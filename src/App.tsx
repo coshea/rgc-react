@@ -1,28 +1,20 @@
-import { useState } from "react";
-import "./App.css";
-import { Button } from "@material-tailwind/react";
-import CounterButton from "@/components/CounterButton.tsx";
+import { Route, Routes } from "react-router-dom";
+
+import IndexPage from "@/pages/index";
+import DocsPage from "@/pages/docs";
+import PricingPage from "@/pages/pricing";
+import BlogPage from "@/pages/blog";
+import AboutPage from "@/pages/about";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="TestButton">
-        <Button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </Button>
-      </div>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-      </div>
-      <CounterButton></CounterButton>
-
-
-    </>
+    <Routes>
+      <Route element={<IndexPage />} path="/" />
+      <Route element={<DocsPage />} path="/docs" />
+      <Route element={<PricingPage />} path="/pricing" />
+      <Route element={<BlogPage />} path="/blog" />
+      <Route element={<AboutPage />} path="/about" />
+    </Routes>
   );
 }
 
