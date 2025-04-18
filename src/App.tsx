@@ -1,19 +1,21 @@
 import { Route, Routes } from "react-router-dom";
 
-import IndexPage from "@/pages/index";
-import DocsPage from "@/pages/docs";
-import PricingPage from "@/pages/pricing";
-import BlogPage from "@/pages/blog";
+import HomePage from "@/pages/home";
 import AboutPage from "@/pages/about";
+import ContactPage from "@/pages/contact";
+
+import { siteConfig } from "@/config/site";
+import NotFoundPage from "@/pages/404page";
+import LoginPage from "@/pages/login";
 
 function App() {
   return (
     <Routes>
-      <Route element={<IndexPage />} path="/" />
-      <Route element={<DocsPage />} path="/docs" />
-      <Route element={<PricingPage />} path="/pricing" />
-      <Route element={<BlogPage />} path="/blog" />
-      <Route element={<AboutPage />} path="/about" />
+      <Route element={<HomePage />} path={siteConfig.pages.home.link} />
+      <Route element={<AboutPage />} path={siteConfig.pages.about.link} />
+      <Route element={<ContactPage />} path={siteConfig.pages.contact.link} />
+      <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
+      <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );
 }

@@ -7,7 +7,7 @@ import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
 
-export default function IndexPage() {
+export default function HomePage() {
   return (
     <DefaultLayout>
       <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
@@ -31,14 +31,14 @@ export default function IndexPage() {
               radius: "full",
               variant: "shadow",
             })}
-            href={siteConfig.links.docs}
+            href="/"
           >
             Documentation
           </Link>
           <Link
             isExternal
             className={buttonStyles({ variant: "bordered", radius: "full" })}
-            href={siteConfig.links.github}
+            href="/"
           >
             GitHub
           </Link>

@@ -63,11 +63,37 @@ export const siteConfig = {
       href: "/logout",
     },
   ],
-  links: {
-    github: "https://github.com/frontio-ai/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
+  links: {},
+  pages: {
+    home: {
+      title: "Home",
+      description: "Welcome to the Ridgefield Golf Club",
+      link: "/",
+    },
+    membership: {
+      title: "Membership",
+      description: "Join the Ridgefield Golf Club",
+      link: "/membership",
+    },
+    about: {
+      title: "About",
+      description: "Learn more about the Ridgefield Golf Club",
+      link: "/about",
+    },
+    policies: {
+      title: "Policies/Rules",
+      description: "View the policies and rules of the Ridgefield Golf Club",
+      link: "/policies",
+    },
+    contact: {
+      title: "Contact Us",
+      description: "Get in touch with the Ridgefield Golf Club",
+      link: "/contact",
+    },
+    login: {
+      title: "Login",
+      description: "Login to your Ridgefield Golf Club account",
+      link: "/login",
+    },
   },
 };
