@@ -1,7 +1,9 @@
 import React from "react";
 import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { XCircleIcon } from "@heroicons/react/24/outline";
 import DefaultLayout from "@/layouts/default";
+import { siteConfig } from "@/config/site";
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
@@ -16,11 +18,23 @@ export default function LoginPage() {
   return (
     <DefaultLayout>
       <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small">
+        <div
+          className="flex w-full max-w-sm flex-col gap-4 rounded-large 
+        bg-content1 px-8 pb-10 pt-6 shadow-small"
+        >
           <div className="flex flex-col gap-1">
             <h1 className="text-large font-medium">Sign in to your account</h1>
-            <p className="text-small text-default-500">to continue to Acme</p>
+            <p className="text-small text-default-500">
+              to continue to Ridgefield Golf Club
+            </p>
           </div>
+          {/* <div className="flex flex-col justify-end size-12">
+            <Link
+              showAnchorIcon
+              anchorIcon={<XCircleIcon />}
+              href={siteConfig.pages.home.link}
+            ></Link>
+          </div> */}
 
           <Form
             className="flex flex-col gap-3"
@@ -85,7 +99,7 @@ export default function LoginPage() {
           </div>
           <p className="text-center text-small">
             Need to create an account?&nbsp;
-            <Link href="#" size="sm">
+            <Link href={siteConfig.pages.signup.link} size="sm">
               Sign Up
             </Link>
           </p>

@@ -19,7 +19,6 @@ import { cn } from "@heroui/react";
 import { RGCIcon, RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
 
-
 import { siteConfig } from "@/config/site";
 
 const menuItems = ["Membership", "Policies/Rules", "Contact Us"];
@@ -30,7 +29,7 @@ const menuItemsMobile = [
   siteConfig.pages.policies,
   siteConfig.pages.about,
   siteConfig.pages.contact,
-]
+];
 
 export const MainNavbar = (props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -91,8 +90,13 @@ export const MainNavbar = (props: NavbarProps) => {
       <NavbarContent className="hidden md:flex" justify="end">
         <NavbarItem className="hidden sm:flex gap-1"></NavbarItem>
         <NavbarItem className="ml-2 !flex gap-2">
-          <Button className="text-default-500" radius="full" variant="light"
-          as={Link} href={siteConfig.pages.login.link} >
+          <Button
+            className="text-default-500"
+            radius="full"
+            variant="light"
+            as={Link}
+            href={siteConfig.pages.login.link}
+          >
             {siteConfig.pages.login.title}
           </Button>
           <Button
@@ -101,8 +105,10 @@ export const MainNavbar = (props: NavbarProps) => {
             endContent={<ChevronRightIcon />}
             radius="full"
             variant="flat"
+            as={Link}
+            href={siteConfig.pages.signup.link}
           >
-            Sign Up
+            {siteConfig.pages.signup.title}
           </Button>
         </NavbarItem>
         <ThemeSwitch />
@@ -118,8 +124,13 @@ export const MainNavbar = (props: NavbarProps) => {
       >
         <ThemeSwitch className="flex" />
         <NavbarMenuItem>
-          <Button fullWidth as={Link} href={siteConfig.pages.login.link} variant="faded">
-          {siteConfig.pages.login.title}
+          <Button
+            fullWidth
+            as={Link}
+            href={siteConfig.pages.login.link}
+            variant="faded"
+          >
+            {siteConfig.pages.login.title}
           </Button>
         </NavbarMenuItem>
         <NavbarMenuItem className="mb-4">
@@ -134,7 +145,11 @@ export const MainNavbar = (props: NavbarProps) => {
         </NavbarMenuItem>
         {menuItemsMobile.map((item, index) => (
           <NavbarMenuItem key={`${item}-${index}`}>
-            <Link className="mb-2 w-full text-default-500" href={item.link} size="md">
+            <Link
+              className="mb-2 w-full text-default-500"
+              href={item.link}
+              size="md"
+            >
               {item.title}
             </Link>
             {index < menuItems.length - 1 && <Divider className="opacity-50" />}

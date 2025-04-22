@@ -7,62 +7,6 @@ export const siteConfig = {
   The purpose of our club is to promote competition, camaraderie and fun. We have about 15 tournaments a year that are open to all club members. 
   
   Tournament winners receive Ridgefield Golf Course Pro-Shop credit which can be used for golf merchandise.`,
-  navItems: [
-    {
-      label: "Home",
-      href: "/",
-    },
-    {
-      label: "Docs",
-      href: "/docs",
-    },
-    {
-      label: "Pricing",
-      href: "/pricing",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
-      href: "/about",
-    },
-  ],
-  navMenuItems: [
-    {
-      label: "Profile",
-      href: "/profile",
-    },
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-    },
-    {
-      label: "Projects",
-      href: "/projects",
-    },
-    {
-      label: "Team",
-      href: "/team",
-    },
-    {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-    },
-    {
-      label: "Help & Feedback",
-      href: "/help-feedback",
-    },
-    {
-      label: "Logout",
-      href: "/logout",
-    },
-  ],
   links: {},
   pages: {
     home: {
@@ -94,6 +38,11 @@ export const siteConfig = {
       title: "Login",
       description: "Login to your Ridgefield Golf Club account",
       link: "/login",
+    },
+    signup: {
+      title: "Sign Up",
+      description: "Sign up for a Ridgefield Golf Club account",
+      link: "/signup",
     },
   },
 };

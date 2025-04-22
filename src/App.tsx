@@ -7,6 +7,7 @@ import ContactPage from "@/pages/contact";
 import { siteConfig } from "@/config/site";
 import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
+import SignUpPage from "@/pages/signup";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route element={<AboutPage />} path={siteConfig.pages.about.link} />
       <Route element={<ContactPage />} path={siteConfig.pages.contact.link} />
       <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
+      <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );
