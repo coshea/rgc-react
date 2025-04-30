@@ -18,10 +18,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import { cn } from "@heroui/react";
 import { RGCIcon, RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
-
 import { siteConfig } from "@/config/site";
-
-const menuItems = ["Membership", "Policies/Rules", "Contact Us"];
 
 const menuItemsMobile = [
   siteConfig.pages.home,
@@ -52,11 +49,12 @@ export const MainNavbar = (props: NavbarProps) => {
       <NavbarBrand>
         <div className="rounded-full bg-foreground text-background">
           {/* Show RGCIcon on small screens (mobile) */}
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
             <RGCIcon size={34} />
-          </div>
+          </div> */}
           {/* Show RGCLogo on medium and larger screens */}
-          <div className="hidden md:block">
+          {/* <div className="hidden md:block"> */}
+          <div>
             <RGCLogo size={248} />
           </div>
         </div>
@@ -152,7 +150,9 @@ export const MainNavbar = (props: NavbarProps) => {
             >
               {item.title}
             </Link>
-            {index < menuItems.length - 1 && <Divider className="opacity-50" />}
+            {index < menuItemsMobile.length - 1 && (
+              <Divider className="opacity-50" />
+            )}
           </NavbarMenuItem>
         ))}
       </NavbarMenu>

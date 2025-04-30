@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Input, Checkbox, Link, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import DefaultLayout from "@/layouts/default";
 
 import { RGCIcon, RGCLogo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
@@ -14,7 +13,6 @@ export default function SignUpPage() {
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
   return (
-    <DefaultLayout>
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex w-full max-w-sm flex-col gap-4 rounded-large">
           <div className="flex flex-col items-center pb-6">
@@ -132,6 +130,5 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
-    </DefaultLayout>
   );
 }
