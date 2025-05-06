@@ -5,6 +5,7 @@ import { button as buttonStyles } from "@heroui/theme";
 
 import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
+import { TournamentSection } from "@/components/tournament-section";
 
 export default function HomePage() {
   return (
@@ -49,6 +50,8 @@ export default function HomePage() {
           </span>
         </Snippet>
       </div>
+
+      <TournamentSection />
     </section>
   );
 }
