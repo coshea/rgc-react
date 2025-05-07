@@ -21,33 +21,41 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
     >
       <CardHeader className="flex justify-between items-start gap-3">
         <div className="flex gap-3">
-          <Image
+          {/* <Image
             alt="Tournament logo"
             className="w-12 h-12 object-cover"
             src={
               tournament.icon ||
               "https://img.heroui.chat/image/sports?w=100&h=100&u=golf1"
             }
-          />
+          /> */}
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold">{tournament.title}</h3>
-            <p className="text-small text-default-500 flex items-center gap-1">
+            <h3 className="text-xl font-semibold mb-2">{tournament.title}</h3>
+            <div className="text-small text-default-500 flex items-center gap-1">
               <Icon icon="lucide:calendar" className="w-4 h-4" />
               {tournament.date.toDateString()}
-            </p>
+              <Chip
+                className="flex justify-end"
+                color={tournament.completed ? "default" : "primary"}
+                variant={tournament.completed ? "flat" : "solid"}
+                size="sm"
+              >
+                {tournament.completed ? "Completed" : "Upcoming"}
+              </Chip>
+            </div>
           </div>
         </div>
-        <Chip
+        {/* <Chip
           color={tournament.completed ? "default" : "primary"}
           variant={tournament.completed ? "flat" : "solid"}
           size="sm"
         >
           {tournament.completed ? "Completed" : "Upcoming"}
-        </Chip>
+        </Chip> */}
       </CardHeader>
       <Divider />
       <CardBody>
-        <p className="text-default-600">{tournament.description}</p>
+        <p className="text-default-400">{tournament.description}</p>
         <div className="mt-4 flex items-center gap-2">
           <Icon icon="lucide:trophy" className="w-5 h-5 text-warning-500" />
           <span className="font-semibold text-lg">

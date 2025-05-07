@@ -1,5 +1,4 @@
 import { TournamentItem } from "@/types/tournament";
-import { UserGroupIcon } from "heroicons-react/24/solid";
 
 export const testTournamentItems: TournamentItem[] = [
   {
