@@ -20,11 +20,17 @@ import { RGCIcon, RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { siteConfig } from "@/config/site";
 
+const menuItemsDesktop = [
+  siteConfig.pages.home,
+  siteConfig.pages.membership,
+  siteConfig.pages.policies,
+  siteConfig.pages.contact,
+];
+
 const menuItemsMobile = [
   siteConfig.pages.home,
   siteConfig.pages.membership,
   siteConfig.pages.policies,
-  siteConfig.pages.about,
   siteConfig.pages.contact,
 ];
 
@@ -62,26 +68,13 @@ export const MainNavbar = (props: NavbarProps) => {
 
       {/* Center Content */}
       <NavbarContent justify="center">
-        <NavbarItem /*isActive*/>
-          <Link className="text-default-500" href="/" size="sm">
-            Home
-          </Link>
-        </NavbarItem>
-        <NavbarItem>
-          <Link className="text-default-500" href="/membership" size="sm">
-            Membership
-          </Link>
-        </NavbarItem>
-        <NavbarItem>
-          <Link className="text-default-500" href="#" size="sm">
-            Policies/Rules
-          </Link>
-        </NavbarItem>
-        <NavbarItem>
-          <Link className="text-default-500" href="/about" size="sm">
-            About Us
-          </Link>
-        </NavbarItem>
+        {menuItemsDesktop.map((item, index) => (
+          <NavbarMenuItem key={`${item}-${index}`}>
+            <Link className="text-default-500" href={item.link} size="sm">
+              {item.title}
+            </Link>
+          </NavbarMenuItem>
+        ))}
       </NavbarContent>
 
       {/* Right Content */}
@@ -136,9 +129,9 @@ export const MainNavbar = (props: NavbarProps) => {
             fullWidth
             as={Link}
             className="bg-foreground text-background"
-            href="/#"
+            href={siteConfig.pages.signup.link}
           >
-            Sign Up
+            {siteConfig.pages.signup.title}
           </Button>
         </NavbarMenuItem>
         {menuItemsMobile.map((item, index) => (

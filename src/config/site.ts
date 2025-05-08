@@ -32,7 +32,7 @@ export const siteConfig = {
     contact: {
       title: "Contact Us",
       description: "Get in touch with the Ridgefield Golf Club",
-      link: "/contact",
+      link: "/#home-contact-section",
     },
     login: {
       title: "Login",
