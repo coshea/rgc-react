@@ -1,6 +1,4 @@
-import type { NavbarProps } from "@heroui/react";
-
-import React from "react";
+import { useState } from "react";
 import {
   Navbar,
   NavbarBrand,
@@ -12,6 +10,7 @@ import {
   Link,
   Button,
   Divider,
+  NavbarProps,
 } from "@heroui/react";
 
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
@@ -34,12 +33,12 @@ const menuItemsMobile = [
   siteConfig.pages.contact,
 ];
 
-export const MainNavbar = (props: NavbarProps) => {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+export const MainNavbar = (_props: NavbarProps) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <Navbar
-      {...props}
+      {..._props}
       classNames={{
         base: cn("border-default-100", {
           "bg-default-200/50 dark:bg-default-100/50": isMenuOpen,
@@ -67,7 +66,7 @@ export const MainNavbar = (props: NavbarProps) => {
       </NavbarBrand>
 
       {/* Center Content */}
-      <NavbarContent justify="center">
+      <NavbarContent className="hidden md:flex" justify="center">
         {menuItemsDesktop.map((item, index) => (
           <NavbarMenuItem key={`${item}-${index}`}>
             <Link className="text-default-500" href={item.link} size="sm">
