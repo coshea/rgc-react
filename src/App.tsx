@@ -9,9 +9,9 @@ import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
 import PolicyPage from "./pages/policies";
-import { createContext } from "react";
+//import { createContext } from "react";
 
-const UserContext = createContext(null);
+//const UserContext = createContext(null);
 
 function App() {
   return (

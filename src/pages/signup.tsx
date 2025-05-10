@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Input, Checkbox, Link, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-import { RGCIcon, RGCLogo } from "@/components/icons";
+import { RGCLogo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 
 export default function SignUpPage() {

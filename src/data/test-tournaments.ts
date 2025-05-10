@@ -27,7 +27,7 @@ export const testTournamentItems: TournamentItem[] = [
     title: "Club Championship",
     date: new Date("2024-09-10T07:30:00Z"),
     description: "Determine the club champion for the year.",
-    players: 2,
+    players: 1,
     completed: false,
     icon: "/logos/club-champ.svg", // Example path
 

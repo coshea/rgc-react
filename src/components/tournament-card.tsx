@@ -2,7 +2,6 @@ import {
   Card,
   CardBody,
   CardHeader,
-  Image,
   Chip,
   Divider,
   CardFooter,

@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { XCircleIcon } from "@heroicons/react/24/outline";
 import { siteConfig } from "@/config/site";
 
 export default function LoginPage() {

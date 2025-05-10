@@ -1,5 +1,3 @@
-import { Card, CardBody } from "@heroui/react";
-import { Icon } from "@iconify/react";
 import { testTournamentItems } from "@/data/test-tournaments";
 import { TournamentCard } from "./tournament-card";
 

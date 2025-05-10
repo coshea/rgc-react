@@ -1,4 +1,3 @@
-import { siteConfig } from "@/config/site";
 import { TournamentSection } from "@/components/tournament-section";
 import { NewsPage } from "@/pages/news";
 import ContactPage from "./contact";

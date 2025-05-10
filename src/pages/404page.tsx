@@ -1,7 +1,6 @@
 import { siteConfig } from "@/config/site";
-import { Link, Button } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { button as buttonStyles } from "@heroui/theme";
-import DefaultLayout from "@/layouts/default";
 
 export default function NotFoundPage() {
   return (
