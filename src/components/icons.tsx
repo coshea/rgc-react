@@ -1,63 +1,15 @@
-import * as React from "react";
-
 import { IconSvgProps } from "@/types";
-import rgcFav from "@/assets/rgc_fav.png";
-import rgcLogo from "@/assets/rgc_logo.png";
+import rgcLogoPng from "@/assets/rgc_logo.png";
+import rgcFavPng from "@/assets/rgc_fav.png";
 
-export const RGCIcon: React.FC<IconSvgProps> = ({
-  size = 24,
-  width,
-  height,
-  ...props
-}) => {
-  return (
-    <img
-      src={rgcFav}
-      alt="RGC Icon"
-      width={size || width}
-      height={size || height}
-      {...props}
-    />
-  );
+export const RGCLogo = ({ className }: IconSvgProps) => {
+  return <img className={className} src={rgcLogoPng} />;
 };
 
-export const RGCLogo: React.FC<IconSvgProps> = ({
-  size = 24,
-  width,
-  height,
-  ...props
-}) => {
-  return (
-    <img
-      src={rgcLogo}
-      alt="RGC Logo"
-      width={size || width}
-      height={size || height}
-      {...props}
-    />
-  );
+export const RGCIcon = ({ className }: IconSvgProps) => {
+  return <img className={className} src={rgcFavPng} />;
 };
 
-export const Logo: React.FC<IconSvgProps> = ({
-  size = 36,
-  height,
-  ...props
-}) => (
-  <svg
-    fill="none"
-    height={size || height}
-    viewBox="0 0 32 32"
-    width={size || height}
-    {...props}
-  >
-    <path
-      clipRule="evenodd"
-      d="M17.6482 10.1305L15.8785 7.02583L7.02979 22.5499H10.5278L17.6482 10.1305ZM19.8798 14.0457L18.11 17.1983L19.394 19.4511H16.8453L15.1056 22.5499H24.7272L19.8798 14.0457Z"
-      fill="currentColor"
-      fillRule="evenodd"
-    />
-  </svg>
-);
 export const MoonFilledIcon = ({
   size = 24,
   width,

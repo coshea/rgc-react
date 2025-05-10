@@ -16,7 +16,7 @@ import {
 
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import { cn } from "@heroui/react";
-import { RGCIcon, RGCLogo } from "@/components/icons";
+import { RGCLogo as RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { siteConfig } from "@/config/site";
 
@@ -61,7 +61,7 @@ export const MainNavbar = (props: NavbarProps) => {
           {/* Show RGCLogo on medium and larger screens */}
           {/* <div className="hidden md:block"> */}
           <div>
-            <RGCLogo size={248} />
+            <RGCLogo />
           </div>
         </div>
       </NavbarBrand>
