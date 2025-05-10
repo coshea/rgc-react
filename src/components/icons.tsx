@@ -1,13 +1,17 @@
 import { IconSvgProps } from "@/types";
 import rgcLogoPng from "@/assets/rgc_logo.png";
-import rgcFavPng from "@/assets/rgc_fav.png";
+import rgcFavPng from "@/assets/rgc_icon.png";
+
+// export const RGCLogo = ({ className }: IconSvgProps) => {
+//   <img className={className} src={rgcLogoPng} />;
+// };
 
 export const RGCLogo = ({ className }: IconSvgProps) => {
   return <img className={className} src={rgcLogoPng} />;
 };
 
 export const RGCIcon = ({ className }: IconSvgProps) => {
-  return <img className={className} src={rgcFavPng} />;
+  <img className={className} src={rgcFavPng} />;
 };
 
 export const MoonFilledIcon = ({
