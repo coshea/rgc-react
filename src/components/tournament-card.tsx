@@ -35,6 +35,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                 year: "numeric",
                 month: "short",
                 day: "numeric",
+                timeZone: "UTC", // Add this line
               })}
             </div>
             {/* Right: Status Chip */}
