@@ -9,9 +9,7 @@ import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
 import PolicyPage from "./pages/policies";
-//import { createContext } from "react";
-
-//const UserContext = createContext(null);
+import PastChampionsWithAvatars from "./pages/past-champions-avatars";
 
 function App() {
   return (
@@ -22,6 +20,10 @@ function App() {
       <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
       <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />
       <Route element={<PolicyPage />} path={siteConfig.pages.policies.link} />
+      <Route
+        element={<PastChampionsWithAvatars showAllYears={true} />}
+        path="/past-champions"
+      />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );

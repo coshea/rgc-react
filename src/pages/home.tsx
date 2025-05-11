@@ -1,6 +1,7 @@
 import { TournamentSection } from "@/components/tournament-section";
 import { NewsPage } from "@/pages/news";
 import ContactPage from "./contact";
+import PastChampionsWithAvatars from "./past-champions-avatars";
 
 export default function HomePage() {
   return (
@@ -8,6 +9,9 @@ export default function HomePage() {
       <NewsPage />
       <TournamentSection />
       {/* Past Champions */}
+      <div id="home-past-champions-section">
+        <PastChampionsWithAvatars />
+      </div>
       {/* FAQ */}
       {/* Contact Us */}
       <div id="home-contact-section">

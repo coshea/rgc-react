@@ -30,7 +30,12 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
             {/* Left: Date */}
             <div className="text-small text-default-500 flex items-center gap-1">
               <Icon icon="lucide:calendar" className="w-4 h-4" />
-              {tournament.date.toDateString()}
+              {tournament.date.toLocaleDateString("en-US", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
             </div>
             {/* Right: Status Chip */}
             <Chip
