@@ -25,7 +25,7 @@ export default function PastChampionsWithAvatars({
 
         {!showAllYears && (
           <div className="text-center">
-            <Link href="/past-champions" color="primary" showAnchorIcon>
+            <Link href="/past-champions" color="success" >
               View All Past Champions
             </Link>
           </div>

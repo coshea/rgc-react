@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { Provider } from "./provider.tsx";
 import "@/styles/globals.css";
+import ScrollToTop from "@/components/scroll-to-top.tsx";
 import DefaultLayout from "@/layouts/default";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Provider>
         <DefaultLayout>
+          <ScrollToTop />
           <App />
         </DefaultLayout>
       </Provider>

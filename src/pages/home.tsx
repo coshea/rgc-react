@@ -10,7 +10,7 @@ export default function HomePage() {
       <TournamentSection />
       {/* Past Champions */}
       <div id="home-past-champions-section">
-        <PastChampionsWithAvatars />
+        <PastChampionsWithAvatars showAllYears={false} />
       </div>
       {/* FAQ */}
       {/* Contact Us */}

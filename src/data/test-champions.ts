@@ -1,11 +1,11 @@
 import { ChampionItem } from "../types/ChampionItem";
 
 export const testChampions: ChampionItem[] = [
-  // Club Champions
+  // Club Champion
   {
     id: 1,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "Andy Inman",
     playerId: 1,
     runnerUp: false,
@@ -14,7 +14,7 @@ export const testChampions: ChampionItem[] = [
   {
     id: 2,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "John Miloro",
     playerId: 2,
     runnerUp: true,
@@ -23,7 +23,7 @@ export const testChampions: ChampionItem[] = [
   {
     id: 3,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "Chris O'Shea",
     playerId: 3,
     runnerUp: false,
@@ -32,7 +32,7 @@ export const testChampions: ChampionItem[] = [
   {
     id: 4,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "Rory Mazur",
     playerId: 4,
     runnerUp: true,
@@ -41,7 +41,7 @@ export const testChampions: ChampionItem[] = [
   {
     id: 5,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "Gregg Brauneisen",
     playerId: 5,
     runnerUp: false,
@@ -50,7 +50,7 @@ export const testChampions: ChampionItem[] = [
   {
     id: 6,
     tournamentId: 1,
-    tournamentTitle: "Club Champions",
+    tournamentTitle: "Club Champion",
     playerName: "Chris O'Shea",
     playerId: 3,
     runnerUp: true,
