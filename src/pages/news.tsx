@@ -1,6 +1,6 @@
 export function NewsPage() {
   return (
-    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
+    <section className="flex flex-col items-center justify-center ">
       <div className="container mx-auto max-w-6xl px-4">
         <h1 className="text-3xl font-bold mb-4">Latest News</h1>
         <p className="text-default-600 mb-8">

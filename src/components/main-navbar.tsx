@@ -18,6 +18,7 @@ import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { siteConfig } from "@/config/site";
+import { ProfileDropdown } from "./profile-dropdown";
 
 const menuItemsDesktop = [
   siteConfig.pages.home,
@@ -38,6 +39,7 @@ export const MainNavbar = (_props: NavbarProps) => {
 
   return (
     <Navbar
+      isBordered
       {..._props}
       classNames={{
         base: cn("border-default-100", {
@@ -51,18 +53,20 @@ export const MainNavbar = (_props: NavbarProps) => {
       onMenuOpenChange={setIsMenuOpen}
     >
       {/* Left Content */}
-      <NavbarBrand>
-        <div className="rounded-full bg-foreground text-background">
-          {/* Show RGCIcon on small screens (mobile) */}
-          {/* <div className="md:hidden">
+      <NavbarBrand className="flex  mb-2">
+        <Link href={siteConfig.pages.home.link} aria-label="Home">
+          <div className="rounded-full bg-foreground text-background">
+            {/* Show RGCIcon on small screens (mobile) */}
+            {/* <div className="md:hidden">
             <RGCIcon size={34} />
           </div> */}
-          {/* Show RGCLogo on medium and larger screens */}
-          {/* <div className="hidden md:block"> */}
-          <div>
-            <RGCLogo />
+            {/* Show RGCLogo on medium and larger screens */}
+            {/* <div className="hidden md:block"> */}
+            <div>
+              <RGCLogo />
+            </div>
           </div>
-        </div>
+        </Link>
       </NavbarBrand>
 
       {/* Center Content */}
@@ -102,6 +106,11 @@ export const MainNavbar = (_props: NavbarProps) => {
           </Button>
         </NavbarItem>
         <ThemeSwitch />
+      </NavbarContent>
+
+      {/* Profile Dropdown */}
+      <NavbarContent className="flex" justify="end">
+        <ProfileDropdown />
       </NavbarContent>
 
       {/* Mobile Content */}
