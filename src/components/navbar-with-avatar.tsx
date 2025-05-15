@@ -15,9 +15,10 @@ import {
 
 import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
-import { ThemeSwitch } from "@/components/theme-switch";
 import { siteConfig } from "@/config/site";
 import { ProfileDropdown } from "./profile-dropdown";
+import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
+import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const menuItemsDesktop = [
   siteConfig.pages.home,
@@ -35,7 +36,7 @@ const menuItemsMobile = [
 
 export const MainNavbarWithAvatar = (_props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { userLoggedIn, loading } = useAuth(); // Get auth state
 
   return (
     <Navbar
@@ -107,7 +108,35 @@ dark:bg-default-100/50"
 
       {/* Profile Dropdown */}
       <NavbarContent justify="end">
-        <ProfileDropdown />
+        {loading ? (
+          // Optional: Show a loading spinner or placeholder
+          <div className="w-8 h-8" /> // Simple placeholder
+        ) : userLoggedIn ? (
+          <ProfileDropdown />
+        ) : (
+          <NavbarItem className="ml-2 !flex gap-2">
+            <Button
+              className="text-default-500"
+              radius="full"
+              variant="light"
+              as={Link}
+              href={siteConfig.pages.login.link}
+            >
+              {siteConfig.pages.login.title}
+            </Button>
+            <Button
+              className="bg-foreground font-medium text-background"
+              color="secondary"
+              endContent={<ChevronRightIcon />}
+              radius="full"
+              variant="flat"
+              as={Link}
+              href={siteConfig.pages.signup.link}
+            >
+              {siteConfig.pages.signup.title}
+            </Button>
+          </NavbarItem>
+        )}
       </NavbarContent>
     </Navbar>
   );

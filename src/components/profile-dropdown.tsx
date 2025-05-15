@@ -2,7 +2,6 @@ import {
   NavbarContent,
   NavbarItem,
   NavbarMenu,
-  NavbarMenuItem,
   Link,
   Button,
   Avatar,
@@ -11,12 +10,11 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
-import { useState } from "react";
+import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { ThemeSwitch } from "./theme-switch";
 
 export const ProfileDropdown = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, logout } = useAuth(); // Get user object and logout function
 
   return (
     <>
@@ -29,24 +27,22 @@ export const ProfileDropdown = () => {
               as="button"
               className="transition-transform"
               color="secondary"
-              name="Jason Hughes"
+              name={user?.displayName || "User"}
               size="sm"
-              src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
+              src={user?.photoURL || undefined} // Use undefined if photoURL is null/empty to let Avatar handle fallback
+              showFallback // Ensure fallback (initials or default icon) is shown if src is invalid/missing
             />
           </DropdownTrigger>
           <DropdownMenu aria-label="Profile Actions" variant="flat">
             <DropdownItem key="profile" className="h-14 gap-2">
               <p className="font-semibold">Signed in as</p>
-              <p className="font-semibold">zoey@example.com</p>
+              <p className="font-semibold">
+                {user?.email || "user@example.com"}
+              </p>
             </DropdownItem>
             <DropdownItem key="settings">My Settings</DropdownItem>
             <DropdownItem key="team_settings">Team Settings</DropdownItem>
-            <DropdownItem key="help_and_feedback">Help & Feedback</DropdownItem>
-            <DropdownItem
-              key="logout"
-              color="danger"
-              onSubmit={() => setIsLoggedIn(false)}
-            >
+            <DropdownItem key="logout" color="danger" onPress={logout}>
               Log Out
             </DropdownItem>
           </DropdownMenu>

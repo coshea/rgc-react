@@ -2,17 +2,37 @@ import React from "react";
 import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
+import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
+  const {
+    userLoggedIn, // We can use this to redirect if already logged in
+    signInWithGoogle,
+    loading: authLoading,
+    error: authError,
+  } = useAuth(); // Get auth functions and state
 
   const toggleVisibility = () => setIsVisible(!isVisible);
+  const navigate = useNavigate(); // Initialize navigate
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("handleSubmit");
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      // Navigation or further actions on successful Google sign-in
+      // can be handled here or by observing userLoggedIn state elsewhere.
+      navigate(siteConfig.pages.home.link); // Navigate to home page
+    } catch (error) {
+      // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
+      console.error("Google Sign-In failed on LoginPage:", error);
+    }
+  };
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div
@@ -25,13 +45,6 @@ export default function LoginPage() {
             to continue to Ridgefield Golf Club
           </p>
         </div>
-        {/* <div className="flex flex-col justify-end size-12">
-            <Link
-              showAnchorIcon
-              anchorIcon={<XCircleIcon />}
-              href={siteConfig.pages.home.link}
-            ></Link>
-          </div> */}
 
         <Form
           className="flex flex-col gap-3"
@@ -87,11 +100,18 @@ export default function LoginPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
+          {authError && (
+            <p className="text-danger text-center text-small">
+              {authError.message}
+            </p>
+          )}
           <Button
             startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"
+            onPress={handleGoogleSignIn}
+            isDisabled={authLoading}
           >
-            Continue with Google
+            {authLoading ? "Signing in..." : "Continue with Google"}
           </Button>
         </div>
         <p className="text-center text-small">
