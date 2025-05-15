@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
   const {
     userLoggedIn, // We can use this to redirect if already logged in
+    loginEmailAndPassword, // Import the email/password login function
     signInWithGoogle,
     loading: authLoading,
     error: authError,
@@ -17,9 +18,27 @@ export default function LoginPage() {
   const toggleVisibility = () => setIsVisible(!isVisible);
   const navigate = useNavigate(); // Initialize navigate
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (userLoggedIn && !authLoading) { // Check if user is logged in and auth is not loading
+      navigate(siteConfig.pages.home.link);
+    }
+  }, [userLoggedIn, authLoading, navigate]);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("handleSubmit");
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (email && password) {
+      try {
+        await loginEmailAndPassword(email, password);
+        navigate(siteConfig.pages.home.link); // Navigate on successful login
+      } catch (error) {
+        // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
+        console.error("Email/Password Sign-In failed on LoginPage:", error);
+      }
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -33,6 +52,11 @@ export default function LoginPage() {
       console.error("Google Sign-In failed on LoginPage:", error);
     }
   };
+
+  // If already logged in and not loading, render null or a loading indicator to prevent flash of login form
+  if (userLoggedIn && !authLoading) {
+    return null; // Or a loading spinner
+  }
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div
@@ -90,8 +114,11 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <Button className="w-full" color="primary" type="submit">
-            Sign In
+          {authError && !authLoading && ( // Display error only if not loading from this specific action
+            <p className="text-danger text-center text-small -mt-2 mb-1">{authError.message}</p>
+          )}
+          <Button className="w-full" color="primary" type="submit" isDisabled={authLoading}>
+            {authLoading ? "Signing In..." : "Sign In"}
           </Button>
         </Form>
         <div className="flex items-center gap-4 py-2">
@@ -100,7 +127,7 @@ export default function LoginPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
-          {authError && (
+          {authError && !authLoading && ( // Display error only if not loading from this specific action
             <p className="text-danger text-center text-small">
               {authError.message}
             </p>

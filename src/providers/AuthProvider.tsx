@@ -64,11 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      await signInWithEmailAndPassword(auth, email, password);
       console.log("Sign-In successful");
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
@@ -82,11 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      await createUserWithEmailAndPassword(auth, email, password);
       console.log("Sign-Up successful");
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
@@ -101,6 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      provider.setCustomParameters({ prompt: "select_account" }); // Ensure explicit account selection
       await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
@@ -118,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
+      console.log("Sign-Out successful");
     } catch (err) {
       setError(err as Error);
     } finally {
