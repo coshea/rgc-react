@@ -3,6 +3,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification, // Import sendEmailVerification
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
@@ -65,10 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("Sign-In successful");
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
       setError(err as Error);
+      throw err; // Re-throw the error for the calling component
     } finally {
       setLoading(false);
     }
@@ -78,11 +79,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      console.log("Sign-Up successful");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       // onAuthStateChanged will handle setting user and userLoggedIn
+      if (userCredential.user) {
+        await sendEmailVerification(userCredential.user);
+      }
     } catch (err) {
       setError(err as Error);
+      throw err; // Re-throw the error for the calling component
     } finally {
       setLoading(false);
     }
@@ -99,9 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
-      console.log("Google Sign-In successful");
     } catch (err) {
       setError(err as Error);
+      throw err; // Re-throw the error for the calling component
     } finally {
       setLoading(false);
     }
@@ -113,9 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
-      console.log("Sign-Out successful");
     } catch (err) {
       setError(err as Error);
+      throw err; // Re-throw the error for the calling component
     } finally {
       setLoading(false);
     }
