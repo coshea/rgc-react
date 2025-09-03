@@ -43,7 +43,7 @@ export const ContactForm = () => {
       </div>
 
       <Card className="p-2 md:h-full flex flex-col">
-        <CardBody className="space-y-6 flex-grow overflow-y-auto">
+        <CardBody className="space-y-6 grow overflow-y-auto">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-foreground">
               Contact Us

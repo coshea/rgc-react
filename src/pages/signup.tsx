@@ -149,11 +149,11 @@ export default function SignUpPage() {
           </div>
           <Checkbox isRequired className="py-4" size="sm">
             I agree with the&nbsp;
-            <Link className="relative z-[1]" href="#" size="sm">
+            <Link className="relative z-1" href="#" size="sm">
               Terms
             </Link>
             &nbsp; and&nbsp;
-            <Link className="relative z-[1]" href="#" size="sm">
+            <Link className="relative z-1" href="#" size="sm">
               Privacy Policy
             </Link>
           </Checkbox>

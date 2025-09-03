@@ -83,7 +83,7 @@ export const MainNavbar = (_props: NavbarProps) => {
       {/* Right Content */}
       <NavbarContent className="hidden md:flex" justify="end">
         <NavbarItem className="hidden sm:flex gap-1"></NavbarItem>
-        <NavbarItem className="ml-2 !flex gap-2">
+        <NavbarItem className="ml-2 flex! gap-2">
           <Button
             className="text-default-500"
             radius="full"
@@ -117,7 +117,7 @@ export const MainNavbar = (_props: NavbarProps) => {
       <NavbarMenuToggle className="text-default-400 md:hidden" />
 
       <NavbarMenu
-        className="top-[calc(var(--navbar-height)_-_1px)] 
+        className="top-[calc(var(--navbar-height)-1px)] 
       max-h-fit bg-default-200/50 pb-6 pt-6 shadow-medium backdrop-blur-md backdrop-saturate-150 
       dark:bg-default-100/50"
       >
