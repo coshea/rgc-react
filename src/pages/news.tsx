@@ -40,7 +40,7 @@ export function NewsPage() {
                 href={lastCompletedTournament.href || "#"}
                 className="text-primary hover:underline"
               >
-                View results
+                View the results
               </a>
             </div>
           )}
