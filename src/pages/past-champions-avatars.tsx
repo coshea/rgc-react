@@ -1,5 +1,5 @@
 import { ChampionsList } from "@/components/champion-list-avatar";
-import { testChampions } from "@/data/test-champions";
+import { Champions } from "@/data/test-champions";
 import { Link } from "@heroui/react";
 
 interface PastChampionsProps {
@@ -11,8 +11,8 @@ export default function PastChampionsWithAvatars({
 }: PastChampionsProps) {
   const currentYear = new Date().getFullYear();
   const filteredChampions = showAllYears
-    ? testChampions
-    : testChampions.filter((champion) => champion.year === currentYear - 1);
+    ? Champions
+    : Champions.filter((champion) => champion.year === currentYear - 1);
 
   return (
     <div className="max-w-7xl mx-auto p-6 ">
@@ -25,7 +25,7 @@ export default function PastChampionsWithAvatars({
 
         {!showAllYears && (
           <div className="text-center">
-            <Link href="/past-champions" color="success" >
+            <Link href="/past-champions" color="success">
               View All Past Champions
             </Link>
           </div>

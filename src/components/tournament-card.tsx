@@ -40,11 +40,27 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
             </div>
             {/* Right: Status Chip */}
             <Chip
-              color={tournament.completed ? "default" : "primary"}
-              variant={tournament.completed ? "flat" : "solid"}
+              color={
+                tournament.canceled
+                  ? "danger"
+                  : tournament.completed
+                    ? "default"
+                    : "primary"
+              }
+              variant={
+                tournament.canceled
+                  ? "solid"
+                  : tournament.completed
+                    ? "flat"
+                    : "solid"
+              }
               size="sm"
             >
-              {tournament.completed ? "Completed" : "Upcoming"}
+              {tournament.canceled
+                ? "Canceled"
+                : tournament.completed
+                  ? "Completed"
+                  : "Upcoming"}
             </Chip>
           </div>
         </CardHeader>

@@ -1,6 +1,6 @@
 import { ChampionItem } from "../types/ChampionItem";
 
-export const testChampions: ChampionItem[] = [
+export const Champions: ChampionItem[] = [
   // Club Champion
   {
     id: 1,
