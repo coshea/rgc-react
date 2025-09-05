@@ -1,6 +1,6 @@
 import { TournamentItem } from "@/types/tournament";
 
-export const testTournamentItems: TournamentItem[] = [
+export const TournamentItems: TournamentItem[] = [
   {
     title: "4 Man Kickoff Scramble-Gold Tees",
     date: new Date("2025-04-12"),

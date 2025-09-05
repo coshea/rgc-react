@@ -1,4 +1,4 @@
-import { testTournamentItems } from "@/data/test-tournaments";
+import { TournamentItems } from "@/data/test-tournaments";
 import { TournamentCard } from "./tournament-card";
 
 export function TournamentSection() {
@@ -12,7 +12,7 @@ export function TournamentSection() {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {testTournamentItems.map((tournament) => (
+          {TournamentItems.map((tournament) => (
             <TournamentCard key={tournament.id} tournament={tournament} />
           ))}
         </div>
