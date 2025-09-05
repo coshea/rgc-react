@@ -5,6 +5,7 @@ export interface TournamentItem {
   description: string;
   players: number;
   completed: boolean;
+  canceled: boolean;
   icon?: string;
   href?: string;
   prizePool: number;
