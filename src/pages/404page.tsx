@@ -19,7 +19,7 @@ export default function NotFoundPage() {
               className={buttonStyles({
                 color: "primary",
                 radius: "full",
-                variant: "shadow-sm",
+                variant: "shadow",
               })}
               href={siteConfig.pages.home.link}
             >
