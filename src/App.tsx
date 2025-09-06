@@ -10,6 +10,7 @@ import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
 import PolicyPage from "./pages/policies";
 import PastChampionsWithAvatars from "./pages/past-champions-avatars";
+import ProfilePage from "./pages/profile";
 
 function App() {
   return (
@@ -22,8 +23,9 @@ function App() {
       <Route element={<PolicyPage />} path={siteConfig.pages.policies.link} />
       <Route
         element={<PastChampionsWithAvatars showAllYears={true} />}
-        path="/past-champions"
+        path={siteConfig.pages.pastchampions.link}
       />
+      <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );

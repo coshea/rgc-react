@@ -5,9 +5,11 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Link,
 } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { ThemeSwitch } from "./theme-switch";
+import { siteConfig } from "@/config/site";
 
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth(); // Get user object and logout function
@@ -59,7 +61,13 @@ export const ProfileDropdown = () => {
                 {user?.email || "user@example.com"}
               </p>
             </DropdownItem>
-            <DropdownItem key="settings">My Settings</DropdownItem>
+            <DropdownItem
+              key="settings"
+              as={Link}
+              href={siteConfig.pages.profile.link}
+            >
+              My Profile
+            </DropdownItem>
             <DropdownItem key="team_settings">Team Settings</DropdownItem>
             <DropdownItem key="logout" color="danger" onPress={logout}>
               Log Out

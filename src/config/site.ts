@@ -44,5 +44,16 @@ export const siteConfig = {
       description: "Sign up for a Ridgefield Golf Club account",
       link: "/signup",
     },
+    profile: {
+      title: "Profile",
+      description: "View and edit your profile",
+      link: "/profile",
+    },
+    pastchampions: {
+      title: "Past Champions",
+      description:
+        "View past champions of the Ridgefield Golf Club tournaments",
+      link: "/past-champions",
+    },
   },
 };
