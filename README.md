@@ -35,6 +35,26 @@ npm install
 npm run dev
 ```
 
+### Enable React Query Devtools in non-dev environments
+
+By default the React Query Devtools are only shown in development. To enable them in another environment (for example a staging build), set the Vite env variable `VITE_ENABLE_REACT_QUERY_DEVTOOLS` to `true` when building or serving:
+
+```powershell
+# Windows PowerShell example
+$env:VITE_ENABLE_REACT_QUERY_DEVTOOLS = 'true'; npm run dev
+
+# or for a production build
+$env:VITE_ENABLE_REACT_QUERY_DEVTOOLS = 'true'; npm run build && npm run preview
+```
+
+In Vite you can also create a `.env.staging` file with:
+
+```
+VITE_ENABLE_REACT_QUERY_DEVTOOLS=true
+```
+
+and then run `vite` with that mode: `vite --mode staging`.
+
 ### Setup pnpm (optional)
 
 If you are using `pnpm`, you need to add the following code to your `.npmrc` file:

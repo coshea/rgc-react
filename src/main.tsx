@@ -22,7 +22,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <App />
           </DefaultLayout>
         </Provider>
-  {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+        {(import.meta.env.DEV ||
+          import.meta.env.VITE_ENABLE_REACT_QUERY_DEVTOOLS === "true") && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
       </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>

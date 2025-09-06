@@ -7,7 +7,7 @@ import { saveUserProfile, getUserProfile } from "@/api/users";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface FormData {
-  name: string;
+  displayName: string;
   email: string;
   phone: string;
   ghinNumber: string;
@@ -15,7 +15,7 @@ interface FormData {
 }
 
 interface FormErrors {
-  name?: string;
+  displayName?: string;
   email?: string;
   phone?: string;
   ghinNumber?: string;
@@ -23,7 +23,7 @@ interface FormErrors {
 
 export function ProfileForm() {
   const [formData, setFormData] = React.useState<FormData>({
-    name: "",
+    displayName: "",
     email: "",
     phone: "",
     ghinNumber: "",
@@ -51,7 +51,7 @@ export function ProfileForm() {
           const profile = userProfile;
           setFormData((prev) => ({
             ...prev,
-            name: profile?.name || user.displayName || "",
+            displayName: profile?.displayName || user.displayName || "",
             email: profile?.email || user.email || "",
             phone: profile?.phone || (user.phoneNumber as string) || "",
             ghinNumber: profile?.ghinNumber || "",
@@ -63,7 +63,7 @@ export function ProfileForm() {
           if (profile) {
             setFormData((prev) => ({
               ...prev,
-              name: profile.name || user.displayName || "",
+              displayName: profile.displayName || user.displayName || "",
               email: profile.email || user.email || "",
               phone: profile.phone || (user.phoneNumber as string) || "",
               ghinNumber: profile.ghinNumber || "",
@@ -74,7 +74,7 @@ export function ProfileForm() {
             // Fallback to auth user data
             setFormData((prev) => ({
               ...prev,
-              name: user.displayName || "",
+              displayName: user.displayName || "",
               email: user.email || "",
               phone: (user.phoneNumber as string) || "",
               ghinNumber: "",
@@ -111,8 +111,8 @@ export function ProfileForm() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = "Name is required";
     }
 
     if (!formData.email.trim()) {
@@ -182,9 +182,20 @@ export function ProfileForm() {
         throw new Error("You must be signed in to save your profile");
       }
 
+      // Debug: surface current auth user UID (if available) to help
+      // diagnose permission-denied issues on Firestore writes.
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
+        const firebaseAuth = require("@/config/firebase").auth as any;
+        // eslint-disable-next-line no-console
+        console.debug("auth.currentUser?.uid:", firebaseAuth?.currentUser?.uid);
+      } catch (e) {
+        // ignore import errors here — it's only for debugging in the browser
+      }
+
       // Prepare data to save (do not include File objects)
       const payload = {
-        name: formData.name,
+        displayName: formData.displayName,
         email: formData.email,
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
@@ -254,11 +265,11 @@ export function ProfileForm() {
           <Input
             label="Full Name"
             placeholder="Enter your full name"
-            value={formData.name}
-            onValueChange={handleInputChange("name")}
+            value={formData.displayName}
+            onValueChange={handleInputChange("displayName")}
             isRequired
-            isInvalid={!!errors.name}
-            errorMessage={errors.name}
+            isInvalid={!!errors.displayName}
+            errorMessage={errors.displayName}
             startContent={
               <Icon icon="lucide:user" className="text-default-400 text-lg" />
             }

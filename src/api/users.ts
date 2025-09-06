@@ -1,8 +1,8 @@
-import { db } from "@/config/firebase";
+import { db, auth } from "@/config/firebase";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 export type UserProfilePayload = {
-  name?: string;
+  displayName?: string;
   email?: string;
   phone?: string;
   ghinNumber?: string;
@@ -18,7 +18,42 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
     updatedAt: serverTimestamp(),
   } as Record<string, any>;
 
-  return setDoc(doc(db, "users", uid), payload, { merge: true });
+  // Basic client-side sanity check: ensure the currently signed-in user
+  // matches the UID we're attempting to write. This doesn't replace
+  // Firestore security rules, but it gives a clearer error when the
+  // client is not authenticated or using the wrong UID.
+  const currentUid = auth.currentUser?.uid ?? null;
+  if (!currentUid) {
+    throw new Error(
+      "Cannot save user profile: no authenticated user found (auth.currentUser is null)."
+    );
+  }
+
+  if (currentUid !== uid) {
+    throw new Error(
+      `Cannot save user profile: authenticated UID (${currentUid}) does not match requested UID (${uid}).`
+    );
+  }
+
+  try {
+    return await setDoc(doc(db, "users", uid), payload, { merge: true });
+  } catch (err: any) {
+    // Surface permission-specific information to aid debugging.
+    // Don't leak sensitive internals — just annotate the error sensibly.
+    if (err?.code === "permission-denied") {
+      const message =
+        `Firestore permission denied when writing users/${uid}. ` +
+        "Check your Firestore security rules (allow write for authenticated users) and ensure App Check / auth tokens are configured if required.";
+      const e = new Error(message);
+      // Preserve original error on a property for deeper debugging if needed
+      // but throw the new, clearer message upstream.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      e.original = err;
+      throw e;
+    }
+    throw err;
+  }
 }
 
 export async function getUserProfile(
