@@ -8,11 +8,13 @@ import {
   Link,
 } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { ThemeSwitch } from "./theme-switch";
 import { siteConfig } from "@/config/site";
 
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth(); // Get user object and logout function
+  const { userProfile } = useUserProfile();
 
   return (
     <>
@@ -25,9 +27,12 @@ export const ProfileDropdown = () => {
               as="button"
               className="transition-transform"
               color="secondary"
-              name={user?.displayName || "User"}
+              name={userProfile?.displayName || user?.displayName || "User"}
               size="sm"
-              src={user?.photoURL || undefined} // Use undefined if photoURL is null/empty to let Avatar handle fallback
+              src={
+                (userProfile?.photoURL as string | undefined) ||
+                (user?.photoURL as string | undefined)
+              } // prefer profile.photoURL, then auth.photoURL
               showFallback // Ensure fallback (initials or default icon) is shown if src is invalid/missing
               fallback={
                 <span
