@@ -69,7 +69,7 @@ export const ProfileDropdown = () => {
               as={Link}
               href={siteConfig.pages.profile.link}
             >
-              My Profile
+              Profile Information
             </DropdownItem>
 
             <DropdownItem key="team_settings">Team Settings</DropdownItem>
