@@ -79,7 +79,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   const handleUserSelection = (place: number, userIds: string[]) => {
     const selectedUsers = users.filter((user) => userIds.includes(user.id));
-    const displayNames = selectedUsers.map((user) => user.displayName);
+    const displayNames = selectedUsers.map((user) => user.displayName || '');
 
     updateWinner(place, {
       userIds,
