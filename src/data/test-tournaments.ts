@@ -183,7 +183,7 @@ export const TournamentItems: Tournament[] = [
   },
   {
     title: "Tony Pisano Cup",
-    date: new Date("2025-01-01"),
+    date: new Date("2025-10-13"),
     description: "Season-long individual match play from Blue tees",
     players: 1,
     completed: false,
@@ -195,7 +195,7 @@ export const TournamentItems: Tournament[] = [
   },
   {
     title: "Team Match Play",
-    date: new Date("2025-01-01"),
+    date: new Date("2025-10-01"),
     description: "Season-long two-man team match play from White tees",
     players: 2,
     completed: false,

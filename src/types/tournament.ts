@@ -9,4 +9,5 @@ export interface Tournament {
   icon?: string;
   href?: string;
   prizePool: number;
+  winners?: import("./winner").Winner[];
 }
