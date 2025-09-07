@@ -1,6 +1,6 @@
-import { TournamentItem } from "@/types/tournament";
+import { Tournament } from "@/types/tournament";
 
-export const TournamentItems: TournamentItem[] = [
+export const TournamentItems: Tournament[] = [
   {
     title: "4 Man Kickoff Scramble-Gold Tees",
     date: new Date("2025-04-12"),

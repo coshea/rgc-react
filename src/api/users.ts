@@ -7,6 +7,8 @@ export type UserProfilePayload = {
   phone?: string;
   ghinNumber?: string;
   photoURL?: string | null;
+  // admin flag is managed in Firestore only; client should not expose this in forms
+  admin?: boolean;
 };
 
 /**

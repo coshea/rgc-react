@@ -8,9 +8,11 @@ import { siteConfig } from "@/config/site";
 import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
-import PolicyPage from "./pages/policies";
-import PastChampionsWithAvatars from "./pages/past-champions-avatars";
-import ProfilePage from "./pages/profile";
+import PolicyPage from "@/pages/policies";
+import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
+import ProfilePage from "@/pages/profile";
+import TournamentsPage from "@/pages/tournaments";
+import RequireAdmin from "@/components/require-admin";
 
 function App() {
   return (
@@ -26,6 +28,14 @@ function App() {
         path={siteConfig.pages.pastchampions.link}
       />
       <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
+      <Route
+        element={
+          <RequireAdmin>
+            <TournamentsPage />
+          </RequireAdmin>
+        }
+        path="/tournaments"
+      />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
   );

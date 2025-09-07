@@ -72,6 +72,17 @@ export const ProfileDropdown = () => {
               My Profile
             </DropdownItem>
 
+            {/* Admin-only menu: Manage Tournaments */}
+            {userProfile?.admin === true ? (
+              <DropdownItem
+                key="manage_tournaments"
+                as={Link}
+                href="/tournaments"
+              >
+                Manage Tournaments
+              </DropdownItem>
+            ) : null}
+
             <DropdownItem key="team_settings">Team Settings</DropdownItem>
 
             <DropdownItem key="logout" color="danger" onPress={logout}>

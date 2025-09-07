@@ -7,10 +7,10 @@ import {
   CardFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { TournamentItem } from "@/types/tournament";
+import { Tournament } from "@/types/tournament";
 
 interface TournamentCardProps {
-  tournament: TournamentItem;
+  tournament: Tournament;
 }
 
 export const TournamentCard = ({ tournament }: TournamentCardProps) => {

@@ -1,4 +1,4 @@
-export interface TournamentItem {
+export interface Tournament {
   id: number;
   title: string;
   date: Date;
