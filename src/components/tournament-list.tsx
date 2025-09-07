@@ -13,19 +13,21 @@ import {
   CardBody,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Tournament } from "../types/tournament";
+import { Tournament } from "@/types/tournament";
 import { useNavigate } from "react-router-dom";
 
 interface TournamentListProps {
   tournaments: Tournament[];
   onEdit: (tournament: Tournament) => void;
   onDelete: (id?: string | number) => Promise<void> | void;
+  isAdmin?: boolean;
 }
 
 export const TournamentList: React.FC<TournamentListProps> = ({
   tournaments,
   onEdit,
   onDelete,
+  isAdmin = false,
 }) => {
   const navigate = useNavigate();
   // Add state to track expanded tournament rows
@@ -348,31 +350,37 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                         Register
                       </Button>
                     ) : null}
+                    {isAdmin && (
+                      <>
+                        <Tooltip content="Edit tournament">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => onEdit(tournament)}
+                            aria-label="Edit tournament"
+                          >
+                            <Icon
+                              icon="lucide:edit"
+                              className="text-default-600"
+                            />
+                          </Button>
+                        </Tooltip>
 
-                    <Tooltip content="Edit tournament">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => onEdit(tournament)}
-                        aria-label="Edit tournament"
-                      >
-                        <Icon icon="lucide:edit" className="text-default-600" />
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip content="Delete tournament" color="danger">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        onPress={() => handleDelete(tournament.firestoreId)}
-                        aria-label="Delete tournament"
-                      >
-                        <Icon icon="lucide:trash-2" />
-                      </Button>
-                    </Tooltip>
+                        <Tooltip content="Delete tournament" color="danger">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            color="danger"
+                            onPress={() => handleDelete(tournament.firestoreId)}
+                            aria-label="Delete tournament"
+                          >
+                            <Icon icon="lucide:trash-2" />
+                          </Button>
+                        </Tooltip>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

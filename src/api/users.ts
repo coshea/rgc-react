@@ -6,6 +6,8 @@ import {
   getDoc,
   collection,
   getDocs,
+  query,
+  orderBy,
 } from "firebase/firestore";
 
 export type UserProfilePayload = {
@@ -82,7 +84,9 @@ export async function getUserProfile(
 
 export async function getUsers(): Promise<User[]> {
   const usersCol = collection(db, "users");
-  const userSnapshot = await getDocs(usersCol);
+  // Return users ordered by displayName for predictable alphabetical listing
+  const q = query(usersCol, orderBy("displayName", "asc"));
+  const userSnapshot = await getDocs(q);
   const userList = userSnapshot.docs.map((doc) => {
     return {
       id: doc.id,

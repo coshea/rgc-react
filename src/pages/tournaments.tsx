@@ -1,4 +1,6 @@
 import React from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { TournamentForm } from "@/components/tournament-form";
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
@@ -24,6 +26,10 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     React.useState<Tournament | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const { user } = useAuth();
+  const { userProfile } = useUserProfile();
+
+  const isAdmin = !!(user && userProfile && userProfile.admin === true);
 
   React.useEffect(() => {
     // Fetch tournaments from Firestore and map to local Tournament objects
@@ -170,25 +176,36 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   return (
     <div className="space-y-6">
       {isCreating || editingTournament ? (
-        <TournamentForm
-          tournament={editingTournament}
-          onSave={handleSaveTournament}
-          onCancel={handleCancelEdit}
-        />
+        // Only allow creating/editing if user is admin
+        isAdmin ? (
+          <TournamentForm
+            tournament={editingTournament}
+            onSave={handleSaveTournament}
+            onCancel={handleCancelEdit}
+          />
+        ) : (
+          <div className="p-6 bg-content1 rounded-lg border border-default-200">
+            <p className="text-foreground-500">
+              You do not have permission to create or edit tournaments.
+            </p>
+          </div>
+        )
       ) : (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-medium text-foreground">
               Scheduled Tournaments
             </h2>
-            <button
-              onClick={handleCreateTournament}
-              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors"
-              disabled={isLoading}
-            >
-              <Icon icon="lucide:plus" />
-              <span>New Tournament</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleCreateTournament}
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors"
+                disabled={isLoading}
+              >
+                <Icon icon="lucide:plus" />
+                <span>New Tournament</span>
+              </button>
+            )}
           </div>
 
           {isLoading ? (
@@ -206,6 +223,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               tournaments={tournaments}
               onEdit={handleEditTournament}
               onDelete={handleDeleteTournament}
+              isAdmin={isAdmin}
             />
           )}
         </div>

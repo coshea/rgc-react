@@ -3,16 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
   CardBody,
-  Input,
   Button,
   Divider,
   Avatar,
   addToast,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { getUsers, User } from "@/api/users";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -20,6 +22,8 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [, setUsersLoading] = React.useState(false);
 
   React.useEffect(() => {
     const fetchTournament = async () => {
@@ -54,7 +58,6 @@ const TournamentRegister: React.FC = () => {
               : new Date();
 
         setTournament({
-          id: typeof data.id === "number" ? data.id : 0,
           firestoreId: snap.id,
           title: data.title,
           date: dateField,
@@ -81,10 +84,31 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
+    // Fetch users separately
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const list = await getUsers();
+        setUsers(list);
+        console.debug("Loaded users:", list.length);
+      } catch (err) {
+        console.error("Failed to load users", err);
+        addToast({
+          title: "Error",
+          description: "Failed to load users",
+          color: "danger",
+        });
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
   }, [firestoreId]);
 
   const maxTeamSize = tournament?.players ?? 1;
 
+  // store teammate user IDs (empty string means unselected)
   const [teammates, setTeammates] = React.useState<string[]>([""]);
 
   if (loading) return <div>Loading...</div>;
@@ -97,11 +121,7 @@ const TournamentRegister: React.FC = () => {
     if (teammates.length < maxTeamSize) setTeammates([...teammates, ""]);
   };
 
-  const updateTeammate = (index: number, value: string) => {
-    const copy = [...teammates];
-    copy[index] = value;
-    setTeammates(copy);
-  };
+  // teammates state now stores user IDs directly; updateTeammate is not used
 
   const removeTeammate = (index: number) => {
     const copy = teammates.filter((_, i) => i !== index);
@@ -134,15 +154,32 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {teammates.map((name, i) => (
+            {teammates.map((userId, i) => (
               <div key={i} className="flex items-center gap-2">
-                <Input
-                  label={i === 0 ? "Team Leader / You" : `Teammate ${i + 1}`}
-                  placeholder="Full name or display name"
-                  value={name}
-                  onValueChange={(v) => updateTeammate(i, v)}
-                  className="flex-1"
-                />
+                <div className="flex-1">
+                  <Select
+                    label={i === 0 ? "Team Leader / You" : `Teammate ${i + 1}`}
+                    placeholder="Select user"
+                    selectionMode="single"
+                    selectedKeys={userId ? new Set([userId]) : new Set()}
+                    onSelectionChange={(keys) => {
+                      const selected = Array.from(keys as Set<string>)[0] as
+                        | string
+                        | undefined;
+                      const copy = [...teammates];
+                      copy[i] = selected || "";
+                      setTeammates(copy);
+                    }}
+                    className="w-full"
+                  >
+                    {users.map((u) => (
+                      <SelectItem key={u.id}>
+                        {u.displayName || u.email || u.id}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
                 {i > 0 && (
                   <Button
                     size="sm"
@@ -171,6 +208,8 @@ const TournamentRegister: React.FC = () => {
                 {teammates.length}/{maxTeamSize}
               </div>
             </div>
+
+            {/* no free-text inputs: teammates are selected by user id via Select */}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button

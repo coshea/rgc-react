@@ -13,7 +13,6 @@ import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
 import ProfilePage from "@/pages/profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
-import RequireAdmin from "@/components/require-admin";
 
 function App() {
   return (
@@ -29,14 +28,7 @@ function App() {
         path={siteConfig.pages.pastchampions.link}
       />
       <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
-      <Route
-        element={
-          <RequireAdmin>
-            <TournamentsPage />
-          </RequireAdmin>
-        }
-        path="/tournaments"
-      />
+      <Route element={<TournamentsPage />} path="/tournaments" />
       <Route
         element={<TournamentRegister />}
         path="/tournaments/:firestoreId/register"
