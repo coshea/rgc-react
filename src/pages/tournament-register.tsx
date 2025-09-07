@@ -13,8 +13,9 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { getUsers, User } from "@/api/users";
+import { useAuth } from "@/providers/AuthProvider";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -110,6 +111,8 @@ const TournamentRegister: React.FC = () => {
 
   // store teammate user IDs (empty string means unselected)
   const [teammates, setTeammates] = React.useState<string[]>([""]);
+  const [submitting, setSubmitting] = React.useState(false);
+  const { user } = useAuth();
 
   if (loading) return <div>Loading...</div>;
 
@@ -128,11 +131,96 @@ const TournamentRegister: React.FC = () => {
     setTeammates(copy);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Wire up registration to Firestore (create a registration doc under tournaments/{id}/registrations)
-    console.log("Registering team:", teammates);
-    navigate("/tournaments");
+
+    if (!tournament || !tournament.firestoreId) {
+      addToast({
+        title: "Error",
+        description: "Invalid tournament",
+        color: "danger",
+      });
+      return;
+    }
+
+    if (!tournament.registrationOpen) {
+      addToast({
+        title: "Closed",
+        description: "Registration for this tournament is closed.",
+        color: "danger",
+      });
+      return;
+    }
+
+    if (!user || !user.uid) {
+      addToast({
+        title: "Sign in",
+        description: "You must be signed in to register.",
+        color: "danger",
+      });
+      return;
+    }
+
+    // validate teammates - ensure no empty selections
+    const selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    if (selectedIds.length === 0) {
+      addToast({
+        title: "Error",
+        description: "Please select at least one teammate.",
+        color: "danger",
+      });
+      return;
+    }
+
+    // map ids to display names
+    const members = selectedIds.map((id) => {
+      const u = users.find((x) => x.id === id);
+      return {
+        id,
+        displayName: u?.displayName || u?.email || id,
+      };
+    });
+
+    // avoid duplicates
+    const idsSet = new Set(members.map((m) => m.id));
+    if (idsSet.size !== members.length) {
+      addToast({
+        title: "Error",
+        description: "Duplicate users in team. Please select unique teammates.",
+        color: "danger",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const ref = doc(db, "tournaments", tournament.firestoreId);
+
+      const registration = {
+        team: members,
+        ownerId: user.uid,
+        // Use client timestamp to avoid arrayUnion/serverTimestamp issues
+        registeredAt: new Date(),
+      } as any;
+
+      await updateDoc(ref, { registrations: arrayUnion(registration) });
+
+      addToast({
+        title: "Registered",
+        description: "Your team has been registered.",
+        color: "success",
+      });
+      navigate("/tournaments");
+    } catch (err) {
+      console.error("Failed to register:", err);
+      addToast({
+        title: "Error",
+        description: "Failed to register team.",
+        color: "danger",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -219,8 +307,8 @@ const TournamentRegister: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button color="primary" type="submit">
-                Register Team
+              <Button color="primary" type="submit" isDisabled={submitting}>
+                {submitting ? "Registering..." : "Register Team"}
               </Button>
             </div>
           </form>

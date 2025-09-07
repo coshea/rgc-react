@@ -44,6 +44,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     // Force UTC timezone so the displayed date matches the stored date
     // (ignores local timezone offsets)
     return new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
