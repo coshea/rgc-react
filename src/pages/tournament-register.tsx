@@ -13,7 +13,18 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { getUsers, User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -25,6 +36,16 @@ const TournamentRegister: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [users, setUsers] = React.useState<User[]>([]);
   const [, setUsersLoading] = React.useState(false);
+
+  // registration-related state must be declared before effects that use them
+  const [teammates, setTeammates] = React.useState<string[]>([""]);
+  const [submitting, setSubmitting] = React.useState(false);
+  const { user } = useAuth();
+  const [registrationId, setRegistrationId] = React.useState<string | null>(
+    null
+  );
+  const [deleting, setDeleting] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchTournament = async () => {
@@ -107,12 +128,37 @@ const TournamentRegister: React.FC = () => {
     fetchUsers();
   }, [firestoreId]);
 
-  const maxTeamSize = tournament?.players ?? 1;
+  // load existing registration for current user
+  React.useEffect(() => {
+    const fetchExistingRegistration = async () => {
+      if (!firestoreId || !user || !user.uid) return;
+      try {
+        const regCol = collection(
+          db,
+          "tournaments",
+          firestoreId,
+          "registrations"
+        );
+        const q = query(regCol, where("ownerId", "==", user.uid));
+        const snaps = await getDocs(q);
+        if (!snaps.empty) {
+          const regDoc = snaps.docs[0];
+          const regData: any = regDoc.data();
+          setRegistrationId(regDoc.id);
+          if (Array.isArray(regData.team) && regData.team.length > 0) {
+            const ids = regData.team.map((m: any) => m.id || "");
+            setTeammates(ids.length ? ids : [""]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load existing registration", err);
+      }
+    };
 
-  // store teammate user IDs (empty string means unselected)
-  const [teammates, setTeammates] = React.useState<string[]>([""]);
-  const [submitting, setSubmitting] = React.useState(false);
-  const { user } = useAuth();
+    fetchExistingRegistration();
+  }, [firestoreId, user]);
+
+  const maxTeamSize = tournament?.players ?? 1;
 
   if (loading) return <div>Loading...</div>;
 
@@ -194,16 +240,33 @@ const TournamentRegister: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const ref = doc(db, "tournaments", tournament.firestoreId);
+      // write to subcollection tournaments/{id}/registrations
+      const regCol = collection(
+        db,
+        "tournaments",
+        tournament.firestoreId,
+        "registrations"
+      );
 
       const registration = {
         team: members,
         ownerId: user.uid,
-        // Use client timestamp to avoid arrayUnion/serverTimestamp issues
-        registeredAt: new Date(),
+        registeredAt: serverTimestamp(),
       } as any;
 
-      await updateDoc(ref, { registrations: arrayUnion(registration) });
+      if (registrationId) {
+        // update existing registration
+        const regRef = doc(
+          db,
+          "tournaments",
+          tournament.firestoreId,
+          "registrations",
+          registrationId
+        );
+        await setDoc(regRef, registration, { merge: true });
+      } else {
+        await addDoc(regCol, registration);
+      }
 
       addToast({
         title: "Registered",
@@ -223,6 +286,38 @@ const TournamentRegister: React.FC = () => {
     }
   };
 
+  const handleConfirmCancel = async () => {
+    if (!registrationId || !tournament?.firestoreId) return;
+    setDeleting(true);
+    try {
+      const regRef = doc(
+        db,
+        "tournaments",
+        tournament.firestoreId,
+        "registrations",
+        registrationId
+      );
+      await deleteDoc(regRef);
+      addToast({
+        title: "Cancelled",
+        description: "Your registration has been removed.",
+        color: "danger",
+      });
+      setRegistrationId(null);
+      setTeammates([""]);
+      setConfirmOpen(false);
+    } catch (err) {
+      console.error("Failed to delete registration", err);
+      addToast({
+        title: "Error",
+        description: "Failed to cancel registration.",
+        color: "danger",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
       <Card>
@@ -235,6 +330,11 @@ const TournamentRegister: React.FC = () => {
               <p className="text-sm text-foreground-500">
                 Maximum teammates: {maxTeamSize}
               </p>
+              {registrationId ? (
+                <p className="text-sm text-foreground-500 mt-2">
+                  You're already registered — update your team below.
+                </p>
+              ) : null}
             </div>
             <Avatar size="lg" src={tournament.icon} />
           </div>
@@ -299,18 +399,90 @@ const TournamentRegister: React.FC = () => {
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                color="default"
-                variant="flat"
-                onPress={() => navigate(-1)}
-              >
-                Cancel
-              </Button>
-              <Button color="primary" type="submit" isDisabled={submitting}>
-                {submitting ? "Registering..." : "Register Team"}
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
+              {/* Left: cancel registration (owner only). Full width on mobile */}
+              <div className="w-full sm:w-auto">
+                {registrationId ? (
+                  <div className="w-full sm:w-auto">
+                    <Button
+                      className="w-full sm:w-auto"
+                      color="danger"
+                      variant="flat"
+                      onPress={() => setConfirmOpen(true)}
+                      isDisabled={deleting}
+                    >
+                      {deleting ? "Cancelling..." : "Cancel registration"}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Right: navigation and submit. Stack on mobile, row on sm+ */}
+              <div className="flex w-full sm:w-auto flex-col sm:flex-row items-center gap-2">
+                <div className="w-full sm:w-auto">
+                  <Button
+                    className="w-full"
+                    color="default"
+                    variant="flat"
+                    onPress={() => navigate(-1)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                <div className="w-full sm:w-auto">
+                  <Button
+                    className="w-full"
+                    type="submit"
+                    color="primary"
+                    isDisabled={submitting}
+                  >
+                    {submitting
+                      ? registrationId
+                        ? "Updating..."
+                        : "Registering..."
+                      : registrationId
+                        ? "Update registration"
+                        : "Register"}
+                  </Button>
+                </div>
+              </div>
             </div>
+
+            {/* Confirmation modal for cancelling registration */}
+            {confirmOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div
+                  className="absolute inset-0 bg-black opacity-40"
+                  onClick={() => setConfirmOpen(false)}
+                />
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-md">
+                  <h3 className="text-lg font-medium mb-2">
+                    Cancel registration
+                  </h3>
+                  <p className="text-sm text-foreground-500 mb-4">
+                    Are you sure you want to cancel your registration? This
+                    cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="light"
+                      color="default"
+                      onPress={() => setConfirmOpen(false)}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      color="danger"
+                      onPress={handleConfirmCancel}
+                      isDisabled={deleting}
+                    >
+                      {deleting ? "Cancelling..." : "Yes, cancel"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </form>
         </CardBody>
       </Card>

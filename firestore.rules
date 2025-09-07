@@ -9,9 +9,38 @@ service cloud.firestore {
 
     // Example: allow public read of tournaments, but deny writes
     match /tournaments/{tournamentId} {
-  allow read: if true;
-  // Allow authenticated users to create/update/delete tournaments from the client
-  allow write: if request.auth != null;
+      // Public read of tournaments
+      allow read: if true;
+
+      // Only allow client-side writes to tournament documents for admins.
+      // Admins are expected to have a custom claim `admin == true` on their token.
+      allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+
+      // Registrations should be stored as documents under the subcollection
+      // tournaments/{tournamentId}/registrations/{registrationId}
+      // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
+      match /registrations/{registrationId} {
+        // Create: only authenticated user, ownerId must match auth uid, and tournament must be open for registration
+        allow create: if request.auth != null
+          && request.auth.uid == request.resource.data.ownerId
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
+          && request.resource.data.team is list
+          && request.resource.data.team.size() > 0
+          // enforce max team size based on tournament players field when available
+          && ( ! (get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int) ||
+               request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
+          ;
+
+        // Owner or admin can update or delete their registration
+        allow update, delete: if request.auth != null && (
+          request.auth.uid == resource.data.ownerId || request.auth.token.admin == true
+        );
+
+        // Reading registrations: owner or admin only (registrations are private by default)
+        allow read: if request.auth != null && (
+          request.auth.uid == resource.data.ownerId || request.auth.token.admin == true
+        );
+      }
     }
 
     // Default: deny everything else
