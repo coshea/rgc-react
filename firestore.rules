@@ -9,8 +9,9 @@ service cloud.firestore {
 
     // Example: allow public read of tournaments, but deny writes
     match /tournaments/{tournamentId} {
-      allow read: if true;
-      allow write: if false;
+  allow read: if true;
+  // Allow authenticated users to create/update/delete tournaments from the client
+  allow write: if request.auth != null;
     }
 
     // Default: deny everything else

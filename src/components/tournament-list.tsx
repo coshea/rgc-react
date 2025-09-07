@@ -1,25 +1,25 @@
 import React from "react";
 import {
-  Table, 
-  TableHeader, 
-  TableColumn, 
-  TableBody, 
-  TableRow, 
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
   TableCell,
   Chip,
   Tooltip,
   Button,
   Card,
   CardBody,
-  Badge
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "../types/tournament";
+import { useNavigate } from "react-router-dom";
 
 interface TournamentListProps {
   tournaments: Tournament[];
   onEdit: (tournament: Tournament) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id?: string | number) => Promise<void> | void;
 }
 
 export const TournamentList: React.FC<TournamentListProps> = ({
@@ -27,20 +27,25 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const navigate = useNavigate();
   // Add state to track expanded tournament rows
-  const [expandedIds, setExpandedIds] = React.useState<number[]>([]);
+  const [expandedIds, setExpandedIds] = React.useState<string[]>([]);
 
-  const toggleExpand = (id: number) => {
+  const toggleExpand = (id?: string) => {
+    if (!id) return;
     setExpandedIds((prev) =>
       prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
     );
   };
 
   const formatDate = (date: Date): string => {
+    // Force UTC timezone so the displayed date matches the stored date
+    // (ignores local timezone offsets)
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "UTC",
     }).format(date);
   };
 
@@ -52,7 +57,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }).format(amount);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id?: string | number) => {
+    if (!id) return;
     if (window.confirm("Are you sure you want to delete this tournament?")) {
       onDelete(id);
     }
@@ -114,10 +120,15 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   // New function to render mobile tournament card
   const renderMobileCard = (tournament: Tournament) => {
-    const isExpanded = expandedIds.includes(tournament.id);
+    const isExpanded = tournament.firestoreId
+      ? expandedIds.includes(tournament.firestoreId)
+      : false;
 
     return (
-      <Card key={tournament.id} className="mb-4 border border-default-200">
+      <Card
+        key={tournament.firestoreId}
+        className="mb-4 border border-default-200"
+      >
         <CardBody className="p-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
@@ -136,25 +147,37 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </div>
 
             <div className="flex flex-col items-end gap-2">
-              {tournament.canceled ? (
-                <Chip color="danger" size="sm" variant="flat">
-                  Canceled
-                </Chip>
-              ) : tournament.completed ? (
-                <Chip color="success" size="sm" variant="flat">
-                  Completed
-                </Chip>
-              ) : (
-                <Chip color="primary" size="sm" variant="flat">
-                  Scheduled
-                </Chip>
-              )}
+              <div className="flex items-center gap-2">
+                {tournament.canceled ? (
+                  <Chip color="danger" size="sm" variant="flat">
+                    Canceled
+                  </Chip>
+                ) : tournament.completed ? (
+                  <Chip color="success" size="sm" variant="flat">
+                    Completed
+                  </Chip>
+                ) : (
+                  <Chip color="primary" size="sm" variant="flat">
+                    Scheduled
+                  </Chip>
+                )}
+
+                {(tournament.registrationOpen ?? false) ? (
+                  <Chip color="success" size="sm" variant="flat">
+                    Registration Open
+                  </Chip>
+                ) : (
+                  <Chip color="default" size="sm" variant="flat">
+                    Closed
+                  </Chip>
+                )}
+              </div>
 
               <Button
                 size="sm"
                 variant="light"
                 isIconOnly
-                onPress={() => toggleExpand(tournament.id)}
+                onPress={() => toggleExpand(tournament.firestoreId)}
                 aria-label={isExpanded ? "Collapse details" : "Expand details"}
               >
                 <Icon
@@ -209,7 +232,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   size="sm"
                   variant="flat"
                   color="danger"
-                  onPress={() => handleDelete(tournament.id)}
+                  onPress={() => handleDelete(tournament.firestoreId)}
                   startContent={<Icon icon="lucide:trash-2" />}
                 >
                   Delete
@@ -263,7 +286,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           </TableHeader>
           <TableBody>
             {tournaments.map((tournament) => (
-              <TableRow key={tournament.id}>
+              <TableRow key={tournament.firestoreId}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-content2 rounded-md flex items-center justify-center">
@@ -300,6 +323,10 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     <Chip color="success" size="sm" variant="flat">
                       Completed
                     </Chip>
+                  ) : (tournament.registrationOpen ?? false) ? (
+                    <Chip color="success" size="sm" variant="flat">
+                      Registration Open
+                    </Chip>
                   ) : (
                     <Chip color="primary" size="sm" variant="flat">
                       Scheduled
@@ -307,7 +334,21 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end items-center gap-2">
+                    {tournament.registrationOpen && tournament.firestoreId ? (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() =>
+                          navigate(
+                            `/tournaments/${tournament.firestoreId}/register`
+                          )
+                        }
+                      >
+                        Register
+                      </Button>
+                    ) : null}
+
                     <Tooltip content="Edit tournament">
                       <Button
                         isIconOnly
@@ -319,13 +360,14 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                         <Icon icon="lucide:edit" className="text-default-600" />
                       </Button>
                     </Tooltip>
+
                     <Tooltip content="Delete tournament" color="danger">
                       <Button
                         isIconOnly
                         size="sm"
                         variant="light"
                         color="danger"
-                        onPress={() => handleDelete(tournament.id)}
+                        onPress={() => handleDelete(tournament.firestoreId)}
                         aria-label="Delete tournament"
                       >
                         <Icon icon="lucide:trash-2" />

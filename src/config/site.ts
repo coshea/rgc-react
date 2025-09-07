@@ -55,5 +55,10 @@ export const siteConfig = {
         "View past champions of the Ridgefield Golf Club tournaments",
       link: "/past-champions",
     },
+    tournaments: {
+      title: "Tournaments",
+      description: "Ridgefield Golf Club tournaments",
+      link: "/tournaments",
+    },
   },
 };

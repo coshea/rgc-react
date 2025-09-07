@@ -12,6 +12,7 @@ import PolicyPage from "@/pages/policies";
 import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
 import ProfilePage from "@/pages/profile";
 import TournamentsPage from "@/pages/tournaments";
+import TournamentRegister from "@/pages/tournament-register";
 import RequireAdmin from "@/components/require-admin";
 
 function App() {
@@ -35,6 +36,10 @@ function App() {
           </RequireAdmin>
         }
         path="/tournaments"
+      />
+      <Route
+        element={<TournamentRegister />}
+        path="/tournaments/:firestoreId/register"
       />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>

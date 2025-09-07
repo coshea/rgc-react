@@ -9,9 +9,11 @@ import {
   Checkbox,
   NumberInput,
   Divider,
+  addToast,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
+import { auth } from "@/config/firebase";
 import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
@@ -42,6 +44,9 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
   const [prizePool, setPrizePool] = React.useState(tournament?.prizePool || 0);
   const [winners, setWinners] = React.useState<Winner[]>(
     tournament?.winners || []
+  );
+  const [registrationOpen, setRegistrationOpen] = React.useState(
+    tournament?.registrationOpen || false
   );
   const [date, setDate] = React.useState<DateValue | null>(
     tournament?.date
@@ -93,11 +98,23 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Require authentication to write to Firestore according to security rules
+      if (!auth || !auth.currentUser) {
+        addToast({
+          title: "Authentication required",
+          description: "You must be signed in to save tournaments.",
+          color: "danger",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      // Persist to Firestore
+      const { db } = await import("@/config/firebase");
+      const { collection, addDoc, updateDoc, doc } = await import(
+        "firebase/firestore"
+      );
 
-      const tournamentData: Tournament = {
-        id: tournament?.id || 0,
+      const tournamentData: Partial<Tournament> = {
         title,
         description,
         players,
@@ -106,12 +123,59 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         icon,
         prizePool,
         winners,
+        registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
       };
 
-      onSave(tournamentData);
+      const colRef = collection(db, "tournaments");
+
+      let createdDocRef: any = null;
+
+      if (tournament && tournament.firestoreId) {
+        // Update using the Firestore document id when available
+        const docRef = doc(db, "tournaments", tournament.firestoreId);
+        await updateDoc(docRef, tournamentData as any);
+      } else {
+        // Create new tournament
+        createdDocRef = await addDoc(colRef, tournamentData as any);
+      }
+
+      // Call onSave with a constructed Tournament object (date is Date)
+      const savedTournament: Tournament = {
+        title: tournamentData.title as string,
+        description: tournamentData.description as string,
+        players: tournamentData.players as number,
+        completed: tournamentData.completed as boolean,
+        canceled: tournamentData.canceled as boolean,
+        icon: tournamentData.icon,
+        prizePool: tournamentData.prizePool as number,
+        winners: (tournamentData.winners as any) || [],
+        registrationOpen: tournamentData.registrationOpen as boolean,
+        date: tournamentData.date as Date,
+      };
+
+      // If we created a new Firestore doc, attach its id to the returned tournament
+      if (createdDocRef && createdDocRef.id) {
+        savedTournament.firestoreId = createdDocRef.id;
+      } else if (tournament && tournament.firestoreId) {
+        savedTournament.firestoreId = tournament.firestoreId;
+      }
+
+      onSave(savedTournament);
+
+      // Show success toast
+      addToast({
+        title: isEditing ? "Tournament Updated" : "Tournament Created",
+        description: `${savedTournament.title} has been successfully ${isEditing ? "updated" : "created"}.`,
+        color: "success",
+      });
     } catch (error) {
       console.error("Error saving tournament:", error);
+      addToast({
+        title: "Error",
+        description: "Failed to save tournament. Please try again.",
+        color: "danger",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -208,6 +272,12 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                   color="danger"
                 >
                   Tournament Canceled
+                </Checkbox>
+                <Checkbox
+                  isSelected={registrationOpen}
+                  onValueChange={setRegistrationOpen}
+                >
+                  Registration Open
                 </Checkbox>
               </div>
 

@@ -2,8 +2,16 @@ import React from "react";
 import { TournamentForm } from "@/components/tournament-form";
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
-import { TournamentItems as mockTournaments } from "@/data/test-tournaments";
 import { addToast } from "@heroui/react";
+import { db } from "@/config/firebase";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
 import { Icon } from "@iconify/react";
 
 interface TournamentsProps {
@@ -11,36 +19,60 @@ interface TournamentsProps {
 }
 
 const Tournaments: React.FC<TournamentsProps> = () => {
-  const [tournaments, setTournaments] =
-    React.useState<Tournament[]>(mockTournaments);
+  const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
   const [editingTournament, setEditingTournament] =
     React.useState<Tournament | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  // In a real app, you would fetch tournaments from Firestore on component mount
   React.useEffect(() => {
-    // Uncomment this in a real implementation with Firebase
-    /*
+    // Fetch tournaments from Firestore and map to local Tournament objects
     const fetchTournaments = async () => {
       setIsLoading(true);
       try {
-        const data = await firestoreService.getAllTournaments();
-        setTournaments(data);
+        const colRef = collection(db, "tournaments");
+        const q = query(colRef, orderBy("date", "asc"));
+        const snap = await getDocs(q);
+        const items: Tournament[] = snap.docs.map((doc) => {
+          const data: any = doc.data();
+          // Convert Firestore Timestamp to JS Date if necessary
+          const dateField =
+            data.date && typeof data.date.toDate === "function"
+              ? data.date.toDate()
+              : data.date
+                ? new Date(data.date)
+                : new Date();
+
+          return {
+            firestoreId: doc.id,
+            title: data.title,
+            date: dateField,
+            description: data.description,
+            players: data.players,
+            completed: data.completed || false,
+            canceled: data.canceled || false,
+            registrationOpen: data.registrationOpen || false,
+            icon: data.icon,
+            href: data.href,
+            prizePool: data.prizePool || 0,
+            winners: data.winners || [],
+          } as Tournament;
+        });
+
+        setTournaments(items);
       } catch (error) {
         console.error("Error fetching tournaments:", error);
         addToast({
           title: "Error",
           description: "Failed to load tournaments",
-          color: "danger"
+          color: "danger",
         });
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchTournaments();
-    */
   }, []);
 
   const handleCreateTournament = () => {
@@ -57,13 +89,17 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setIsLoading(true);
 
     try {
-      // In a real app, save to Firestore
-      // await firestoreService.saveTournament(tournament);
-
+      // In a real app, save to Firestore (done in TournamentForm)
       if (editingTournament) {
-        // Update existing tournament
-        setTournaments(
-          tournaments.map((t) => (t.id === tournament.id ? tournament : t))
+        // Update existing tournament in local state (match by firestoreId)
+        setTournaments((prev) =>
+          prev.map((t) =>
+            t.firestoreId &&
+            tournament.firestoreId &&
+            t.firestoreId === tournament.firestoreId
+              ? tournament
+              : t
+          )
         );
         addToast({
           title: "Tournament Updated",
@@ -71,12 +107,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           color: "success",
         });
       } else {
-        // Create new tournament
-        const newTournament = {
-          ...tournament,
-          id: Math.max(0, ...tournaments.map((t) => t.id)) + 1,
-        };
-        setTournaments([...tournaments, newTournament]);
+        // Append newly created tournament (TournamentForm will include firestoreId when created)
+        setTournaments((prev) => [...prev, tournament]);
         addToast({
           title: "Tournament Created",
           description: `${tournament.title} has been successfully created.`,
@@ -102,14 +134,22 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setIsCreating(false);
   };
 
-  const handleDeleteTournament = async (id: number) => {
+  const handleDeleteTournament = async (id?: string | number) => {
     setIsLoading(true);
 
     try {
-      // In a real app, delete from Firestore
-      // await firestoreService.deleteTournament(id);
-
-      setTournaments(tournaments.filter((t) => t.id !== id));
+      // If id is a Firestore document id (string), delete the doc
+      if (typeof id === "string") {
+        try {
+          await deleteDoc(doc(db, "tournaments", id));
+        } catch (err) {
+          console.warn(
+            "Failed to delete Firestore document, continuing to remove locally",
+            err
+          );
+        }
+        setTournaments((prev) => prev.filter((t) => t.firestoreId !== id));
+      }
       addToast({
         title: "Tournament Deleted",
         description: "The tournament has been successfully deleted.",
