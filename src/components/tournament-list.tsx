@@ -122,6 +122,40 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   };
 
   // New function to render mobile tournament card
+  const renderStatusChips = (tournament: Tournament) =>
+    // Show exactly one status with priority: Canceled > Completed > Registration Open > Scheduled
+    (() => {
+      if (tournament.canceled) {
+        return (
+          <Chip color="danger" size="sm" variant="flat">
+            Canceled
+          </Chip>
+        );
+      }
+
+      if (tournament.completed) {
+        return (
+          <Chip color="success" size="sm" variant="flat">
+            Completed
+          </Chip>
+        );
+      }
+
+      if (tournament.registrationOpen ?? false) {
+        return (
+          <Chip color="success" size="sm" variant="flat">
+            Registration Open
+          </Chip>
+        );
+      }
+
+      return (
+        <Chip color="primary" size="sm" variant="flat">
+          Scheduled
+        </Chip>
+      );
+    })();
+
   const renderMobileCard = (tournament: Tournament) => {
     const isExpanded = tournament.firestoreId
       ? expandedIds.includes(tournament.firestoreId)
@@ -132,8 +166,14 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         key={tournament.firestoreId}
         className="mb-4 border border-default-200"
       >
-        <CardBody className="p-4">
-          <div className="flex justify-between items-start">
+        <CardBody
+          className="p-4"
+          // make entire card body clickable to expand/collapse
+          onClick={() => toggleExpand(tournament.firestoreId)}
+          role="button"
+          aria-pressed={isExpanded}
+        >
+          <div className="flex justify-between items-start cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-content2 rounded-md flex items-center justify-center">
                 <Icon icon="lucide:golf" className="text-xl text-primary" />
@@ -150,46 +190,45 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </div>
 
             <div className="flex flex-col items-end gap-2">
+              {renderStatusChips(tournament)}
+
               <div className="flex items-center gap-2">
-                {tournament.canceled ? (
-                  <Chip color="danger" size="sm" variant="flat">
-                    Canceled
-                  </Chip>
-                ) : tournament.completed ? (
-                  <Chip color="success" size="sm" variant="flat">
-                    Completed
-                  </Chip>
-                ) : (
-                  <Chip color="primary" size="sm" variant="flat">
-                    Scheduled
-                  </Chip>
+                {/* Register button visible in mobile header when open */}
+                {tournament.registrationOpen && tournament.firestoreId && (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      navigate(
+                        `/tournaments/${tournament.firestoreId}/register`
+                      );
+                    }}
+                  >
+                    Register
+                  </Button>
                 )}
 
-                {(tournament.registrationOpen ?? false) ? (
-                  <Chip color="success" size="sm" variant="flat">
-                    Registration Open
-                  </Chip>
-                ) : (
-                  <Chip color="default" size="sm" variant="flat">
-                    Closed
-                  </Chip>
-                )}
-              </div>
-
-              <Button
-                size="sm"
-                variant="light"
-                isIconOnly
-                onPress={() => toggleExpand(tournament.firestoreId)}
-                aria-label={isExpanded ? "Collapse details" : "Expand details"}
-              >
-                <Icon
-                  icon={
-                    isExpanded ? "lucide:chevron-up" : "lucide:chevron-down"
+                <Button
+                  size="sm"
+                  variant="light"
+                  isIconOnly
+                  onPress={(e: any) => {
+                    e?.stopPropagation?.();
+                    toggleExpand(tournament.firestoreId);
+                  }}
+                  aria-label={
+                    isExpanded ? "Collapse details" : "Expand details"
                   }
-                  className="text-default-500"
-                />
-              </Button>
+                >
+                  <Icon
+                    icon={
+                      isExpanded ? "lucide:chevron-up" : "lucide:chevron-down"
+                    }
+                    className="text-default-500"
+                  />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -226,7 +265,10 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <Button
                   size="sm"
                   variant="flat"
-                  onPress={() => onEdit(tournament)}
+                  onPress={(e: any) => {
+                    e?.stopPropagation?.();
+                    onEdit(tournament);
+                  }}
                   startContent={<Icon icon="lucide:edit" />}
                 >
                   Edit
@@ -235,7 +277,10 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   size="sm"
                   variant="flat"
                   color="danger"
-                  onPress={() => handleDelete(tournament.firestoreId)}
+                  onPress={(e: any) => {
+                    e?.stopPropagation?.();
+                    handleDelete(tournament.firestoreId);
+                  }}
                   startContent={<Icon icon="lucide:trash-2" />}
                 >
                   Delete
@@ -317,25 +362,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>
-                <TableCell>
-                  {tournament.canceled ? (
-                    <Chip color="danger" size="sm" variant="flat">
-                      Canceled
-                    </Chip>
-                  ) : tournament.completed ? (
-                    <Chip color="success" size="sm" variant="flat">
-                      Completed
-                    </Chip>
-                  ) : (tournament.registrationOpen ?? false) ? (
-                    <Chip color="success" size="sm" variant="flat">
-                      Registration Open
-                    </Chip>
-                  ) : (
-                    <Chip color="primary" size="sm" variant="flat">
-                      Scheduled
-                    </Chip>
-                  )}
-                </TableCell>
+                <TableCell>{renderStatusChips(tournament)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end items-center gap-2">
                     {tournament.registrationOpen && tournament.firestoreId ? (

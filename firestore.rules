@@ -1,21 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper: returns true if the requester is a super-admin (custom claim)
+    // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
+    function isAdmin() {
+      return request.auth != null && (
+        // custom claim override
+        request.auth.token.admin == true
+        // OR user has an admin document set to true
+        || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+
     // Allow authenticated users to read the users collection
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Example: allow public read of tournaments, but deny writes
+    // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
     match /tournaments/{tournamentId} {
       // Public read of tournaments
       allow read: if true;
+      // Only allow create/update/delete if the requester is an admin (either
+      // has the custom claim or is listed in /admin/{uid}.isAdmin == true).
+      allow create, update, delete: if isAdmin();
 
-      // Only allow client-side writes to tournament documents for admins.
-      // Admins are expected to have a custom claim `admin == true` on their token.
+
+    // Admin list stored at /admin/{uid} with document { isAdmin: true }
+    // Only super-admins (custom claim `admin == true`) can modify the admin list.
+    // Admin documents can be read by the user themselves or by super-admins.
+    match /admin/{adminId} {
+      // Allow users to read their own admin doc (so client can check quickly)
+      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true || isAdmin());
+
+      // Only custom-claim super-admins may create/update/delete admin documents.
+      // This prevents arbitrary users from granting themselves admin rights.
       allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
-
+    }
       // Registrations should be stored as documents under the subcollection
       // tournaments/{tournamentId}/registrations/{registrationId}
       // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
