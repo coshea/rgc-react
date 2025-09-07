@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -11,13 +11,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Winner } from "@/types/winner";
-
-// Minimal mock users for winner selection (replace with Firestore users later)
-const mockUsers = [
-  { id: "u1", displayName: "Alice" },
-  { id: "u2", displayName: "Bob" },
-  { id: "u3", displayName: "Charlie" },
-];
+import { getUsers, User } from "@/api/users";
 
 interface WinnerFormProps {
   winners: Winner[];
@@ -34,7 +28,21 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   prizePool,
   isCompleted,
 }) => {
-  const [users] = React.useState<any[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const fetchedUsers = await getUsers();
+        setUsers(fetchedUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        // Optionally, show a toast or error message to the user
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const addWinner = () => {
     const nextPlace =

@@ -1,5 +1,12 @@
 import { db, auth } from "@/config/firebase";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  getDoc,
+  collection,
+  getDocs,
+} from "firebase/firestore";
 
 export type UserProfilePayload = {
   displayName?: string;
@@ -9,6 +16,10 @@ export type UserProfilePayload = {
   photoURL?: string | null;
   // admin flag is managed in Firestore only; client should not expose this in forms
   admin?: boolean;
+};
+
+export type User = UserProfilePayload & {
+  id: string;
 };
 
 /**
@@ -67,4 +78,16 @@ export async function getUserProfile(
   const data = snap.data();
   // Cast to UserProfilePayload (may contain additional fields like updatedAt)
   return data as unknown as UserProfilePayload;
+}
+
+export async function getUsers(): Promise<User[]> {
+  const usersCol = collection(db, "users");
+  const userSnapshot = await getDocs(usersCol);
+  const userList = userSnapshot.docs.map((doc) => {
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as User;
+  });
+  return userList;
 }

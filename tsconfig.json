@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-  "lib": ["ES2022", "DOM", "DOM.Iterable"],
-  "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
     "skipLibCheck": true,
     "baseUrl": ".",
     "types": ["vite/client", "node"],
@@ -12,9 +12,9 @@
     },
 
     /* Bundler mode */
-  "moduleResolution": "bundler",
-  "esModuleInterop": true,
-  "allowSyntheticDefaultImports": true,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

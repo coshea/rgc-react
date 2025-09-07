@@ -53,7 +53,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }
 
     // Sort winners by place
-  const sortedWinners = [...(tournament.winners || [])].sort(
+    const sortedWinners = [...(tournament.winners || [])].sort(
       (a, b) => a.place - b.place
     );
 
