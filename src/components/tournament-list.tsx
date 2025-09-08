@@ -359,17 +359,19 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <TableCell>
                   <div className="flex justify-end items-center gap-2">
                     {tournament.registrationOpen && tournament.firestoreId ? (
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        onPress={() =>
-                          navigate(
-                            `/tournaments/${tournament.firestoreId}/register`
-                          )
-                        }
-                      >
-                        Register
-                      </Button>
+                      <Tooltip content="Register for the tournament">
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() =>
+                            navigate(
+                              `/tournaments/${tournament.firestoreId}/register`
+                            )
+                          }
+                        >
+                          Register
+                        </Button>
+                      </Tooltip>
                     ) : null}
                     {isAdmin && (
                       <>

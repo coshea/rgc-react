@@ -51,14 +51,18 @@ service cloud.firestore {
                request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
           ;
 
-        // Owner or admin can update or delete their registration
+        // Owner or admin can update or delete the registration. Use isAdmin()
+        // so that admins defined under /admin/{uid} (isAdmin == true) are
+        // permitted in addition to super-admin custom claims.
         allow update, delete: if request.auth != null && (
-          request.auth.uid == resource.data.ownerId || request.auth.token.admin == true
+          request.auth.uid == resource.data.ownerId || isAdmin()
         );
 
         // Reading registrations: owner or admin only (registrations are private by default)
+        // Allow the document owner or an admin. Use the isAdmin() helper so admins
+        // defined in /admin/{uid} (isAdmin == true) can read registrations as well
         allow read: if request.auth != null && (
-          request.auth.uid == resource.data.ownerId || request.auth.token.admin == true
+          request.auth.uid == resource.data.ownerId || isAdmin()
         );
       }
     }

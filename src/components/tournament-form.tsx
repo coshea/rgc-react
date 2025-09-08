@@ -14,9 +14,11 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { auth } from "@/config/firebase";
+import { getUsers, User } from "@/api/users";
 import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
+import RegistrationsList from "@/components/registrations-list";
 
 interface TournamentFormProps {
   tournament?: Tournament | null;
@@ -55,6 +57,10 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [registrations, setRegistrations] = React.useState<any[]>([]);
+  const [regsLoading, setRegsLoading] = React.useState(false);
+  const [editingRegId, setEditingRegId] = React.useState<string | null>(null);
+  const [allUsers, setAllUsers] = React.useState<User[]>([]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -178,6 +184,80 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     }
   };
 
+  // Fetch registrations for existing tournament (admin view)
+  React.useEffect(() => {
+    const load = async () => {
+      if (!tournament || !tournament.firestoreId) return;
+      setRegsLoading(true);
+      try {
+        const users = await getUsers();
+        setAllUsers(users);
+        const { collection, getDocs } = await import("firebase/firestore");
+        const { db } = await import("@/config/firebase");
+        const col = collection(
+          db,
+          "tournaments",
+          tournament.firestoreId,
+          "registrations"
+        );
+        const snaps = await getDocs(col);
+        const list = snaps.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as any),
+        }));
+        setRegistrations(list);
+      } catch (err) {
+        console.error("Failed to load registrations", err);
+        addToast({
+          title: "Error",
+          description: "Failed to load registrations",
+          color: "danger",
+        });
+      } finally {
+        setRegsLoading(false);
+      }
+    };
+
+    load();
+  }, [tournament?.firestoreId]);
+
+  const startEdit = (reg: any) => {
+    setEditingRegId(reg.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingRegId(null);
+  };
+
+  const deleteRegistration = async (regId: string) => {
+    if (!tournament || !tournament.firestoreId) return;
+    try {
+      const { doc, deleteDoc } = await import("firebase/firestore");
+      const { db } = await import("@/config/firebase");
+      const regRef = doc(
+        db,
+        "tournaments",
+        tournament.firestoreId,
+        "registrations",
+        regId
+      );
+      await deleteDoc(regRef);
+      setRegistrations((prev) => prev.filter((r) => r.id !== regId));
+      addToast({
+        title: "Deleted",
+        description: "Registration removed.",
+        color: "danger",
+      });
+    } catch (err) {
+      console.error("Failed to delete registration", err);
+      addToast({
+        title: "Error",
+        description: "Failed to delete registration.",
+        color: "danger",
+      });
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardBody className="p-6">
@@ -295,6 +375,73 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
               />
               {errors.winners && (
                 <p className="text-danger text-sm mt-2">{errors.winners}</p>
+              )}
+            </div>
+          )}
+
+          {/* Registrations management (admin view) */}
+          {isEditing && (
+            <div className="pt-6">
+              <Divider className="my-4" />
+              <h3 className="text-lg font-medium mb-2">Registrations</h3>
+              {regsLoading ? (
+                <div>Loading registrations...</div>
+              ) : registrations.length === 0 ? (
+                <div className="text-sm text-foreground-500">
+                  No registrations yet.
+                </div>
+              ) : (
+                <RegistrationsList
+                  registrations={registrations}
+                  users={allUsers}
+                  players={players}
+                  editingId={editingRegId}
+                  onStartEdit={(reg) => startEdit(reg)}
+                  onCancelEdit={() => cancelEdit()}
+                  onSave={async (regId, ids) => {
+                    // convert ids to team objects and save via existing saveRegistration flow
+                    const team = ids.map((id) => {
+                      const u = allUsers.find((x) => x.id === id);
+                      return {
+                        id,
+                        displayName: u?.displayName || u?.email || id,
+                      };
+                    });
+                    try {
+                      const { doc, updateDoc } = await import(
+                        "firebase/firestore"
+                      );
+                      const { db } = await import("@/config/firebase");
+                      const regRef = doc(
+                        db,
+                        "tournaments",
+                        tournament!.firestoreId!,
+                        "registrations",
+                        regId
+                      );
+                      await updateDoc(regRef, { team });
+                      setRegistrations((prev) =>
+                        prev.map((r) => (r.id === regId ? { ...r, team } : r))
+                      );
+                      addToast({
+                        title: "Saved",
+                        description: "Registration updated.",
+                        color: "success",
+                      });
+                      cancelEdit();
+                    } catch (err) {
+                      console.error("Failed to save registration", err);
+                      addToast({
+                        title: "Error",
+                        description: "Failed to save registration.",
+                        color: "danger",
+                      });
+                    }
+                  }}
+                  onDelete={async (regId) => {
+                    await deleteRegistration(regId);
+                  }}
+                />
               )}
             </div>
           )}
