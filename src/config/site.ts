@@ -18,6 +18,13 @@ export const siteConfig = {
       title: "Membership",
       description: "Join the Ridgefield Golf Club",
       link: "/membership",
+      children: {
+        directory: {
+          title: "Member Directory",
+          description: "View all members",
+          link: "/membership/member-directory",
+        },
+      },
     },
     about: {
       title: "About",

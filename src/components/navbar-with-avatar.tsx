@@ -68,7 +68,7 @@ export const MainNavbarWithAvatar = (_props: NavbarProps) => {
 max-h-fit bg-default-200/50 pb-6 pt-6 shadow-medium backdrop-blur-md backdrop-saturate-150 
 dark:bg-default-100/50"
         >
-          {menuItemsMobile.map((item, index) => (
+          {menuItemsMobile.map((item: any, index) => (
             <NavbarMenuItem key={`${item}-${index}`}>
               <Link
                 className="mb-2 w-full text-default-500"
@@ -77,6 +77,20 @@ dark:bg-default-100/50"
               >
                 {item.title}
               </Link>
+              {item.children && (
+                <div className="pl-4">
+                  {Object.values(item.children).map((child: any) => (
+                    <Link
+                      key={child.link}
+                      className="block mb-2 text-default-500"
+                      href={child.link}
+                    >
+                      {child.title}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
               {index < menuItemsMobile.length - 1 && (
                 <Divider className="opacity-50" />
               )}
@@ -97,11 +111,30 @@ dark:bg-default-100/50"
 
       {/* Center Content */}
       <NavbarContent className="hidden md:flex" justify="center">
-        {menuItemsDesktop.map((item, index) => (
+        {menuItemsDesktop.map((item: any, index) => (
           <NavbarMenuItem key={`${item}-${index}`}>
-            <Link className="text-default-500" href={item.link} size="sm">
-              {item.title}
-            </Link>
+            {item.children ? (
+              <div className="relative group">
+                <Link className="text-default-500" href={item.link} size="sm">
+                  {item.title}
+                </Link>
+                <div className="absolute left-0 mt-2 hidden group-hover:block bg-background rounded shadow-md py-2">
+                  {Object.values(item.children).map((child: any) => (
+                    <Link
+                      key={child.link}
+                      href={child.link}
+                      className="block px-4 py-2 text-default-500 text-sm"
+                    >
+                      {child.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Link className="text-default-500" href={item.link} size="sm">
+                {item.title}
+              </Link>
+            )}
           </NavbarMenuItem>
         ))}
       </NavbarContent>

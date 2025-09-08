@@ -13,6 +13,7 @@ import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
 import ProfilePage from "@/pages/profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
+import MembershipDirectoryPage from "@/pages/membership-directory";
 
 function App() {
   return (
@@ -32,6 +33,11 @@ function App() {
       <Route
         element={<TournamentRegister />}
         path="/tournaments/:firestoreId/register"
+      />
+      <Route element={<MembershipDirectoryPage />} path="/membership" />
+      <Route
+        element={<MembershipDirectoryPage />}
+        path="/membership/member-directory"
       />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>
