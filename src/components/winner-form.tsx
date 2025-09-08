@@ -9,6 +9,7 @@ import {
   SelectItem,
   Tooltip,
 } from "@heroui/react";
+import { Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Winner } from "@/types/winner";
 import { getUsers, User } from "@/api/users";
@@ -79,7 +80,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   const handleUserSelection = (place: number, userIds: string[]) => {
     const selectedUsers = users.filter((user) => userIds.includes(user.id));
-    const displayNames = selectedUsers.map((user) => user.displayName || '');
+    const displayNames = selectedUsers.map((user) => user.displayName || "");
 
     updateWinner(place, {
       userIds,
@@ -213,18 +214,31 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                     </Select>
                   </div>
 
-                  <NumberInput
-                    label="Prize Amount (per person)"
-                    placeholder="Enter prize amount"
-                    value={winner.prizeAmount}
-                    onValueChange={(value) =>
-                      updateWinner(winner.place, { prizeAmount: value })
-                    }
-                    min={0}
-                    startContent={
-                      <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">$</span>
-                      </div>
+                  <div>
+                    <NumberInput
+                      label="Prize Amount (per person)"
+                      placeholder="Enter prize amount"
+                      value={winner.prizeAmount}
+                      onValueChange={(value) =>
+                        updateWinner(winner.place, { prizeAmount: value })
+                      }
+                      min={0}
+                      startContent={
+                        <div className="pointer-events-none flex items-center">
+                          <span className="text-default-400 text-small">$</span>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <Input
+                    label="Score"
+                    placeholder="Enter score"
+                    value={winner.score || ""}
+                    onChange={(e: any) =>
+                      updateWinner(winner.place, { score: e.target.value })
                     }
                   />
                 </div>

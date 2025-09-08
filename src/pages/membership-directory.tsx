@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Input } from "@heroui/react";
+import { Button, Input, Avatar } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
@@ -23,6 +23,24 @@ export default function MembershipDirectoryPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
+
+  // Phone helpers: normalize to digits and format as (xxx) xxx-xxxx when possible
+  function normalizePhone(value?: string) {
+    if (!value) return "";
+    return String(value).replace(/\D/g, "");
+  }
+
+  function formatPhone(value?: string) {
+    const digits = normalizePhone(value);
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    if (digits.length === 7) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    }
+    // fallback: return original trimmed value (if any)
+    return value ? String(value).trim() : "";
+  }
 
   useEffect(() => {
     if (!loading && !userLoggedIn) {
@@ -75,15 +93,35 @@ export default function MembershipDirectoryPage() {
 
     init();
 
-    // subscribe to users collection
-    const usersCol = collection(db, "users");
-    unsubUsers = onSnapshot(usersCol, (snap) => {
-      const arr: User[] = [];
-      snap.forEach((d) => {
-        arr.push({ id: d.id, ...(d.data() as any) } as User);
-      });
-      setMembers(arr);
-    });
+    // subscribe to users collection only when authenticated (avoid permission-denied)
+    if (user && userLoggedIn) {
+      const usersCol = collection(db, "users");
+      unsubUsers = onSnapshot(
+        usersCol,
+        (snap) => {
+          const arr: User[] = [];
+          snap.forEach((d) => {
+            arr.push({ id: d.id, ...(d.data() as any) } as User);
+          });
+          // sort alphabetically by displayName, fallback to email
+          arr.sort((a, b) => {
+            const A = (a.displayName || a.email || "").toLowerCase();
+            const B = (b.displayName || b.email || "").toLowerCase();
+            if (A < B) return -1;
+            if (A > B) return 1;
+            return 0;
+          });
+          setMembers(arr);
+        },
+        (err) => {
+          // Log permission errors and clear members to avoid stale view
+          console.error("Users snapshot error:", err);
+          if (err && (err as any).code === "permission-denied") {
+            setMembers([]);
+          }
+        }
+      );
+    }
 
     return () => {
       if (unsubUsers) unsubUsers();
@@ -100,18 +138,19 @@ export default function MembershipDirectoryPage() {
   async function save() {
     if (!isAdmin) return;
     try {
+      const phoneToSave = formatPhone(form.phone);
       if (editing) {
         const ref = doc(db, "users", editing.id);
         await updateDoc(ref, {
           displayName: form.displayName || "",
           email: form.email || "",
-          phone: form.phone || "",
+          phone: phoneToSave || "",
         });
       } else {
         await addDoc(collection(db, "users"), {
           displayName: form.displayName || "",
           email: form.email || "",
-          phone: form.phone || "",
+          phone: phoneToSave || "",
         });
       }
       setOpen(false);
@@ -136,30 +175,58 @@ export default function MembershipDirectoryPage() {
       </div>
 
       <div className="bg-background rounded-lg shadow-sm">
-        <div className="grid grid-cols-12 items-center gap-4 p-4 border-b text-sm text-default-500 font-medium">
-          <div className="col-span-6">NAME</div>
-          <div className="col-span-4">EMAIL</div>
-          <div className="col-span-2">PHONE</div>
+        {/* desktop header only */}
+        <div className="hidden md:grid grid-cols-3 items-center gap-4 p-4 border-b text-sm text-default-500 font-medium">
+          <div>NAME</div>
+          <div>EMAIL</div>
+          <div>PHONE</div>
         </div>
 
         <div className="divide-y">
           {members.map((m) => (
-            <div
-              key={m.id}
-              className="grid grid-cols-12 items-center gap-4 p-4"
-            >
-              <div className="col-span-6">
-                <div className="font-medium text-lg">
-                  {m.displayName || "(no name)"}
+            <div key={m.id}>
+              {/* desktop row */}
+              <div className="hidden md:grid grid-cols-3 items-center gap-4 p-4">
+                <div className="flex items-center gap-4">
+                  <Avatar
+                    className="w-8 h-8"
+                    src={(m.photoURL as string) || undefined}
+                    alt={m.displayName || m.email}
+                  />
+                  <div className="text-sm text-default-500">
+                    {m.displayName || "(no name)"}
+                  </div>
+                </div>
+
+                <div className="text-sm text-default-500 truncate max-w-[12rem]">
+                  {m.email}
+                </div>
+
+                <div className="text-sm text-default-500">
+                  {m.phone ? formatPhone(m.phone) : "—"}
                 </div>
               </div>
 
-              <div className="col-span-4 text-sm text-default-500">
-                {m.email}
-              </div>
-
-              <div className="col-span-2 text-sm text-default-500">
-                {m.phone || "—"}
+              {/* mobile stacked card */}
+              <div className="block md:hidden p-4">
+                <div className="flex items-center gap-4 mb-2">
+                  <Avatar
+                    className="w-8 h-8"
+                    src={(m.photoURL as string) || undefined}
+                    alt={m.displayName || m.email}
+                  />
+                  <div className="text-sm text-default-500 font-medium">
+                    {m.displayName || "(no name)"}
+                  </div>
+                </div>
+                <div className="text-sm text-default-500 mb-1 flex items-center gap-2">
+                  <span className="font-medium">Email:</span>
+                  <span className="truncate max-w-full block">{m.email}</span>
+                </div>
+                <div className="text-sm text-default-500">
+                  <span className="font-medium">Phone: </span>
+                  <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
+                </div>
               </div>
             </div>
           ))}
@@ -204,6 +271,9 @@ export default function MembershipDirectoryPage() {
                 value={form.phone || ""}
                 onChange={(e: any) =>
                   setForm({ ...form, phone: e.target.value })
+                }
+                onBlur={() =>
+                  setForm({ ...form, phone: formatPhone(form.phone) })
                 }
               />
             </div>
