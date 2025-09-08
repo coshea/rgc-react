@@ -175,9 +175,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         >
           <div className="flex justify-between items-start cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-content2 rounded-md flex items-center justify-center">
-                <Icon icon="lucide:golf" className="text-xl text-primary" />
-              </div>
               <div>
                 <p className="font-medium text-foreground">
                   {tournament.title}
@@ -237,7 +234,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <p className="text-xs text-foreground-500">Description</p>
-                  <p className="text-sm">{tournament.description}</p>
+                  <p className="text-sm line-clamp-2">
+                    {tournament.description}
+                  </p>
                 </div>
 
                 <div>
@@ -337,17 +336,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               <TableRow key={tournament.firestoreId}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-content2 rounded-md flex items-center justify-center">
-                      <Icon
-                        icon="lucide:golf"
-                        className="text-xl text-primary"
-                      />
-                    </div>
                     <div>
                       <p className="font-medium text-foreground">
                         {tournament.title}
                       </p>
-                      <p className="text-xs text-foreground-500 truncate max-w-[200px]">
+                      <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
                         {tournament.description}
                       </p>
                       {renderWinners(tournament)}

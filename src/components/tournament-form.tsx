@@ -40,7 +40,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     tournament?.completed || false
   );
   const [canceled, setCanceled] = React.useState(tournament?.canceled || false);
-  const [icon] = React.useState(tournament?.icon || "/logos/default.png");
   const [prizePool, setPrizePool] = React.useState(tournament?.prizePool || 0);
   const [winners, setWinners] = React.useState<Winner[]>(
     tournament?.winners || []
@@ -120,7 +119,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         players,
         completed,
         canceled,
-        icon,
         prizePool,
         winners,
         registrationOpen,
@@ -147,7 +145,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         players: tournamentData.players as number,
         completed: tournamentData.completed as boolean,
         canceled: tournamentData.canceled as boolean,
-        icon: tournamentData.icon,
         prizePool: tournamentData.prizePool as number,
         winners: (tournamentData.winners as any) || [],
         registrationOpen: tournamentData.registrationOpen as boolean,
@@ -281,22 +278,7 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 </Checkbox>
               </div>
 
-              <div className="pt-4">
-                <p className="text-sm text-foreground-500 mb-2">
-                  Tournament Icon
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-content2 rounded-md flex items-center justify-center">
-                    <Icon
-                      icon="lucide:golf"
-                      className="text-2xl text-primary"
-                    />
-                  </div>
-                  <div className="text-sm text-foreground-500">
-                    Default icon will be used
-                  </div>
-                </div>
-              </div>
+              {/* Tournament icon option removed; default icon used */}
             </div>
           </div>
 
