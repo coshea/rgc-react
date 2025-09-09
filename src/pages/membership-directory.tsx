@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button, Input, Avatar } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@/providers/AuthProvider";
@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
+import type { UserProfilePayload } from "@/api/users";
+import { parseUsersCsv } from "@/services/csv";
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
@@ -24,11 +26,19 @@ export default function MembershipDirectoryPage() {
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
 
+  // Bulk CSV upload state
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [csvRows, setCsvRows] = useState<UserProfilePayload[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Phone helpers: normalize to digits and format as (xxx) xxx-xxxx when possible
   function normalizePhone(value?: string) {
     if (!value) return "";
     return String(value).replace(/\D/g, "");
   }
+
+  // CSV parsing moved to `src/services/csv.ts` (parseUsersCsv)
 
   function formatPhone(value?: string) {
     const digits = normalizePhone(value);
@@ -135,6 +145,54 @@ export default function MembershipDirectoryPage() {
     setOpen(true);
   }
 
+  function onSelectCsv() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFile(e: any) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = String(ev.target?.result || "");
+      const rows = parseUsersCsv(text);
+      setCsvRows(rows);
+      setCsvOpen(true);
+    };
+    reader.readAsText(f);
+    // clear the input so the same file can be reselected if needed
+    e.target.value = null;
+  }
+
+  async function uploadCsv() {
+    if (!isAdmin || csvRows.length === 0) return;
+    setUploading(true);
+    try {
+      for (const r of csvRows) {
+        // r already conforms to UserProfilePayload from parseUsersCsv
+        // Ensure nullable strings are empty string instead of undefined
+        const docPayload: Record<string, any> = {
+          displayName: r.displayName || "",
+          email: r.email || "",
+          phone: r.phone || "",
+          ghinNumber: r.ghinNumber || "",
+          photoURL: r.photoURL ?? null,
+        };
+        if (typeof r.active === "boolean") docPayload.active = r.active;
+        if (typeof r.registered === "boolean")
+          docPayload.registered = r.registered;
+
+        await addDoc(collection(db, "users"), docPayload as any);
+      }
+      setCsvOpen(false);
+      setCsvRows([]);
+    } catch (e) {
+      console.error("CSV upload error", e);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function save() {
     if (!isAdmin) return;
     try {
@@ -171,6 +229,20 @@ export default function MembershipDirectoryPage() {
           <Button onPress={openAdd} startContent={<PlusIcon />}>
             Add Member
           </Button>
+        )}
+        {isAdmin && (
+          <div className="ml-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={handleFile}
+            />
+            <Button onPress={onSelectCsv} variant="flat">
+              Bulk Upload CSV
+            </Button>
+          </div>
         )}
       </div>
 
@@ -283,6 +355,62 @@ export default function MembershipDirectoryPage() {
               </Button>
               <Button onPress={save} color="secondary">
                 Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Preview Modal */}
+      {csvOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setCsvOpen(false)}
+          />
+          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-2xl z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">CSV Upload Preview</h3>
+              <button
+                className="text-default-500"
+                onClick={() => setCsvOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="max-h-96 overflow-auto border rounded mb-4">
+              <table className="w-full text-sm">
+                <thead className="bg-default-50">
+                  <tr>
+                    {csvRows.length > 0 &&
+                      Object.keys(csvRows[0]).map((k) => (
+                        <th key={k} className="p-2 text-left">
+                          {k}
+                        </th>
+                      ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvRows.map((r, i) => (
+                    <tr key={i} className="border-b">
+                      {Object.values(r).map((v, j) => (
+                        <td key={j} className="p-2 truncate max-w-xs">
+                          {v}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="flat" onPress={() => setCsvOpen(false)}>
+                Cancel
+              </Button>
+              <Button onPress={uploadCsv} color="secondary">
+                {uploading ? "Uploading..." : "Upload"}
               </Button>
             </div>
           </div>
