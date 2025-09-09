@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Navbar,
   NavbarBrand,
@@ -12,6 +12,9 @@ import {
   Divider,
   NavbarProps,
 } from "@heroui/react";
+import { Icon } from "@iconify/react";
+import NavDropdown from "@/components/nav-dropdown";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
@@ -20,25 +23,64 @@ import { ProfileDropdown } from "./profile-dropdown";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
-const menuItemsDesktop = [
-  siteConfig.pages.home,
-  siteConfig.pages.tournaments,
-  siteConfig.pages.membership,
-  siteConfig.pages.policies,
-  siteConfig.pages.contact,
-];
+const menuItemsDesktop = {
+  Home: [siteConfig.pages.home],
+  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
+  Membership: [siteConfig.pages.membership, siteConfig.pages.directory],
+  "Policies/Rules": [siteConfig.pages.policies],
+  "Contact Us": [siteConfig.pages.contact],
+};
 
-const menuItemsMobile = [
-  siteConfig.pages.home,
-  siteConfig.pages.tournaments,
-  siteConfig.pages.membership,
-  siteConfig.pages.policies,
-  siteConfig.pages.contact,
-];
+const menuItemsMobile = {
+  Home: [siteConfig.pages.home],
+  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
+  Membership: [siteConfig.pages.membership, siteConfig.pages.directory],
+  "Policies/Rules": [siteConfig.pages.policies],
+  "Contact Us": [siteConfig.pages.contact],
+};
 
 export const MainNavbarWithAvatar = (_props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userLoggedIn, loading } = useAuth(); // Get auth state
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!openDropdown) return;
+      const node = containerRefs.current[openDropdown];
+      if (node && !node.contains(e.target as Node)) setOpenDropdown(null);
+    }
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenDropdown(null);
+    }
+
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openDropdown]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleGoToContact = (e?: any) => {
+    e?.preventDefault?.();
+    const id = "home-contact-section";
+    if (location.pathname === "/") {
+      scrollToSection(id);
+    } else {
+      navigate("/", { state: { scrollTo: id } });
+    }
+  };
 
   return (
     <Navbar
@@ -68,30 +110,37 @@ export const MainNavbarWithAvatar = (_props: NavbarProps) => {
 max-h-fit bg-default-200/50 pb-6 pt-6 shadow-medium backdrop-blur-md backdrop-saturate-150 
 dark:bg-default-100/50"
         >
-          {menuItemsMobile.map((item: any, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
-              <Link
-                className="mb-2 w-full text-default-500"
-                href={item.link}
-                size="md"
-              >
-                {item.title}
-              </Link>
-              {item.children && (
-                <div className="pl-4">
-                  {Object.values(item.children).map((child: any) => (
-                    <Link
-                      key={child.link}
-                      className="block mb-2 text-default-500"
-                      href={child.link}
-                    >
-                      {child.title}
-                    </Link>
-                  ))}
-                </div>
+          {Object.entries(menuItemsMobile).map(([label, items]: any, idx) => (
+            <NavbarMenuItem key={`${label}-${idx}`}>
+              {Array.isArray(items) && items.length > 1 ? (
+                <NavDropdown
+                  label={label}
+                  items={items}
+                  isMobile
+                  onNavigate={() => setIsMenuOpen(false)}
+                />
+              ) : (
+                <Link
+                  className="mb-2 w-full text-default-500"
+                  href={Array.isArray(items) && items[0] ? items[0].link : "#"}
+                  size="md"
+                  onClick={
+                    Array.isArray(items) &&
+                    items[0] &&
+                    items[0].link &&
+                    items[0].link.includes("#home-contact-section")
+                      ? (e: any) => {
+                          handleGoToContact(e);
+                          setIsMenuOpen(false);
+                        }
+                      : () => setIsMenuOpen(false)
+                  }
+                >
+                  {Array.isArray(items) && items[0] ? items[0].title : label}
+                </Link>
               )}
 
-              {index < menuItemsMobile.length - 1 && (
+              {idx < Object.keys(menuItemsMobile).length - 1 && (
                 <Divider className="opacity-50" />
               )}
             </NavbarMenuItem>
@@ -111,28 +160,32 @@ dark:bg-default-100/50"
 
       {/* Center Content */}
       <NavbarContent className="hidden md:flex" justify="center">
-        {menuItemsDesktop.map((item: any, index) => (
-          <NavbarMenuItem key={`${item}-${index}`}>
-            {item.children ? (
-              <div className="relative group">
-                <Link className="text-default-500" href={item.link} size="sm">
-                  {item.title}
-                </Link>
-                <div className="absolute left-0 mt-2 hidden group-hover:block bg-background rounded shadow-md py-2">
-                  {Object.values(item.children).map((child: any) => (
-                    <Link
-                      key={child.link}
-                      href={child.link}
-                      className="block px-4 py-2 text-default-500 text-sm"
-                    >
-                      {child.title}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+        {Object.entries(menuItemsDesktop).map(([label, items]: any, idx) => (
+          <NavbarMenuItem key={`${label}-${idx}`}>
+            {Array.isArray(items) && items.length > 1 ? (
+              <NavDropdown
+                label={label}
+                items={items}
+                onNavigate={() => setOpenDropdown(null)}
+              />
             ) : (
-              <Link className="text-default-500" href={item.link} size="sm">
-                {item.title}
+              <Link
+                className="text-default-500 flex items-center gap-2"
+                href={Array.isArray(items) && items[0] ? items[0].link : "#"}
+                size="sm"
+                onClick={
+                  Array.isArray(items) &&
+                  items[0] &&
+                  items[0].link &&
+                  items[0].link.includes("#home-contact-section")
+                    ? handleGoToContact
+                    : undefined
+                }
+              >
+                {Array.isArray(items) && items[0] && items[0].icon && (
+                  <Icon icon={items[0].icon} className="text-base" />
+                )}
+                {Array.isArray(items) && items[0] ? items[0].title : label}
               </Link>
             )}
           </NavbarMenuItem>
