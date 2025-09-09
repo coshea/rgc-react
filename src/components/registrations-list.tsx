@@ -38,9 +38,31 @@ export const RegistrationsList: React.FC<Props> = ({
   onSave,
   onDelete,
 }) => {
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [localTeams, setLocalTeams] = React.useState<Record<string, string[]>>(
     {}
   );
+
+  const selectedRegistration = React.useMemo(() => {
+    return registrations.find((r) => r.id === deletingId) || null;
+  }, [registrations, deletingId]);
+
+  const ownerUser = React.useMemo(() => {
+    if (!selectedRegistration || !selectedRegistration.ownerId) return null;
+    return users.find((u) => u.id === selectedRegistration.ownerId) || null;
+  }, [selectedRegistration, users]);
+
+  const teamMemberNames = React.useMemo(() => {
+    if (!selectedRegistration || !Array.isArray(selectedRegistration.team))
+      return [] as string[];
+    return selectedRegistration.team.map((m) => {
+      const u = users.find((x) => x.id === (m as any).id);
+      return (
+        u?.displayName || (m as any).displayName || (m as any).id || "(unknown)"
+      );
+    });
+  }, [selectedRegistration, users]);
 
   const startEditing = (reg: Registration) => {
     const ids = Array.isArray(reg.team)
@@ -118,6 +140,61 @@ export const RegistrationsList: React.FC<Props> = ({
                       {team.map((m) => m.displayName || m.id).join(", ")}
                     </div>
                   </div>
+
+                  {/* Confirmation modal (in-app) */}
+                  {confirmOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                      <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => {
+                          setConfirmOpen(false);
+                          setDeletingId(null);
+                        }}
+                      />
+                      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+                        <h3 className="text-lg font-medium mb-2">
+                          Remove registration
+                        </h3>
+                        <p className="text-sm text-foreground-500 mb-4">
+                          Are you sure you want to remove this registration?
+                          This cannot be undone.
+                        </p>
+                        {selectedRegistration && (
+                          <div className="text-sm text-foreground-500 mb-4">
+                            <p className="font-medium">Owner:</p>
+                            <p>
+                              {ownerUser
+                                ? ownerUser.displayName || ownerUser.email
+                                : selectedRegistration.ownerId}
+                            </p>
+                            <p className="font-medium mt-2">Team:</p>
+                            <p>{teamMemberNames.join(", ")}</p>
+                          </div>
+                        )}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="flat"
+                            onPress={() => {
+                              setConfirmOpen(false);
+                              setDeletingId(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            color="danger"
+                            onPress={() => {
+                              if (deletingId) onDelete(deletingId);
+                              setConfirmOpen(false);
+                              setDeletingId(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -152,7 +229,10 @@ export const RegistrationsList: React.FC<Props> = ({
                         size="sm"
                         color="danger"
                         variant="light"
-                        onPress={() => onDelete(reg.id)}
+                        onPress={() => {
+                          setDeletingId(reg.id);
+                          setConfirmOpen(true);
+                        }}
                       >
                         Delete
                       </Button>
