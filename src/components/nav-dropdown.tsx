@@ -40,11 +40,26 @@ export default function NavDropdown({
       if (e.key === "Escape") setOpen(false);
     }
 
+    // Close this dropdown when another dropdown opens
+    function onOtherOpen(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      if (detail.label && detail.label !== label) setOpen(false);
+    }
+
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
+    document.addEventListener(
+      "nav-dropdown-open",
+      onOtherOpen as EventListener
+    );
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener(
+        "nav-dropdown-open",
+        onOtherOpen as EventListener
+      );
     };
   }, [open]);
 
@@ -84,7 +99,18 @@ export default function NavDropdown({
         variant="light"
         aria-haspopup="true"
         aria-expanded={open}
-        onPress={() => setOpen((s) => !s)}
+        onPress={() => {
+          setOpen((s) => {
+            const next = !s;
+            if (next) {
+              // notify other dropdowns that this one opened
+              document.dispatchEvent(
+                new CustomEvent("nav-dropdown-open", { detail: { label } })
+              );
+            }
+            return next;
+          });
+        }}
       >
         {label}
       </Button>
