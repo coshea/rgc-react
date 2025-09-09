@@ -60,11 +60,25 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }).format(amount);
   };
 
-  const handleDelete = (id?: string | number) => {
+  // In-app confirmation modal state
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
+  const selectedTournament = React.useMemo(() => {
+    return tournaments.find((t) => t.firestoreId === deletingId) || null;
+  }, [tournaments, deletingId]);
+
+  const openConfirm = (id?: string | number) => {
     if (!id) return;
-    if (window.confirm("Are you sure you want to delete this tournament?")) {
-      onDelete(id);
-    }
+    setDeletingId(String(id));
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingId) return;
+    onDelete(deletingId);
+    setConfirmOpen(false);
+    setDeletingId(null);
   };
 
   // New function to render winners
@@ -278,7 +292,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   color="danger"
                   onPress={(e: any) => {
                     e?.stopPropagation?.();
-                    handleDelete(tournament.firestoreId);
+                    openConfirm(tournament.firestoreId);
                   }}
                   startContent={<Icon icon="lucide:trash-2" />}
                 >
@@ -396,7 +410,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                             size="sm"
                             variant="light"
                             color="danger"
-                            onPress={() => handleDelete(tournament.firestoreId)}
+                            onPress={() => openConfirm(tournament.firestoreId)}
                             aria-label="Delete tournament"
                           >
                             <Icon icon="lucide:trash-2" />
@@ -411,6 +425,53 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirmation modal (in-app) */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              setConfirmOpen(false);
+              setDeletingId(null);
+            }}
+          />
+          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+            <h3 className="text-lg font-medium mb-2">Delete tournament</h3>
+            <p className="text-sm text-foreground-500 mb-4">
+              Are you sure you want to delete this tournament? This cannot be
+              undone.
+            </p>
+            {selectedTournament && (
+              <div className="text-sm text-foreground-500 mb-4">
+                <p className="font-medium">Tournament:</p>
+                <p>{selectedTournament.title}</p>
+                <p className="font-medium mt-2">Date:</p>
+                <p>{formatDate(selectedTournament.date)}</p>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="flat"
+                onPress={() => {
+                  setConfirmOpen(false);
+                  setDeletingId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="danger"
+                onPress={() => {
+                  confirmDelete();
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
