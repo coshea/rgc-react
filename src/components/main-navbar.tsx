@@ -1,3 +1,4 @@
+// not in use
 import { useState } from "react";
 import {
   Navbar,
@@ -18,7 +19,7 @@ import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { siteConfig } from "@/config/site";
-import { ProfileDropdown } from "./profile-dropdown";
+import { ProfileDropdown } from "@/components/profile-dropdown";
 
 const menuItemsDesktop = [
   siteConfig.pages.home,

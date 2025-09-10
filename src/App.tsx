@@ -8,8 +8,12 @@ import { siteConfig } from "@/config/site";
 import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
-import PolicyPage from "./pages/policies";
-import PastChampionsWithAvatars from "./pages/past-champions-avatars";
+import PolicyPage from "@/pages/policies";
+import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
+import ProfilePage from "@/pages/profile";
+import TournamentsPage from "@/pages/tournaments";
+import TournamentRegister from "@/pages/tournament-register";
+import MembershipDirectoryPage from "@/pages/membership-directory";
 
 function App() {
   return (
@@ -22,7 +26,18 @@ function App() {
       <Route element={<PolicyPage />} path={siteConfig.pages.policies.link} />
       <Route
         element={<PastChampionsWithAvatars showAllYears={true} />}
-        path="/past-champions"
+        path={siteConfig.pages.pastchampions.link}
+      />
+      <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
+      <Route element={<TournamentsPage />} path="/tournaments" />
+      <Route
+        element={<TournamentRegister />}
+        path="/tournaments/:firestoreId/register"
+      />
+      <Route element={<MembershipDirectoryPage />} path="/membership" />
+      <Route
+        element={<MembershipDirectoryPage />}
+        path="/membership/member-directory"
       />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>

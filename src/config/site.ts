@@ -13,26 +13,37 @@ export const siteConfig = {
       title: "Home",
       description: "Welcome to the Ridgefield Golf Club",
       link: "/",
+      icon: "lucide:home",
     },
     membership: {
       title: "Membership",
       description: "Join the Ridgefield Golf Club",
       link: "/membership",
+      icon: "lucide:users",
+    },
+    directory: {
+      title: "Member Directory",
+      description: "View all members",
+      link: "/membership/member-directory",
+      icon: "lucide:user",
     },
     about: {
       title: "About",
       description: "Learn more about the Ridgefield Golf Club",
       link: "/about",
+      icon: "lucide:info",
     },
     policies: {
       title: "Policies/Rules",
       description: "View the policies and rules of the Ridgefield Golf Club",
       link: "/policies",
+      icon: "lucide:file-text",
     },
     contact: {
       title: "Contact Us",
       description: "Get in touch with the Ridgefield Golf Club",
       link: "/#home-contact-section",
+      icon: "lucide:mail",
     },
     login: {
       title: "Login",
@@ -43,6 +54,24 @@ export const siteConfig = {
       title: "Sign Up",
       description: "Sign up for a Ridgefield Golf Club account",
       link: "/signup",
+    },
+    profile: {
+      title: "Profile",
+      description: "View and edit your profile",
+      link: "/profile",
+    },
+    pastchampions: {
+      title: "Past Champions",
+      description:
+        "View past champions of the Ridgefield Golf Club tournaments",
+      link: "/past-champions",
+      icon: "lucide:award",
+    },
+    tournaments: {
+      title: "Tournaments",
+      description: "Ridgefield Golf Club tournaments",
+      link: "/tournaments",
+      icon: "lucide:calendar",
     },
   },
 };

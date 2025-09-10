@@ -1,26 +1,38 @@
 import React, { useEffect } from "react";
-import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Checkbox,
+  Link,
+  Form,
+  Divider,
+  addToast,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
+  const [inlineError, setInlineError] = React.useState<string | null>(null);
   const {
     userLoggedIn, // We can use this to redirect if already logged in
     loginEmailAndPassword, // Import the email/password login function
     signInWithGoogle,
     loading: authLoading,
-    error: authError,
   } = useAuth(); // Get auth functions and state
 
   const toggleVisibility = () => setIsVisible(!isVisible);
   const navigate = useNavigate(); // Initialize navigate
+  const location = useLocation();
+  const state = (location.state || {}) as { from?: string; message?: string };
 
   useEffect(() => {
-    if (userLoggedIn && !authLoading) { // Check if user is logged in and auth is not loading
-      navigate(siteConfig.pages.home.link);
+    if (userLoggedIn && !authLoading) {
+      // Check if user is logged in and auth is not loading
+      const dest = state?.from || siteConfig.pages.home.link;
+      navigate(dest);
     }
   }, [userLoggedIn, authLoading, navigate]);
 
@@ -33,10 +45,25 @@ export default function LoginPage() {
     if (email && password) {
       try {
         await loginEmailAndPassword(email, password);
-        navigate(siteConfig.pages.home.link); // Navigate on successful login
+        // Navigate to original destination if provided, otherwise home
+        const dest = state?.from || siteConfig.pages.home.link;
+        navigate(dest);
       } catch (error) {
-        // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
         console.error("Email/Password Sign-In failed on LoginPage:", error);
+        const err = error as any;
+        const msg = getAuthErrorMessage(err?.code, err?.message);
+        // show toast and set inline fallback
+        try {
+          addToast({
+            title: "Sign in failed",
+            description: msg,
+            color: "danger",
+          });
+        } catch (e) {
+          // if toast fails for some reason, still set inline error
+          console.warn("Toast failed:", e);
+        }
+        setInlineError(msg);
       }
     }
   };
@@ -46,12 +73,45 @@ export default function LoginPage() {
       await signInWithGoogle();
       // Navigation or further actions on successful Google sign-in
       // can be handled here or by observing userLoggedIn state elsewhere.
-      navigate(siteConfig.pages.home.link); // Navigate to home page
+      const dest = state?.from || siteConfig.pages.home.link;
+      navigate(dest);
     } catch (error) {
-      // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
       console.error("Google Sign-In failed on LoginPage:", error);
+      const err = error as any;
+      const msg = getAuthErrorMessage(err?.code, err?.message);
+      try {
+        addToast({
+          title: "Sign in failed",
+          description: msg,
+          color: "danger",
+        });
+      } catch (e) {
+        console.warn("Toast failed:", e);
+      }
+      setInlineError(msg);
     }
   };
+
+  function getAuthErrorMessage(code?: string, fallback?: string) {
+    switch (code) {
+      case "auth/invalid-email":
+        return "The email address is not valid.";
+      case "auth/user-disabled":
+        return "This account has been disabled. Contact support.";
+      case "auth/user-not-found":
+        return "No account found for that email.";
+      case "auth/wrong-password":
+        return "Incorrect password. Try again or reset your password.";
+      case "auth/invalid-credential":
+        return "Invalid credentials provided. Please try again.";
+      case "auth/popup-closed-by-user":
+        return "Sign in popup was closed before completing. Try again.";
+      case "auth/cancelled-popup-request":
+        return "Sign in was cancelled. Try again.";
+      default:
+        return fallback || "Failed to sign in. Please try again.";
+    }
+  }
 
   // If already logged in and not loading, render null or a loading indicator to prevent flash of login form
   if (userLoggedIn && !authLoading) {
@@ -68,6 +128,16 @@ export default function LoginPage() {
           <p className="text-small text-default-500">
             to continue to Ridgefield Golf Club
           </p>
+          {state?.message ? (
+            <div className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+              {state.message}
+            </div>
+          ) : null}
+          {inlineError ? (
+            <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {inlineError}
+            </div>
+          ) : null}
         </div>
 
         <Form
@@ -114,10 +184,13 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          {authError && !authLoading && ( // Display error only if not loading from this specific action
-            <p className="text-danger text-center text-small -mt-2 mb-1">{authError.message}</p>
-          )}
-          <Button className="w-full" color="primary" type="submit" isDisabled={authLoading}>
+          {/* authError is shown via toast; remove inline Firebase error message to avoid exposing raw messages */}
+          <Button
+            className="w-full"
+            color="primary"
+            type="submit"
+            isDisabled={authLoading}
+          >
             {authLoading ? "Signing In..." : "Sign In"}
           </Button>
         </Form>
@@ -127,11 +200,7 @@ export default function LoginPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
-          {authError && !authLoading && ( // Display error only if not loading from this specific action
-            <p className="text-danger text-center text-small">
-              {authError.message}
-            </p>
-          )}
+          {/* Google Sign-In Button */}
           <Button
             startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"

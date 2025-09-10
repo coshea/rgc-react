@@ -1,0 +1,118 @@
+[
+  {
+    "id": "prefer-function-components",
+    "severity": "error",
+    "scope": "react",
+    "description": "Prefer function components with hooks over class components.",
+    "pattern": "class\\s+\\w+\\s+extends\\s+React\\.(Component|PureComponent)",
+    "suggestion": "Convert to a function component and use hooks (useState/useEffect/useRef).",
+    "examples": {
+      "bad": "class MyComp extends React.Component { render(){ return <div/> } }",
+      "good": "function MyComp(){ const [s,setS]=useState(null); return <div/> }"
+    }
+  },
+
+  {
+    "id": "use-heroui-primitives",
+    "severity": "warn",
+    "scope": "react",
+    "description": "Prefer HeroUI primitives (Button, Input, Avatar, DropdownItem, etc.) when a matching component exists instead of raw HTML so styling and accessibility are consistent.",
+    "pattern": "<(button|input|select|img)(\\s|>)",
+    "suggestion": "Use the corresponding HeroUI component (e.g. <Button>, <Input>, <Avatar />) unless you need a raw element for a compelling reason.",
+    "examples": {
+      "bad": "<button class=\"btn\">Save</button>",
+      "good": "<Button color=\"primary\">Save</Button>"
+    }
+  },
+
+  {
+    "id": "dropdown-textvalue",
+    "severity": "error",
+    "scope": "react",
+    "description": "DropdownItem with non-plain text children must expose a machine-readable textValue prop for accessibility.",
+    "pattern": "<DropdownItem[^>]*>\\s*<(p|div|span)[^>]*>",
+    "suggestion": "Add a textValue prop with a short text summary (not passed to DOM directly). Example: <DropdownItem textValue=\"My Profile\">...jsx...</DropdownItem>",
+    "examples": {
+      "bad": "<DropdownItem><p>Title</p><p>Subtitle</p></DropdownItem>",
+      "good": "<DropdownItem textValue=\"Title - Subtitle\"><p>Title</p><p>Subtitle</p></DropdownItem>"
+    }
+  },
+
+  {
+    "id": "avatar-upload-path",
+    "severity": "error",
+    "scope": "firebase",
+    "description": "Uploads to storage should use owner-scoped paths (avatars/{uid}/...) and not public/global locations.",
+    "pattern": "avatars/\\$?\\{?uid\\}?",
+    "suggestion": "Ensure uploads use `avatars/${uid}/filename` and storage rules enforce request.auth.uid == userId.",
+    "examples": {
+      "bad": "ref(storage, `avatars/${file.name}`)",
+      "good": "ref(storage, `avatars/${uid}/${Date.now()}_${file.name}`)"
+    }
+  },
+
+  {
+    "id": "no-secrets-in-code",
+    "severity": "error",
+    "scope": "all",
+    "description": "Do not commit API keys, service account JSON, or other secrets to the repository.",
+    "pattern": "(AIza[0-9A-Za-z-_]{35}|-----BEGIN PRIVATE KEY-----|serviceAccount|PRIVATE_KEY=)",
+    "suggestion": "Move secrets into environment variables or a secret manager and update code to read from process.env or runtime config.",
+    "examples": {
+      "bad": "const apiKey = 'AIza...';",
+      "good": "const apiKey = process.env.VITE_FIREBASE_API_KEY"
+    }
+  },
+
+  {
+    "id": "use-effect-cleanup",
+    "severity": "warn",
+    "scope": "react",
+    "description": "Effects that subscribe to external resources must return a cleanup function to avoid leaks.",
+    "pattern": "useEffect\\s*\\([^)]*=>\\s*{(?:(?!return).)*$",
+    "suggestion": "Return a cleanup function from useEffect. For example: useEffect(()=>{ const sub = x.subscribe(); return ()=>sub.unsubscribe() }, []);",
+    "examples": {
+      "bad": "useEffect(()=>{ window.addEventListener('resize', onResize) }, [])",
+      "good": "useEffect(()=>{ window.addEventListener('resize', onResize); return ()=>window.removeEventListener('resize', onResize) }, [])"
+    }
+  },
+
+  {
+    "id": "type-props",
+    "severity": "error",
+    "scope": "typescript",
+    "description": "Props and public hooks should be strongly typed in TypeScript (no implicit any).",
+    "pattern": ":\\s*any\\b|function\\s+\\w+\\([^)]*:\\s*any\\)",
+    "suggestion": "Add explicit types or generics to props and hook return values. Enable strict mode in tsconfig.",
+    "examples": {
+      "bad": "function Comp(props:any){ return null }",
+      "good": "type Props = { title: string }; function Comp(props:Props){ return null }"
+    }
+  },
+
+  {
+    "id": "accessibility-semantic",
+    "severity": "error",
+    "scope": "a11y",
+    "description": "Interactive elements must be semantic and keyboard accessible; e.g., use button for actions or add role/tabindex with correct handlers.",
+    "pattern": "<(?:div|span)[^>]*onClick\\s*=",
+    "suggestion": "Use <button> for clickable actions or ensure correct ARIA roles and keyboard handlers are present.",
+    "examples": {
+      "bad": "<div onClick={doSomething}>Click</div>",
+      "good": "<button onClick={doSomething}>Click</button>"
+    }
+  },
+
+  {
+    "id": "prefer-react-query",
+    "severity": "info",
+    "scope": "data",
+    "description": "For server state caching prefer React Query patterns (useQuery/useMutation) instead of ad-hoc fetch + local state for non-trivial data fetching.",
+    "pattern": "fetch\\(|axios\\.",
+    "suggestion": "Wrap server calls in hooks and surface them via useQuery/useMutation to benefit from caching/retries/optimistic updates.",
+    "examples": {
+      "bad": "useEffect(()=>{ fetch('/api')... }, [])",
+      "good": "const {data} = useQuery(['items'], fetchItems)"
+    }
+  }
+]

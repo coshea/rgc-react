@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: returns true if the requester is a super-admin (custom claim)
+    // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
+    function isAdmin() {
+      return request.auth != null && (
+        // custom claim override
+        request.auth.token.admin == true
+        // OR user has an admin document set to true
+        || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+
+    // Allow authenticated users to read the users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      // Allow users to write their own profile. Also allow admins to create or modify
+      // other users' profiles (so admins can add members). Admin check uses custom
+      // claim `request.auth.token.admin == true` or the admin collection lookup.
+      allow create, update, delete: if request.auth != null && (
+        request.auth.uid == userId || request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      );
+      // allow set (write) to be same as create/update above
+      allow write: if request.auth != null && (
+        request.auth.uid == userId || request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+
+    // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
+    match /tournaments/{tournamentId} {
+      // Public read of tournaments
+      allow read: if true;
+      // Only allow create/update/delete if the requester is an admin (either
+      // has the custom claim or is listed in /admin/{uid}.isAdmin == true).
+      allow create, update, delete: if isAdmin();
+      // Registrations should be stored as documents under the subcollection
+      // tournaments/{tournamentId}/registrations/{registrationId}
+      // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
+      match /registrations/{registrationId} {
+        // Create: only authenticated user, ownerId must match auth uid, and tournament must be open for registration
+        allow create: if request.auth != null
+          && request.auth.uid == request.resource.data.ownerId
+          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
+          && request.resource.data.team is list
+          && request.resource.data.team.size() > 0
+          // enforce max team size based on tournament players field when available
+          && ( ! (get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int) ||
+               request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
+          ;
+
+        // Owner or admin can update or delete the registration. Use isAdmin()
+        // so that admins defined under /admin/{uid} (isAdmin == true) are
+        // permitted in addition to super-admin custom claims.
+        allow update, delete: if request.auth != null && (
+          request.auth.uid == resource.data.ownerId || isAdmin()
+        );
+
+        // Reading registrations: owner or admin only (registrations are private by default)
+        // Allow the document owner or an admin. Use the isAdmin() helper so admins
+        // defined in /admin/{uid} (isAdmin == true) can read registrations as well
+        allow read: if request.auth != null && (
+          request.auth.uid == resource.data.ownerId || isAdmin()
+        );
+      }
+    }
+
+    // Admin list stored at /admin/{uid} with document { isAdmin: true }
+    // Only super-admins (custom claim `admin == true`) can modify the admin list.
+    // Admin documents can be read by the user themselves or by super-admins.
+    match /admin/{adminId} {
+      // Allow users to read their own admin doc (so client can check quickly)
+      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true || isAdmin());
+
+      // Only custom-claim super-admins may create/update/delete admin documents.
+      // This prevents arbitrary users from granting themselves admin rights.
+      allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Default: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
