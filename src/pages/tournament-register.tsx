@@ -128,6 +128,24 @@ const TournamentRegister: React.FC = () => {
     fetchUsers();
   }, [firestoreId]);
 
+  // Redirect unauthenticated users to login when they land on the register page
+  React.useEffect(() => {
+    // If we've loaded the tournament and the auth state is known and there is no user, redirect
+    // We only redirect when loading is finished to avoid flicker.
+    if (!loading && !user) {
+      const fromPath = firestoreId
+        ? `/tournaments/${firestoreId}/register`
+        : "/tournaments";
+      navigate("/login", {
+        state: {
+          from: fromPath,
+          message: "You must be logged in to register for a tournament",
+        },
+        replace: true,
+      });
+    }
+  }, [loading, user, navigate, firestoreId]);
+
   // load existing registration for current user
   React.useEffect(() => {
     const fetchExistingRegistration = async () => {

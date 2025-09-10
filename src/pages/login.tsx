@@ -3,7 +3,7 @@ import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
@@ -17,10 +17,14 @@ export default function LoginPage() {
 
   const toggleVisibility = () => setIsVisible(!isVisible);
   const navigate = useNavigate(); // Initialize navigate
+  const location = useLocation();
+  const state = (location.state || {}) as { from?: string; message?: string };
 
   useEffect(() => {
-    if (userLoggedIn && !authLoading) { // Check if user is logged in and auth is not loading
-      navigate(siteConfig.pages.home.link);
+    if (userLoggedIn && !authLoading) {
+      // Check if user is logged in and auth is not loading
+      const dest = state?.from || siteConfig.pages.home.link;
+      navigate(dest);
     }
   }, [userLoggedIn, authLoading, navigate]);
 
@@ -33,7 +37,9 @@ export default function LoginPage() {
     if (email && password) {
       try {
         await loginEmailAndPassword(email, password);
-        navigate(siteConfig.pages.home.link); // Navigate on successful login
+        // Navigate to original destination if provided, otherwise home
+        const dest = state?.from || siteConfig.pages.home.link;
+        navigate(dest);
       } catch (error) {
         // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
         console.error("Email/Password Sign-In failed on LoginPage:", error);
@@ -46,7 +52,8 @@ export default function LoginPage() {
       await signInWithGoogle();
       // Navigation or further actions on successful Google sign-in
       // can be handled here or by observing userLoggedIn state elsewhere.
-      navigate(siteConfig.pages.home.link); // Navigate to home page
+      const dest = state?.from || siteConfig.pages.home.link;
+      navigate(dest);
     } catch (error) {
       // Error is already set in AuthProvider, but you can log or handle UI specific feedback here
       console.error("Google Sign-In failed on LoginPage:", error);
@@ -68,6 +75,11 @@ export default function LoginPage() {
           <p className="text-small text-default-500">
             to continue to Ridgefield Golf Club
           </p>
+          {state?.message ? (
+            <div className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+              {state.message}
+            </div>
+          ) : null}
         </div>
 
         <Form
@@ -114,10 +126,18 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          {authError && !authLoading && ( // Display error only if not loading from this specific action
-            <p className="text-danger text-center text-small -mt-2 mb-1">{authError.message}</p>
-          )}
-          <Button className="w-full" color="primary" type="submit" isDisabled={authLoading}>
+          {authError &&
+            !authLoading && ( // Display error only if not loading from this specific action
+              <p className="text-danger text-center text-small -mt-2 mb-1">
+                {authError.message}
+              </p>
+            )}
+          <Button
+            className="w-full"
+            color="primary"
+            type="submit"
+            isDisabled={authLoading}
+          >
             {authLoading ? "Signing In..." : "Sign In"}
           </Button>
         </Form>
@@ -127,11 +147,12 @@ export default function LoginPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
-          {authError && !authLoading && ( // Display error only if not loading from this specific action
-            <p className="text-danger text-center text-small">
-              {authError.message}
-            </p>
-          )}
+          {authError &&
+            !authLoading && ( // Display error only if not loading from this specific action
+              <p className="text-danger text-center text-small">
+                {authError.message}
+              </p>
+            )}
           <Button
             startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"

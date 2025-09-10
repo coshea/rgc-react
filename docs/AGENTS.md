@@ -1,15 +1,156 @@
 Assistant rules for the rgc-react repository
 
-Purpose
+## Purpose
 
 This document records the rules and conventions the user has asked the assistant to follow while working in the rgc-react repository. It is written to be concise and actionable so other contributors or automated agents can reuse it.
 
-How to use
+## How to use
 
 - Humans: read this file before editing UI or Firestore rules. It summarizes event naming, UI patterns, modal usage, and data model expectations.
 - Bots/automation: the same rules can be turned into machine-readable JSON or integrated into project checks.
 
-Core rules (explicit user requests)
+## Tech Stack
+
+- **Frontend Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Routing**: React Router v6
+- **UI Components**: HeroUI
+- **Styling**: Tailwind 4 CSS / Styled-components
+- **HTTP Client**: Axios
+- **Testing Framework**: Vitest + React Testing Library
+- **Code Quality**: ESLint + Prettier
+- **Database**: Firebase Firestore
+
+## Do
+
+- use HeroUI. make sure your code is v3 compatible
+- use apex charts for charts. do not supply custom html
+- default to small components. prefer focused modules over god components
+- default to small files and diffs. avoid repo wide rewrites unless asked
+
+## Don't
+
+- do not hard code colors
+- do not use `div`s if we have a component already
+- do not add new heavy dependencies without approval
+
+## Safety and permissions
+
+### Allowed without prompt:
+
+- read files, list files
+- tsc single file, prettier, eslint,
+- vitest single test
+
+### Ask first:
+
+- package installs,
+- git push
+- deleting files, chmod
+- running full build or end to end suites
+
+## Development Guidelines
+
+### Component Development Standards
+
+1. **Function Components First**: Use function components and Hooks
+2. **TypeScript Types**: Define interfaces for all props
+3. **Component Naming**: Use PascalCase, file name matches component name
+4. **Single Responsibility**: Each component handles only one functionality
+
+## Project Structure
+
+```
+react-project/
+├── src/
+│   ├── assets/             # Static assets
+│   ├── components/         # Reusable components
+│   ├── components/         # Reusable components
+│   ├── pages/             # Page components
+│   ├── hooks/             # Custom Hooks
+│   ├── store/             # State management
+│   ├── services/          # API services
+│   ├── utils/             # Utility functions
+│   ├── types/             # TypeScript type definitions
+│   ├── styles/            # Global styles
+│   ├── config/         # Configs
+│   ├── App.tsx
+│   └── main.tsx
+├── tests/                 # Test files
+├── docs/                  # Project documentation
+├── .env.example          # Environment variables example
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+```
+
+### Project structure
+
+- see `App.tsx` for routes
+- components live in `app/components`
+-
+
+## Testing Strategy
+
+### Unit Testing Example
+
+## Performance Optimization
+
+### Code Splitting
+
+```tsx
+import { lazy, Suspense } from "react";
+
+const LazyComponent = lazy(() => import("./LazyComponent"));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LazyComponent />
+    </Suspense>
+  );
+}
+```
+
+### Memory Optimization
+
+```tsx
+import { memo, useMemo, useCallback } from "react";
+
+const ExpensiveComponent = memo(({ data, onUpdate }) => {
+  const processedData = useMemo(() => {
+    return data.map((item) => ({ ...item, processed: true }));
+  }, [data]);
+
+  const handleUpdate = useCallback(
+    (id) => {
+      onUpdate(id);
+    },
+    [onUpdate]
+  );
+
+  return (
+    <div>
+      {processedData.map((item) => (
+        <div key={item.id} onClick={() => handleUpdate(item.id)}>
+          {item.name}
+        </div>
+      ))}
+    </div>
+  );
+});
+```
+
+## Deployment Configuration
+
+### Build Production Version
+
+```bash
+npm run build
+```
+
+## Core rules (explicit user requests)
 
 1. Identity
 
@@ -18,6 +159,7 @@ Core rules (explicit user requests)
 2. UI interaction patterns
 
 - Use HeroUI components, https://www.heroui.com/docs/components, when possible
+- Use Tailwind for all CSS
 - Prefer in-app HeroUI modals for any destructive/confirmation flows. Avoid using window.confirm.
 - Use `onPress` for button event handlers in JSX props (avoid `onClick`).
 - Use the project's HeroUI components (Button, Input, Avatar, Card, Table, Modal-like overlays) and existing Tailwind utility classes.
@@ -71,7 +213,7 @@ Core rules (explicit user requests)
 
 11. Rule updates and maintenance
 
-- Whenever the user adds a new rule (in conversation, PR, or issue), the assistant will immediately update this `docs/assistant-rules.md` file to reflect the new rule. The update should:
+- Whenever the user adds a new rule (in conversation, PR, or issue), the assistant will immediately update this `docs/AGENTS.md` file to reflect the new rule. The update should:
   - Add the new rule text under the appropriate section (or create a new numbered section) and include a one-line rationale.
   - Update the "Last updated" metadata below with the date and brief note about what changed.
   - Prefer minimal, focused edits and do not reformat unrelated content.
@@ -79,3 +221,4 @@ Core rules (explicit user requests)
 Metadata
 
 - Last updated: 2025-09-08 (assistant added maintenance rule)
+  Assistant rules for the rgc-react repository
