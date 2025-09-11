@@ -10,6 +10,8 @@ import {
   NumberInput,
   Divider,
   addToast,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
@@ -52,6 +54,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [registrationOpen, setRegistrationOpen] = React.useState(
     tournament?.registrationOpen || false
   );
+  const [tee, setTee] = React.useState<
+    "Blue" | "White" | "Gold" | "Red" | "Mixed"
+  >((tournament?.tee as any) || "Mixed");
   const [date, setDate] = React.useState<DateValue | null>(
     tournament?.date
       ? parseDate(tournament.date.toISOString().split("T")[0])
@@ -135,6 +140,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winners,
         registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
+        tee,
       };
       const colRef = collection(db, "tournaments");
       let createdDocRef: any = null;
@@ -154,6 +160,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winners: (tournamentData.winners as any) || [],
         registrationOpen: tournamentData.registrationOpen as boolean,
         date: tournamentData.date as Date,
+        tee: tournamentData.tee as any,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -396,6 +403,77 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.prizePool}
                 errorMessage={errors.prizePool}
               />
+              <Select
+                label="Tee"
+                selectedKeys={[tee]}
+                disallowEmptySelection
+                classNames={{
+                  trigger: "bg-content2",
+                  popoverContent: "min-w-[160px]",
+                }}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as string;
+                  if (val) setTee(val as any);
+                }}
+                renderValue={(items) => {
+                  const val = items[0]?.key as string | undefined;
+                  const cls = (v: string | undefined) =>
+                    v === "Blue"
+                      ? "text-blue-600 dark:text-blue-300"
+                      : v === "White"
+                        ? "text-default-700 dark:text-default-300"
+                        : v === "Gold"
+                          ? "text-yellow-600 dark:text-yellow-400"
+                          : v === "Red"
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-teal-600 dark:text-teal-400";
+                  return (
+                    <div className={`flex items-center gap-2 ${cls(val)}`}>
+                      <Icon icon="lucide:flag" className="w-4 h-4 opacity-70" />
+                      <span>{val}</span>
+                    </div>
+                  );
+                }}
+              >
+                {["Blue", "White", "Gold", "Red", "Mixed"].map((opt) => (
+                  <SelectItem
+                    key={opt}
+                    textValue={opt}
+                    className="flex items-center"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          opt === "Blue"
+                            ? "w-3 h-3 rounded-full bg-blue-500 inline-block"
+                            : opt === "White"
+                              ? "w-3 h-3 rounded-full bg-default-300 inline-block border border-default-400"
+                              : opt === "Gold"
+                                ? "w-3 h-3 rounded-full bg-yellow-500 inline-block"
+                                : opt === "Red"
+                                  ? "w-3 h-3 rounded-full bg-red-500 inline-block"
+                                  : "w-3 h-3 rounded-full bg-teal-500 inline-block"
+                        }
+                      />
+                      <span
+                        className={
+                          opt === "Blue"
+                            ? "text-blue-600 dark:text-blue-300"
+                            : opt === "White"
+                              ? "text-default-700 dark:text-default-300"
+                              : opt === "Gold"
+                                ? "text-yellow-600 dark:text-yellow-400"
+                                : opt === "Red"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-teal-600 dark:text-teal-400"
+                        }
+                      >
+                        {opt}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
               <div className="flex flex-col gap-4 pt-2">
                 <Checkbox isSelected={completed} onValueChange={setCompleted}>
                   Tournament Completed

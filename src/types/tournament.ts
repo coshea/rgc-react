@@ -13,4 +13,6 @@ export interface Tournament {
   href?: string;
   prizePool: number;
   winners?: import("./winner").Winner[];
+  // Tee selection for the tournament round
+  tee?: "Blue" | "White" | "Gold" | "Red" | "Mixed";
 }

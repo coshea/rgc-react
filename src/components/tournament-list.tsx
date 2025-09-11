@@ -15,6 +15,7 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { useNavigate } from "react-router-dom";
+import { teeColorClasses } from "@/utils/teeStyles";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -59,6 +60,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Removed inline teeColorClasses function
 
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -196,6 +199,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <div className="flex items-center gap-2 text-xs text-foreground-500">
                   <Icon icon="lucide:calendar" className="text-xs" />
                   <span>{formatDate(tournament.date)}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
+                  >
+                    <Icon icon="lucide:flag" className="w-3 h-3 opacity-70" />
+                    {tournament.tee || "Mixed"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -341,6 +350,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             <TableColumn>TOURNAMENT</TableColumn>
             <TableColumn>DATE</TableColumn>
             <TableColumn>PLAYERS</TableColumn>
+            <TableColumn>TEE</TableColumn>
             <TableColumn>PRIZE POOL</TableColumn>
             <TableColumn>STATUS</TableColumn>
             <TableColumn className="text-right">ACTIONS</TableColumn>
@@ -387,6 +397,23 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   <div className="flex items-center gap-1">
                     <Icon icon="lucide:users" className="text-default-400" />
                     <span>{tournament.players}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className={teeColorClasses(tournament.tee)}
+                    >
+                      <span className="flex items-center gap-1">
+                        <Icon
+                          icon="lucide:flag"
+                          className="w-3.5 h-3.5 opacity-70"
+                        />
+                        {tournament.tee || "Mixed"}
+                      </span>
+                    </Chip>
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>

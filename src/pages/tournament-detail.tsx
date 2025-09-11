@@ -21,6 +21,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
+import { teeColorClasses } from "@/utils/teeStyles";
 import { Winner } from "@/types/winner";
 import { getUsers, User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
@@ -88,6 +89,7 @@ const TournamentDetailPage: React.FC = () => {
           href: data.href,
           prizePool: data.prizePool || 0,
           winners: data.winners || [],
+          tee: data.tee || "Mixed",
         });
         setLoading(false);
       },
@@ -243,12 +245,6 @@ const TournamentDetailPage: React.FC = () => {
         <>
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-start gap-4">
-              <Avatar
-                size="lg"
-                radius="sm"
-                src={tournament.icon}
-                name={tournament.title}
-              />
               <div>
                 <h1 className="text-3xl font-bold mb-2">{tournament.title}</h1>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-foreground-500">
@@ -263,6 +259,15 @@ const TournamentDetailPage: React.FC = () => {
                   <span className="flex items-center gap-1">
                     <Icon icon="lucide:users" className="w-4 h-4" />
                     Teams: {tournament.players}
+                  </span>
+                  <span
+                    className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${teeColorClasses(tournament.tee)}`}
+                  >
+                    <Icon
+                      icon="lucide:flag"
+                      className="w-3.5 h-3.5 opacity-70"
+                    />
+                    {tournament.tee || "Mixed"}
                   </span>
                   {tournament.registrationOpen && (
                     <Chip color="success" size="sm" variant="flat">
@@ -347,6 +352,23 @@ const TournamentDetailPage: React.FC = () => {
                   <div>
                     <p className="font-medium">Teams</p>
                     <p>{tournament.players}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Icon icon="lucide:flag" className="w-4 h-4 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Tee</p>
+                    <p>
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
+                      >
+                        <Icon
+                          icon="lucide:flag"
+                          className="w-3 h-3 opacity-70"
+                        />
+                        {tournament.tee || "Mixed"}
+                      </span>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">

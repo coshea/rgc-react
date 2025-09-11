@@ -60,6 +60,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             href: data.href,
             prizePool: data.prizePool || 0,
             winners: data.winners || [],
+            tee: data.tee || "Mixed",
           } as Tournament;
         });
         setTournaments(items);

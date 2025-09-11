@@ -27,6 +27,7 @@ This document records the rules and conventions the user has asked the assistant
 - use apex charts for charts. do not supply custom html
 - default to small components. prefer focused modules over god components
 - default to small files and diffs. avoid repo wide rewrites unless asked
+- always consider how the mobile view will look as well. Build to also have mobile optimized components and views
 
 ## Don't
 
