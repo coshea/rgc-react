@@ -13,6 +13,7 @@ import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
 import ProfilePage from "@/pages/profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
+import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
 
 function App() {
@@ -30,6 +31,10 @@ function App() {
       />
       <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
       <Route element={<TournamentsPage />} path="/tournaments" />
+      <Route
+        element={<TournamentDetailPage />}
+        path="/tournaments/:firestoreId"
+      />
       <Route
         element={<TournamentRegister />}
         path="/tournaments/:firestoreId/register"

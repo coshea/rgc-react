@@ -351,9 +351,17 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="font-medium text-foreground">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          tournament.firestoreId &&
+                          navigate(`/tournaments/${tournament.firestoreId}`)
+                        }
+                        className="font-medium text-foreground hover:underline text-left"
+                        aria-label={`View details for ${tournament.title}`}
+                      >
                         {tournament.title}
-                      </p>
+                      </button>
                       <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
                         {tournament.description}
                       </p>

@@ -14,6 +14,9 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { auth } from "@/config/firebase";
+import { useAuth } from "@/providers/AuthProvider";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import RegistrationEditor from "@/components/registration-editor";
 import { getUsers, User } from "@/api/users";
 import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
@@ -61,6 +64,13 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
   const [regsLoading, setRegsLoading] = React.useState(false);
   const [editingRegId, setEditingRegId] = React.useState<string | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const [addOpen, setAddOpen] = React.useState(false);
+  const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
+  const [adding, setAdding] = React.useState(false);
+
+  const { user } = useAuth();
+  const { userProfile } = useUserProfile();
+  const isAdmin = !!(user && userProfile && (userProfile as any).admin === true);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -258,6 +268,58 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     }
   };
 
+  const submitNewRegistration = async () => {
+    if (!tournament?.firestoreId) return;
+    const cleaned = newMembers.filter(Boolean);
+    if (!cleaned.length) {
+      addToast({
+        title: "Select members",
+        description: "Choose at least one member.",
+        color: "warning",
+      });
+      return;
+    }
+    setAdding(true);
+    try {
+      const { db } = await import("@/config/firebase");
+      const { collection, addDoc, serverTimestamp } = await import(
+        "firebase/firestore"
+      );
+      const team = cleaned.map((id) => {
+        const u = allUsers.find((x) => x.id === id);
+        return { id, displayName: u?.displayName || u?.email || id };
+      });
+      const colRef = collection(
+        db,
+        "tournaments",
+        tournament.firestoreId,
+        "registrations"
+      );
+      const docRef = await addDoc(colRef, {
+        ownerId: "__admin__",
+        team,
+        registeredAt: serverTimestamp(),
+      });
+      setRegistrations((prev) => [...prev, { id: docRef.id, ownerId: "__admin__", team }]);
+      addToast({
+        title: "Added",
+        description: "Registration created.",
+        color: "success",
+      });
+      setAddOpen(false);
+      setNewMembers([""]); // reset
+    } catch (err) {
+      console.error("Failed to add registration", err);
+      addToast({
+        title: "Error",
+        description: "Failed to add registration.",
+        color: "danger",
+      });
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardBody className="p-6">
@@ -379,17 +441,24 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
             </div>
           )}
 
-          {/* Registrations management (admin view) */}
           {isEditing && (
             <div className="pt-6">
               <Divider className="my-4" />
               <h3 className="text-lg font-medium mb-2">Registrations</h3>
+              {isAdmin && (
+                <div className="mb-4 flex items-center gap-3">
+                  <Button size="sm" color="primary" onPress={() => setAddOpen(true)}>
+                    Add Registration
+                  </Button>
+                  <div className="text-xs text-foreground-500">
+                    Team size: {players}
+                  </div>
+                </div>
+              )}
               {regsLoading ? (
                 <div>Loading registrations...</div>
               ) : registrations.length === 0 ? (
-                <div className="text-sm text-foreground-500">
-                  No registrations yet.
-                </div>
+                <div className="text-sm text-foreground-500">No registrations yet.</div>
               ) : (
                 <RegistrationsList
                   registrations={registrations}
@@ -460,6 +529,51 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
             </Button>
           </div>
         </form>
+
+        {addOpen && isAdmin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => {
+                if (!adding) {
+                  setAddOpen(false);
+                  setNewMembers([""]); 
+                }
+              }}
+            />
+            <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-lg z-10">
+              <h3 className="text-lg font-medium mb-2">Add Registration</h3>
+              <RegistrationEditor
+                value={newMembers}
+                onChange={setNewMembers}
+                users={allUsers}
+                maxSize={players}
+              />
+              <div className="h-4" />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="flat"
+                  onPress={() => {
+                    if (!adding) {
+                      setAddOpen(false);
+                      setNewMembers([""]); 
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  isLoading={adding}
+                  onPress={submitNewRegistration}
+                  isDisabled={newMembers.filter(Boolean).length === 0}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </CardBody>
     </Card>
   );

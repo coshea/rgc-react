@@ -40,16 +40,25 @@ service cloud.firestore {
       // tournaments/{tournamentId}/registrations/{registrationId}
       // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
       match /registrations/{registrationId} {
-        // Create: only authenticated user, ownerId must match auth uid, and tournament must be open for registration
+        // Create:
+        // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
+        // - Admins: may create regardless of registrationOpen; ownerId can be "__admin__" or their own uid.
         allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.ownerId
-          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
           && request.resource.data.team is list
           && request.resource.data.team.size() > 0
-          // enforce max team size based on tournament players field when available
-          && ( ! (get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int) ||
-               request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
-          ;
+          && ( !(get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int)
+               || request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
+          && (
+            (
+              request.auth.uid == request.resource.data.ownerId &&
+              get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
+            )
+            || (
+              isAdmin() && (
+                request.resource.data.ownerId == "__admin__" || request.resource.data.ownerId == request.auth.uid
+              )
+            )
+          );
 
         // Owner or admin can update or delete the registration. Use isAdmin()
         // so that admins defined under /admin/{uid} (isAdmin == true) are

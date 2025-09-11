@@ -111,6 +111,37 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   // Sort winners by place
   const sortedWinners = [...winners].sort((a, b) => a.place - b.place);
 
+  // Build a set of valid user ids for quick membership checks
+  const validUserIds = React.useMemo(
+    () => new Set(users.map((u) => u.id)),
+    [users]
+  );
+
+  // Auto-sanitize any winner entries that reference users no longer in the list
+  React.useEffect(() => {
+    if (users.length === 0) return;
+    let changed = false;
+    const cleaned = winners.map((w) => {
+      const filteredIds = (w.userIds || []).filter((id) =>
+        validUserIds.has(id)
+      );
+      if (filteredIds.length !== w.userIds.length) {
+        changed = true;
+        const filteredUsers = users.filter((u) => filteredIds.includes(u.id));
+        return {
+          ...w,
+          userIds: filteredIds,
+          displayNames: filteredUsers.map((u) => u.displayName || ""),
+        };
+      }
+      return w;
+    });
+    if (changed) {
+      onWinnersChange(cleaned);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
   if (!isCompleted) {
     return (
       <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
@@ -191,7 +222,14 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                         teamSize > 1 ? "Select team members" : "Select winner"
                       }
                       selectionMode={teamSize > 1 ? "multiple" : "single"}
-                      selectedKeys={new Set(winner.userIds)}
+                      // ensure selectedKeys only includes currently valid user ids
+                      selectedKeys={
+                        new Set(
+                          (winner.userIds || []).filter((id) =>
+                            validUserIds.has(id)
+                          )
+                        )
+                      }
                       onSelectionChange={(keys) => {
                         const selectedKeys = Array.from(keys);
                         handleUserSelection(

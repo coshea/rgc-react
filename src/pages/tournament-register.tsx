@@ -178,6 +178,22 @@ const TournamentRegister: React.FC = () => {
 
   const maxTeamSize = tournament?.players ?? 1;
 
+  // Sanitize teammate IDs if users list changes (remove ids not present anymore)
+  React.useEffect(() => {
+    if (!users || users.length === 0) return;
+    const valid = new Set(users.map((u) => u.id));
+    let changed = false;
+    const cleaned = teammates.map((id) =>
+      id && valid.has(id) ? id : id === "" ? "" : ""
+    );
+    // If a non-empty id was removed due to being invalid, mark changed
+    if (cleaned.some((id, i) => id !== teammates[i])) changed = true;
+    // Ensure at least one slot
+    if (cleaned.length === 0) cleaned.push("");
+    if (changed) setTeammates(cleaned);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
   if (loading) return <div>Loading...</div>;
 
   if (!tournament) {

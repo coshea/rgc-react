@@ -1,15 +1,7 @@
 import React from "react";
-import {
-  Card,
-  CardBody,
-  Avatar,
-  AvatarGroup,
-  Button,
-  Select,
-  SelectItem,
-} from "@heroui/react";
-import { Icon } from "@iconify/react";
+import { Card, CardBody, Avatar, AvatarGroup, Button } from "@heroui/react";
 import { User } from "@/api/users";
+import RegistrationEditor from "@/components/registration-editor";
 
 type Registration = {
   id: string;
@@ -72,32 +64,8 @@ export const RegistrationsList: React.FC<Props> = ({
     onStartEdit(reg);
   };
 
-  const updateSlot = (
-    regId: string,
-    index: number,
-    value: string | undefined
-  ) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [""];
-      current[index] = value || "";
-      return { ...s, [regId]: current };
-    });
-  };
-
-  const addSlot = (regId: string) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [""];
-      if (current.length < players) current.push("");
-      return { ...s, [regId]: current };
-    });
-  };
-
-  const removeSlot = (regId: string, index: number) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [];
-      current.splice(index, 1);
-      return { ...s, [regId]: current };
-    });
+  const updateLocal = (regId: string, ids: string[]) => {
+    setLocalTeams((s) => ({ ...s, [regId]: ids }));
   };
 
   return (
@@ -242,61 +210,13 @@ export const RegistrationsList: React.FC<Props> = ({
               </div>
 
               {isEditing && (
-                <div className="mt-3 space-y-2">
-                  {(local || []).map((uid, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Select
-                          label={
-                            idx === 0 ? "Team Leader" : `Teammate ${idx + 1}`
-                          }
-                          placeholder="Select user"
-                          selectionMode="single"
-                          selectedKeys={uid ? new Set([uid]) : new Set()}
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(
-                              keys as Set<string>
-                            )[0] as string | undefined;
-                            updateSlot(reg.id, idx, selected);
-                          }}
-                          className="w-full"
-                        >
-                          {users.map((u) => (
-                            <SelectItem key={u.id}>
-                              {u.displayName || u.email || u.id}
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {local.length > 1 && (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => removeSlot(reg.id, idx)}
-                          >
-                            <Icon icon="lucide:trash-2" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={() => addSlot(reg.id)}
-                      isDisabled={(local || []).length >= players}
-                    >
-                      Add Teammate
-                    </Button>
-                    <div className="text-sm text-foreground-500">
-                      {(local || []).length}/{players}
-                    </div>
-                  </div>
+                <div className="mt-3">
+                  <RegistrationEditor
+                    value={local}
+                    onChange={(ids) => updateLocal(reg.id, ids)}
+                    users={users}
+                    maxSize={players}
+                  />
                 </div>
               )}
             </CardBody>
