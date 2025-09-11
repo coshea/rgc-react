@@ -8,6 +8,8 @@ import {
   getDocs,
   query,
   orderBy,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 export type UserProfilePayload = {
@@ -96,4 +98,21 @@ export async function getUsers(): Promise<User[]> {
     } as User;
   });
   return userList;
+}
+
+/** Admin-only: update another user's profile (does not enforce auth client-side).
+ * Firestore security rules must permit this (isAdmin()).
+ */
+export async function updateUser(
+  uid: string,
+  data: Partial<UserProfilePayload>
+) {
+  const ref = doc(db, "users", uid);
+  await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
+}
+
+/** Admin-only: delete a user profile document. */
+export async function deleteUser(uid: string) {
+  const ref = doc(db, "users", uid);
+  await deleteDoc(ref);
 }

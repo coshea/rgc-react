@@ -1,17 +1,12 @@
 import { useEffect, useState, useRef } from "react";
-import { Button, Input, Avatar } from "@heroui/react";
+import { Button, Input, Avatar, addToast, Tooltip } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
-import {
-  collection,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
+import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
+import { updateUser, deleteUser } from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
 
@@ -21,10 +16,12 @@ export default function MembershipDirectoryPage() {
   const [members, setMembers] = useState<User[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Modal state
+  // Modal state for add/edit user
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
+  // Delete confirmation state
+  const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
 
   // Bulk CSV upload state
   const [csvOpen, setCsvOpen] = useState(false);
@@ -145,6 +142,20 @@ export default function MembershipDirectoryPage() {
     setOpen(true);
   }
 
+  function openEdit(user: User) {
+    setEditing(user);
+    setForm({
+      displayName: user.displayName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    });
+    setOpen(true);
+  }
+
+  function requestDelete(user: User) {
+    setConfirmDelete(user);
+  }
+
   function onSelectCsv() {
     fileInputRef.current?.click();
   }
@@ -168,6 +179,7 @@ export default function MembershipDirectoryPage() {
     if (!isAdmin || csvRows.length === 0) return;
     setUploading(true);
     try {
+      console.log("[Directory] Starting CSV upload", { rows: csvRows.length });
       for (const r of csvRows) {
         // r already conforms to UserProfilePayload from parseUsersCsv
         // Ensure nullable strings are empty string instead of undefined
@@ -186,8 +198,20 @@ export default function MembershipDirectoryPage() {
       }
       setCsvOpen(false);
       setCsvRows([]);
+      addToast({
+        title: "Upload Complete",
+        description: `${csvRows.length} member${csvRows.length === 1 ? "" : "s"} imported successfully`,
+        color: "success",
+      });
+      console.log("[Directory] CSV upload success", { count: csvRows.length });
     } catch (e) {
       console.error("CSV upload error", e);
+      addToast({
+        title: "Upload Failed",
+        description: "One or more rows failed to import",
+        color: "danger",
+      });
+      console.log("[Directory] CSV upload failed", e);
     } finally {
       setUploading(false);
     }
@@ -198,22 +222,69 @@ export default function MembershipDirectoryPage() {
     try {
       const phoneToSave = formatPhone(form.phone);
       if (editing) {
-        const ref = doc(db, "users", editing.id);
-        await updateDoc(ref, {
+        await updateUser(editing.id, {
           displayName: form.displayName || "",
           email: form.email || "",
           phone: phoneToSave || "",
         });
+        addToast({
+          title: "User Updated",
+          description: `${form.displayName || form.email || "User"} updated successfully`,
+          color: "success",
+        });
+        console.log("[Directory] User updated", { id: editing.id, ...form });
       } else {
         await addDoc(collection(db, "users"), {
           displayName: form.displayName || "",
           email: form.email || "",
           phone: phoneToSave || "",
         });
+        addToast({
+          title: "User Added",
+          description: `${form.displayName || form.email || "User"} added successfully`,
+          color: "success",
+        });
+        console.log("[Directory] User added", { ...form });
       }
       setOpen(false);
     } catch (e) {
       console.error(e);
+      addToast({ title: "Error", description: "Save failed", color: "danger" });
+      console.log("[Directory] User save failed", e);
+    }
+  }
+
+  async function confirmDeleteUser() {
+    if (!isAdmin || !confirmDelete) return;
+    try {
+      if (confirmDelete.id === user?.uid) {
+        addToast({
+          title: "Action Blocked",
+          description: "You can't delete your own profile.",
+          color: "warning",
+        });
+        setConfirmDelete(null);
+        console.log("[Directory] Attempted self-delete blocked", {
+          id: confirmDelete.id,
+        });
+        return;
+      }
+      await deleteUser(confirmDelete.id);
+      addToast({
+        title: "User Deleted",
+        description: `${confirmDelete.displayName || confirmDelete.email || "User"} removed`,
+        color: "success",
+      });
+      setConfirmDelete(null);
+      console.log("[Directory] User deleted", { id: confirmDelete.id });
+    } catch (e) {
+      console.error(e);
+      addToast({
+        title: "Error",
+        description: "Delete failed",
+        color: "danger",
+      });
+      console.log("[Directory] User delete failed", e);
     }
   }
 
@@ -248,17 +319,18 @@ export default function MembershipDirectoryPage() {
 
       <div className="bg-background rounded-lg shadow-sm">
         {/* desktop header only */}
-        <div className="hidden md:grid grid-cols-3 items-center gap-4 p-4 border-b text-sm text-default-500 font-medium">
+        <div className="hidden md:grid grid-cols-4 items-center gap-4 p-4 border-b text-sm text-default-500 font-medium">
           <div>NAME</div>
           <div>EMAIL</div>
           <div>PHONE</div>
+          {isAdmin && <div className="text-right pr-4">ACTIONS</div>}
         </div>
 
         <div className="divide-y">
           {members.map((m) => (
             <div key={m.id}>
               {/* desktop row */}
-              <div className="hidden md:grid grid-cols-3 items-center gap-4 p-4">
+              <div className="hidden md:grid grid-cols-4 items-center gap-4 p-4">
                 <div className="flex items-center gap-4">
                   <Avatar
                     className="w-8 h-8"
@@ -277,6 +349,60 @@ export default function MembershipDirectoryPage() {
                 <div className="text-sm text-default-500">
                   {m.phone ? formatPhone(m.phone) : "—"}
                 </div>
+                {isAdmin && (
+                  <div className="flex justify-end gap-2 pr-2">
+                    <Tooltip content="Edit member">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => openEdit(m)}
+                        aria-label="Edit member"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4 text-default-600"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
+                        </svg>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Delete member" color="danger">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => requestDelete(m)}
+                        aria-label="Delete member"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+                        </svg>
+                      </Button>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
 
               {/* mobile stacked card */}
@@ -299,6 +425,60 @@ export default function MembershipDirectoryPage() {
                   <span className="font-medium">Phone: </span>
                   <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
                 </div>
+                {isAdmin && (
+                  <div className="mt-3 flex gap-2">
+                    <Tooltip content="Edit member">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => openEdit(m)}
+                        aria-label="Edit member"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4 text-default-600"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
+                        </svg>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Delete member" color="danger">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        onPress={() => requestDelete(m)}
+                        aria-label="Delete member"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                          <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+                        </svg>
+                      </Button>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -355,6 +535,36 @@ export default function MembershipDirectoryPage() {
               </Button>
               <Button onPress={save} color="secondary">
                 Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setConfirmDelete(null)}
+          />
+          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-sm z-10">
+            <h3 className="text-lg font-medium mb-2">Delete Member</h3>
+            <p className="text-sm text-default-600 mb-4">
+              Are you sure you want to permanently delete{" "}
+              <span className="font-medium">
+                {confirmDelete.displayName ||
+                  confirmDelete.email ||
+                  "this user"}
+              </span>
+              ? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="flat" onPress={() => setConfirmDelete(null)}>
+                Cancel
+              </Button>
+              <Button color="danger" onPress={confirmDeleteUser}>
+                Delete
               </Button>
             </div>
           </div>
