@@ -17,7 +17,7 @@ import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import RegistrationEditor from "@/components/registration-editor";
-import { getUsers, User } from "@/api/users";
+import { User } from "@/api/users";
 import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
@@ -179,38 +179,63 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   };
 
   React.useEffect(() => {
-    const load = async () => {
+    let unsubRegs: (() => void) | null = null;
+    let unsubUsers: (() => void) | null = null;
+    const init = async () => {
       if (!tournament || !tournament.firestoreId) return;
       setRegsLoading(true);
       try {
-        const users = await getUsers();
-        setAllUsers(users);
-        const { collection, getDocs } = await import("firebase/firestore");
+        const { collection, onSnapshot, orderBy, query } = await import(
+          "firebase/firestore"
+        );
         const { db } = await import("@/config/firebase");
-        const col = collection(
+        // Users real-time
+        const usersCol = collection(db, "users");
+        unsubUsers = onSnapshot(usersCol, (snap) => {
+          const list: User[] = snap.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as any),
+          })) as User[];
+          setAllUsers(list);
+        });
+        // Registrations real-time ordered by registeredAt
+        const regsCol = collection(
           db,
           "tournaments",
           tournament.firestoreId,
           "registrations"
         );
-        const snaps = await getDocs(col);
-        const list = snaps.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
-        setRegistrations(list);
-      } catch (err) {
-        console.error("Failed to load registrations", err);
-        addToast({
-          title: "Error",
-          description: "Failed to load registrations",
-          color: "danger",
-        });
-      } finally {
+        const qRegs = query(regsCol, orderBy("registeredAt", "asc"));
+        unsubRegs = onSnapshot(
+          qRegs,
+          (snap) => {
+            const list = snap.docs.map((d) => ({
+              id: d.id,
+              ...(d.data() as any),
+            }));
+            setRegistrations(list);
+            setRegsLoading(false);
+          },
+          (err) => {
+            console.error("Failed to load registrations", err);
+            addToast({
+              title: "Error",
+              description: "Failed to load registrations",
+              color: "danger",
+            });
+            setRegsLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Realtime init failed", e);
         setRegsLoading(false);
       }
     };
-    load();
+    init();
+    return () => {
+      if (unsubRegs) unsubRegs();
+      if (unsubUsers) unsubUsers();
+    };
   }, [tournament?.firestoreId]);
 
   const startEdit = (reg: any) => setEditingRegId(reg.id);

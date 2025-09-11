@@ -8,11 +8,11 @@ import { addToast } from "@heroui/react";
 import { db } from "@/config/firebase";
 import {
   collection,
-  getDocs,
   query,
   orderBy,
   doc,
   deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { Icon } from "@iconify/react";
 
@@ -33,24 +33,22 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   React.useEffect(() => {
     // Fetch tournaments from Firestore and map to local Tournament objects
-    const fetchTournaments = async () => {
-      setIsLoading(true);
-      try {
-        const colRef = collection(db, "tournaments");
-        const q = query(colRef, orderBy("date", "asc"));
-        const snap = await getDocs(q);
-        const items: Tournament[] = snap.docs.map((doc) => {
-          const data: any = doc.data();
-          // Convert Firestore Timestamp to JS Date if necessary
+    setIsLoading(true);
+    const colRef = collection(db, "tournaments");
+    const qCol = query(colRef, orderBy("date", "asc"));
+    const unsub = onSnapshot(
+      qCol,
+      (snap) => {
+        const items: Tournament[] = snap.docs.map((d) => {
+          const data: any = d.data();
           const dateField =
             data.date && typeof data.date.toDate === "function"
               ? data.date.toDate()
               : data.date
                 ? new Date(data.date)
                 : new Date();
-
           return {
-            firestoreId: doc.id,
+            firestoreId: d.id,
             title: data.title,
             date: dateField,
             description: data.description,
@@ -64,21 +62,20 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             winners: data.winners || [],
           } as Tournament;
         });
-
         setTournaments(items);
-      } catch (error) {
-        console.error("Error fetching tournaments:", error);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error listening to tournaments:", error);
         addToast({
           title: "Error",
           description: "Failed to load tournaments",
           color: "danger",
         });
-      } finally {
         setIsLoading(false);
       }
-    };
-
-    fetchTournaments();
+    );
+    return () => unsub();
   }, []);
 
   const handleCreateTournament = () => {
@@ -95,7 +92,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setIsLoading(true);
 
     try {
-      // In a real app, save to Firestore (done in TournamentForm)
+      // In a real app, save to Firestore (handled in TournamentEditor)
       if (editingTournament) {
         // Update existing tournament in local state (match by firestoreId)
         setTournaments((prev) =>
@@ -113,7 +110,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           color: "success",
         });
       } else {
-        // Append newly created tournament (TournamentForm will include firestoreId when created)
+        // Append newly created tournament (TournamentEditor includes firestoreId when created)
         setTournaments((prev) => [...prev, tournament]);
         addToast({
           title: "Tournament Created",

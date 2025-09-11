@@ -346,8 +346,16 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             <TableColumn className="text-right">ACTIONS</TableColumn>
           </TableHeader>
           <TableBody>
-            {tournaments.map((tournament) => (
-              <TableRow key={tournament.firestoreId}>
+            {tournaments.map((tournament, idx) => (
+              <TableRow
+                key={tournament.firestoreId}
+                className={
+                  `group transition-colors ` +
+                  `${idx % 2 === 0 ? "bg-content1/60" : "bg-content2/40"} ` +
+                  `hover:bg-primary/5 ` +
+                  `${tournament.canceled ? "border-l-4 border-l-danger" : tournament.completed ? "border-l-4 border-l-success" : tournament.registrationOpen ? "border-l-4 border-l-warning" : "border-l-4 border-l-default-200"}`
+                }
+              >
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div>
@@ -369,7 +377,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{formatDate(tournament.date)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Icon icon="lucide:calendar" className="text-default-400" />
+                    <span>{formatDate(tournament.date)}</span>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Icon icon="lucide:users" className="text-default-400" />
