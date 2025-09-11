@@ -232,7 +232,7 @@ const TournamentDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
+    <div className="max-w-5xl mx-auto pt-4 pb-10 px-4">
       {loading || !tournament ? (
         <div className="flex flex-col items-center py-24 gap-4">
           <Icon

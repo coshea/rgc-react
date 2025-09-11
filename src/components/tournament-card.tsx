@@ -8,7 +8,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -16,18 +16,21 @@ interface TournamentCardProps {
 
 export const TournamentCard = ({ tournament }: TournamentCardProps) => {
   const navigate = useNavigate();
+  const detailHref = tournament.firestoreId
+    ? `/tournaments/${tournament.firestoreId}`
+    : undefined;
   return (
     <>
       <Card
-        className={`max-w-md ${tournament.completed ? "bg-content2" : "bg-content1"}`}
+        as={detailHref ? Link : undefined}
+        to={detailHref || "#"}
+        className={`max-w-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${tournament.completed ? "bg-content2" : "bg-content1"}`}
         shadow="md"
         isHoverable
         onPress={() => {
-          if (tournament.firestoreId) {
-            navigate(`/tournaments/${tournament.firestoreId}`);
-          }
+          if (detailHref) navigate(detailHref);
         }}
-        role="button"
+        role="link"
         aria-label={`View details for ${tournament.title}`}
       >
         <CardHeader className="flex flex-col items-start gap-2 pb-2 pt-3">
