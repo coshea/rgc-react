@@ -23,13 +23,13 @@ import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
 import RegistrationsList from "@/components/registrations-list";
 
-interface TournamentFormProps {
+interface TournamentEditorProps {
   tournament?: Tournament | null;
   onSave: (tournament: Tournament) => void;
   onCancel: () => void;
 }
 
-export const TournamentForm: React.FC<TournamentFormProps> = ({
+export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   tournament,
   onSave,
   onCancel,
@@ -70,7 +70,11 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
 
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
-  const isAdmin = !!(user && userProfile && (userProfile as any).admin === true);
+  const isAdmin = !!(
+    user &&
+    userProfile &&
+    (userProfile as any).admin === true
+  );
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -81,7 +85,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     if (players < 1) newErrors.players = "Must have at least 1 player";
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
 
-    // Validate winners if tournament is completed
     if (completed && winners.length > 0) {
       const totalPrizeAmount = winners.reduce(
         (total, winner) => total + winner.prizeAmount * winner.userIds.length,
@@ -92,7 +95,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         newErrors.winners = "Total prize amount exceeds prize pool";
       }
 
-      // Check if any winner has no users selected
       const hasEmptyWinners = winners.some(
         (winner) => winner.userIds.length === 0
       );
@@ -107,13 +109,9 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
-
     setIsSubmitting(true);
-
     try {
-      // Require authentication to write to Firestore according to security rules
       if (!auth || !auth.currentUser) {
         addToast({
           title: "Authentication required",
@@ -123,12 +121,10 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         setIsSubmitting(false);
         return;
       }
-      // Persist to Firestore
       const { db } = await import("@/config/firebase");
       const { collection, addDoc, updateDoc, doc } = await import(
         "firebase/firestore"
       );
-
       const tournamentData: Partial<Tournament> = {
         title,
         description,
@@ -140,21 +136,14 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
       };
-
       const colRef = collection(db, "tournaments");
-
       let createdDocRef: any = null;
-
       if (tournament && tournament.firestoreId) {
-        // Update using the Firestore document id when available
         const docRef = doc(db, "tournaments", tournament.firestoreId);
         await updateDoc(docRef, tournamentData as any);
       } else {
-        // Create new tournament
         createdDocRef = await addDoc(colRef, tournamentData as any);
       }
-
-      // Call onSave with a constructed Tournament object (date is Date)
       const savedTournament: Tournament = {
         title: tournamentData.title as string,
         description: tournamentData.description as string,
@@ -166,17 +155,12 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         registrationOpen: tournamentData.registrationOpen as boolean,
         date: tournamentData.date as Date,
       };
-
-      // If we created a new Firestore doc, attach its id to the returned tournament
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
       } else if (tournament && tournament.firestoreId) {
         savedTournament.firestoreId = tournament.firestoreId;
       }
-
       onSave(savedTournament);
-
-      // Show success toast
       addToast({
         title: isEditing ? "Tournament Updated" : "Tournament Created",
         description: `${savedTournament.title} has been successfully ${isEditing ? "updated" : "created"}.`,
@@ -194,7 +178,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     }
   };
 
-  // Fetch registrations for existing tournament (admin view)
   React.useEffect(() => {
     const load = async () => {
       if (!tournament || !tournament.firestoreId) return;
@@ -227,18 +210,11 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         setRegsLoading(false);
       }
     };
-
     load();
   }, [tournament?.firestoreId]);
 
-  const startEdit = (reg: any) => {
-    setEditingRegId(reg.id);
-  };
-
-  const cancelEdit = () => {
-    setEditingRegId(null);
-  };
-
+  const startEdit = (reg: any) => setEditingRegId(reg.id);
+  const cancelEdit = () => setEditingRegId(null);
   const deleteRegistration = async (regId: string) => {
     if (!tournament || !tournament.firestoreId) return;
     try {
@@ -300,7 +276,10 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
         team,
         registeredAt: serverTimestamp(),
       });
-      setRegistrations((prev) => [...prev, { id: docRef.id, ownerId: "__admin__", team }]);
+      setRegistrations((prev) => [
+        ...prev,
+        { id: docRef.id, ownerId: "__admin__", team },
+      ]);
       addToast({
         title: "Added",
         description: "Registration created.",
@@ -337,7 +316,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
             <Icon icon="lucide:x" className="text-lg" />
           </Button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
@@ -350,7 +328,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 isInvalid={!!errors.title}
                 errorMessage={errors.title}
               />
-
               <Textarea
                 label="Description"
                 placeholder="Enter tournament description"
@@ -360,7 +337,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
               />
-
               <DatePicker
                 label="Tournament Date"
                 value={date}
@@ -369,10 +345,7 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 isInvalid={!!errors.date}
                 errorMessage={errors.date}
               />
-
-              {/* URL Path input removed */}
             </div>
-
             <div className="space-y-6">
               <NumberInput
                 label="Number of Players"
@@ -384,7 +357,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 isInvalid={!!errors.players}
                 errorMessage={errors.players}
               />
-
               <NumberInput
                 label="Prize Pool ($)"
                 placeholder="Enter prize amount"
@@ -399,12 +371,10 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                 isInvalid={!!errors.prizePool}
                 errorMessage={errors.prizePool}
               />
-
               <div className="flex flex-col gap-4 pt-2">
                 <Checkbox isSelected={completed} onValueChange={setCompleted}>
                   Tournament Completed
                 </Checkbox>
-
                 <Checkbox
                   isSelected={canceled}
                   onValueChange={setCanceled}
@@ -419,12 +389,8 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                   Registration Open
                 </Checkbox>
               </div>
-
-              {/* Tournament icon option removed; default icon used */}
             </div>
           </div>
-
-          {/* Add Winners section */}
           {(isEditing || completed) && (
             <div className="pt-4">
               <Divider className="my-4" />
@@ -440,14 +406,17 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
               )}
             </div>
           )}
-
           {isEditing && (
             <div className="pt-6">
               <Divider className="my-4" />
               <h3 className="text-lg font-medium mb-2">Registrations</h3>
               {isAdmin && (
                 <div className="mb-4 flex items-center gap-3">
-                  <Button size="sm" color="primary" onPress={() => setAddOpen(true)}>
+                  <Button
+                    size="sm"
+                    color="primary"
+                    onPress={() => setAddOpen(true)}
+                  >
                     Add Registration
                   </Button>
                   <div className="text-xs text-foreground-500">
@@ -458,7 +427,9 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
               {regsLoading ? (
                 <div>Loading registrations...</div>
               ) : registrations.length === 0 ? (
-                <div className="text-sm text-foreground-500">No registrations yet.</div>
+                <div className="text-sm text-foreground-500">
+                  No registrations yet.
+                </div>
               ) : (
                 <RegistrationsList
                   registrations={registrations}
@@ -468,7 +439,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                   onStartEdit={(reg) => startEdit(reg)}
                   onCancelEdit={() => cancelEdit()}
                   onSave={async (regId, ids) => {
-                    // convert ids to team objects and save via existing saveRegistration flow
                     const team = ids.map((id) => {
                       const u = allUsers.find((x) => x.id === id);
                       return {
@@ -514,7 +484,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
               )}
             </div>
           )}
-
           <div className="flex justify-end gap-3 pt-4">
             <Button color="default" variant="flat" onPress={onCancel}>
               Cancel
@@ -529,7 +498,6 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
             </Button>
           </div>
         </form>
-
         {addOpen && isAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div
@@ -537,7 +505,7 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
               onClick={() => {
                 if (!adding) {
                   setAddOpen(false);
-                  setNewMembers([""]); 
+                  setNewMembers([""]);
                 }
               }}
             />
@@ -556,7 +524,7 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
                   onPress={() => {
                     if (!adding) {
                       setAddOpen(false);
-                      setNewMembers([""]); 
+                      setNewMembers([""]);
                     }
                   }}
                 >
@@ -578,3 +546,5 @@ export const TournamentForm: React.FC<TournamentFormProps> = ({
     </Card>
   );
 };
+
+export default TournamentEditor;

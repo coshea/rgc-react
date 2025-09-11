@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { TournamentForm } from "@/components/tournament-form";
+import TournamentEditor from "@/components/tournament-editor";
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import { addToast } from "@heroui/react";
@@ -178,7 +178,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       {isCreating || editingTournament ? (
         // Only allow creating/editing if user is admin
         isAdmin ? (
-          <TournamentForm
+          <TournamentEditor
             tournament={editingTournament}
             onSave={handleSaveTournament}
             onCancel={handleCancelEdit}
