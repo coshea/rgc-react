@@ -1,8 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
-import { uploadProfilePicture } from '@/api/storage';
+import { describe, it, expect, vi } from "vitest";
+import { uploadProfilePicture } from "@/api/storage";
+
+// Mock firebase auth to ensure currentUser exists
+vi.mock("@/config/firebase", () => ({
+  auth: { currentUser: { uid: "uid123" } },
+  storage: {},
+}));
 
 // We'll mock firebase/storage methods used in the implementation.
-vi.mock('firebase/storage', async (importOriginal) => {
+vi.mock("firebase/storage", async (importOriginal) => {
   await importOriginal();
   return {
     getStorage: vi.fn(() => ({})),
@@ -12,11 +18,13 @@ vi.mock('firebase/storage', async (importOriginal) => {
   };
 });
 
-describe('uploadProfilePicture', () => {
-  it('uploads a file and returns a download URL', async () => {
-    const file = new File(['abc'], 'avatar.png', { type: 'image/png' });
-  const url = await uploadProfilePicture('uid123', file);
-  // url should contain the generated timestamped filename under avatars/uid123
-  expect(url).toMatch(/^https:\/\/storage\.test\/avatars\/uid123\/\d+_avatar\.png$/);
+describe("uploadProfilePicture", () => {
+  it("uploads a file and returns a download URL", async () => {
+    const file = new File(["abc"], "avatar.png", { type: "image/png" });
+    const url = await uploadProfilePicture("uid123", file);
+    // url should contain the generated timestamped filename under avatars/uid123
+    expect(url).toMatch(
+      /^https:\/\/storage\.test\/avatars\/uid123\/\d+_avatar\.png$/
+    );
   });
 });
