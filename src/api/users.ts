@@ -91,11 +91,17 @@ export async function getUsers(): Promise<User[]> {
   // Return users ordered by displayName for predictable alphabetical listing
   const q = query(usersCol, orderBy("displayName", "asc"));
   const userSnapshot = await getDocs(q);
-  const userList = userSnapshot.docs.map((doc) => {
-    return {
-      id: doc.id,
-      ...doc.data(),
-    } as User;
+  const userList = userSnapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+  })) as User[];
+  // Some users may have blank/missing displayName; apply stable secondary sort by email
+  userList.sort((a, b) => {
+    const A = (a.displayName || a.email || "").toLowerCase();
+    const B = (b.displayName || b.email || "").toLowerCase();
+    if (A < B) return -1;
+    if (A > B) return 1;
+    return 0;
   });
   return userList;
 }

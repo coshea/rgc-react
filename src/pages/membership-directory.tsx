@@ -113,7 +113,7 @@ export default function MembershipDirectoryPage() {
           snap.forEach((d) => {
             arr.push({ id: d.id, ...(d.data() as any) } as User);
           });
-          // sort alphabetically by displayName, fallback to email
+          // ensure alphabetical order (displayName fallback to email)
           arr.sort((a, b) => {
             const A = (a.displayName || a.email || "").toLowerCase();
             const B = (b.displayName || b.email || "").toLowerCase();
