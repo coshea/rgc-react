@@ -83,8 +83,6 @@ export const ProfileDropdown = () => {
               </DropdownItem>
             ) : null}
 
-            <DropdownItem key="team_settings">Team Settings</DropdownItem>
-
             <DropdownItem key="logout" color="danger" onPress={logout}>
               Log Out
             </DropdownItem>

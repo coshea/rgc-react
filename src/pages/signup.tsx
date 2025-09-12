@@ -44,7 +44,8 @@ export default function SignUpPage() {
     if (email && password) {
       try {
         await signupEmailAndPassword(email, password);
-        navigate(siteConfig.pages.home.link);
+        // Redirect only to profile so user can complete their details
+        navigate(siteConfig.pages.profile.link);
       } catch (error) {
         console.error("Email/Password Sign-Up failed:", error);
       }
@@ -54,7 +55,7 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     try {
       await signInWithGoogle();
-      navigate(siteConfig.pages.home.link);
+      navigate(siteConfig.pages.profile.link);
     } catch (error) {
       console.error("Google Sign-Up failed:", error);
     }
@@ -74,10 +75,7 @@ export default function SignUpPage() {
             Create an account to get started
           </p>
         </div>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={handleSignUp}
-        >
+        <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
           <div className="flex flex-col">
             <Input
               isRequired
@@ -158,7 +156,9 @@ export default function SignUpPage() {
             </Link>
           </Checkbox>
           {authError && !authLoading && (
-            <p className="text-danger text-center text-small -mt-2 mb-1">{authError.message}</p>
+            <p className="text-danger text-center text-small -mt-2 mb-1">
+              {authError.message}
+            </p>
           )}
           <Button color="primary" type="submit" isDisabled={authLoading}>
             {authLoading ? "Signing Up..." : "Sign Up"}
@@ -170,9 +170,12 @@ export default function SignUpPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
-          {authError && !authLoading && ( // Also show general auth error here if not specific to email/pass
-            <p className="text-danger text-center text-small">{authError.message}</p>
-          )}
+          {authError &&
+            !authLoading && ( // Also show general auth error here if not specific to email/pass
+              <p className="text-danger text-center text-small">
+                {authError.message}
+              </p>
+            )}
           <Button
             startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"
