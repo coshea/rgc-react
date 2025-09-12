@@ -1,5 +1,12 @@
 import React, { useEffect } from "react";
-import { Button, Input, Checkbox, Link, Divider } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Checkbox,
+  Link,
+  Divider,
+  addToast,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { RGCLogo } from "@/components/icons";
@@ -10,12 +17,12 @@ import { useNavigate } from "react-router-dom";
 export default function SignUpPage() {
   const [isVisible, setIsVisible] = React.useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = React.useState(false);
+  const [inlineError, setInlineError] = React.useState<string | null>(null);
   const {
     userLoggedIn,
     signupEmailAndPassword,
     signInWithGoogle,
     loading: authLoading,
-    error: authError,
   } = useAuth();
   const navigate = useNavigate();
 
@@ -23,10 +30,8 @@ export default function SignUpPage() {
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
   useEffect(() => {
-    if (userLoggedIn && !authLoading) {
-      navigate(siteConfig.pages.home.link);
-    }
-  }, [userLoggedIn, authLoading, navigate]);
+    // Keep user here unless they manually go elsewhere; no auto redirect when logged in
+  }, [userLoggedIn, authLoading]);
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -42,11 +47,21 @@ export default function SignUpPage() {
     }
 
     if (email && password) {
+      setInlineError(null);
       try {
         await signupEmailAndPassword(email, password);
-        // Redirect only to profile so user can complete their details
-        navigate(siteConfig.pages.profile.link);
+        navigate(siteConfig.pages.verifyEmail.link);
       } catch (error) {
+        const err = error as any;
+        const msg = getSignupErrorMessage(err?.code, err?.message);
+        setInlineError(msg);
+        try {
+          addToast({
+            title: "Sign up failed",
+            description: msg,
+            color: "danger",
+          });
+        } catch {}
         console.error("Email/Password Sign-Up failed:", error);
       }
     }
@@ -55,11 +70,38 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     try {
       await signInWithGoogle();
-      navigate(siteConfig.pages.profile.link);
+      navigate(siteConfig.pages.verifyEmail.link);
     } catch (error) {
+      const err = error as any;
+      const msg = getSignupErrorMessage(err?.code, err?.message);
+      setInlineError(msg);
+      try {
+        addToast({
+          title: "Sign up failed",
+          description: msg,
+          color: "danger",
+        });
+      } catch {}
       console.error("Google Sign-Up failed:", error);
     }
   };
+
+  function getSignupErrorMessage(code?: string, fallback?: string) {
+    switch (code) {
+      case "auth/email-already-in-use":
+        return "An account with that email already exists. Please sign in instead or use Forgot Password.";
+      case "auth/invalid-email":
+        return "The email address is not valid.";
+      case "auth/weak-password":
+        return "Password is too weak. Use at least 6 characters (more is better).";
+      case "auth/operation-not-allowed":
+        return "Email/password sign up is disabled. Contact support.";
+      case "auth/popup-closed-by-user":
+        return "The sign up popup was closed before completing.";
+      default:
+        return fallback || "Failed to sign up. Please try again.";
+    }
+  }
 
   if (userLoggedIn && !authLoading) {
     return null; // Or a loading spinner
@@ -75,6 +117,11 @@ export default function SignUpPage() {
             Create an account to get started
           </p>
         </div>
+        {inlineError && (
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {inlineError}
+          </div>
+        )}
         <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
           <div className="flex flex-col">
             <Input
@@ -155,11 +202,6 @@ export default function SignUpPage() {
               Privacy Policy
             </Link>
           </Checkbox>
-          {authError && !authLoading && (
-            <p className="text-danger text-center text-small -mt-2 mb-1">
-              {authError.message}
-            </p>
-          )}
           <Button color="primary" type="submit" isDisabled={authLoading}>
             {authLoading ? "Signing Up..." : "Sign Up"}
           </Button>
@@ -170,12 +212,6 @@ export default function SignUpPage() {
           <Divider className="flex-1" />
         </div>
         <div className="flex flex-col gap-2">
-          {authError &&
-            !authLoading && ( // Also show general auth error here if not specific to email/pass
-              <p className="text-danger text-center text-small">
-                {authError.message}
-              </p>
-            )}
           <Button
             startContent={<Icon icon="flat-color-icons:google" width={24} />}
             variant="bordered"

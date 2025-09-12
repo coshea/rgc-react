@@ -15,6 +15,7 @@ import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
+import VerifyEmailPage from "@/pages/verify-email";
 
 function App() {
   return (
@@ -43,6 +44,10 @@ function App() {
       <Route
         element={<MembershipDirectoryPage />}
         path="/membership/member-directory"
+      />
+      <Route
+        element={<VerifyEmailPage />}
+        path={siteConfig.pages.verifyEmail.link}
       />
       <Route element={<NotFoundPage />} path="*" />
     </Routes>

@@ -73,5 +73,11 @@ export const siteConfig = {
       link: "/tournaments",
       icon: "lucide:calendar",
     },
+    verifyEmail: {
+      title: "Verify Email",
+      description: "Confirm your email address",
+      link: "/verify-email",
+      icon: "lucide:check-circle",
+    },
   },
 };

@@ -3,11 +3,12 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendEmailVerification, // Import sendEmailVerification
+  sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  User as FirebaseUser, // Import Firebase User type
+  User as FirebaseUser,
+  ActionCodeSettings,
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 
@@ -79,10 +80,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       // onAuthStateChanged will handle setting user and userLoggedIn
       if (userCredential.user) {
-        await sendEmailVerification(userCredential.user);
+        const actionCodeSettings: ActionCodeSettings = {
+          url: window.location.origin + "/verify-email",
+          handleCodeInApp: true,
+        };
+        try {
+          await sendEmailVerification(userCredential.user, actionCodeSettings);
+        } catch (ve) {
+          console.error("Failed to send verification email", ve);
+          // don't block signup, but surface error
+          setError(ve as Error);
+        }
       }
     } catch (err) {
       setError(err as Error);
