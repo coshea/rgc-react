@@ -25,6 +25,7 @@ import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
+import { PlusIcon } from "@heroicons/react/24/solid";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -530,6 +531,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   <Button
                     size="sm"
                     color="primary"
+                    startContent={<PlusIcon className="w-4 h-4" />}
                     onPress={() => setAddOpen(true)}
                   >
                     Add Registration

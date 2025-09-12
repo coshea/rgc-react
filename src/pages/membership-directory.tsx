@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button, Input, Avatar, addToast, Tooltip } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
 import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
@@ -28,6 +29,8 @@ export default function MembershipDirectoryPage() {
   const [csvRows, setCsvRows] = useState<UserProfilePayload[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // search filter
+  const [filter, setFilter] = useState("");
 
   // Phone helpers: normalize to digits and format as (xxx) xxx-xxxx when possible
   function normalizePhone(value?: string) {
@@ -297,12 +300,7 @@ export default function MembershipDirectoryPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">Membership Directory</h1>
         {isAdmin && (
-          <Button onPress={openAdd} startContent={<PlusIcon />}>
-            Add Member
-          </Button>
-        )}
-        {isAdmin && (
-          <div className="ml-2">
+          <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -311,177 +309,218 @@ export default function MembershipDirectoryPage() {
               onChange={handleFile}
             />
             <Button onPress={onSelectCsv} variant="flat">
-              Bulk Upload CSV
+              Bulk Upload
+            </Button>
+            <Button
+              color="primary"
+              startContent={<PlusIcon className="w-4 h-4" />}
+              onPress={openAdd}
+              className="font-medium"
+            >
+              Add Member
             </Button>
           </div>
         )}
       </div>
 
+      <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <Input
+          isClearable
+          size="sm"
+          radius="full"
+          placeholder="Search by name or email..."
+          startContent={
+            <MagnifyingGlassIcon className="w-4 h-4 text-default-400" />
+          }
+          value={filter}
+          onClear={() => setFilter("")}
+          onValueChange={(v: string) => setFilter(v)}
+          className="sm:max-w-sm"
+        />
+        <div className="text-xs text-default-400">
+          Showing {filter ? "filtered" : "all"} {members.length} member
+          {members.length === 1 ? "" : "s"}
+        </div>
+      </div>
+
       <div className="bg-background rounded-lg shadow-sm">
         {/* desktop header only */}
-        <div className="hidden md:grid grid-cols-4 items-center gap-4 p-4 border-b text-sm text-default-500 font-medium">
+        <div className="hidden md:grid items-center gap-4 p-4 border-b text-sm text-default-500 font-medium grid-cols-[2fr_4fr_2fr_2fr]">
           <div>NAME</div>
           <div>EMAIL</div>
           <div>PHONE</div>
-          {isAdmin && <div className="text-right pr-4">ACTIONS</div>}
+          {isAdmin ? <div className="text-right pr-4">ACTIONS</div> : <div />}
         </div>
 
         <div className="divide-y">
-          {members.map((m) => (
-            <div key={m.id}>
-              {/* desktop row */}
-              <div className="hidden md:grid grid-cols-4 items-center gap-4 p-4">
-                <div className="flex items-center gap-4">
-                  <Avatar
-                    className="w-8 h-8"
-                    src={(m.photoURL as string) || undefined}
-                    alt={m.displayName || m.email}
-                  />
+          {members
+            .filter((m) => {
+              if (!filter.trim()) return true;
+              const q = filter.toLowerCase();
+              return (
+                (m.displayName || "").toLowerCase().includes(q) ||
+                (m.email || "").toLowerCase().includes(q)
+              );
+            })
+            .map((m) => (
+              <div key={m.id}>
+                {/* desktop row */}
+                <div className="hidden md:grid items-center gap-4 p-4 grid-cols-[2fr_4fr_2fr_2fr]">
+                  <div className="flex items-center gap-4">
+                    <Avatar
+                      className="w-8 h-8"
+                      src={(m.photoURL as string) || undefined}
+                      alt={m.displayName || m.email}
+                    />
+                    <div className="text-sm text-default-500">
+                      {m.displayName || "(no name)"}
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-default-500 whitespace-nowrap">
+                    {m.email}
+                  </div>
+
+                  <div className="text-sm text-default-500 whitespace-nowrap">
+                    {m.phone ? formatPhone(m.phone) : "—"}
+                  </div>
+                  {isAdmin ? (
+                    <div className="flex justify-end gap-2 pr-2">
+                      <Tooltip content="Edit member">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => openEdit(m)}
+                          aria-label="Edit member"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4 text-default-600"
+                          >
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
+                          </svg>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Delete member" color="danger">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => requestDelete(m)}
+                          aria-label="Delete member"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+                          </svg>
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+
+                {/* mobile stacked card */}
+                <div className="block md:hidden p-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <Avatar
+                      className="w-8 h-8"
+                      src={(m.photoURL as string) || undefined}
+                      alt={m.displayName || m.email}
+                    />
+                    <div className="text-sm text-default-500 font-medium">
+                      {m.displayName || "(no name)"}
+                    </div>
+                  </div>
+                  <div className="text-sm text-default-500 mb-1 flex items-center gap-2 whitespace-normal break-words">
+                    <span className="font-medium">Email:</span>
+                    <span className="block break-words whitespace-normal">
+                      {m.email}
+                    </span>
+                  </div>
                   <div className="text-sm text-default-500">
-                    {m.displayName || "(no name)"}
+                    <span className="font-medium">Phone: </span>
+                    <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
                   </div>
-                </div>
-
-                <div className="text-sm text-default-500 truncate max-w-[12rem]">
-                  {m.email}
-                </div>
-
-                <div className="text-sm text-default-500">
-                  {m.phone ? formatPhone(m.phone) : "—"}
-                </div>
-                {isAdmin && (
-                  <div className="flex justify-end gap-2 pr-2">
-                    <Tooltip content="Edit member">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => openEdit(m)}
-                        aria-label="Edit member"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="w-4 h-4 text-default-600"
+                  {isAdmin && (
+                    <div className="mt-3 flex gap-2">
+                      <Tooltip content="Edit member">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => openEdit(m)}
+                          aria-label="Edit member"
                         >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
-                        </svg>
-                      </Button>
-                    </Tooltip>
-                    <Tooltip content="Delete member" color="danger">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        onPress={() => requestDelete(m)}
-                        aria-label="Delete member"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="w-4 h-4"
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4 text-default-600"
+                          >
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
+                          </svg>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Delete member" color="danger">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => requestDelete(m)}
+                          aria-label="Delete member"
                         >
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
-                        </svg>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                )}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+                          </svg>
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {/* mobile stacked card */}
-              <div className="block md:hidden p-4">
-                <div className="flex items-center gap-4 mb-2">
-                  <Avatar
-                    className="w-8 h-8"
-                    src={(m.photoURL as string) || undefined}
-                    alt={m.displayName || m.email}
-                  />
-                  <div className="text-sm text-default-500 font-medium">
-                    {m.displayName || "(no name)"}
-                  </div>
-                </div>
-                <div className="text-sm text-default-500 mb-1 flex items-center gap-2">
-                  <span className="font-medium">Email:</span>
-                  <span className="truncate max-w-full block">{m.email}</span>
-                </div>
-                <div className="text-sm text-default-500">
-                  <span className="font-medium">Phone: </span>
-                  <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
-                </div>
-                {isAdmin && (
-                  <div className="mt-3 flex gap-2">
-                    <Tooltip content="Edit member">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => openEdit(m)}
-                        aria-label="Edit member"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="w-4 h-4 text-default-600"
-                        >
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
-                        </svg>
-                      </Button>
-                    </Tooltip>
-                    <Tooltip content="Delete member" color="danger">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        onPress={() => requestDelete(m)}
-                        aria-label="Delete member"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="w-4 h-4"
-                        >
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                          <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
-                        </svg>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
