@@ -90,7 +90,9 @@ react-project/
 
 - see `App.tsx` for routes
 - components live in `app/components`
--
+- Tournaments get editted in the component `tournament-editor.tsx`
+- Tournaments get viewed in the component `tournament-detail.tsx`
+- The list of tournament are viewed in the component `tournament-list.tsx`
 
 ## Testing Strategy
 

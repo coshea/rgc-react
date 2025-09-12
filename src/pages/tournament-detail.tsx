@@ -21,6 +21,8 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { teeColorClasses } from "@/utils/teeStyles";
 import { Winner } from "@/types/winner";
 import { getUsers, User } from "@/api/users";
@@ -81,6 +83,7 @@ const TournamentDetailPage: React.FC = () => {
           title: data.title,
           date: dateField,
           description: data.description,
+          detailsMarkdown: data.detailsMarkdown || data.details || "",
           players: data.players,
           completed: data.completed || false,
           canceled: data.canceled || false,
@@ -315,82 +318,133 @@ const TournamentDetailPage: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {/* Left Column: Overview */}
             <Card className="md:col-span-2" shadow="sm">
               <CardHeader className="pb-0">
                 <h2 className="text-lg font-semibold">Overview</h2>
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                <p className="leading-relaxed text-foreground-600 whitespace-pre-line">
-                  {tournament.description}
-                </p>
+                {tournament.detailsMarkdown ? (
+                  <div className="prose dark:prose-invert max-w-none text-sm">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {tournament.detailsMarkdown}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="leading-relaxed text-foreground-600 whitespace-pre-line">
+                    {tournament.description}
+                  </p>
+                )}
               </CardBody>
             </Card>
 
-            <Card shadow="sm">
-              <CardHeader className="pb-0">
-                <h2 className="text-lg font-semibold">Key Facts</h2>
-              </CardHeader>
-              <Divider />
-              <CardBody className="pt-4 space-y-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <Icon icon="lucide:clock" className="w-4 h-4 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Date</p>
-                    <p>{formatDateLong(tournament.date)}</p>
+            {/* Right Column: Key Facts */}
+            <div className="space-y-6">
+              <Card shadow="sm">
+                <CardHeader className="pb-0">
+                  <h2 className="text-lg font-semibold">Key Facts</h2>
+                </CardHeader>
+                <Divider />
+                <CardBody className="pt-4 space-y-5 text-sm">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:clock" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Date</p>
+                        <p>{formatDateLong(tournament.date)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:trophy" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Prize Pool</p>
+                        <p>${tournament.prizePool.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:users" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Players On A Team</p>
+                        <p>{tournament.players}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:flag" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Tee</p>
+                        <p>
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
+                          >
+                            <Icon
+                              icon="lucide:flag"
+                              className="w-3 h-3 opacity-70"
+                            />
+                            {tournament.tee || "Mixed"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon
+                        icon="lucide:check-circle"
+                        className="w-4 h-4 mt-0.5"
+                      />
+                      <div>
+                        <p className="font-medium">Status</p>
+                        <p>
+                          {tournament.canceled
+                            ? "Canceled"
+                            : tournament.completed
+                              ? "Completed"
+                              : tournament.registrationOpen
+                                ? "Registration Open"
+                                : "Scheduled"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Icon icon="lucide:trophy" className="w-4 h-4 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Prize Pool</p>
-                    <p>${tournament.prizePool.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Icon icon="lucide:users" className="w-4 h-4 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Teams</p>
-                    <p>{tournament.players}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Icon icon="lucide:flag" className="w-4 h-4 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Tee</p>
-                    <p>
-                      <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
+                </CardBody>
+              </Card>
+
+              <Card shadow="sm">
+                <CardHeader className="pb-0">
+                  <h2 className="text-lg font-semibold">Registration</h2>
+                </CardHeader>
+                <Divider />
+                <CardBody className="pt-4 space-y-4">
+                  {tournament.registrationOpen ? (
+                    <>
+                      <p className="text-sm text-foreground-600">
+                        Ready to compete? Register your team now before spots
+                        fill up.
+                      </p>
+                      <Button
+                        color="primary"
+                        fullWidth
+                        onPress={handleRegister}
                       >
-                        <Icon
-                          icon="lucide:flag"
-                          className="w-3 h-3 opacity-70"
-                        />
-                        {tournament.tee || "Mixed"}
-                      </span>
+                        Register
+                      </Button>
+                      {!user && (
+                        <p className="text-xs text-foreground-500">
+                          Sign in required to register.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-foreground-500">
+                      Registration is currently closed.
                     </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Icon icon="lucide:check-circle" className="w-4 h-4 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Status</p>
-                    <p>
-                      {tournament.canceled
-                        ? "Canceled"
-                        : tournament.completed
-                          ? "Completed"
-                          : tournament.registrationOpen
-                            ? "Registration Open"
-                            : "Scheduled"}
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
+            {/* Left Column: Past Winners */}
             <Card className="md:col-span-2" shadow="sm">
               <CardHeader className="pb-0">
                 <h2 className="text-lg font-semibold">
@@ -428,38 +482,13 @@ const TournamentDetailPage: React.FC = () => {
                 )}
               </CardBody>
             </Card>
-            <Card shadow="sm">
-              <CardHeader className="pb-0">
-                <h2 className="text-lg font-semibold">Registration</h2>
-              </CardHeader>
-              <Divider />
-              <CardBody className="pt-4 space-y-4">
-                {tournament.registrationOpen ? (
-                  <>
-                    <p className="text-sm text-foreground-600">
-                      Ready to compete? Register your team now before spots fill
-                      up.
-                    </p>
-                    <Button color="primary" fullWidth onPress={handleRegister}>
-                      Register
-                    </Button>
-                    {!user && (
-                      <p className="text-xs text-foreground-500">
-                        Sign in required to register.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-foreground-500">
-                    Registration is currently closed.
-                  </p>
-                )}
-              </CardBody>
-            </Card>
+            {/* Right Column spacer (empty) */}
+            <div />
           </div>
 
-          <div className="mb-24 md:mb-16">
-            <Card shadow="sm">
+          <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
+            {/* Full Width: Registered Teams */}
+            <Card className="md:col-span-3" shadow="sm">
               <CardHeader className="pb-0">
                 <h2 className="text-lg font-semibold">Registered Teams</h2>
               </CardHeader>

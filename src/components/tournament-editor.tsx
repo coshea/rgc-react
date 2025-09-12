@@ -24,6 +24,7 @@ import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
 import { WinnerForm } from "@/components/winner-form";
 import RegistrationsList from "@/components/registrations-list";
+import { MarkdownEditor } from "@/components/markdown-editor";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -41,6 +42,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [title, setTitle] = React.useState(tournament?.title || "");
   const [description, setDescription] = React.useState(
     tournament?.description || ""
+  );
+  const [detailsMarkdown, setDetailsMarkdown] = React.useState(
+    tournament?.detailsMarkdown || ""
   );
   const [players, setPlayers] = React.useState(tournament?.players || 1);
   const [completed, setCompleted] = React.useState(
@@ -87,6 +91,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (!title.trim()) newErrors.title = "Title is required";
     if (!description.trim()) newErrors.description = "Description is required";
     if (!date) newErrors.date = "Date is required";
+    // markdown not required but if provided can be large; no validation now
     if (players < 1) newErrors.players = "Must have at least 1 player";
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
 
@@ -133,6 +138,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const tournamentData: Partial<Tournament> = {
         title,
         description,
+        detailsMarkdown,
         players,
         completed,
         canceled,
@@ -153,6 +159,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const savedTournament: Tournament = {
         title: tournamentData.title as string,
         description: tournamentData.description as string,
+        detailsMarkdown: tournamentData.detailsMarkdown,
         players: tournamentData.players as number,
         completed: tournamentData.completed as boolean,
         canceled: tournamentData.canceled as boolean,
@@ -368,6 +375,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isRequired
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
+              />
+              <MarkdownEditor
+                value={detailsMarkdown}
+                onChange={setDetailsMarkdown}
+                placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
               />
               <DatePicker
                 label="Tournament Date"

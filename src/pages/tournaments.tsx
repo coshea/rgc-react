@@ -52,6 +52,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             title: data.title,
             date: dateField,
             description: data.description,
+            detailsMarkdown: data.detailsMarkdown || data.details || "",
             players: data.players,
             completed: data.completed || false,
             canceled: data.canceled || false,

@@ -4,6 +4,8 @@ export interface Tournament {
   title: string;
   date: Date;
   description: string;
+  // Extended markdown capable details (optional rich content)
+  detailsMarkdown?: string;
   players: number;
   completed: boolean;
   canceled: boolean;
