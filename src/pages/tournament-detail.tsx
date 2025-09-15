@@ -24,6 +24,7 @@ import { Tournament } from "@/types/tournament";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { teeColorClasses } from "@/utils/teeStyles";
+import { TournamentEditor } from "@/components/tournament-editor";
 import { Winner } from "@/types/winner";
 import { getUsers, User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
@@ -54,6 +55,19 @@ const TournamentDetailPage: React.FC = () => {
     []
   );
   const [users, setUsers] = React.useState<User[]>([]);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const userId = user?.uid;
+
+  const isUserRegistered = React.useMemo(() => {
+    if (!userId) return false;
+    return registrations.some(
+      (r) =>
+        r.ownerId === userId ||
+        (Array.isArray(r.team) && r.team.some((m) => (m as any).id === userId))
+    );
+  }, [registrations, userId]);
 
   React.useEffect(() => {
     if (!firestoreId) return;
@@ -234,6 +248,37 @@ const TournamentDetailPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleEditSave = (_updated: Tournament) => {
+    // We rely on Firestore listener to update UI. Just close modal.
+    setEditOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!isAdmin || !tournament?.firestoreId) return;
+    setDeleting(true);
+    try {
+      const ref = doc(db, "tournaments", tournament.firestoreId);
+      const { deleteDoc } = await import("firebase/firestore");
+      await deleteDoc(ref);
+      addToast({
+        title: "Deleted",
+        description: "Tournament removed.",
+        color: "danger",
+      });
+      navigate("/tournaments");
+    } catch (e) {
+      console.error("Delete failed", e);
+      addToast({
+        title: "Error",
+        description: "Failed to delete tournament.",
+        color: "danger",
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto pt-4 pb-10 px-4">
       {loading || !tournament ? (
@@ -278,6 +323,29 @@ const TournamentDetailPage: React.FC = () => {
                   <span className="hidden md:inline">Export</span>
                 </Button>
               )}
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() => setEditOpen(true)}
+                  startContent={<Icon icon="lucide:edit" />}
+                  aria-label="Edit tournament"
+                >
+                  <span className="hidden md:inline">Edit</span>
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  onPress={() => setDeleteConfirm(true)}
+                  startContent={<Icon icon="lucide:trash-2" />}
+                  aria-label="Delete tournament"
+                >
+                  <span className="hidden md:inline">Delete</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -297,7 +365,7 @@ const TournamentDetailPage: React.FC = () => {
               </span>
               <span className="flex items-center gap-1">
                 <Icon icon="lucide:users" className="w-4 h-4" />
-                Teams: {tournament.players}
+                Players: {tournament.players}
               </span>
               <span
                 className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${teeColorClasses(tournament.tee)}`}
@@ -306,7 +374,7 @@ const TournamentDetailPage: React.FC = () => {
                 {tournament.tee || "Mixed"}
               </span>
               {tournament.registrationOpen && (
-                <Chip color="success" size="sm" variant="flat">
+                <Chip color="warning" size="sm" variant="flat">
                   Registration Open
                 </Chip>
               )}
@@ -355,7 +423,7 @@ const TournamentDetailPage: React.FC = () => {
                 <CardBody className="pt-4 space-y-5 text-sm">
                   <div className="space-y-3">
                     <div className="flex items-start gap-2">
-                      <Icon icon="lucide:clock" className="w-4 h-4 mt-0.5" />
+                      <Icon icon="lucide:calendar" className="w-4 h-4 mt-0.5" />
                       <div>
                         <p className="font-medium">Date</p>
                         <p>{formatDateLong(tournament.date)}</p>
@@ -422,21 +490,68 @@ const TournamentDetailPage: React.FC = () => {
                 <CardBody className="pt-4 space-y-4">
                   {tournament.registrationOpen ? (
                     <>
-                      <p className="text-sm text-foreground-600">
-                        Ready to compete? Register your team now before spots
-                        fill up.
-                      </p>
-                      <Button
-                        color="primary"
-                        fullWidth
-                        onPress={handleRegister}
-                      >
-                        Register
-                      </Button>
-                      {!user && (
-                        <p className="text-xs text-foreground-500">
-                          Sign in required to register.
-                        </p>
+                      {isUserRegistered ? (
+                        <>
+                          <p className="text-sm text-foreground-600 flex items-center gap-1">
+                            <Icon
+                              icon="lucide:check-circle"
+                              className="w-4 h-4 text-success"
+                            />
+                            You're registered for this tournament.
+                          </p>
+                          <Button
+                            color="success"
+                            variant="flat"
+                            fullWidth
+                            isDisabled
+                            startContent={
+                              <Icon icon="lucide:check" className="w-4 h-4" />
+                            }
+                            aria-label="Already registered"
+                          >
+                            Registered
+                          </Button>
+                          <Button
+                            fullWidth
+                            size="sm"
+                            variant="ghost"
+                            onPress={handleRegister}
+                            aria-label="View or edit your registration"
+                          >
+                            View / Edit Registration
+                          </Button>
+                        </>
+                      ) : user ? (
+                        <>
+                          <p className="text-sm text-foreground-600">
+                            Ready to compete? Register your team now before
+                            spots fill up.
+                          </p>
+                          <Button
+                            color="primary"
+                            fullWidth
+                            onPress={handleRegister}
+                          >
+                            Register
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-foreground-600">
+                            Sign in to register your team.
+                          </p>
+                          <Button
+                            color="primary"
+                            fullWidth
+                            isDisabled
+                            aria-label="Sign in required to register"
+                          >
+                            Register
+                          </Button>
+                          <p className="text-xs text-foreground-500">
+                            Sign in required to register.
+                          </p>
+                        </>
                       )}
                     </>
                   ) : (
@@ -609,6 +724,62 @@ const TournamentDetailPage: React.FC = () => {
             </Card>
           </div>
         </>
+      )}
+      {isAdmin && editOpen && (
+        <div
+          className="fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit tournament"
+        >
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setEditOpen(false)}
+          />
+          {/* Wrapper: mobile fullscreen; desktop centered with max height */}
+          <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
+            <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:border-default-200 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <div className="flex-1 overflow-y-auto md:rounded-b-xl">
+                <TournamentEditor
+                  tournament={tournament}
+                  onSave={handleEditSave}
+                  onCancel={() => setEditOpen(false)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isAdmin && deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => !deleting && setDeleteConfirm(false)}
+          />
+          <div className="relative z-10 bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-2">Delete Tournament</h3>
+            <p className="text-sm text-foreground-500 mb-4">
+              Are you sure you want to delete this tournament? This cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="flat"
+                onPress={() => !deleting && setDeleteConfirm(false)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="danger"
+                onPress={handleDelete}
+                isLoading={deleting}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

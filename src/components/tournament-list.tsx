@@ -151,7 +151,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
       if (tournament.registrationOpen ?? false) {
         return (
-          <Chip color="success" size="sm" variant="flat">
+          <Chip color="warning" size="sm" variant="flat">
             Registration Open
           </Chip>
         );
@@ -287,33 +287,38 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             <TableColumn>TEE</TableColumn>
             <TableColumn>PRIZE POOL</TableColumn>
             <TableColumn>STATUS</TableColumn>
-            <TableColumn className="text-right">ACTIONS</TableColumn>
           </TableHeader>
           <TableBody>
             {tournaments.map((tournament, idx) => (
               <TableRow
                 key={tournament.firestoreId}
                 className={
-                  `group transition-colors ` +
+                  `group transition-colors cursor-pointer ` +
                   `${idx % 2 === 0 ? "bg-content1/60" : "bg-content2/40"} ` +
-                  `hover:bg-primary/5 ` +
+                  `hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ` +
                   `${tournament.canceled ? "border-l-4 border-l-danger" : tournament.completed ? "border-l-4 border-l-success" : tournament.registrationOpen ? "border-l-4 border-l-warning" : "border-l-4 border-l-default-200"}`
                 }
+                role="link"
+                tabIndex={0}
+                onClick={() =>
+                  tournament.firestoreId &&
+                  navigate(`/tournaments/${tournament.firestoreId}`)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    tournament.firestoreId &&
+                      navigate(`/tournaments/${tournament.firestoreId}`);
+                  }
+                }}
+                aria-label={`View details for ${tournament.title}`}
               >
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          tournament.firestoreId &&
-                          navigate(`/tournaments/${tournament.firestoreId}`)
-                        }
-                        className="font-medium text-foreground hover:underline text-left"
-                        aria-label={`View details for ${tournament.title}`}
-                      >
+                      <p className="font-medium text-foreground text-left">
                         {tournament.title}
-                      </button>
+                      </p>
                       <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
                         {tournament.description}
                       </p>
@@ -352,56 +357,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>
                 <TableCell>{renderStatusChips(tournament)}</TableCell>
-                <TableCell>
-                  <div className="flex justify-end items-center gap-2">
-                    {tournament.registrationOpen && tournament.firestoreId ? (
-                      <Tooltip content="Register for the tournament">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() =>
-                            navigate(
-                              `/tournaments/${tournament.firestoreId}/register`
-                            )
-                          }
-                        >
-                          Register
-                        </Button>
-                      </Tooltip>
-                    ) : null}
-                    {isAdmin && (
-                      <>
-                        <Tooltip content="Edit tournament">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            onPress={() => onEdit(tournament)}
-                            aria-label="Edit tournament"
-                          >
-                            <Icon
-                              icon="lucide:edit"
-                              className="text-default-600"
-                            />
-                          </Button>
-                        </Tooltip>
-
-                        <Tooltip content="Delete tournament" color="danger">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => openConfirm(tournament.firestoreId)}
-                            aria-label="Delete tournament"
-                          >
-                            <Icon icon="lucide:trash-2" />
-                          </Button>
-                        </Tooltip>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
