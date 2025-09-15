@@ -67,12 +67,9 @@ service cloud.firestore {
           request.auth.uid == resource.data.ownerId || isAdmin()
         );
 
-        // Reading registrations: owner or admin only (registrations are private by default)
-        // Allow the document owner or an admin. Use the isAdmin() helper so admins
-        // defined in /admin/{uid} (isAdmin == true) can read registrations as well
-        allow read: if request.auth != null && (
-          request.auth.uid == resource.data.ownerId || isAdmin()
-        );
+  // Reading registrations: any authenticated user can read to view who is registered.
+  // This broadens visibility from just owner/admin to all signed-in members.
+  allow read: if request.auth != null;
       }
     }
 

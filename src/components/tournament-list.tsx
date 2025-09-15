@@ -31,15 +31,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   isAdmin = false,
 }) => {
   const navigate = useNavigate();
-  // Add state to track expanded tournament rows
-  const [expandedIds, setExpandedIds] = React.useState<string[]>([]);
-
-  const toggleExpand = (id?: string) => {
-    if (!id) return;
-    setExpandedIds((prev) =>
-      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
-    );
-  };
 
   const formatDate = (date: Date): string => {
     // Force UTC timezone so the displayed date matches the stored date
@@ -174,142 +165,85 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     })();
 
   const renderMobileCard = (tournament: Tournament) => {
-    const isExpanded = tournament.firestoreId
-      ? expandedIds.includes(tournament.firestoreId)
-      : false;
-
+    const goToDetails = () => {
+      if (tournament.firestoreId) {
+        navigate(`/tournaments/${tournament.firestoreId}`);
+      }
+    };
     return (
       <Card
         key={tournament.firestoreId}
-        className="mb-4 border border-default-200"
+        className="mb-4 border border-default-200 cursor-pointer hover:bg-content2 transition-colors"
+        onPress={goToDetails as any}
+        role="link"
+        aria-label={`View details for ${tournament.title}`}
       >
-        <CardBody
-          className="p-4"
-          // make entire card body clickable to expand/collapse
-          onClick={() => toggleExpand(tournament.firestoreId)}
-          role="button"
-          aria-pressed={isExpanded}
-        >
-          <div className="flex justify-between items-start cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="font-medium text-foreground">
-                  {tournament.title}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-foreground-500">
-                  <Icon icon="lucide:calendar" className="text-xs" />
-                  <span>{formatDate(tournament.date)}</span>
-                  <span
-                    className={`inline-flex items-center gap-1 ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
-                  >
-                    <Icon icon="lucide:flag" className="w-3 h-3 opacity-70" />
-                    {tournament.tee || "Mixed"}
-                  </span>
-                </div>
+        <CardBody className="p-4" onClick={goToDetails}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-medium text-foreground mb-1">
+                {tournament.title}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
+                <span className="inline-flex items-center gap-1">
+                  <Icon icon="lucide:calendar" className="w-3.5 h-3.5" />
+                  {formatDate(tournament.date)}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
+                >
+                  <Icon icon="lucide:flag" className="w-3 h-3 opacity-70" />
+                  {tournament.tee || "Mixed"}
+                </span>
               </div>
+              <p className="text-xs text-foreground-500 mt-2 line-clamp-2">
+                {tournament.description}
+              </p>
+              {renderWinners(tournament)}
             </div>
-
             <div className="flex flex-col items-end gap-2">
               {renderStatusChips(tournament)}
-
-              <div className="flex items-center gap-2">
-                {/* Register button visible in mobile header when open */}
-                {tournament.registrationOpen && tournament.firestoreId && (
+              <div className="text-right">
+                <p className="text-[11px] text-foreground-500">Prize:</p>
+                <p className="text-sm font-medium">
+                  {formatCurrency(tournament.prizePool)}
+                </p>
+                <div className="flex items-center gap-1 mt-1 text-xs text-foreground-500">
+                  <Icon icon="lucide:users" className="w-3.5 h-3.5" />
+                  {tournament.players}
+                </div>
+              </div>
+              {isAdmin && (
+                <div className="flex gap-1 mt-1">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="light"
+                    isIconOnly
                     onPress={(e: any) => {
                       e?.stopPropagation?.();
-                      navigate(
-                        `/tournaments/${tournament.firestoreId}/register`
-                      );
+                      onEdit(tournament);
                     }}
+                    aria-label="Edit tournament"
                   >
-                    Register
+                    <Icon icon="lucide:edit" />
                   </Button>
-                )}
-
-                <Button
-                  size="sm"
-                  variant="light"
-                  isIconOnly
-                  onPress={(e: any) => {
-                    e?.stopPropagation?.();
-                    toggleExpand(tournament.firestoreId);
-                  }}
-                  aria-label={
-                    isExpanded ? "Collapse details" : "Expand details"
-                  }
-                >
-                  <Icon
-                    icon={
-                      isExpanded ? "lucide:chevron-up" : "lucide:chevron-down"
-                    }
-                    className="text-default-500"
-                  />
-                </Button>
-              </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    isIconOnly
+                    onPress={(e: any) => {
+                      e?.stopPropagation?.();
+                      openConfirm(tournament.firestoreId);
+                    }}
+                    aria-label="Delete tournament"
+                  >
+                    <Icon icon="lucide:trash-2" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-default-100">
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <p className="text-xs text-foreground-500">Description</p>
-                  <p className="text-sm line-clamp-2">
-                    {tournament.description}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-foreground-500">Prize Pool</p>
-                  <p className="text-sm font-medium">
-                    {formatCurrency(tournament.prizePool)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-foreground-500">Players</p>
-                  <div className="flex items-center gap-1">
-                    <Icon
-                      icon="lucide:users"
-                      className="text-default-400 text-sm"
-                    />
-                    <span className="text-sm">{tournament.players}</span>
-                  </div>
-                </div>
-              </div>
-
-              {renderWinners(tournament)}
-
-              <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={(e: any) => {
-                    e?.stopPropagation?.();
-                    onEdit(tournament);
-                  }}
-                  startContent={<Icon icon="lucide:edit" />}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  onPress={(e: any) => {
-                    e?.stopPropagation?.();
-                    openConfirm(tournament.firestoreId);
-                  }}
-                  startContent={<Icon icon="lucide:trash-2" />}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
         </CardBody>
       </Card>
     );

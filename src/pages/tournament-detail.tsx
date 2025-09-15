@@ -246,74 +246,80 @@ const TournamentDetailPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{tournament.title}</h1>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-foreground-500">
-                  <span className="flex items-center gap-1">
-                    <Icon icon="lucide:calendar" className="w-4 h-4" />
-                    {formatDateLong(tournament.date)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Icon icon="lucide:trophy" className="w-4 h-4" />
-                    Prize Pool: ${tournament.prizePool.toLocaleString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Icon icon="lucide:users" className="w-4 h-4" />
-                    Teams: {tournament.players}
-                  </span>
-                  <span
-                    className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${teeColorClasses(tournament.tee)}`}
-                  >
-                    <Icon
-                      icon="lucide:flag"
-                      className="w-3.5 h-3.5 opacity-70"
-                    />
-                    {tournament.tee || "Mixed"}
-                  </span>
-                  {tournament.registrationOpen && (
-                    <Chip color="success" size="sm" variant="flat">
-                      Registration Open
-                    </Chip>
-                  )}
-                  {tournament.completed && !tournament.canceled && (
-                    <Chip color="default" size="sm" variant="flat">
-                      Completed
-                    </Chip>
-                  )}
-                  {tournament.canceled && (
-                    <Chip color="danger" size="sm" variant="flat">
-                      Canceled
-                    </Chip>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+          {/* Top navigation row: Back link on the far left */}
+          <div className="mb-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-1 text-sm text-foreground-500 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-1 -ml-1"
+              aria-label="Go back to tournaments list"
+            >
+              <Icon icon="lucide:arrow-left" className="w-4 h-4" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+            <div className="flex items-center gap-2">
               <Button
+                size="sm"
                 variant="flat"
                 onPress={shareLink}
                 startContent={<Icon icon="lucide:share" />}
+                aria-label="Share tournament"
               >
-                Share
+                <span className="hidden md:inline">Share</span>
               </Button>
               {isAdmin && (
                 <Button
+                  size="sm"
                   variant="flat"
                   onPress={exportRegistrations}
                   startContent={<Icon icon="lucide:download" />}
+                  aria-label="Export registrations"
                 >
-                  Export
+                  <span className="hidden md:inline">Export</span>
                 </Button>
               )}
-              <Button
-                variant="light"
-                onPress={() => navigate(-1)}
-                startContent={<Icon icon="lucide:arrow-left" />}
+            </div>
+          </div>
+
+          {/* Title & meta section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-3 leading-tight">
+              {tournament.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground-500">
+              <span className="flex items-center gap-1">
+                <Icon icon="lucide:calendar" className="w-4 h-4" />
+                {formatDateLong(tournament.date)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Icon icon="lucide:trophy" className="w-4 h-4" />
+                Prize Pool: ${tournament.prizePool.toLocaleString()}
+              </span>
+              <span className="flex items-center gap-1">
+                <Icon icon="lucide:users" className="w-4 h-4" />
+                Teams: {tournament.players}
+              </span>
+              <span
+                className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${teeColorClasses(tournament.tee)}`}
               >
-                Back
-              </Button>
+                <Icon icon="lucide:flag" className="w-3.5 h-3.5 opacity-70" />
+                {tournament.tee || "Mixed"}
+              </span>
+              {tournament.registrationOpen && (
+                <Chip color="success" size="sm" variant="flat">
+                  Registration Open
+                </Chip>
+              )}
+              {tournament.completed && !tournament.canceled && (
+                <Chip color="default" size="sm" variant="flat">
+                  Completed
+                </Chip>
+              )}
+              {tournament.canceled && (
+                <Chip color="danger" size="sm" variant="flat">
+                  Canceled
+                </Chip>
+              )}
             </div>
           </div>
 
@@ -487,10 +493,22 @@ const TournamentDetailPage: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
-            {/* Full Width: Registered Teams */}
+            {/* Full Width: Registered Teams (Improved readability) */}
             <Card className="md:col-span-3" shadow="sm">
-              <CardHeader className="pb-0">
-                <h2 className="text-lg font-semibold">Registered Teams</h2>
+              <CardHeader className="pb-0 flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  Registered Teams
+                  {!regsLoading && registrations.length > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      {registrations.length}
+                    </span>
+                  )}
+                </h2>
+                {!regsLoading && registrations.length > 0 && (
+                  <p className="text-[11px] text-foreground-500">
+                    Updated live
+                  </p>
+                )}
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
@@ -503,16 +521,25 @@ const TournamentDetailPage: React.FC = () => {
                     No teams registered yet.
                   </p>
                 ) : (
-                  <ScrollShadow className="max-h-80 pr-2">
-                    <div className="space-y-3">
-                      {registrations.map((reg) => {
+                  <ScrollShadow className="max-h-80 pr-1">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {registrations.map((reg, idx) => {
                         const team = Array.isArray(reg.team) ? reg.team : [];
+                        const dateStr = reg.registeredAt?.toDate
+                          ? new Date(
+                              reg.registeredAt.toDate()
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "";
                         return (
                           <div
                             key={reg.id}
-                            className="flex items-center justify-between bg-content2 rounded-md px-3 py-2"
+                            className="rounded-md border border-default-200 bg-content2/60 hover:bg-content2 transition-colors p-3 flex flex-col gap-2"
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-start gap-3">
                               <div className="flex -space-x-2">
                                 {team.map((m, i) => {
                                   const memberUser = users.find(
@@ -543,18 +570,34 @@ const TournamentDetailPage: React.FC = () => {
                                   );
                                 })}
                               </div>
-                              <div className="text-sm font-medium">
-                                {team
-                                  .map((m) => m.displayName || m.id)
-                                  .join(", ")}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
+                                  Team {idx + 1}
+                                </p>
+                                <ul className="text-sm font-medium leading-snug space-y-0.5">
+                                  {team.map((m, i) => (
+                                    <li key={i} className="truncate">
+                                      {m.displayName || m.id}
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
                             </div>
-                            <div className="text-xs text-foreground-500">
-                              {reg.registeredAt?.toDate
-                                ? new Date(
-                                    reg.registeredAt.toDate()
-                                  ).toLocaleDateString("en-US")
-                                : ""}
+                            <div className="flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
+                              <span className="flex items-center gap-1">
+                                <Icon
+                                  icon="lucide:calendar-clock"
+                                  className="w-3.5 h-3.5"
+                                />
+                                {dateStr}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Icon
+                                  icon="lucide:users"
+                                  className="w-3.5 h-3.5"
+                                />
+                                {team.length}
+                              </span>
                             </div>
                           </div>
                         );
