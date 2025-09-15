@@ -27,6 +27,12 @@ export const siteConfig = {
       link: "/membership/member-directory",
       icon: "lucide:user",
     },
+    board: {
+      title: "Board of Governors",
+      description: "Club leadership team",
+      link: "/board",
+      icon: "lucide:shield",
+    },
     about: {
       title: "About",
       description: "Learn more about the Ridgefield Golf Club",

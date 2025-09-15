@@ -22,6 +22,9 @@ export type UserProfilePayload = {
   admin?: boolean;
   active?: boolean;
   registered?: boolean;
+  // board governance fields
+  boardMember?: boolean; // true if on Board of Governors
+  role?: string; // e.g. 'president', 'secretary', 'treasurer'
 };
 
 export type User = UserProfilePayload & {

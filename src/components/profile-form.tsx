@@ -200,6 +200,7 @@ export function ProfileForm() {
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
+        // Only include governance fields if current user is admin editing self (admin property on profile)
       } as Record<string, any>;
 
       // Use the hook's save method (this handles uploading the file if present)

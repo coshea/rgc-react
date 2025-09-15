@@ -151,6 +151,8 @@ export default function MembershipDirectoryPage() {
       displayName: user.displayName || "",
       email: user.email || "",
       phone: user.phone || "",
+      boardMember: (user as any).boardMember || false,
+      role: (user as any).role || "",
     });
     setOpen(true);
   }
@@ -224,11 +226,23 @@ export default function MembershipDirectoryPage() {
     if (!isAdmin) return;
     try {
       const phoneToSave = formatPhone(form.phone);
+      // Conditional validation: role is required if boardMember is checked
+      if (form.boardMember && !form.role?.trim()) {
+        addToast({
+          title: "Role Required",
+          description:
+            "Board members must have a role (e.g. President, Secretary)",
+          color: "warning",
+        });
+        return;
+      }
       if (editing) {
         await updateUser(editing.id, {
           displayName: form.displayName || "",
           email: form.email || "",
           phone: phoneToSave || "",
+          boardMember: !!form.boardMember,
+          role: form.boardMember ? (form.role || "").trim() : null,
         });
         addToast({
           title: "User Updated",
@@ -241,6 +255,8 @@ export default function MembershipDirectoryPage() {
           displayName: form.displayName || "",
           email: form.email || "",
           phone: phoneToSave || "",
+          boardMember: !!form.boardMember,
+          role: form.boardMember ? (form.role || "").trim() : null,
         });
         addToast({
           title: "User Added",
@@ -567,6 +583,75 @@ export default function MembershipDirectoryPage() {
                   setForm({ ...form, phone: formatPhone(form.phone) })
                 }
               />
+              <div className="pt-2 border-t border-default-200 space-y-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="accent-primary h-4 w-4"
+                    checked={!!form.boardMember}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((prev: any) => ({
+                        ...prev,
+                        boardMember: checked,
+                        role: checked ? prev.role || "Board Member" : "",
+                      }));
+                    }}
+                  />
+                  <span>Board Member</span>
+                </label>
+                {form.boardMember ? (
+                  <div className="space-y-1">
+                    {(() => {
+                      const ROLE_OPTIONS = [
+                        "President",
+                        "Treasurer",
+                        "Handicap Chairman",
+                        "Webmaster",
+                        "Board Member",
+                      ];
+                      const hasLegacy =
+                        form.role && !ROLE_OPTIONS.includes(form.role);
+                      const options = hasLegacy
+                        ? [form.role, ...ROLE_OPTIONS]
+                        : ROLE_OPTIONS;
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-medium text-default-600">
+                            Role <span className="text-danger">*</span>
+                          </label>
+                          <select
+                            className="border rounded-md px-3 py-2 bg-default-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            value={form.role || ""}
+                            onChange={(e) =>
+                              setForm({ ...form, role: e.target.value })
+                            }
+                          >
+                            <option value="" disabled>
+                              Select a role
+                            </option>
+                            {options.map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                          </select>
+                          {!form.role?.trim() && (
+                            <p className="text-[11px] text-danger mt-1">
+                              Required for board members
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-default-500">
+                    Check "Board Member" to assign a role (e.g. President,
+                    Treasurer).
+                  </p>
+                )}
+              </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="flat" onPress={() => setOpen(false)}>
