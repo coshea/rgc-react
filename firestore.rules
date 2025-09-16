@@ -18,15 +18,39 @@ service cloud.firestore {
       // Allow users to write their own profile. Also allow admins to create or modify
       // other users' profiles (so admins can add members). Admin check uses custom
       // claim `request.auth.token.admin == true` or the admin collection lookup.
-      allow create, update, delete: if request.auth != null && (
-        request.auth.uid == userId || request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      function isSelfOrAdmin() {
+        return request.auth != null && (
+          request.auth.uid == userId || isAdmin()
+        );
+      }
+      // Validate board fields: only admins may set boardMember true or assign a role.
+      function boardRoleValid(newData) {
+        let allowed = [
+          'President',
+          'Treasurer',
+          'Handicap Chairman',
+          'Webmaster',
+          'Board Member'
+        ];
+        return !(newData.boardMember == true) || (
+          newData.role is string && allowed.hasAny([newData.role])
+        );
+      }
+      function boardFieldsUnchanged() {
+        return resource == null || (
+          resource.data.boardMember == request.resource.data.boardMember &&
+          resource.data.role == request.resource.data.role
+        );
+      }
+      // Core write gate with board field restrictions
+      allow create: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
+        // if non-admin creating their own doc, they must not set board fields
+        isAdmin() || (request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
-      // allow set (write) to be same as create/update above
-      allow write: if request.auth != null && (
-        request.auth.uid == userId || request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      allow update: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
+        isAdmin() || boardFieldsUnchanged()
       );
+      allow delete: if isSelfOrAdmin();
     }
 
     // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
