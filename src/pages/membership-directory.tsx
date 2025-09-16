@@ -7,6 +7,7 @@ import { db } from "@/config/firebase";
 import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
+import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
 import { updateUser, deleteUser } from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
@@ -147,12 +148,14 @@ export default function MembershipDirectoryPage() {
 
   function openEdit(user: User) {
     setEditing(user);
+    // Preserve legacy role temporarily if not allowed yet (so it can be migrated) but UI will not let saving invalid role.
+    const legacyRole = (user as any).role || "";
     setForm({
       displayName: user.displayName || "",
       email: user.email || "",
       phone: user.phone || "",
       boardMember: (user as any).boardMember || false,
-      role: (user as any).role || "",
+      role: legacyRole,
     });
     setOpen(true);
   }
@@ -233,6 +236,14 @@ export default function MembershipDirectoryPage() {
           description:
             "Board members must have a role (e.g. President, Secretary)",
           color: "warning",
+        });
+        return;
+      }
+      if (form.boardMember && form.role && !isAllowedBoardRole(form.role)) {
+        addToast({
+          title: "Invalid Role",
+          description: "Selected role is not allowed.",
+          color: "danger",
         });
         return;
       }
@@ -603,13 +614,8 @@ export default function MembershipDirectoryPage() {
                 {form.boardMember ? (
                   <div className="space-y-1">
                     {(() => {
-                      const ROLE_OPTIONS = [
-                        "President",
-                        "Treasurer",
-                        "Handicap Chairman",
-                        "Webmaster",
-                        "Board Member",
-                      ];
+                      const ROLE_OPTIONS =
+                        ALLOWED_BOARD_ROLES as readonly string[];
                       const hasLegacy =
                         form.role && !ROLE_OPTIONS.includes(form.role);
                       const options = hasLegacy
@@ -641,6 +647,14 @@ export default function MembershipDirectoryPage() {
                               Required for board members
                             </p>
                           )}
+                          {form.role?.trim() &&
+                            form.boardMember &&
+                            !isAllowedBoardRole(form.role) && (
+                              <p className="text-[11px] text-danger mt-1">
+                                Legacy/unrecognized role, please pick a valid
+                                one.
+                              </p>
+                            )}
                         </div>
                       );
                     })()}

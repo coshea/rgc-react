@@ -1,5 +1,12 @@
 import React from "react";
-import { Card, CardBody, Avatar, AvatarGroup, Button } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  Avatar,
+  AvatarGroup,
+  Button,
+  Tooltip,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
@@ -169,54 +176,92 @@ export const RegistrationsList: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        onPress={() =>
-                          onSave(
-                            reg.id,
-                            (localTeams[reg.id] || []).filter(Boolean)
-                          )
-                        }
+                      <Tooltip
+                        content="Save"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="light"
-                        onPress={() => onCancelEdit()}
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onPress={() =>
+                            onSave(
+                              reg.id,
+                              (localTeams[reg.id] || []).filter(Boolean)
+                            )
+                          }
+                          startContent={
+                            <Icon icon="lucide:save" className="w-4 h-4" />
+                          }
+                          aria-label="Save registration"
+                        >
+                          <span className="hidden sm:inline">Save</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content="Cancel"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        Cancel
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => onCancelEdit()}
+                          startContent={
+                            <Icon icon="lucide:x" className="w-4 h-4" />
+                          }
+                          aria-label="Cancel editing"
+                        >
+                          <span className="hidden sm:inline">Cancel</span>
+                        </Button>
+                      </Tooltip>
                     </>
                   ) : (
                     <>
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        onPress={() => startEditing(reg)}
-                        startContent={
-                          <Icon icon="lucide:edit" className="w-4 h-4" />
-                        }
-                        aria-label="Edit registration"
+                      <Tooltip
+                        content="Edit"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        <span className="hidden sm:inline">Edit</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="flat"
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => startEditing(reg)}
+                          startContent={
+                            <Icon icon="lucide:edit" className="w-4 h-4" />
+                          }
+                          aria-label="Edit registration"
+                        >
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content="Delete"
+                        placement="top"
                         color="danger"
-                        onPress={() => {
-                          setDeletingId(reg.id);
-                          setConfirmOpen(true);
-                        }}
-                        startContent={
-                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                        }
-                        aria-label="Delete registration"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        <span className="hidden sm:inline">Delete</span>
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          color="danger"
+                          onPress={() => {
+                            setDeletingId(reg.id);
+                            setConfirmOpen(true);
+                          }}
+                          startContent={
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                          }
+                          aria-label="Delete registration"
+                        >
+                          <span className="hidden sm:inline">Delete</span>
+                        </Button>
+                      </Tooltip>
                     </>
                   )}
                 </div>

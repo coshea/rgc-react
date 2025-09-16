@@ -24,7 +24,11 @@ import { Tournament } from "@/types/tournament";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { teeColorClasses } from "@/utils/teeStyles";
-import { TournamentEditor } from "@/components/tournament-editor";
+const TournamentEditor = React.lazy(() =>
+  import("@/components/tournament-editor").then((m) => ({
+    default: m.TournamentEditor,
+  }))
+);
 import { Winner } from "@/types/winner";
 import { getUsers, User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
@@ -740,11 +744,25 @@ const TournamentDetailPage: React.FC = () => {
           <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
             <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:border-default-200 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
               <div className="flex-1 overflow-y-auto md:rounded-b-xl">
-                <TournamentEditor
-                  tournament={tournament}
-                  onSave={handleEditSave}
-                  onCancel={() => setEditOpen(false)}
-                />
+                <React.Suspense
+                  fallback={
+                    <div className="p-8 flex flex-col items-center gap-3">
+                      <Icon
+                        icon="lucide:loader"
+                        className="animate-spin text-2xl text-primary"
+                      />
+                      <p className="text-sm text-foreground-500">
+                        Loading editor...
+                      </p>
+                    </div>
+                  }
+                >
+                  <TournamentEditor
+                    tournament={tournament}
+                    onSave={handleEditSave}
+                    onCancel={() => setEditOpen(false)}
+                  />
+                </React.Suspense>
               </div>
             </div>
           </div>
