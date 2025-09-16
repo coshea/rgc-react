@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, CardBody, Avatar, AvatarGroup, Button } from "@heroui/react";
+import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
 
@@ -190,19 +191,31 @@ export const RegistrationsList: React.FC<Props> = ({
                     </>
                   ) : (
                     <>
-                      <Button size="sm" onPress={() => startEditing(reg)}>
-                        Edit
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() => startEditing(reg)}
+                        startContent={
+                          <Icon icon="lucide:edit" className="w-4 h-4" />
+                        }
+                        aria-label="Edit registration"
+                      >
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                       <Button
                         size="sm"
+                        variant="flat"
                         color="danger"
-                        variant="light"
                         onPress={() => {
                           setDeletingId(reg.id);
                           setConfirmOpen(true);
                         }}
+                        startContent={
+                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                        }
+                        aria-label="Delete registration"
                       >
-                        Delete
+                        <span className="hidden sm:inline">Delete</span>
                       </Button>
                     </>
                   )}
