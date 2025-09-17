@@ -29,43 +29,44 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
+  // When creating, optional initial values to prepopulate the form
+  initialValues?: Partial<Tournament>;
   onSave: (tournament: Tournament) => void;
   onCancel: () => void;
 }
 
 export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   tournament,
+  initialValues,
   onSave,
   onCancel,
 }) => {
   const isEditing = !!tournament;
 
-  const [title, setTitle] = React.useState(tournament?.title || "");
-  const [description, setDescription] = React.useState(
-    tournament?.description || ""
-  );
+  const seed = isEditing
+    ? (tournament as Partial<Tournament>)
+    : initialValues || {};
+
+  const [title, setTitle] = React.useState(seed.title || "");
+  const [description, setDescription] = React.useState(seed.description || "");
   const [detailsMarkdown, setDetailsMarkdown] = React.useState(
-    tournament?.detailsMarkdown || ""
+    seed.detailsMarkdown || ""
   );
-  const [players, setPlayers] = React.useState(tournament?.players || 1);
-  const [completed, setCompleted] = React.useState(
-    tournament?.completed || false
-  );
-  const [canceled, setCanceled] = React.useState(tournament?.canceled || false);
-  const [prizePool, setPrizePool] = React.useState(tournament?.prizePool || 0);
+  const [players, setPlayers] = React.useState(seed.players || 1);
+  const [completed, setCompleted] = React.useState(!!seed.completed);
+  const [canceled, setCanceled] = React.useState(!!seed.canceled);
+  const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winners, setWinners] = React.useState<Winner[]>(
-    tournament?.winners || []
+    isEditing ? tournament?.winners || [] : []
   );
   const [registrationOpen, setRegistrationOpen] = React.useState(
-    tournament?.registrationOpen || false
+    !!seed.registrationOpen
   );
   const [tee, setTee] = React.useState<
     "Blue" | "White" | "Gold" | "Red" | "Mixed"
-  >((tournament?.tee as any) || "Mixed");
+  >(((seed.tee as any) || "Mixed") as any);
   const [date, setDate] = React.useState<DateValue | null>(
-    tournament?.date
-      ? parseDate(tournament.date.toISOString().split("T")[0])
-      : null
+    seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null
   );
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});

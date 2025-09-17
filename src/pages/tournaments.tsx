@@ -4,7 +4,19 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import TournamentEditor from "@/components/tournament-editor";
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
-import { addToast } from "@heroui/react";
+import {
+  addToast,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Select,
+  SelectItem,
+  RadioGroup,
+  Radio,
+} from "@heroui/react";
 import { db } from "@/config/firebase";
 import {
   collection,
@@ -16,9 +28,7 @@ import {
 } from "firebase/firestore";
 import { Icon } from "@iconify/react";
 
-interface TournamentsProps {
-  // You can add props here if needed
-}
+interface TournamentsProps {}
 
 const Tournaments: React.FC<TournamentsProps> = () => {
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
@@ -26,13 +36,26 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     React.useState<Tournament | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  // Create flow state
+  const [createModeOpen, setCreateModeOpen] = React.useState(false);
+  const [createMethod, setCreateMethod] = React.useState<"scratch" | "copy">(
+    "scratch"
+  );
+  const [templateId, setTemplateId] = React.useState<string | null>(null);
+  const [initialValues, setInitialValues] = React.useState<
+    Partial<Tournament> | undefined
+  >(undefined);
+
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
-
-  const isAdmin = !!(user && userProfile && userProfile.admin === true);
+  const isAdmin = !!(
+    user &&
+    userProfile &&
+    (userProfile as any).admin === true
+  );
 
   React.useEffect(() => {
-    // Fetch tournaments from Firestore and map to local Tournament objects
     setIsLoading(true);
     const colRef = collection(db, "tournaments");
     const qCol = query(colRef, orderBy("date", "asc"));
@@ -82,7 +105,10 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   const handleCreateTournament = () => {
     setEditingTournament(null);
-    setIsCreating(true);
+    setCreateMethod("scratch");
+    setTemplateId(null);
+    setInitialValues(undefined);
+    setCreateModeOpen(true);
   };
 
   const handleEditTournament = (tournament: Tournament) => {
@@ -92,11 +118,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   const handleSaveTournament = async (tournament: Tournament) => {
     setIsLoading(true);
-
     try {
-      // In a real app, save to Firestore (handled in TournamentEditor)
       if (editingTournament) {
-        // Update existing tournament in local state (match by firestoreId)
         setTournaments((prev) =>
           prev.map((t) =>
             t.firestoreId &&
@@ -112,7 +135,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           color: "success",
         });
       } else {
-        // Append newly created tournament (TournamentEditor includes firestoreId when created)
         setTournaments((prev) => [...prev, tournament]);
         addToast({
           title: "Tournament Created",
@@ -131,19 +153,19 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       setIsLoading(false);
       setEditingTournament(null);
       setIsCreating(false);
+      setInitialValues(undefined);
     }
   };
 
   const handleCancelEdit = () => {
     setEditingTournament(null);
     setIsCreating(false);
+    setInitialValues(undefined);
   };
 
   const handleDeleteTournament = async (id?: string | number) => {
     setIsLoading(true);
-
     try {
-      // If id is a Firestore document id (string), delete the doc
       if (typeof id === "string") {
         try {
           await deleteDoc(doc(db, "tournaments", id));
@@ -172,13 +194,91 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     }
   };
 
+  const onContinueCreate = () => {
+    let init: Partial<Tournament> | undefined = undefined;
+    if (createMethod === "copy" && templateId) {
+      const tpl = tournaments.find((t) => t.firestoreId === templateId);
+      if (tpl) {
+        init = {
+          title: tpl.title,
+          description: tpl.description,
+          detailsMarkdown: tpl.detailsMarkdown,
+          players: tpl.players,
+          prizePool: tpl.prizePool,
+          registrationOpen: false,
+          completed: false,
+          canceled: false,
+          tee: tpl.tee,
+        };
+      }
+    }
+    setInitialValues(init);
+    setCreateModeOpen(false);
+    setEditingTournament(null);
+    setIsCreating(true);
+  };
+
   return (
     <div className="space-y-6">
+      <Modal isOpen={createModeOpen} onClose={() => setCreateModeOpen(false)}>
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            New Tournament
+          </ModalHeader>
+          <ModalBody>
+            <RadioGroup
+              label="How would you like to start?"
+              value={createMethod}
+              onValueChange={(v) => setCreateMethod(v as any)}
+            >
+              <Radio value="scratch">Create from scratch</Radio>
+              <Radio value="copy">Copy from previous</Radio>
+            </RadioGroup>
+            {createMethod === "copy" && (
+              <Select
+                label="Choose a previous tournament"
+                selectedKeys={templateId ? [templateId] : []}
+                onSelectionChange={(keys) => {
+                  const id = Array.from(keys)[0] as string | undefined;
+                  setTemplateId(id || null);
+                }}
+              >
+                {tournaments
+                  .filter((t) => !!t.firestoreId)
+                  .map((t) => {
+                    const year = t.date
+                      ? new Date(t.date).getFullYear()
+                      : undefined;
+                    const label = year ? `${t.title} (${year})` : t.title;
+                    return (
+                      <SelectItem key={t.firestoreId!} textValue={label}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
+              </Select>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setCreateModeOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={createMethod === "copy" && !templateId}
+              onPress={onContinueCreate}
+            >
+              Continue
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {isCreating || editingTournament ? (
-        // Only allow creating/editing if user is admin
         isAdmin ? (
           <TournamentEditor
             tournament={editingTournament}
+            initialValues={initialValues}
             onSave={handleSaveTournament}
             onCancel={handleCancelEdit}
           />
