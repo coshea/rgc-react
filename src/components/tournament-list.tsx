@@ -181,8 +181,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         <CardBody className="p-4" onClick={goToDetails}>
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-medium text-foreground mb-1">
+              <p className="font-medium text-foreground mb-1 flex items-center gap-2">
                 {tournament.title}
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-default-200 dark:bg-default-300/30 text-foreground-600">
+                  {new Date(tournament.date).getFullYear()}
+                </span>
               </p>
               <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
                 <span className="inline-flex items-center gap-1">
@@ -316,8 +319,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="font-medium text-foreground text-left">
+                      <p className="font-medium text-foreground text-left flex items-center gap-2">
                         {tournament.title}
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-default-200 dark:bg-default-300/30 text-foreground-600">
+                          {new Date(tournament.date).getFullYear()}
+                        </span>
                       </p>
                       <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
                         {tournament.description}
