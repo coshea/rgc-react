@@ -47,7 +47,7 @@ const menuItemsMobile = {
   "Contact Us": [siteConfig.pages.contact],
 };
 
-export const MainNavbarWithAvatar = (_props: NavbarProps) => {
+export const MainNavbar = (_props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userLoggedIn, loading } = useAuth(); // Get auth state
   const navigate = useNavigate();

@@ -1,5 +1,4 @@
-// import { MainNavbar } from "@/components/main-navbar";
-import { MainNavbarWithAvatar as MainNavbar } from "@/components/navbar-with-avatar";
+import { MainNavbar as MainNavbar } from "@/components/navbar-with-avatar";
 
 export default function DefaultLayout({
   children,
