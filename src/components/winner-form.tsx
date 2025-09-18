@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Card,
@@ -12,7 +12,7 @@ import {
 import { Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Winner } from "@/types/winner";
-import { getUsers, User } from "@/api/users";
+import { useUsers } from "@/hooks/useUsers";
 
 interface WinnerFormProps {
   winners: Winner[];
@@ -29,33 +29,17 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   prizePool,
   isCompleted,
 }) => {
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const fetchedUsers = await getUsers();
-        setUsers(fetchedUsers);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        // Optionally, show a toast or error message to the user
-      }
-    };
-
-    fetchUsers();
-  }, []);
+  const { users, isLoading: usersLoading } = useUsers();
 
   const addWinner = () => {
     const nextPlace =
       winners.length > 0 ? Math.max(...winners.map((w) => w.place)) + 1 : 1;
-
     const newWinner: Winner = {
       place: nextPlace,
       userIds: [],
       displayNames: [],
       prizeAmount: 0,
     };
-
     onWinnersChange([...winners, newWinner]);
   };
 
@@ -119,7 +103,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   // Auto-sanitize any winner entries that reference users no longer in the list
   React.useEffect(() => {
-    if (users.length === 0) return;
+    if (!users || users.length === 0) return;
     let changed = false;
     const cleaned = winners.map((w) => {
       const filteredIds = (w.userIds || []).filter((id) =>
@@ -239,6 +223,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       }}
                       isRequired
                       className="w-full"
+                      isDisabled={usersLoading}
                       isInvalid={winner.userIds.length === 0}
                       errorMessage={
                         winner.userIds.length === 0 ? "Winner is required" : ""

@@ -1,15 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  Button,
-  Divider,
-  Avatar,
-  addToast,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Card, CardBody, Button, Divider, addToast, Select, SelectItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
@@ -25,7 +16,7 @@ import {
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { getUsers, User } from "@/api/users";
+import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 
 const TournamentRegister: React.FC = () => {
@@ -34,8 +25,7 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [, setUsersLoading] = React.useState(false);
+  const { users } = useUsers();
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
@@ -106,26 +96,6 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
-    // Fetch users separately
-    const fetchUsers = async () => {
-      setUsersLoading(true);
-      try {
-        const list = await getUsers();
-        setUsers(list);
-        console.debug("Loaded users:", list.length);
-      } catch (err) {
-        console.error("Failed to load users", err);
-        addToast({
-          title: "Error",
-          description: "Failed to load users",
-          color: "danger",
-        });
-      } finally {
-        setUsersLoading(false);
-      }
-    };
-
-    fetchUsers();
   }, [firestoreId]);
 
   // Redirect unauthenticated users to login when they land on the register page
@@ -180,7 +150,7 @@ const TournamentRegister: React.FC = () => {
 
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
-    if (!users || users.length === 0) return;
+  if (!users || users.length === 0) return;
     const valid = new Set(users.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
@@ -370,7 +340,13 @@ const TournamentRegister: React.FC = () => {
                 </p>
               ) : null}
             </div>
-            <Avatar size="lg" src={tournament.icon} />
+              {tournament.icon ? (
+                <img
+                src={tournament.icon}
+                alt={tournament.title}
+                className="w-16 h-16 rounded-md object-cover border border-default-200"
+                />
+              ) : null}
           </div>
 
           <Divider className="my-4" />

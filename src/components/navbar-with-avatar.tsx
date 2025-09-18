@@ -25,7 +25,11 @@ import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const menuItemsDesktop = {
   Home: [siteConfig.pages.home],
-  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
+  Tournaments: [
+    siteConfig.pages.tournaments,
+    siteConfig.pages.moneyList,
+    siteConfig.pages.pastchampions,
+  ],
   Membership: [
     siteConfig.pages.membership,
     siteConfig.pages.directory,
@@ -37,7 +41,11 @@ const menuItemsDesktop = {
 
 const menuItemsMobile = {
   Home: [siteConfig.pages.home],
-  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
+  Tournaments: [
+    siteConfig.pages.tournaments,
+    siteConfig.pages.moneyList,
+    siteConfig.pages.pastchampions,
+  ],
   Membership: [
     siteConfig.pages.membership,
     siteConfig.pages.directory,

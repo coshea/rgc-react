@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { Button, Input, Avatar, addToast, Tooltip } from "@heroui/react";
+import { Button, Input, addToast, Tooltip } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/providers/AuthProvider";
@@ -394,8 +395,11 @@ export default function MembershipDirectoryPage() {
                 {/* desktop row */}
                 <div className="hidden md:grid items-center gap-4 p-4 grid-cols-[2fr_4fr_2fr_2fr]">
                   <div className="flex items-center gap-4">
-                    <Avatar
+                    <UserAvatar
                       className="w-8 h-8"
+                      size="sm"
+                      userId={m.id}
+                      name={m.displayName || m.email}
                       src={(m.photoURL as string) || undefined}
                       alt={m.displayName || m.email}
                     />
@@ -472,8 +476,11 @@ export default function MembershipDirectoryPage() {
                 {/* mobile stacked card */}
                 <div className="block md:hidden p-4">
                   <div className="flex items-center gap-4 mb-2">
-                    <Avatar
+                    <UserAvatar
                       className="w-8 h-8"
+                      size="sm"
+                      userId={m.id}
+                      name={m.displayName || m.email}
                       src={(m.photoURL as string) || undefined}
                       alt={m.displayName || m.email}
                     />

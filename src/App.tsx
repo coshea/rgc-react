@@ -17,6 +17,7 @@ import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
 import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
+import MoneyListPage from "@/pages/money-list";
 
 function App() {
   return (
@@ -37,6 +38,12 @@ function App() {
         element={<TournamentDetailPage />}
         path="/tournaments/:firestoreId"
       />
+      <Route
+        element={<MoneyListPage />}
+        path={siteConfig.pages.moneyList.link}
+      />
+      {/* Legacy redirect from /winnings if previously shared */}
+      <Route element={<MoneyListPage />} path="/winnings" />
       <Route
         element={<TournamentRegister />}
         path="/tournaments/:firestoreId/register"

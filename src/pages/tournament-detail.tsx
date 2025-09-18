@@ -15,10 +15,10 @@ import {
   Chip,
   Button,
   Divider,
-  Avatar,
   addToast,
   ScrollShadow,
 } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import ReactMarkdown from "react-markdown";
@@ -30,7 +30,8 @@ const TournamentEditor = React.lazy(() =>
   }))
 );
 import { Winner } from "@/types/winner";
-import { getUsers, User } from "@/api/users";
+// User types consumed indirectly; no direct import needed after hook migration
+import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -58,7 +59,7 @@ const TournamentDetailPage: React.FC = () => {
   const [registrations, setRegistrations] = React.useState<RegistrationDoc[]>(
     []
   );
-  const [users, setUsers] = React.useState<User[]>([]);
+  const { usersMap } = useUsersMap();
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -150,17 +151,7 @@ const TournamentDetailPage: React.FC = () => {
     return () => unsub();
   }, [firestoreId]);
 
-  React.useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const list = await getUsers();
-        setUsers(list);
-      } catch (e) {
-        console.error("Failed to load users", e);
-      }
-    };
-    loadUsers();
-  }, []);
+  // Users are now loaded globally via React Query (useUsersMap)
 
   const firstPlaceWinners: Winner[] = React.useMemo(() => {
     if (!tournament?.winners) return [];
@@ -661,8 +652,8 @@ const TournamentDetailPage: React.FC = () => {
                             <div className="flex items-start gap-3">
                               <div className="flex -space-x-2">
                                 {team.map((m, i) => {
-                                  const memberUser = users.find(
-                                    (u) => u.id === (m as any).id
+                                  const memberUser = usersMap.get(
+                                    (m as any).id
                                   );
                                   const src = memberUser
                                     ? (memberUser as any).profileURL ||
@@ -674,18 +665,14 @@ const TournamentDetailPage: React.FC = () => {
                                     ""
                                   ).toString();
                                   return (
-                                    <Avatar
+                                    <UserAvatar
                                       key={m.id || i}
                                       size="sm"
                                       src={src}
                                       name={label}
                                       className="border border-default-200"
-                                    >
-                                      {label
-                                        .split(" ")
-                                        .map((s: string) => s[0])
-                                        .join("")}
-                                    </Avatar>
+                                      alt={label}
+                                    />
                                   );
                                 })}
                               </div>

@@ -1,5 +1,6 @@
 import React from "react";
-import { Card, Input, Button, Avatar } from "@heroui/react";
+import { Card, Input, Button } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { PiGolf } from "react-icons/pi";
@@ -232,10 +233,22 @@ export function ProfileForm() {
             className="relative group cursor-pointer mb-3"
             onClick={triggerFileInput}
           >
-            <Avatar
+            <UserAvatar
               src={imagePreview || undefined}
-              className="w-24 h-24 text-large transition-transform duration-200 group-hover:scale-105"
-              isBordered
+              name={
+                formData.displayName ||
+                user?.displayName ||
+                user?.email ||
+                "User"
+              }
+              className="w-24 h-24 text-large transition-transform duration-200 group-hover:scale-105 border-2 border-default-200"
+              size="lg"
+              alt={
+                formData.displayName ||
+                user?.displayName ||
+                user?.email ||
+                "User"
+              }
             />
             {/* upload spinner overlay when saving */}
             {/** If hook reports saving, show spinner **/}

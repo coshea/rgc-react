@@ -29,6 +29,7 @@ service cloud.firestore {
           'President',
           'Treasurer',
           'Handicap Chairman',
+          'Tournament Chairman',
           'Webmaster',
           'Board Member'
         ];
