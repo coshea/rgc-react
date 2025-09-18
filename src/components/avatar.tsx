@@ -27,6 +27,7 @@ export interface UserAvatarProps {
 export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
   (
     {
+      userId, // intentionally extracted so it is NOT forwarded to DOM / HeroUI Avatar
       name,
       src,
       size = "sm",

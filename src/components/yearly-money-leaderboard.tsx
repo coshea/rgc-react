@@ -12,6 +12,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { useUsersMap } from "@/hooks/useUsers";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
@@ -30,6 +31,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
     year,
     enabled: userLoggedIn,
   });
+  const { usersMap, isLoading: loadingUsers } = useUsersMap();
   const [filter, setFilter] = useState("");
 
   // Build map of wins & tournaments played per user
@@ -73,7 +75,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
     return rows.filter((r) => r.displayName.toLowerCase().includes(q));
   }, [filter, rows]);
 
-  const isLoading = loadingWinnings || loadingTournaments;
+  const isLoading = loadingWinnings || loadingTournaments || loadingUsers;
   const topThree = filtered.slice(0, 3);
 
   return (
@@ -96,193 +98,255 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
       {/* Podium Section */}
       {!isLoading && topThree.length > 0 && (
         <div className="mx-auto w-full max-w-3xl">
-          <div className="flex items-end justify-center gap-4 sm:gap-8 py-2">
+          <div className="flex items-end justify-center gap-3 sm:gap-8 py-1 sm:py-2">
             {/* Second */}
-            <div className="flex flex-col items-center w-24">
-              {topThree[1] && (
-                <>
-                  <UserAvatar
-                    size="sm"
-                    userId={topThree[1].userId}
-                    name={topThree[1].displayName}
-                    className="shadow-sm mb-1"
-                  />
-                  <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
-                    <Icon
-                      icon="lucide:medal"
-                      className="w-3 h-3 text-default-400"
-                    />
-                    <span>2nd</span>
-                  </div>
-                  <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                    {topThree[1].displayName}
-                  </p>
-                  <p className="text-[11px] font-semibold text-success-600 mt-0.5">
-                    ${topThree[1].winnings.toLocaleString("en-US")}
-                  </p>
-                </>
-              )}
+            <div className="flex flex-col items-center w-20 sm:w-24">
+              {topThree[1] &&
+                (() => {
+                  const u = usersMap.get(topThree[1].userId);
+                  return (
+                    <>
+                      <UserAvatar
+                        size="sm"
+                        userId={topThree[1].userId}
+                        name={
+                          (u && (u.displayName || (u as any).name)) ||
+                          topThree[1].displayName
+                        }
+                        src={
+                          (u as any)?.photoURL ||
+                          (u as any)?.profileURL ||
+                          undefined
+                        }
+                        className="shadow-sm mb-1"
+                      />
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                        <Icon
+                          icon="lucide:medal"
+                          className="w-3 h-3 text-default-400"
+                        />
+                        <span>2nd</span>
+                      </div>
+                      <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
+                        {(u && (u.displayName || (u as any).name)) ||
+                          topThree[1].displayName}
+                      </p>
+                      <p className="text-[11px] font-semibold text-success-600 mt-0.5">
+                        ${topThree[1].winnings.toLocaleString("en-US")}
+                      </p>
+                    </>
+                  );
+                })()}
             </div>
             {/* First */}
-            <div className="flex flex-col items-center w-28">
-              {topThree[0] && (
-                <>
-                  <UserAvatar
-                    size="md"
-                    userId={topThree[0].userId}
-                    name={topThree[0].displayName}
-                    className="shadow-md ring-2 ring-warning mb-1"
-                  />
-                  <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
-                    <Icon icon="lucide:trophy" className="w-4 h-4" />
-                    <span>1st</span>
-                  </div>
-                  <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
-                    {topThree[0].displayName}
-                  </p>
-                  <p className="text-[12px] font-bold text-success-700 mt-0.5">
-                    ${topThree[0].winnings.toLocaleString("en-US")}
-                  </p>
-                </>
-              )}
+            <div className="flex flex-col items-center w-24 sm:w-28">
+              {topThree[0] &&
+                (() => {
+                  const u = usersMap.get(topThree[0].userId);
+                  return (
+                    <>
+                      <UserAvatar
+                        size="md"
+                        userId={topThree[0].userId}
+                        name={
+                          (u && (u.displayName || (u as any).name)) ||
+                          topThree[0].displayName
+                        }
+                        src={
+                          (u as any)?.photoURL ||
+                          (u as any)?.profileURL ||
+                          undefined
+                        }
+                        className="shadow-md ring-2 ring-warning mb-1"
+                      />
+                      <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
+                        <Icon icon="lucide:trophy" className="w-4 h-4" />
+                        <span>1st</span>
+                      </div>
+                      <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
+                        {(u && (u.displayName || (u as any).name)) ||
+                          topThree[0].displayName}
+                      </p>
+                      <p className="text-[12px] font-bold text-success-700 mt-0.5">
+                        ${topThree[0].winnings.toLocaleString("en-US")}
+                      </p>
+                    </>
+                  );
+                })()}
             </div>
             {/* Third */}
-            <div className="flex flex-col items-center w-24">
-              {topThree[2] && (
-                <>
-                  <UserAvatar
-                    size="sm"
-                    userId={topThree[2].userId}
-                    name={topThree[2].displayName}
-                    className="shadow-sm mb-1"
-                  />
-                  <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
-                    <Icon
-                      icon="lucide:medal"
-                      className="w-3 h-3 text-amber-700"
-                    />
-                    <span>3rd</span>
-                  </div>
-                  <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                    {topThree[2].displayName}
-                  </p>
-                  <p className="text-[11px] font-semibold text-success-600 mt-0.5">
-                    ${topThree[2].winnings.toLocaleString("en-US")}
-                  </p>
-                </>
-              )}
+            <div className="flex flex-col items-center w-20 sm:w-24">
+              {topThree[2] &&
+                (() => {
+                  const u = usersMap.get(topThree[2].userId);
+                  return (
+                    <>
+                      <UserAvatar
+                        size="sm"
+                        userId={topThree[2].userId}
+                        name={
+                          (u && (u.displayName || (u as any).name)) ||
+                          topThree[2].displayName
+                        }
+                        src={
+                          (u as any)?.photoURL ||
+                          (u as any)?.profileURL ||
+                          undefined
+                        }
+                        className="shadow-sm mb-1"
+                      />
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                        <Icon
+                          icon="lucide:medal"
+                          className="w-3 h-3 text-amber-700"
+                        />
+                        <span>3rd</span>
+                      </div>
+                      <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
+                        {(u && (u.displayName || (u as any).name)) ||
+                          topThree[2].displayName}
+                      </p>
+                      <p className="text-[11px] font-semibold text-success-600 mt-0.5">
+                        ${topThree[2].winnings.toLocaleString("en-US")}
+                      </p>
+                    </>
+                  );
+                })()}
             </div>
           </div>
         </div>
       )}
-      <Table
-        aria-label="Yearly money leaderboard"
-        removeWrapper
-        isStriped
-        classNames={{
-          th: "bg-default-100 text-default-600 font-medium text-[11px]",
-        }}
-      >
-        <TableHeader>
-          <TableColumn key="rank">RANK</TableColumn>
-          <TableColumn key="player">PLAYER</TableColumn>
-          <TableColumn key="played">PLAYED</TableColumn>
-          <TableColumn key="wins">WINS</TableColumn>
-          <TableColumn key="winnings">WINNINGS</TableColumn>
-        </TableHeader>
-        <TableBody
-          items={filtered}
-          loadingState={isLoading ? "loading" : "idle"}
-          emptyContent={
-            !isLoading && filtered.length === 0
-              ? filter
-                ? "No players match filter."
-                : "No winnings yet."
-              : undefined
-          }
+      <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+        <Table
+          aria-label="Yearly money leaderboard"
+          removeWrapper
+          isStriped
+          classNames={{
+            th: "bg-default-100 text-default-600 font-medium text-[11px] whitespace-nowrap",
+          }}
         >
-          {(item: any) => (
-            <TableRow
-              key={item.userId}
-              className={
-                "transition-colors hover:bg-default-50 " +
-                (item.rank === 1
-                  ? "bg-warning/15 dark:bg-warning/20"
-                  : item.rank === 2
-                    ? "bg-secondary/10"
-                    : item.rank === 3
-                      ? "bg-default-200/40 dark:bg-default-200/10"
-                      : "")
-              }
-            >
-              {(columnKey) => {
-                switch (columnKey) {
-                  case "rank":
-                    return (
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={
-                              "font-semibold " +
-                              (item.rank <= 3 ? "text-primary-600" : "")
-                            }
-                          >
-                            {item.rank}
-                          </span>
-                        </div>
-                      </TableCell>
-                    );
-                  case "player":
-                    return (
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <UserAvatar
-                            size="sm"
-                            userId={item.userId}
-                            name={item.displayName}
-                            className="hidden sm:flex"
-                          />
-                          <div>
-                            <p className="font-medium">{item.displayName}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                    );
-                  case "played":
-                    return <TableCell>{item.played}</TableCell>;
-                  case "wins":
-                    return (
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{item.wins}</span>
-                          {item.wins > 0 && (
-                            <Chip size="sm" variant="flat" color="success">
-                              {item.wins === 1 ? "1 win" : `${item.wins} wins`}
-                            </Chip>
-                          )}
-                        </div>
-                      </TableCell>
-                    );
-                  case "winnings":
-                    return (
-                      <TableCell>
-                        <span className="font-semibold">
-                          ${item.winnings.toLocaleString("en-US")}
-                        </span>
-                      </TableCell>
-                    );
-                  default:
-                    return (
-                      <TableCell>
-                        <span />
-                      </TableCell>
-                    );
-                }
-              }}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          <TableHeader>
+            <TableColumn key="rank">RANK</TableColumn>
+            <TableColumn key="player">PLAYER</TableColumn>
+            <TableColumn key="played" className="hidden sm:table-cell">
+              PLAYED
+            </TableColumn>
+            <TableColumn key="wins" className="hidden sm:table-cell">
+              WINS
+            </TableColumn>
+            <TableColumn key="winnings">WINNINGS</TableColumn>
+          </TableHeader>
+          <TableBody
+            items={filtered}
+            loadingState={isLoading ? "loading" : "idle"}
+            emptyContent={
+              !isLoading && filtered.length === 0
+                ? filter
+                  ? "No players match filter."
+                  : "No winnings yet."
+                : undefined
+            }
+          >
+            {(item: any) => {
+              const u = usersMap.get(item.userId);
+              const display =
+                (u && (u.displayName || (u as any).name)) || item.displayName;
+              const src =
+                (u as any)?.photoURL || (u as any)?.profileURL || undefined;
+              return (
+                <TableRow
+                  key={item.userId}
+                  className={
+                    "transition-colors hover:bg-default-50 " +
+                    (item.rank === 1
+                      ? "bg-warning/15 dark:bg-warning/20"
+                      : item.rank === 2
+                        ? "bg-secondary/10"
+                        : item.rank === 3
+                          ? "bg-default-200/40 dark:bg-default-200/10"
+                          : "")
+                  }
+                >
+                  {(columnKey) => {
+                    switch (columnKey) {
+                      case "rank":
+                        return (
+                          <TableCell>
+                            <span
+                              className={
+                                "font-semibold " +
+                                (item.rank <= 3 ? "text-primary-600" : "")
+                              }
+                            >
+                              {item.rank}
+                            </span>
+                          </TableCell>
+                        );
+                      case "player":
+                        return (
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-3">
+                                <UserAvatar
+                                  size="sm"
+                                  userId={item.userId}
+                                  name={display}
+                                  src={src}
+                                  className="hidden sm:flex"
+                                />
+                                <p className="font-medium leading-tight max-w-[160px] truncate">
+                                  {display}
+                                </p>
+                              </div>
+                              <div className="sm:hidden mt-1 text-[10px] text-default-500 flex gap-2">
+                                <span className="whitespace-nowrap">
+                                  {item.played} played
+                                </span>
+                                {item.wins > 0 && (
+                                  <span className="whitespace-nowrap">
+                                    {item.wins} {item.wins === 1 ? "win" : "wins"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        );
+                      case "played":
+                        return <TableCell className="hidden sm:table-cell">{item.played}</TableCell>;
+                      case "wins":
+                        return (
+                          <TableCell className="hidden sm:table-cell">
+                            <div className="flex items-center">
+                              {item.wins > 0 && (
+                                <Chip size="sm" variant="flat" color="success">
+                                  {item.wins === 1 ? "1 win" : `${item.wins} wins`}
+                                </Chip>
+                              )}
+                            </div>
+                          </TableCell>
+                        );
+                      case "winnings":
+                        return (
+                          <TableCell>
+                            <span className="font-semibold whitespace-nowrap">
+                              ${item.winnings.toLocaleString("en-US")}
+                            </span>
+                          </TableCell>
+                        );
+                      default:
+                        return (
+                          <TableCell>
+                            <span />
+                          </TableCell>
+                        );
+                    }
+                  }}
+                </TableRow>
+              );
+            }}
+          </TableBody>
+        </Table>
+      </div>
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
