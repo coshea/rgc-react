@@ -1,6 +1,12 @@
 import { useMemo } from "react";
 import { useUsers } from "@/hooks/useUsers";
-import { BOARD_ROLE_META, coerceBoardRole, getBoardRolePriority, formatBoardRoleLabel, type BoardRole } from "@/types/roles";
+import {
+  BOARD_ROLE_META,
+  coerceBoardRole,
+  getBoardRolePriority,
+  formatBoardRoleLabel,
+  type BoardRole,
+} from "@/types/roles";
 import type { User } from "@/api/users";
 
 export interface EnrichedBoardMember extends User {
@@ -29,12 +35,14 @@ export function useBoardMembers() {
     );
 
     const enriched: EnrichedBoardMember[] = filtered.map((u: any) => {
-      const rawRole: string | null = (u.role || u.boardRole || null);
+      const rawRole: string | null = u.role || u.boardRole || null;
       const normalizedRole = coerceBoardRole(rawRole);
       const rolePriority = getBoardRolePriority(rawRole);
       const roleLabel = formatBoardRoleLabel(rawRole);
       const roleMeta = normalizedRole ? BOARD_ROLE_META[normalizedRole] : null;
-      const isPresident = normalizedRole === "President" || roleLabel.toLowerCase() === "president";
+      const isPresident =
+        normalizedRole === "President" ||
+        roleLabel.toLowerCase() === "president";
       return {
         ...(u as User),
         normalizedRole,
@@ -46,7 +54,8 @@ export function useBoardMembers() {
     });
 
     enriched.sort((a, b) => {
-      if (a.rolePriority !== b.rolePriority) return a.rolePriority - b.rolePriority;
+      if (a.rolePriority !== b.rolePriority)
+        return a.rolePriority - b.rolePriority;
       const na = (a.displayName || a.email || "").toLowerCase();
       const nb = (b.displayName || b.email || "").toLowerCase();
       return na.localeCompare(nb);

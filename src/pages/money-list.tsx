@@ -36,7 +36,9 @@ export default function MoneyListPage() {
         <CardHeader className="flex flex-col gap-2 pb-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Money List</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Money List
+              </h1>
               <p className="text-xs text-default-500 mt-1">
                 Yearly prize earnings & tournament results.
               </p>
@@ -78,7 +80,8 @@ export default function MoneyListPage() {
         </CardBody>
       </Card>
       <p className="text-[11px] text-default-400 leading-relaxed">
-        Prize amounts are per-person shares; team winnings shown per member. Data loads live from tournaments.
+        Prize amounts are per-person shares; team winnings shown per member.
+        Data loads live from tournaments.
       </p>
     </div>
   );

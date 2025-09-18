@@ -16,8 +16,18 @@ export const BOARD_ROLE_META: Record<
   BoardRole,
   { icon: string; color: any; label: string; priority: number }
 > = {
-  President: { icon: "lucide:crown", color: "warning", label: "President", priority: 1 },
-  Treasurer: { icon: "lucide:wallet", color: "secondary", label: "Treasurer", priority: 2 },
+  President: {
+    icon: "lucide:crown",
+    color: "warning",
+    label: "President",
+    priority: 1,
+  },
+  Treasurer: {
+    icon: "lucide:wallet",
+    color: "secondary",
+    label: "Treasurer",
+    priority: 2,
+  },
   "Handicap Chairman": {
     icon: "lucide:target",
     color: "success",
@@ -30,7 +40,12 @@ export const BOARD_ROLE_META: Record<
     label: "Tournament Chairman",
     priority: 4,
   },
-  Webmaster: { icon: "lucide:globe", color: "primary", label: "Webmaster", priority: 5 },
+  Webmaster: {
+    icon: "lucide:globe",
+    color: "primary",
+    label: "Webmaster",
+    priority: 5,
+  },
   "Board Member": {
     icon: "lucide:users",
     color: "default",

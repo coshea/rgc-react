@@ -155,51 +155,55 @@ export function TournamentBreakdown({ year }: Props) {
                 <TableBody items={rows} emptyContent="No results">
                   {(item: ResultRow) => {
                     const user = usersMap.get(item.userId);
-                    const src = (user as any)?.photoURL || (user as any)?.profileURL || undefined;
+                    const src =
+                      (user as any)?.photoURL ||
+                      (user as any)?.profileURL ||
+                      undefined;
                     return (
-                    <TableRow key={item.id}>
-                      <TableCell>{renderPosition(item.position)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {usersLoading ? (
-                            <Skeleton className="hidden h-8 w-8 rounded-full sm:flex" />
-                          ) : (
-                            <UserAvatar
-                              size="sm"
-                              className="hidden sm:flex"
-                              name={item.name}
-                              userId={item.userId}
-                              src={src}
-                            />
-                          )}
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            {item.teamSize > 1 && (
-                              <p className="text-[10px] text-default-400">
-                                Team of {item.teamSize}
-                              </p>
+                      <TableRow key={item.id}>
+                        <TableCell>{renderPosition(item.position)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {usersLoading ? (
+                              <Skeleton className="hidden h-8 w-8 rounded-full sm:flex" />
+                            ) : (
+                              <UserAvatar
+                                size="sm"
+                                className="hidden sm:flex"
+                                name={item.name}
+                                userId={item.userId}
+                                src={src}
+                              />
                             )}
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              {item.teamSize > 1 && (
+                                <p className="text-[10px] text-default-400">
+                                  Team of {item.teamSize}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            item.score && item.score.startsWith("-")
-                              ? "text-success font-medium"
-                              : ""
-                          }
-                        >
-                          {item.score || "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold">
-                          ${item.prize.toLocaleString("en-US")}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                    )}}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={
+                              item.score && item.score.startsWith("-")
+                                ? "text-success font-medium"
+                                : ""
+                            }
+                          >
+                            {item.score || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold">
+                            ${item.prize.toLocaleString("en-US")}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }}
                 </TableBody>
               </Table>
             </div>

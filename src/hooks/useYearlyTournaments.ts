@@ -17,9 +17,13 @@ export function useYearlyTournaments({
       const start = new Date(year, 0, 1);
       const end = new Date(year + 1, 0, 1);
       const { db } = await import("@/config/firebase");
-      const { collection, query: q, where, getDocs, orderBy } = await import(
-        "firebase/firestore"
-      );
+      const {
+        collection,
+        query: q,
+        where,
+        getDocs,
+        orderBy,
+      } = await import("firebase/firestore");
       const colRef = collection(db, "tournaments");
       let docsSnap;
       try {
@@ -47,7 +51,7 @@ export function useYearlyTournaments({
         if (dateObj.getFullYear() !== year) return; // guard if fallback
         tournaments.push({
           firestoreId: docSnap.id,
-            // required Tournament fields
+          // required Tournament fields
           title: data.title || "(untitled)",
           date: dateObj,
           description: data.description || "",

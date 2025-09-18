@@ -1,6 +1,14 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardBody, Button, Divider, addToast, Select, SelectItem } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  Button,
+  Divider,
+  addToast,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
@@ -150,7 +158,7 @@ const TournamentRegister: React.FC = () => {
 
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
-  if (!users || users.length === 0) return;
+    if (!users || users.length === 0) return;
     const valid = new Set(users.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
@@ -340,13 +348,13 @@ const TournamentRegister: React.FC = () => {
                 </p>
               ) : null}
             </div>
-              {tournament.icon ? (
-                <img
+            {tournament.icon ? (
+              <img
                 src={tournament.icon}
                 alt={tournament.title}
                 className="w-16 h-16 rounded-md object-cover border border-default-200"
-                />
-              ) : null}
+              />
+            ) : null}
           </div>
 
           <Divider className="my-4" />
