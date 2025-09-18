@@ -1,227 +1,77 @@
-Assistant rules for the rgc-react repository
+Assistant Rules for the rgc-react Repository
 
 ## Purpose
 
-This document records the rules and conventions the user has asked the assistant to follow while working in the rgc-react repository. It is written to be concise and actionable so other contributors or automated agents can reuse it.
+Single source of truth for explicit, enforceable repository rules (UI, data, safety). High‑level operational cheat sheet for AI lives in `/.github/copilot-instructions.md`; that file mirrors a concise subset of this one.
 
-## How to use
+## How to Use
 
-- Humans: read this file before editing UI or Firestore rules. It summarizes event naming, UI patterns, modal usage, and data model expectations.
-- Bots/automation: the same rules can be turned into machine-readable JSON or integrated into project checks.
+- Read before modifying auth, Firestore rules, or membership directory features.
+- Update THIS file first when a rule changes; then sync the distilled summary in `/.github/copilot-instructions.md`.
 
-## Tech Stack
+## Current Tech Stack (Authoritative)
 
-- **Frontend Framework**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **Routing**: React Router v6
-- **UI Components**: HeroUI
-- **Styling**: Tailwind 4 CSS / Styled-components
-- **HTTP Client**: Axios
-- **Testing Framework**: Vitest + React Testing Library
-- **Code Quality**: ESLint + Prettier
-- **Database**: Firebase Firestore
+- React 18 + TypeScript, Vite
+- HeroUI + Tailwind CSS v4 (no styled-components in use)
+- Routing: React Router v6
+- Data/Server: Firebase (Auth, Firestore, Storage)
+- State/server caching: TanStack Query
+- Testing: Vitest + React Testing Library (jsdom)
+- Lint/Format: ESLint + Prettier
+
+Removed (do NOT reference unless intentionally added later): Axios, Styled-components, ApexCharts.
 
 ## Do
 
-- use HeroUI. make sure your code is v3 compatible
-- use apex charts for charts. do not supply custom html
-- default to small components. prefer focused modules over god components
-- default to small files and diffs. avoid repo wide rewrites unless asked
-- always consider how the mobile view will look as well. Build to also have mobile optimized components and views
+- Use HeroUI primitives (`Button`, `Input`, `Avatar`, etc.) and Tailwind utilities.
+- Keep components focused & small; extract sub-parts into `src/components/`.
+- Use `onPress` instead of `onClick` for HeroUI components.
+- Normalize & format phone numbers consistently (see membership directory + `parseUsersCsv`).
+- Use dynamic imports for large Firestore interactions in admin/editor contexts (see `tournament-editor.tsx`).
 
-## Don't
+## Don’t
 
-- do not hard code colors
-- do not use `div`s if we have a component already
-- do not add new heavy dependencies without approval
+- Add heavy dependencies without explicit approval.
+- Re-implement auth listeners (centralized in `AuthProvider`).
+- Duplicate admin detection logic—import or replicate the tri-source OR pattern exactly.
+- Use `window.confirm` for destructive actions—use an in-app modal overlay.
 
-## Safety and permissions
+## Safety & Permissions
 
-### Allowed without prompt:
+Allowed automatically: read/list files, run single test, run eslint/prettier, type-check a single file.
+Ask first: install packages, delete files, run full build/test suite, push commits, chmod changes.
 
-- read files, list files
-- tsc single file, prettier, eslint,
-- vitest single test
+## Architecture Snapshot
 
-### Ask first:
+- Routing: `src/App.tsx`.
+- Global providers: `src/provider.tsx` wraps `AuthProvider` → `HeroUIProvider` → `ToastProvider`.
+- Auth: `src/providers/AuthProvider.tsx`; consumer hook: `useAuth()`.
+- Current user profile & optimistic save: `src/hooks/useUserProfile.ts`.
+- Domain models: `src/types/` (`tournament.ts`, `roles.ts`, `winner.ts`).
+- Firestore helpers: `src/api/users.ts`, `src/api/storage.ts` (enforces UID checks).
+- Membership directory: `src/pages/membership-directory.tsx` (authoritative admin detection implementation).
 
-- package installs,
-- git push
-- deleting files, chmod
-- running full build or end to end suites
+## Core Rules
 
-## Development Guidelines
+1. Identity: When asked your name, answer exactly: `GitHub Copilot`.
+2. UI: HeroUI + Tailwind only; use `onPress`; no raw `div` wrappers when a semantic/component alternative exists.
+3. Modals: Use custom overlay pattern (see directory & tournament editor) for confirmations; never `window.confirm`.
+4. Membership Directory: Show avatar, name, email, phone only (unless explicitly extending). Use `User` model; admin-only edits persist to `users` collection.
+5. Admin Detection (must OR all): `users/{uid}.admin` OR `admin/{uid}.isAdmin` OR ID token claim `admin`.
+6. Firestore Access: Subscribe only after confirming auth; keep `admin` collection at root; preserve UID validation logic in write helpers.
+7. Roles: Validate with `isAllowedBoardRole`; reject legacy/unrecognized roles unless in migration path.
+8. Phone Numbers: Normalize digits; display `(xxx) xxx-xxxx` when 10 digits; keep helper logic consistent across pages & CSV import.
+9. Optimistic Updates: Follow `useUserProfile()` pattern (`onMutate` + rollback) for new cached mutations.
+10. Validation & Feedback: Use local `errors` object and HeroUI `isInvalid` + `errorMessage`; surface results with `addToast`.
+11. Accessibility: Provide `aria-label` for icon-only buttons; ensure modals trap focus if expanded beyond current simple overlays.
+12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
 
-### Component Development Standards
+## Maintenance & Propagation
 
-1. **Function Components First**: Use function components and Hooks
-2. **TypeScript Types**: Define interfaces for all props
-3. **Component Naming**: Use PascalCase, file name matches component name
-4. **Single Responsibility**: Each component handles only one functionality
+1. Update this file first when introducing/changing a rule.
+2. Add a dated bullet under Metadata (what changed + why).
+3. Reflect concise version in `/.github/copilot-instructions.md` (omit rationale, keep actionable steps).
 
-## Project Structure
+## Metadata
 
-```
-react-project/
-├── src/
-│   ├── assets/             # Static assets
-│   ├── components/         # Reusable components
-│   ├── components/         # Reusable components
-│   ├── pages/             # Page components
-│   ├── hooks/             # Custom Hooks
-│   ├── store/             # State management
-│   ├── services/          # API services
-│   ├── utils/             # Utility functions
-│   ├── types/             # TypeScript type definitions
-│   ├── styles/            # Global styles
-│   ├── config/         # Configs
-│   ├── App.tsx
-│   └── main.tsx
-├── tests/                 # Test files
-├── docs/                  # Project documentation
-├── .env.example          # Environment variables example
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── README.md
-```
-
-### Project structure
-
-- see `App.tsx` for routes
-- components live in `app/components`
-- Tournaments get editted in the component `tournament-editor.tsx`
-- Tournaments get viewed in the component `tournament-detail.tsx`
-- The list of tournament are viewed in the component `tournament-list.tsx`
-
-## Testing Strategy
-
-### Unit Testing Example
-
-## Performance Optimization
-
-### Code Splitting
-
-```tsx
-import { lazy, Suspense } from "react";
-
-const LazyComponent = lazy(() => import("./LazyComponent"));
-
-function App() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LazyComponent />
-    </Suspense>
-  );
-}
-```
-
-### Memory Optimization
-
-```tsx
-import { memo, useMemo, useCallback } from "react";
-
-const ExpensiveComponent = memo(({ data, onUpdate }) => {
-  const processedData = useMemo(() => {
-    return data.map((item) => ({ ...item, processed: true }));
-  }, [data]);
-
-  const handleUpdate = useCallback(
-    (id) => {
-      onUpdate(id);
-    },
-    [onUpdate]
-  );
-
-  return (
-    <div>
-      {processedData.map((item) => (
-        <div key={item.id} onClick={() => handleUpdate(item.id)}>
-          {item.name}
-        </div>
-      ))}
-    </div>
-  );
-});
-```
-
-## Deployment Configuration
-
-### Build Production Version
-
-```bash
-npm run build
-```
-
-## Core rules (explicit user requests)
-
-1. Identity
-
-- When asked for the assistant's name, reply with exactly: "GitHub Copilot".
-
-2. UI interaction patterns
-
-- Use HeroUI components, https://www.heroui.com/docs/components, when possible
-- Use Tailwind for all CSS
-- Prefer in-app HeroUI modals for any destructive/confirmation flows. Avoid using window.confirm.
-- Use `onPress` for button event handlers in JSX props (avoid `onClick`).
-- Use the project's HeroUI components (Button, Input, Avatar, Card, Table, Modal-like overlays) and existing Tailwind utility classes.
-- Display avatars next to user display names in lists and cards.
-
-3. Membership directory
-
-- Use the existing `User` model rather than creating a new `Member` type.
-- The membership directory page is a protected route (only authenticated users can access).
-- Fields to show: avatar, displayName, email (own column), phone (own column). Remove role/status/department from the UI unless specifically requested.
-- Admins can add, edit, and delete users. All changes must be saved to Firestore in the `users` collection.
-- Normalize phone values on save and format for display.
-
-4. Admin detection
-
-- Admin signal should be an OR of:
-  - `users/{uid}.admin` boolean field
-  - `admin/{uid}.isAdmin` document
-  - Firebase ID token custom claim `admin` (verify via getIdTokenResult)
-
-5. Firestore access patterns and rules
-
-- Only subscribe to Firestore collections after confirming authentication to avoid permission-denied snapshot errors.
-- Firestore rules should allow reads of `users` for authenticated users and allow create/update/delete only if request.auth.uid==userId or the requestor is an admin (per the admin signals).
-- Keep `match /admin/{adminId}` at the top-level in `firestore.rules` (not nested under other collections).
-
-6. Coding and repo patterns
-
-- Prefer small, focused edits. Avoid reformatting unrelated code.
-- When editing files, use the same indentation style and follow TypeScript types already present in the codebase.
-- Add small, low-risk adjacent improvements when possible (tests, types, docs). If a follow-up is risky or large, list it as next steps instead.
-- When replacing UI patterns, consider creating small reusable components (e.g., `ConfirmationModal`) to avoid duplication.
-
-7. UX and formatting
-
-- Clamp long descriptions when displayed in tables (use `line-clamp-2` to limit to two lines where appropriate).
-- Format currency and dates consistently using Intl APIs configured for en-US and UTC where the codebase already uses that convention.
-
-8. Build and validation
-
-- After substantive changes, run build/tests/linter to ensure no TypeScript or compile errors. Fix issues if they arise (iterate up to three times)
-- Prioritize a clean build before ending a change set. Report any non-fatal warnings (chunk-size, dynamic imports) but continue if builds pass.
-
-9. Confirmation modifier
-
-- Always use an in-app confirmation modal that shows contextual information about what will be deleted (owner, team members, tournament title/date) and includes Cancel and Confirm actions.
-
-10. Accessibility and semantics
-
-- Provide ARIA attributes and accessible labels for interactive controls (aria-label for icon-only buttons, role and aria-pressed for toggle elements).
-
-11. Rule updates and maintenance
-
-- Whenever the user adds a new rule (in conversation, PR, or issue), the assistant will immediately update this `docs/AGENTS.md` file to reflect the new rule. The update should:
-  - Add the new rule text under the appropriate section (or create a new numbered section) and include a one-line rationale.
-  - Update the "Last updated" metadata below with the date and brief note about what changed.
-  - Prefer minimal, focused edits and do not reformat unrelated content.
-
-Metadata
-
-- Last updated: 2025-09-08 (assistant added maintenance rule)
-  Assistant rules for the rgc-react repository
+Last updated: 2025-09-17 (pruned outdated libs, removed verbose examples, added architecture snapshot & cross-link)
