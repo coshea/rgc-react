@@ -83,7 +83,7 @@ export const siteConfig = {
       title: "Money List",
       description: "Yearly prize money standings",
       link: "/money-list",
-      icon: "lucide:trophy",
+      icon: "lucide:badge-dollar-sign",
     },
     verifyEmail: {
       title: "Verify Email",

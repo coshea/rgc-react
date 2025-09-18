@@ -10,6 +10,7 @@ import {
   Chip,
   Skeleton,
 } from "@heroui/react";
+import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
@@ -73,6 +74,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
   }, [filter, rows]);
 
   const isLoading = loadingWinnings || loadingTournaments;
+  const topThree = filtered.slice(0, 3);
 
   return (
     <div className="space-y-4">
@@ -91,6 +93,88 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
           {filtered.length} player{filtered.length === 1 ? "" : "s"}
         </div>
       </div>
+      {/* Podium Section */}
+      {!isLoading && topThree.length > 0 && (
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="flex items-end justify-center gap-4 sm:gap-8 py-2">
+            {/* Second */}
+            <div className="flex flex-col items-center w-24">
+              {topThree[1] && (
+                <>
+                  <UserAvatar
+                    size="sm"
+                    userId={topThree[1].userId}
+                    name={topThree[1].displayName}
+                    className="shadow-sm mb-1"
+                  />
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                    <Icon
+                      icon="lucide:medal"
+                      className="w-3 h-3 text-default-400"
+                    />
+                    <span>2nd</span>
+                  </div>
+                  <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
+                    {topThree[1].displayName}
+                  </p>
+                  <p className="text-[11px] font-semibold text-success-600 mt-0.5">
+                    ${topThree[1].winnings.toLocaleString("en-US")}
+                  </p>
+                </>
+              )}
+            </div>
+            {/* First */}
+            <div className="flex flex-col items-center w-28">
+              {topThree[0] && (
+                <>
+                  <UserAvatar
+                    size="md"
+                    userId={topThree[0].userId}
+                    name={topThree[0].displayName}
+                    className="shadow-md ring-2 ring-warning mb-1"
+                  />
+                  <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
+                    <Icon icon="lucide:trophy" className="w-4 h-4" />
+                    <span>1st</span>
+                  </div>
+                  <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
+                    {topThree[0].displayName}
+                  </p>
+                  <p className="text-[12px] font-bold text-success-700 mt-0.5">
+                    ${topThree[0].winnings.toLocaleString("en-US")}
+                  </p>
+                </>
+              )}
+            </div>
+            {/* Third */}
+            <div className="flex flex-col items-center w-24">
+              {topThree[2] && (
+                <>
+                  <UserAvatar
+                    size="sm"
+                    userId={topThree[2].userId}
+                    name={topThree[2].displayName}
+                    className="shadow-sm mb-1"
+                  />
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                    <Icon
+                      icon="lucide:medal"
+                      className="w-3 h-3 text-amber-700"
+                    />
+                    <span>3rd</span>
+                  </div>
+                  <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
+                    {topThree[2].displayName}
+                  </p>
+                  <p className="text-[11px] font-semibold text-success-600 mt-0.5">
+                    ${topThree[2].winnings.toLocaleString("en-US")}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <Table
         aria-label="Yearly money leaderboard"
         removeWrapper
@@ -120,7 +204,16 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
           {(item: any) => (
             <TableRow
               key={item.userId}
-              className="transition-colors hover:bg-default-50"
+              className={
+                "transition-colors hover:bg-default-50 " +
+                (item.rank === 1
+                  ? "bg-warning/15 dark:bg-warning/20"
+                  : item.rank === 2
+                    ? "bg-secondary/10"
+                    : item.rank === 3
+                      ? "bg-default-200/40 dark:bg-default-200/10"
+                      : "")
+              }
             >
               {(columnKey) => {
                 switch (columnKey) {
