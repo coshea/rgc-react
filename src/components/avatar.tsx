@@ -60,8 +60,8 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       typeof tabIndex === "number"
         ? tabIndex
         : onPress && !tabIndex
-        ? 0
-        : tabIndex;
+          ? 0
+          : tabIndex;
     // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
     const computeInitials = (full?: string) => {
       if (!full) return "?";
