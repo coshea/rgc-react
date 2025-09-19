@@ -38,9 +38,8 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       as,
       onClick,
       onPress,
-      role,
-      tabIndex,
-      ...rest
+  role,
+  tabIndex
     },
     ref
   ) => {
@@ -78,11 +77,9 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         isBordered={isBordered}
         color={color as any}
         as={as}
-        onClick={onClick as any}
-        onPress={onPress as any}
+        onClick={(onClick as any) ?? (onPress ? ((e: any) => onPress(e)) : undefined)}
         role={role}
         tabIndex={tabIndex}
-        {...rest}
       />
     );
   }

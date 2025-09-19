@@ -325,10 +325,10 @@ export default function MembershipDirectoryPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Membership Directory</h1>
+      <div className="mb-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold leading-tight">Membership Directory</h1>
         {isAdmin && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <input
               ref={fileInputRef}
               type="file"
@@ -336,16 +336,20 @@ export default function MembershipDirectoryPage() {
               className="hidden"
               onChange={handleFile}
             />
-            <Button onPress={onSelectCsv} variant="flat">
-              Bulk Upload
-            </Button>
             <Button
               color="primary"
               startContent={<PlusIcon className="w-4 h-4" />}
               onPress={openAdd}
-              className="font-medium"
+              className="font-medium w-full sm:w-auto"
             >
               Add Member
+            </Button>
+            <Button
+              onPress={onSelectCsv}
+              variant="flat"
+              className="w-full sm:w-auto"
+            >
+              Bulk Upload
             </Button>
           </div>
         )}
@@ -499,7 +503,7 @@ export default function MembershipDirectoryPage() {
                     <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
                   </div>
                   {isAdmin && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex gap-3 flex-row flex-wrap">
                       <Tooltip content="Edit member">
                         <Button
                           isIconOnly
