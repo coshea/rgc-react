@@ -326,7 +326,9 @@ export default function MembershipDirectoryPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="mb-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold leading-tight">Membership Directory</h1>
+        <h1 className="text-2xl font-semibold leading-tight">
+          Membership Directory
+        </h1>
         {isAdmin && (
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <input
