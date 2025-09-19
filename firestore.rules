@@ -4,11 +4,16 @@ service cloud.firestore {
     // Helper: returns true if the requester is a super-admin (custom claim)
     // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
     function isAdmin() {
+      let adminDoc = get(/databases/$(database)/documents/admin/$(request.auth.uid));
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return request.auth != null && (
-        // custom claim override
+        // Source 1: custom claim override (super-admin)
         request.auth.token.admin == true
-        // OR user has an admin document set to true
-        || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+        // Source 2: explicit admin collection doc (/admin/{uid}.isAdmin == true)
+        || adminDoc.data.isAdmin == true
+        // Source 3: user profile flag (/users/{uid}.admin == true or string 'true')
+        || userDoc.data.admin == true
+        || userDoc.data.admin == 'true'
       );
     }
 
@@ -44,9 +49,13 @@ service cloud.firestore {
         );
       }
       // Core write gate with board field restrictions
-      allow create: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
-        // if non-admin creating their own doc, they must not set board fields
-        isAdmin() || (request.resource.data.boardMember != true && !(request.resource.data.role is string))
+      // Permit admins to create any user doc; permit non-admin authenticated users to create
+      // their own user doc (without board fields). Bulk upload relies on admin path.
+      allow create: if request.auth != null && (
+        // Admin full create
+        isAdmin() && boardRoleValid(request.resource.data)
+        // Self-create with no board fields
+        || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
       allow update: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
         isAdmin() || boardFieldsUnchanged()
@@ -103,7 +112,8 @@ service cloud.firestore {
     // Admin documents can be read by the user themselves or by super-admins.
     match /admin/{adminId} {
       // Allow users to read their own admin doc (so client can check quickly)
-      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true || isAdmin());
+      // IMPORTANT: cannot call isAdmin() here (would recurse). Only allow if user reads own doc or already has claim.
+      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true);
 
       // Only custom-claim super-admins may create/update/delete admin documents.
       // This prevents arbitrary users from granting themselves admin rights.

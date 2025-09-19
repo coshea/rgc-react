@@ -15,7 +15,7 @@ export interface UserAvatarProps {
   color?: string;
   as?: any;
   onClick?: React.MouseEventHandler<HTMLElement>;
-  onPress?: (...args: any[]) => void; // if consumer still uses onPress pattern
+  onPress?: (...args: any[]) => void; // preserve HeroUI style triggers
   role?: string;
   tabIndex?: number;
 }
@@ -25,8 +25,8 @@ export interface UserAvatarProps {
  * If no `src` provided, we seed a generic generated avatar using userId or name.
  */
 export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       name,
       src,
       size = "sm",
@@ -40,9 +40,8 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       onPress,
       role,
       tabIndex,
-    },
-    ref
-  ) => {
+      ...rest
+    } = props;
     // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
     const computeInitials = (full?: string) => {
       if (!full) return "?";
@@ -77,11 +76,12 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         isBordered={isBordered}
         color={color as any}
         as={as}
-        onClick={
-          (onClick as any) ?? (onPress ? (e: any) => onPress(e) : undefined)
-        }
         role={role}
         tabIndex={tabIndex}
+        onClick={onClick}
+        // HeroUI Avatar supports onPress; pass through both
+        onPress={onPress as any}
+        {...rest}
       />
     );
   }
