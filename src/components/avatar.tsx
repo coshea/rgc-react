@@ -15,7 +15,7 @@ export interface UserAvatarProps {
   color?: string;
   as?: any;
   onClick?: React.MouseEventHandler<HTMLElement>;
-  onPress?: (...args: any[]) => void; // preserve HeroUI style triggers
+  onPress?: (...args: any[]) => void; // synthetic press handler (map to onClick)
   role?: string;
   tabIndex?: number;
 }
@@ -27,6 +27,7 @@ export interface UserAvatarProps {
 export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
   (props, ref) => {
     const {
+      userId, // intentionally not forwarded to DOM/Avatar to avoid React warnings
       name,
       src,
       size = "sm",
@@ -42,6 +43,25 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       tabIndex,
       ...rest
     } = props;
+    // satisfy noUnusedLocals while preventing unintended DOM attribute
+    void userId;
+    // Compose click handler: respect both provided onClick and onPress
+    const handleClick: React.MouseEventHandler<HTMLElement> | undefined =
+      onClick || onPress
+        ? (e) => {
+            if (onClick) onClick(e);
+            if (!e.defaultPrevented && onPress) onPress(e);
+          }
+        : undefined;
+
+    // Provide keyboard accessibility if only onPress supplied
+    const finalRole = role || (onPress && !role ? "button" : role);
+    const finalTabIndex =
+      typeof tabIndex === "number"
+        ? tabIndex
+        : onPress && !tabIndex
+        ? 0
+        : tabIndex;
     // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
     const computeInitials = (full?: string) => {
       if (!full) return "?";
@@ -76,11 +96,9 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         isBordered={isBordered}
         color={color as any}
         as={as}
-        role={role}
-        tabIndex={tabIndex}
-        onClick={onClick}
-        // HeroUI Avatar supports onPress; pass through both
-        onPress={onPress as any}
+        role={finalRole}
+        tabIndex={finalTabIndex}
+        onClick={handleClick}
         {...rest}
       />
     );
