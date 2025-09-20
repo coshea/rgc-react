@@ -25,8 +25,8 @@ export interface UserAvatarProps {
  * If no `src` provided, we seed a generic generated avatar using userId or name.
  */
 export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
-  (
-    {
+  (props, ref) => {
+    const {
       userId, // intentionally extracted so it is NOT forwarded to DOM / HeroUI Avatar
       name,
       src,
@@ -43,9 +43,11 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       tabIndex,
       ...rest
     } = props;
-    // satisfy noUnusedLocals while preventing unintended DOM attribute
+
+    // If we need the userId later for generated images we can hook here; suppress unused warning for now.
     void userId;
-    // Compose click handler: respect both provided onClick and onPress
+
+    // Compose click handler: respect both provided onClick and onPress (mapping onPress -> onClick)
     const handleClick: React.MouseEventHandler<HTMLElement> | undefined =
       onClick || onPress
         ? (e) => {
@@ -55,13 +57,10 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         : undefined;
 
     // Provide keyboard accessibility if only onPress supplied
-    const finalRole = role || (onPress && !role ? "button" : role);
+    const finalRole = role ?? (onPress ? "button" : undefined);
     const finalTabIndex =
-      typeof tabIndex === "number"
-        ? tabIndex
-        : onPress && !tabIndex
-          ? 0
-          : tabIndex;
+      typeof tabIndex === "number" ? tabIndex : onPress ? 0 : undefined;
+
     // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
     const computeInitials = (full?: string) => {
       if (!full) return "?";
@@ -74,7 +73,6 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         if (solo.length === 1) return solo[0].toUpperCase();
         return "?";
       }
-      // take first alpha char of first and last segment
       const first = parts[0].replace(/[^A-Za-z]/g, "");
       const last = parts[parts.length - 1].replace(/[^A-Za-z]/g, "");
       const fi = first ? first[0].toUpperCase() : "";
@@ -83,6 +81,7 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       return combo || "?";
     };
     const initials = computeInitials(name);
+
     return (
       <Avatar
         ref={ref}
