@@ -256,16 +256,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
               return (
                 <TableRow
                   key={item.userId}
-                  className={
-                    "transition-colors hover:bg-default-50 " +
-                    (item.rank === 1
-                      ? "bg-warning/15 dark:bg-warning/20"
-                      : item.rank === 2
-                        ? "bg-secondary/10"
-                        : item.rank === 3
-                          ? "bg-default-200/40 dark:bg-default-200/10"
-                          : "")
-                  }
+                  className="transition-colors hover:bg-default-50"
                 >
                   {(columnKey) => {
                     switch (columnKey) {
