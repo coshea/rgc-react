@@ -1,0 +1,19 @@
+{
+  "name": "Ridgefield Golf Club",
+  "short_name": "RGC",
+  "description": "Ridgefield Golf Club member portal",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a4d1a",
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/rgc_fav.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
