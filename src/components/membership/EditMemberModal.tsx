@@ -29,9 +29,16 @@ export function EditMemberModal({
           <h3 className="text-lg font-medium">
             {editing ? "Edit Member" : "Add Member"}
           </h3>
-          <button className="text-default-500" onClick={onClose}>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            aria-label="Close"
+            onPress={onClose}
+            className="text-default-500"
+          >
             ×
-          </button>
+          </Button>
         </div>
         <div className="space-y-3">
           <Input

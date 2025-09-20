@@ -296,14 +296,22 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               Scheduled Tournaments
             </h2>
             {isAdmin && (
-              <button
-                onClick={handleCreateTournament}
-                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors"
-                disabled={isLoading}
+              <Button
+                color="primary"
+                size="sm"
+                startContent={
+                  <Icon icon="lucide:plus" className="w-4 h-4 sm:w-5 sm:h-5" />
+                }
+                className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
+                onPress={handleCreateTournament}
+                isDisabled={isLoading}
+                aria-label="Create new tournament"
               >
-                <Icon icon="lucide:plus" />
-                <span>New Tournament</span>
-              </button>
+                <span className="hidden xs:inline sm:inline">
+                  New Tournament
+                </span>
+                <span className="sm:hidden sr-only">New Tournament</span>
+              </Button>
             )}
           </div>
 

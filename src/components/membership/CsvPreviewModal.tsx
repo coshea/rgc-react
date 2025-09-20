@@ -23,9 +23,16 @@ export function CsvPreviewModal({
       <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-2xl z-10">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium">CSV Upload Preview</h3>
-          <button className="text-default-500" onClick={onClose}>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            aria-label="Close"
+            onPress={onClose}
+            className="text-default-500"
+          >
             ×
-          </button>
+          </Button>
         </div>
         <div className="max-h-96 overflow-auto border rounded mb-4">
           <table className="w-full text-sm">

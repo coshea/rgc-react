@@ -145,19 +145,26 @@ export default function SignUpPage() {
                   "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
               }}
               endContent={
-                <button type="button" onClick={toggleVisibility}>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={toggleVisibility}
+                  aria-label={isVisible ? "Hide password" : "Show password"}
+                  className="min-w-0 h-auto"
+                >
                   {isVisible ? (
                     <Icon
-                      className="pointer-events-none text-2xl text-default-400"
+                      className="text-2xl text-default-400"
                       icon="solar:eye-closed-linear"
                     />
                   ) : (
                     <Icon
-                      className="pointer-events-none text-2xl text-default-400"
+                      className="text-2xl text-default-400"
                       icon="solar:eye-bold"
                     />
                   )}
-                </button>
+                </Button>
               }
               label="Password"
               name="password"
@@ -171,19 +178,30 @@ export default function SignUpPage() {
                 inputWrapper: "rounded-t-none",
               }}
               endContent={
-                <button type="button" onClick={toggleConfirmVisibility}>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={toggleConfirmVisibility}
+                  aria-label={
+                    isConfirmVisible
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                  className="min-w-0 h-auto"
+                >
                   {isConfirmVisible ? (
                     <Icon
-                      className="pointer-events-none text-2xl text-default-400"
+                      className="text-2xl text-default-400"
                       icon="solar:eye-closed-linear"
                     />
                   ) : (
                     <Icon
-                      className="pointer-events-none text-2xl text-default-400"
+                      className="text-2xl text-default-400"
                       icon="solar:eye-bold"
                     />
                   )}
-                </button>
+                </Button>
               }
               label="Confirm Password"
               name="confirmPassword"

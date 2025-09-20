@@ -156,19 +156,26 @@ export default function LoginPage() {
           <Input
             isRequired
             endContent={
-              <button type="button" onClick={toggleVisibility}>
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                onPress={toggleVisibility}
+                aria-label={isVisible ? "Hide password" : "Show password"}
+                className="min-w-0 h-auto"
+              >
                 {isVisible ? (
                   <Icon
-                    className="pointer-events-none text-2xl text-default-400"
+                    className="text-2xl text-default-400"
                     icon="solar:eye-closed-linear"
                   />
                 ) : (
                   <Icon
-                    className="pointer-events-none text-2xl text-default-400"
+                    className="text-2xl text-default-400"
                     icon="solar:eye-bold"
                   />
                 )}
-              </button>
+              </Button>
             }
             label="Password"
             name="password"

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Card, CardBody, Input } from "@heroui/react";
+import { Card, CardBody, Input, Button } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
@@ -276,29 +276,33 @@ export function YearlyWinningsStandings({ year }: Props) {
                           }}
                         >
                           <td className="px-3 sm:px-4 py-2 font-mono w-14 sm:w-16 align-top">
-                            <button
-                              type="button"
-                              onClick={() => toggle(row.userId)}
-                              aria-expanded={isExpanded}
-                              aria-label={
-                                isExpanded
-                                  ? `Collapse winnings for ${row.displayName}`
-                                  : `Expand winnings for ${row.displayName}`
-                              }
-                              className="flex items-center gap-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
-                              data-expander
-                            >
+                            <div className="flex items-center gap-1">
                               <span>{row.rank}</span>
-                              <Icon
-                                icon={
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="light"
+                                onPress={() => toggle(row.userId)}
+                                aria-expanded={isExpanded}
+                                aria-label={
                                   isExpanded
-                                    ? "lucide:chevron-down"
-                                    : "lucide:chevron-right"
+                                    ? `Collapse winnings for ${row.displayName}`
+                                    : `Expand winnings for ${row.displayName}`
                                 }
-                                className="w-3.5 h-3.5 text-default-400 group-hover:text-default-600 transition-colors"
-                                aria-hidden="true"
-                              />
-                            </button>
+                                data-expander
+                                className="min-w-0 h-auto p-0 text-default-400 hover:text-default-600"
+                              >
+                                <Icon
+                                  icon={
+                                    isExpanded
+                                      ? "lucide:chevron-down"
+                                      : "lucide:chevron-right"
+                                  }
+                                  className="w-4 h-4"
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                            </div>
                           </td>
                           <td className="px-3 sm:px-4 py-2 font-medium truncate max-w-[200px] sm:max-w-[240px] align-top">
                             <div className="flex items-center gap-2 min-w-0">

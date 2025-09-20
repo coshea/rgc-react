@@ -295,15 +295,18 @@ const TournamentDetailPage: React.FC = () => {
         <>
           {/* Top navigation row: Back link on the far left */}
           <div className="mb-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1 text-sm text-foreground-500 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-1 -ml-1"
+            <Button
+              size="sm"
+              variant="light"
+              onPress={() => navigate(-1)}
+              startContent={
+                <Icon icon="lucide:arrow-left" className="w-4 h-4" />
+              }
               aria-label="Go back to tournaments list"
+              className="-ml-1 text-foreground-500"
             >
-              <Icon icon="lucide:arrow-left" className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
-            </button>
+            </Button>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
