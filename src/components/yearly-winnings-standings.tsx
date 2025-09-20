@@ -58,24 +58,7 @@ export function YearlyWinningsStandings({ year }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Search & meta */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <Input
-          placeholder="Search player"
-          size="sm"
-          value={filter}
-          onValueChange={setFilter}
-          aria-label="Filter players"
-          className="w-full sm:w-64"
-          isClearable
-          onClear={() => setFilter("")}
-        />
-        <div className="text-[11px] text-default-500">
-          {filtered.length} player{filtered.length === 1 ? "" : "s"}
-        </div>
-      </div>
-
-      {/* Podium Section (legacy style) */}
+      {/* Podium Section */}
       {!isLoading && topThree.length > 0 && (
         <div className="mx-auto w-full max-w-3xl">
           <div className="flex items-end justify-center gap-3 sm:gap-8 py-1 sm:py-2">
@@ -187,6 +170,23 @@ export function YearlyWinningsStandings({ year }: Props) {
           </div>
         </div>
       )}
+
+      {/* Search & meta moved below podium, above table */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <Input
+          placeholder="Search player"
+          size="sm"
+          value={filter}
+          onValueChange={setFilter}
+          aria-label="Filter players"
+          className="w-full sm:w-64"
+          isClearable
+          onClear={() => setFilter("")}
+        />
+        <div className="text-[11px] text-default-500">
+          {filtered.length} player{filtered.length === 1 ? "" : "s"}
+        </div>
+      </div>
 
       <Card>
         <CardBody className="p-0">
