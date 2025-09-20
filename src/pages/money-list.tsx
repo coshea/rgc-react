@@ -10,7 +10,8 @@ import {
   Divider,
 } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
-import { YearlyMoneyLeaderboard } from "@/components/yearly-money-leaderboard";
+// Replaced legacy leaderboard with new standings component
+import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
@@ -72,7 +73,7 @@ export default function MoneyListPage() {
             color="primary"
           >
             <Tab key="yearly" title="Yearly Standings">
-              <YearlyMoneyLeaderboard year={year} />
+              <YearlyWinningsStandings year={year} />
             </Tab>
             <Tab key="tournaments" title="Tournament Breakdown">
               <TournamentBreakdown year={year} />
