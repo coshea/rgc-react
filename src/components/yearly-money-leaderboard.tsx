@@ -304,7 +304,8 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                                 </span>
                                 {item.wins > 0 && (
                                   <span className="whitespace-nowrap">
-                                    {item.wins} {item.wins === 1 ? "win" : "wins"}
+                                    {item.wins}{" "}
+                                    {item.wins === 1 ? "win" : "wins"}
                                   </span>
                                 )}
                               </div>
@@ -312,14 +313,20 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                           </TableCell>
                         );
                       case "played":
-                        return <TableCell className="hidden sm:table-cell">{item.played}</TableCell>;
+                        return (
+                          <TableCell className="hidden sm:table-cell">
+                            {item.played}
+                          </TableCell>
+                        );
                       case "wins":
                         return (
                           <TableCell className="hidden sm:table-cell">
                             <div className="flex items-center">
                               {item.wins > 0 && (
                                 <Chip size="sm" variant="flat" color="success">
-                                  {item.wins === 1 ? "1 win" : `${item.wins} wins`}
+                                  {item.wins === 1
+                                    ? "1 win"
+                                    : `${item.wins} wins`}
                                 </Chip>
                               )}
                             </div>
