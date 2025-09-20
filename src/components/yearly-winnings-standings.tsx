@@ -192,13 +192,21 @@ export function YearlyWinningsStandings({ year }: Props) {
         <CardBody className="p-0">
           <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
             <table className="min-w-full text-sm">
-              <thead className="bg-default-100 text-default-600 text-xs uppercase">
+              <thead className="bg-default-100 text-default-600 text-[10px] sm:text-xs uppercase">
                 <tr>
-                  <th className="text-left px-4 py-2 w-16">Rank</th>
-                  <th className="text-left px-4 py-2">Player</th>
-                  <th className="text-left px-4 py-2 w-24">Played</th>
-                  <th className="text-left px-4 py-2 w-28">Wins</th>
-                  <th className="text-right px-4 py-2 w-32">Winnings</th>
+                  <th className="text-left px-3 sm:px-4 py-2 w-14 sm:w-16">
+                    Rank
+                  </th>
+                  <th className="text-left px-3 sm:px-4 py-2">Player</th>
+                  <th className="hidden sm:table-cell text-left px-4 py-2 w-24">
+                    Played
+                  </th>
+                  <th className="hidden sm:table-cell text-left px-4 py-2 w-28">
+                    Wins
+                  </th>
+                  <th className="text-right px-3 sm:px-4 py-2 w-28 sm:w-32">
+                    Winnings
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -267,7 +275,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                             toggle(row.userId);
                           }}
                         >
-                          <td className="px-4 py-2 font-mono w-16">
+                          <td className="px-3 sm:px-4 py-2 font-mono w-14 sm:w-16 align-top">
                             <button
                               type="button"
                               onClick={() => toggle(row.userId)}
@@ -292,26 +300,32 @@ export function YearlyWinningsStandings({ year }: Props) {
                               />
                             </button>
                           </td>
-                          <td className="px-4 py-2 font-medium truncate max-w-[200px] sm:max-w-[240px]">
-                            <div className="flex items-center gap-2">
+                          <td className="px-3 sm:px-4 py-2 font-medium truncate max-w-[200px] sm:max-w-[240px] align-top">
+                            <div className="flex items-center gap-2 min-w-0">
                               <UserAvatar
                                 size="sm"
                                 userId={row.userId}
                                 name={row.displayName}
                                 className="flex-shrink-0"
                               />
-                              <span className="truncate max-w-[160px] sm:max-w-[200px]">
-                                {row.displayName}
-                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate max-w-[140px] sm:max-w-[200px] leading-tight">
+                                  {row.displayName}
+                                </span>
+                                <span className="sm:hidden text-[10px] text-default-500 mt-0.5">
+                                  {wins} win{wins === 1 ? "" : "s"} • {played}{" "}
+                                  played
+                                </span>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-4 py-2 text-xs font-medium text-default-600 tabular-nums">
+                          <td className="hidden sm:table-cell px-4 py-2 text-xs font-medium text-default-600 tabular-nums">
                             {played}
                           </td>
-                          <td className="px-4 py-2 font-medium tabular-nums text-default-600">
+                          <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-default-600">
                             {wins}
                           </td>
-                          <td className="px-4 py-2 text-right font-semibold tabular-nums">
+                          <td className="px-3 sm:px-4 py-2 text-right font-semibold tabular-nums align-top">
                             {amountDisplay}
                           </td>
                         </tr>
