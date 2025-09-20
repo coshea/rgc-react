@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 import { YearlyMoneyLeaderboard } from "@/components/yearly-money-leaderboard";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
+import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
 const currentYear = new Date().getFullYear();
 const years = [currentYear, currentYear - 1, currentYear - 2];
@@ -75,6 +76,9 @@ export default function MoneyListPage() {
             </Tab>
             <Tab key="tournaments" title="Tournament Breakdown">
               <TournamentBreakdown year={year} />
+            </Tab>
+            <Tab key="teams" title="Team Winners">
+              <YearlyTeamWinners year={year} />
             </Tab>
           </Tabs>
         </CardBody>

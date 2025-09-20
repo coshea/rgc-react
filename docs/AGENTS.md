@@ -66,6 +66,24 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 11. Accessibility: Provide `aria-label` for icon-only buttons; ensure modals trap focus if expanded beyond current simple overlays.
 12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
 
+### Event Handling: `onPress` vs `onClick`
+
+HeroUI components (Button, Input variants, Menu items, etc.) expose a unified `onPress` abstraction that normalizes pointer, keyboard, and assistive tech activation. Previous anti-patterns fixed in the codebase included:
+
+- Passing `onClick` to HeroUI primitives (keyboard activation inconsistencies, double-firing in some browsers).
+- Forwarding arbitrary DOM props (e.g., `userId`) onto native elements causing React console warnings.
+- Mixing `onClick` and `onPress` in the same component tree leading to uneven focus/pressed states.
+
+Current standard:
+
+1. Use `onPress` for all interactive HeroUI components (Buttons, Tabs, Dropdown items, custom pressable wrappers).
+2. Only use native `onClick` on plain semantic elements (`<a>`, `<div role="button">`) when a HeroUI component is not suitable.
+3. Filter non-DOM props before spreading to native elements to avoid React unknown prop warnings (pattern implemented in `avatar.tsx`).
+4. Do not alias `onPress` to `onClick`; import and pass the correct prop explicitly for clarity.
+5. Tests asserting interaction should fire `fireEvent.click` or RTL `userEvent.click` on the element—HeroUI maps these to `onPress` internally.
+
+Rationale: Ensures consistent accessibility behavior (Enter/Space support), prevents duplicate event semantics, and removes noisy React warnings that obscure real issues.
+
 ## Maintenance & Propagation
 
 1. Update this file first when introducing/changing a rule.
