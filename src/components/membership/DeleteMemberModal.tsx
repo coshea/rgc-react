@@ -8,7 +8,12 @@ interface DeleteMemberModalProps {
   onConfirm: () => void;
 }
 
-export function DeleteMemberModal({ user, selfId, onCancel, onConfirm }: DeleteMemberModalProps) {
+export function DeleteMemberModal({
+  user,
+  selfId,
+  onCancel,
+  onConfirm,
+}: DeleteMemberModalProps) {
   if (!user) return null;
   const selfDelete = user.id === selfId;
   return (
@@ -20,12 +25,24 @@ export function DeleteMemberModal({ user, selfId, onCancel, onConfirm }: DeleteM
           {selfDelete ? (
             <span>You can't delete your own profile.</span>
           ) : (
-            <span>Are you sure you want to permanently delete <span className="font-medium">{user.displayName || user.email || 'this user'}</span>? This action cannot be undone.</span>
+            <span>
+              Are you sure you want to permanently delete{" "}
+              <span className="font-medium">
+                {user.displayName || user.email || "this user"}
+              </span>
+              ? This action cannot be undone.
+            </span>
           )}
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="flat" onPress={onCancel}>Cancel</Button>
-          {!selfDelete && <Button color="danger" onPress={onConfirm}>Delete</Button>}
+          <Button variant="flat" onPress={onCancel}>
+            Cancel
+          </Button>
+          {!selfDelete && (
+            <Button color="danger" onPress={onConfirm}>
+              Delete
+            </Button>
+          )}
         </div>
       </div>
     </div>

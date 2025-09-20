@@ -5,7 +5,7 @@ import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
 // Mock hooks used inside component
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ userLoggedIn: true })
+  useAuth: () => ({ userLoggedIn: true }),
 }));
 
 vi.mock("@/hooks/useYearlyTournaments", () => ({
@@ -22,9 +22,20 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
         canceled: false,
         prizePool: 500,
         winners: [
-            { place: 1, userIds: ["A","B"], displayNames: ["Alice","Bob"], prizeAmount: 50, score: "65" },
-            { place: 2, userIds: ["C","D"], displayNames: ["Carol","Dan"], prizeAmount: 30 },
-        ]
+          {
+            place: 1,
+            userIds: ["A", "B"],
+            displayNames: ["Alice", "Bob"],
+            prizeAmount: 50,
+            score: "65",
+          },
+          {
+            place: 2,
+            userIds: ["C", "D"],
+            displayNames: ["Carol", "Dan"],
+            prizeAmount: 30,
+          },
+        ],
       },
       {
         firestoreId: "t2",
@@ -36,12 +47,22 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
         canceled: false,
         prizePool: 400,
         winners: [
-            { place: 3, userIds: ["A","B"], displayNames: ["Alice","Bob"], prizeAmount: 20 },
-            { place: 1, userIds: ["E","F"], displayNames: ["Evan","Frank"], prizeAmount: 55 }
-        ]
-      }
-    ]
-  })
+          {
+            place: 3,
+            userIds: ["A", "B"],
+            displayNames: ["Alice", "Bob"],
+            prizeAmount: 20,
+          },
+          {
+            place: 1,
+            userIds: ["E", "F"],
+            displayNames: ["Evan", "Frank"],
+            prizeAmount: 55,
+          },
+        ],
+      },
+    ],
+  }),
 }));
 
 describe("YearlyTeamWinners", () => {
@@ -54,24 +75,24 @@ describe("YearlyTeamWinners", () => {
       // parent div holds name <p> followed by stats <p>
       const container = nameEl.parentElement; // <div> wrapping name + stats
       if (!container) throw new Error("Missing container for team " + teamName);
-      const ps = Array.from(container.querySelectorAll('p'));
+      const ps = Array.from(container.querySelectorAll("p"));
       // stats line should be second paragraph element
-      return ps.find(p => p !== nameEl) as HTMLParagraphElement;
+      return ps.find((p) => p !== nameEl) as HTMLParagraphElement;
     };
 
     // Alice • Bob
-    const aliceStats = getStatsLine('Alice • Bob');
+    const aliceStats = getStatsLine("Alice • Bob");
     expect(aliceStats).toBeInTheDocument();
     expect(aliceStats.textContent).toMatch(/1\s+win/);
     expect(aliceStats.textContent).toMatch(/2\s+podium/);
 
     // Evan • Frank
-    const evanStats = getStatsLine('Evan • Frank');
+    const evanStats = getStatsLine("Evan • Frank");
     expect(evanStats.textContent).toMatch(/1\s+win/);
     expect(evanStats.textContent).toMatch(/1\s+podium/);
 
     // Carol • Dan (no wins, 1 podium)
-    const carolStats = getStatsLine('Carol • Dan');
+    const carolStats = getStatsLine("Carol • Dan");
     expect(carolStats.textContent).toMatch(/0\s+win/);
     expect(carolStats.textContent).toMatch(/1\s+podium/);
   });
