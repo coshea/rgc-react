@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
@@ -68,12 +69,15 @@ vi.mock("@/components/tournament-editor", () => ({
 }));
 
 function renderWithRoute(id: string) {
+  const qc = new QueryClient();
   return render(
-    <MemoryRouter initialEntries={[`/t/${id}`]}>
-      <Routes>
-        <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[`/t/${id}`]}>
+        <Routes>
+          <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

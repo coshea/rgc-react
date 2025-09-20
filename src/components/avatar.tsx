@@ -15,7 +15,7 @@ export interface UserAvatarProps {
   color?: string;
   as?: any;
   onClick?: React.MouseEventHandler<HTMLElement>;
-  onPress?: (...args: any[]) => void; // if consumer still uses onPress pattern
+  onPress?: (...args: any[]) => void; // synthetic press handler (map to onClick)
   role?: string;
   tabIndex?: number;
 }
@@ -42,9 +42,26 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       role,
       tabIndex,
       ...rest
-    },
-    ref
-  ) => {
+    } = props;
+    // satisfy noUnusedLocals while preventing unintended DOM attribute
+    void userId;
+    // Compose click handler: respect both provided onClick and onPress
+    const handleClick: React.MouseEventHandler<HTMLElement> | undefined =
+      onClick || onPress
+        ? (e) => {
+            if (onClick) onClick(e);
+            if (!e.defaultPrevented && onPress) onPress(e);
+          }
+        : undefined;
+
+    // Provide keyboard accessibility if only onPress supplied
+    const finalRole = role || (onPress && !role ? "button" : role);
+    const finalTabIndex =
+      typeof tabIndex === "number"
+        ? tabIndex
+        : onPress && !tabIndex
+          ? 0
+          : tabIndex;
     // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
     const computeInitials = (full?: string) => {
       if (!full) return "?";
@@ -79,10 +96,9 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         isBordered={isBordered}
         color={color as any}
         as={as}
-        onClick={onClick as any}
-        onPress={onPress as any}
-        role={role}
-        tabIndex={tabIndex}
+        role={finalRole}
+        tabIndex={finalTabIndex}
+        onClick={handleClick}
         {...rest}
       />
     );
