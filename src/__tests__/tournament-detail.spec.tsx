@@ -157,7 +157,7 @@ describe("TournamentDetailPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows only first place winners list", async () => {
+  it("shows all winners with placements", async () => {
     renderWithRoute("win1");
     emitDoc("tournaments/win1", {
       ...baseTournament,
@@ -172,8 +172,9 @@ describe("TournamentDetailPage", () => {
       ],
     });
     await screen.findByText("Club Championship");
-    expect(screen.getByText("Champ")).toBeInTheDocument();
-    expect(screen.queryByText("Runner")).not.toBeInTheDocument();
+    // Both Champ and Runner should appear now with ordinal labels
+    expect(screen.getByText(/1st: Champ/)).toBeInTheDocument();
+    expect(screen.getByText(/2nd: Runner/)).toBeInTheDocument();
   });
 
   it("shows admin action buttons when user is admin", async () => {

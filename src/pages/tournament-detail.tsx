@@ -153,10 +153,17 @@ const TournamentDetailPage: React.FC = () => {
 
   // Users are now loaded globally via React Query (useUsersMap)
 
-  const firstPlaceWinners: Winner[] = React.useMemo(() => {
+  // All winners sorted by place ascending
+  const allWinners: Winner[] = React.useMemo(() => {
     if (!tournament?.winners) return [];
-    return (tournament.winners || []).filter((w) => w.place === 1);
+    return [...(tournament.winners || [])].sort((a, b) => a.place - b.place);
   }, [tournament]);
+
+  const ordinal = (n: number) => {
+    const s = ["th", "st", "nd", "rd"]; // basic ordinal suffixes
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
 
   const formatDateLong = (date: Date) =>
     new Intl.DateTimeFormat("en-US", {
@@ -560,40 +567,61 @@ const TournamentDetailPage: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {/* Left Column: Past Winners */}
+            {/* Left Column: Winners / Placements */}
             <Card className="md:col-span-2" shadow="sm">
               <CardHeader className="pb-0">
-                <h2 className="text-lg font-semibold">
-                  Past Winners (1st Place)
-                </h2>
+                <h2 className="text-lg font-semibold">Tournament Winners</h2>
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                {firstPlaceWinners.length === 0 ? (
+                {allWinners.length === 0 ? (
                   <p className="text-sm text-foreground-500">
-                    No first place winner data available.
+                    No winner data available.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {firstPlaceWinners.map((w, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between bg-content2 rounded-md px-3 py-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon
-                            icon="lucide:crown"
-                            className="w-4 h-4 text-warning"
-                          />
-                          <span className="font-medium">
-                            {w.displayNames.join(", ")}
-                          </span>
+                    {allWinners.map((w, idx) => {
+                      const isFirst = w.place === 1;
+                      const icon = isFirst
+                        ? "lucide:crown"
+                        : w.place === 2
+                          ? "lucide:medal"
+                          : w.place === 3
+                            ? "lucide:award"
+                            : "lucide:dot";
+                      const iconClass = isFirst
+                        ? "text-warning"
+                        : w.place === 2
+                          ? "text-foreground-400"
+                          : w.place === 3
+                            ? "text-success"
+                            : "text-foreground-400 opacity-70";
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-content2 rounded-md px-3 py-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon
+                              icon={icon}
+                              className={`w-4 h-4 ${iconClass}`}
+                            />
+                            <span className="font-medium">
+                              {ordinal(w.place)}: {w.displayNames.join(", ")}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-foreground-500">
+                            {typeof w.prizeAmount === "number" &&
+                              w.prizeAmount > 0 && (
+                                <span>
+                                  ${w.prizeAmount.toLocaleString()} each
+                                </span>
+                              )}
+                            {w.score && <span>Score: {w.score}</span>}
+                          </div>
                         </div>
-                        <div className="text-xs text-foreground-500">
-                          {w.score ? `Score: ${w.score}` : "Winner"}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardBody>
