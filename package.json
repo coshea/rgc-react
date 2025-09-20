@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "prepare": "husky install",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "lint": "eslint -c .eslintrc.json ./src/**/**/*.{ts,tsx} --fix",
     "preview": "vite preview",
-    "firebase": "npm run build && firebase deploy"
+    "firebase": "npm run build && firebase deploy",
+    "firebase-rules": "firebase deploy --only firestore:rules"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

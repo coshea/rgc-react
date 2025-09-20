@@ -10,6 +10,7 @@ import {
   orderBy,
   updateDoc,
   deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 export type UserProfilePayload = {
@@ -124,4 +125,115 @@ export async function updateUser(
 export async function deleteUser(uid: string) {
   const ref = doc(db, "users", uid);
   await deleteDoc(ref);
+}
+
+/**
+ * Bulk create user documents (admin-only pathway). Uses Firestore write batches
+ * with a max of 500 operations per batch. Each payload is sanitized to ensure
+ * string fields are at least empty strings (preventing undefined fields when
+ * UI expects string). Board / role fields are passed through verbatim; security
+ * rules will enforce validity.
+ *
+ * Returns total number of documents attempted. Throws on the first batch error.
+ */
+export async function bulkCreateUsers(
+  rows: UserProfilePayload[]
+): Promise<number> {
+  if (!rows.length) return 0;
+
+  // Firestore limitation: 500 writes per batch
+  const MAX = 500;
+  let processed = 0;
+  for (let i = 0; i < rows.length; i += MAX) {
+    const slice = rows.slice(i, i + MAX);
+    const batch = writeBatch(db);
+    slice.forEach((r) => {
+      const ref = doc(collection(db, "users"));
+      const payload: Record<string, any> = {
+        displayName: r.displayName || "",
+        email: r.email || "",
+        phone: r.phone || "",
+        ghinNumber: r.ghinNumber || "",
+        photoURL: r.photoURL ?? null,
+      };
+      if (typeof r.active === "boolean") payload.active = r.active;
+      if (typeof r.registered === "boolean") payload.registered = r.registered;
+      if (typeof r.boardMember === "boolean")
+        payload.boardMember = r.boardMember;
+      if (r.role) payload.role = r.role;
+      payload.createdAt = serverTimestamp();
+      payload.updatedAt = serverTimestamp();
+      batch.set(ref, payload);
+    });
+    try {
+      await batch.commit();
+      processed += slice.length;
+    } catch (err: any) {
+      // Provide granular diagnostics by retrying each write individually.
+      console.error(
+        "[bulkCreateUsers] Batch commit failed — attempting per-row isolation",
+        err
+      );
+      const perRowErrors: { index: number; reason: string }[] = [];
+      let successfulThisSlice = 0;
+      for (let localIdx = 0; localIdx < slice.length; localIdx++) {
+        const r = slice[localIdx];
+        try {
+          const ref = doc(collection(db, "users"));
+          const payload: Record<string, any> = {
+            displayName: r.displayName || "",
+            email: r.email || "",
+            phone: r.phone || "",
+            ghinNumber: r.ghinNumber || "",
+            photoURL: r.photoURL ?? null,
+          };
+          if (typeof r.active === "boolean") payload.active = r.active;
+          if (typeof r.registered === "boolean")
+            payload.registered = r.registered;
+          if (typeof r.boardMember === "boolean")
+            payload.boardMember = r.boardMember;
+          if (r.role) payload.role = r.role;
+          payload.createdAt = serverTimestamp();
+          payload.updatedAt = serverTimestamp();
+          await setDoc(ref, payload);
+          successfulThisSlice++;
+        } catch (rowErr: any) {
+          const code = rowErr?.code || rowErr?.message || "unknown";
+          // Common pattern detection for clarity
+          let reason = String(code);
+          if (code === "permission-denied") {
+            if (!auth.currentUser) {
+              reason = "permission-denied (unauthenticated)";
+            } else {
+              reason =
+                "permission-denied (rules rejection: likely not admin or email missing)";
+            }
+          } else if (/missing|email/i.test(code) && !slice[localIdx].email) {
+            reason = "missing-email";
+          }
+          perRowErrors.push({ index: i + localIdx, reason });
+        }
+      }
+      processed += successfulThisSlice;
+      if (perRowErrors.length) {
+        const summary = {
+          attempted: slice.length,
+          succeeded: successfulThisSlice,
+          failed: perRowErrors.length,
+          errors: perRowErrors.slice(0, 10), // limit log volume
+        };
+        console.error("[bulkCreateUsers] Partial failures", summary);
+        // Throw aggregated error so caller can surface succinct message
+        const errMsg = `Bulk create partially failed: ${successfulThisSlice}/${slice.length} succeeded. First errors: ${perRowErrors
+          .slice(0, 5)
+          .map((e) => `#${e.index}:${e.reason}`)
+          .join(", ")}`;
+        const aggregate = new Error(errMsg);
+        // @ts-ignore attach metadata
+        aggregate.details = summary;
+        throw aggregate;
+      }
+    }
+  }
+  return processed;
 }

@@ -9,9 +9,10 @@ import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
-import { updateUser, deleteUser } from "@/api/users";
+import { updateUser, deleteUser, bulkCreateUsers } from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
+import { formatPhone } from "@/utils/phone";
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
@@ -34,25 +35,7 @@ export default function MembershipDirectoryPage() {
   // search filter
   const [filter, setFilter] = useState("");
 
-  // Phone helpers: normalize to digits and format as (xxx) xxx-xxxx when possible
-  function normalizePhone(value?: string) {
-    if (!value) return "";
-    return String(value).replace(/\D/g, "");
-  }
-
-  // CSV parsing moved to `src/services/csv.ts` (parseUsersCsv)
-
-  function formatPhone(value?: string) {
-    const digits = normalizePhone(value);
-    if (digits.length === 10) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-    }
-    if (digits.length === 7) {
-      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-    }
-    // fallback: return original trimmed value (if any)
-    return value ? String(value).trim() : "";
-  }
+  // Phone helpers moved to utils/phone.ts
 
   useEffect(() => {
     if (!loading && !userLoggedIn) {
@@ -61,49 +44,42 @@ export default function MembershipDirectoryPage() {
       return;
     }
 
-    // admin detection: prefer userProfile.admin (client cache), then admin doc, then token claim
     let unsubAdminDoc: (() => void) | undefined;
     let unsubUsers: (() => void) | undefined;
-    function init() {
+
+    const initAdmin = () => {
       if (!user?.uid) return;
 
-      // track three possible admin signals and OR them together
-      let userAdmin = false;
+      // Only rely on admin doc + custom claim now
       let adminDocFlag = false;
       let tokenAdmin = false;
-
-      const userRef = doc(db, "users", user.uid);
-      const unsubUser = onSnapshot(userRef, (snap) => {
-        const data = snap.data();
-        userAdmin = data?.admin === true;
-        setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
-      });
 
       const adminRef = doc(db, "admin", user.uid);
       const unsubAdminLocal = onSnapshot(adminRef, (snap) => {
         const data = snap.data();
-        adminDocFlag = data?.isAdmin === true;
-        setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
+        adminDocFlag =
+          data?.isAdmin === true ||
+          data?.admin === true ||
+          data?.admin === "true";
+        setIsAdmin(adminDocFlag || tokenAdmin);
       });
 
-      // token claim check once
       (user as any)
         .getIdTokenResult()
         .then((tr: any) => {
           tokenAdmin = tr?.claims?.admin === true;
-          setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
+          setIsAdmin(adminDocFlag || tokenAdmin);
         })
         .catch(() => {
           /* ignore */
         });
 
       unsubAdminDoc = () => {
-        unsubUser();
         unsubAdminLocal();
       };
-    }
+    };
 
-    init();
+    initAdmin();
 
     // subscribe to users collection only when authenticated (avoid permission-denied)
     if (user && userLoggedIn) {
@@ -126,7 +102,6 @@ export default function MembershipDirectoryPage() {
           setMembers(arr);
         },
         (err) => {
-          // Log permission errors and clear members to avoid stale view
           console.error("Users snapshot error:", err);
           if (err && (err as any).code === "permission-denied") {
             setMembers([]);
@@ -136,40 +111,45 @@ export default function MembershipDirectoryPage() {
     }
 
     return () => {
-      if (unsubUsers) unsubUsers();
-      if (unsubAdminDoc) unsubAdminDoc();
+      unsubAdminDoc?.();
+      unsubUsers?.();
     };
-  }, [loading, user, userLoggedIn, navigate]);
+  }, [user, userLoggedIn, loading, navigate]);
 
+  // ----- Helper Actions -----
   function openAdd() {
     setEditing(null);
-    setForm({});
-    setOpen(true);
-  }
-
-  function openEdit(user: User) {
-    setEditing(user);
-    // Preserve legacy role temporarily if not allowed yet (so it can be migrated) but UI will not let saving invalid role.
-    const legacyRole = (user as any).role || "";
     setForm({
-      displayName: user.displayName || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      boardMember: (user as any).boardMember || false,
-      role: legacyRole,
+      displayName: "",
+      email: "",
+      phone: "",
+      boardMember: false,
+      role: "",
     });
     setOpen(true);
   }
 
-  function requestDelete(user: User) {
-    setConfirmDelete(user);
+  function openEdit(u: User) {
+    setEditing(u);
+    setForm({
+      displayName: u.displayName || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      boardMember: !!u.boardMember,
+      role: u.boardMember ? u.role || "" : "",
+    });
+    setOpen(true);
+  }
+
+  function requestDelete(u: User) {
+    setConfirmDelete(u);
   }
 
   function onSelectCsv() {
     fileInputRef.current?.click();
   }
 
-  function handleFile(e: any) {
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     const reader = new FileReader();
@@ -180,47 +160,82 @@ export default function MembershipDirectoryPage() {
       setCsvOpen(true);
     };
     reader.readAsText(f);
-    // clear the input so the same file can be reselected if needed
-    e.target.value = null;
+    // clear input so same file can be re-selected
+    e.target.value = "";
   }
 
   async function uploadCsv() {
-    if (!isAdmin || csvRows.length === 0) return;
+    if (!isAdmin) {
+      addToast({
+        title: "Not Authorized",
+        description: "You are not an admin.",
+        color: "danger",
+      });
+      return;
+    }
+    if (csvRows.length === 0) return;
+    // Preflight: disallow boardMember/role in bulk CSV to match security expectations.
+    const invalidBoard = csvRows.some(
+      (r: any) =>
+        r.boardMember === true || (typeof r.role === "string" && r.role.trim())
+    );
+    if (invalidBoard) {
+      addToast({
+        title: "Invalid CSV",
+        description:
+          "Bulk upload cannot assign board roles. Remove boardMember/role columns.",
+        color: "warning",
+      });
+      return;
+    }
+    // Basic validation: ensure every row has a non-empty email (rules now enforce this)
+    const missingEmail = csvRows.filter((r) => !r.email?.trim());
+    if (missingEmail.length) {
+      addToast({
+        title: "Invalid CSV",
+        description: `${missingEmail.length} row${missingEmail.length === 1 ? "" : "s"} missing email.`,
+        color: "danger",
+      });
+      console.warn(
+        "[Directory] CSV rows missing email, aborting bulk upload",
+        missingEmail.slice(0, 5)
+      );
+      return;
+    }
     setUploading(true);
     try {
-      console.log("[Directory] Starting CSV upload", { rows: csvRows.length });
-      for (const r of csvRows) {
-        // r already conforms to UserProfilePayload from parseUsersCsv
-        // Ensure nullable strings are empty string instead of undefined
-        const docPayload: Record<string, any> = {
-          displayName: r.displayName || "",
-          email: r.email || "",
-          phone: r.phone || "",
-          ghinNumber: r.ghinNumber || "",
-          photoURL: r.photoURL ?? null,
-        };
-        if (typeof r.active === "boolean") docPayload.active = r.active;
-        if (typeof r.registered === "boolean")
-          docPayload.registered = r.registered;
-
-        await addDoc(collection(db, "users"), docPayload as any);
+      console.log("[Directory] Starting CSV bulk upload", {
+        rows: csvRows.length,
+        sample: csvRows.slice(0, 3),
+        isAdmin,
+      });
+      const boardIntended = csvRows.filter(
+        (r) => (r as any).boardMember === true || (r as any).role
+      )?.length;
+      if (boardIntended) {
+        console.log(
+          "[Directory] (diagnostic) rows contained board member intent which is stripped by preflight",
+          { boardIntended }
+        );
       }
+      const count = await bulkCreateUsers(csvRows);
       setCsvOpen(false);
       setCsvRows([]);
       addToast({
         title: "Upload Complete",
-        description: `${csvRows.length} member${csvRows.length === 1 ? "" : "s"} imported successfully`,
+        description: `${count} member${count === 1 ? "" : "s"} imported successfully`,
         color: "success",
       });
-      console.log("[Directory] CSV upload success", { count: csvRows.length });
+      console.log("[Directory] CSV bulk upload success", { count });
+      console.log("[Directory] CSV bulk upload success", { count });
     } catch (e) {
-      console.error("CSV upload error", e);
+      console.error("CSV bulk upload error", e);
       addToast({
         title: "Upload Failed",
-        description: "One or more rows failed to import",
+        description: "Bulk upload failed. Check console for details.",
         color: "danger",
       });
-      console.log("[Directory] CSV upload failed", e);
+      console.log("[Directory] CSV bulk upload failed", e);
     } finally {
       setUploading(false);
     }

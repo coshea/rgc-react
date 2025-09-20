@@ -5,15 +5,12 @@ service cloud.firestore {
     // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
     function isAdmin() {
       let adminDoc = get(/databases/$(database)/documents/admin/$(request.auth.uid));
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return request.auth != null && (
-        // Source 1: custom claim override (super-admin)
+        // Custom claim OR explicit admin doc flags only
         request.auth.token.admin == true
-        // Source 2: explicit admin collection doc (/admin/{uid}.isAdmin == true)
         || adminDoc.data.isAdmin == true
-        // Source 3: user profile flag (/users/{uid}.admin == true or string 'true')
-        || userDoc.data.admin == true
-        || userDoc.data.admin == 'true'
+        || adminDoc.data.admin == true
+        || adminDoc.data.admin == 'true'
       );
     }
 
@@ -29,6 +26,7 @@ service cloud.firestore {
         );
       }
       // Validate board fields: only admins may set boardMember true or assign a role.
+      // Validate board fields only when boardMember asserted. Roles must be in the allow list.
       function boardRoleValid(newData) {
         let allowed = [
           'President',
@@ -39,7 +37,7 @@ service cloud.firestore {
           'Board Member'
         ];
         return !(newData.boardMember == true) || (
-          newData.role is string && allowed.hasAny([newData.role])
+          newData.role is string && newData.role != '' && allowed.hasAny([newData.role])
         );
       }
       function boardFieldsUnchanged() {
@@ -48,10 +46,14 @@ service cloud.firestore {
           resource.data.role == request.resource.data.role
         );
       }
+      // Enforce minimal integrity: email must be a non-empty string on create.
+      function hasBaselineFields(d) {
+        return d.email is string && d.email != '';
+      }
       // Core write gate with board field restrictions
       // Permit admins to create any user doc; permit non-admin authenticated users to create
       // their own user doc (without board fields). Bulk upload relies on admin path.
-      allow create: if request.auth != null && (
+      allow create: if request.auth != null && hasBaselineFields(request.resource.data) && (
         // Admin full create
         isAdmin() && boardRoleValid(request.resource.data)
         // Self-create with no board fields

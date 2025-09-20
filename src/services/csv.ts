@@ -76,7 +76,14 @@ export function parseUsersCsv(text: string): UserProfilePayload[] {
         row["full_name"] ||
         row["full name"] ||
         "",
-      email: row["email"] || row["e-mail"] || "",
+      // Accept broader email header variants
+      email:
+        row["email"] ||
+        row["e-mail"] ||
+        row["email address"] ||
+        row["email_address"] ||
+        row["emailaddress"] ||
+        "",
       phone: normalizePhone(
         row["phone"] || row["phonenumber"] || row["phone_number"] || ""
       ),
@@ -93,6 +100,19 @@ export function parseUsersCsv(text: string): UserProfilePayload[] {
         parseBoolean(row["isregistered"]) ??
         parseBoolean(row["registered?"]),
     };
+    // Skip empty rows: if all core textual fields are blank and no booleans set
+    const coreFields = [
+      payload.displayName,
+      payload.email,
+      payload.phone,
+      payload.ghinNumber,
+      payload.photoURL || "",
+    ].map((v) => (v ?? "").toString().trim());
+    const hasBoolean =
+      payload.active !== undefined || payload.registered !== undefined;
+    if (coreFields.every((f) => f === "") && !hasBoolean) {
+      continue;
+    }
     out.push(payload);
   }
   return out;
