@@ -75,6 +75,10 @@ function renderWithRoute(id: string) {
       <MemoryRouter initialEntries={[`/t/${id}`]}>
         <Routes>
           <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
+          <Route
+            path="/tournaments"
+            element={<div data-testid="tournaments-list">Tournaments List</div>}
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -108,6 +112,19 @@ describe("TournamentDetailPage", () => {
     await waitFor(() =>
       expect(screen.getByText("Club Championship")).toBeInTheDocument()
     );
+  });
+
+  it("back button always navigates to tournaments list", async () => {
+    renderWithRoute("back1");
+    emitDoc("tournaments/back1", baseTournament);
+    await screen.findByText("Club Championship");
+    const backBtn = screen.getByRole("button", {
+      name: /go back to tournaments list/i,
+    });
+    await act(async () => {
+      backBtn.click();
+    });
+    await screen.findByTestId("tournaments-list");
   });
 
   it("shows registration open chip and register button when open and user not registered", async () => {
@@ -190,5 +207,81 @@ describe("TournamentDetailPage", () => {
     expect(
       screen.getByRole("button", { name: /Export registrations/i })
     ).toBeInTheDocument();
+  });
+
+  it("highlights teams with open spots", async () => {
+    renderWithRoute("spots1");
+    emitDoc("tournaments/spots1", { ...baseTournament, players: 4 });
+    // Registration snapshot with a team of 2 (so 2 open spots)
+    emitCollection("tournaments/spots1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "other",
+          team: [
+            { id: "u10", displayName: "Player A" },
+            { id: "u11", displayName: "Player B" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+    // Expect the open spots indicator text
+    expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
+    // Expect the +2 badge (aria-label)
+    expect(screen.getByLabelText(/2 open team spots?/i)).toBeInTheDocument();
+  });
+
+  it("filters to show only teams needing players when toggle active", async () => {
+    renderWithRoute("filter1");
+    emitDoc("tournaments/filter1", { ...baseTournament, players: 4 });
+    // Two registrations: one full (4 players), one needing 2 players
+    emitCollection("tournaments/filter1/registrations", [
+      {
+        id: "full1",
+        data: () => ({
+          ownerId: "o1",
+          team: [
+            { id: "a", displayName: "A" },
+            { id: "b", displayName: "B" },
+            { id: "c", displayName: "C" },
+            { id: "d", displayName: "D" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "open1",
+        data: () => ({
+          ownerId: "o2",
+          team: [
+            { id: "e", displayName: "E" },
+            { id: "f", displayName: "F" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+    // Both teams visible initially
+    expect(screen.getByText(/Team 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
+    // Activate filter
+    const toggleBtn = screen.getByRole("button", {
+      name: /Toggle show teams needing players/i,
+    });
+    await act(async () => {
+      toggleBtn.click();
+    });
+    // Wait for filter to hide full team
+    await waitFor(() => expect(screen.queryByText(/Team 1/i)).toBeNull());
+    expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
+    // Toggle off restores full team
+    await act(async () => {
+      toggleBtn.click();
+    });
+    await screen.findByText(/Team 1/i);
   });
 });

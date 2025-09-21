@@ -59,6 +59,7 @@ const TournamentDetailPage: React.FC = () => {
   const [registrations, setRegistrations] = React.useState<RegistrationDoc[]>(
     []
   );
+  const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const { usersMap } = useUsersMap();
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
@@ -179,6 +180,8 @@ const TournamentDetailPage: React.FC = () => {
     navigate(`/tournaments/${tournament.firestoreId}/register`);
   };
 
+  const toggleShowNeedingPlayers = () => setShowNeedingPlayers((prev) => !prev);
+
   // Share current tournament link
   const shareLink = async () => {
     if (!tournament?.firestoreId) return;
@@ -282,7 +285,7 @@ const TournamentDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pt-4 pb-10 px-4">
+    <div className="max-w-5xl mx-auto pt-4 pb-10 px-4 overflow-x-hidden">
       {loading || !tournament ? (
         <div className="flex flex-col items-center py-24 gap-4">
           <Icon
@@ -298,7 +301,7 @@ const TournamentDetailPage: React.FC = () => {
             <Button
               size="sm"
               variant="light"
-              onPress={() => navigate(-1)}
+              onPress={() => navigate("/tournaments", { replace: false })}
               startContent={
                 <Icon icon="lucide:arrow-left" className="w-4 h-4" />
               }
@@ -636,7 +639,7 @@ const TournamentDetailPage: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
             {/* Full Width: Registered Teams (Improved readability) */}
             <Card className="md:col-span-3" shadow="sm">
-              <CardHeader className="pb-0 flex items-center justify-between">
+              <CardHeader className="pb-0 flex flex-wrap items-center justify-between gap-2 overflow-visible relative">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   Registered Teams
                   {!regsLoading && registrations.length > 0 && (
@@ -645,11 +648,53 @@ const TournamentDetailPage: React.FC = () => {
                     </span>
                   )}
                 </h2>
-                {!regsLoading && registrations.length > 0 && (
-                  <p className="text-[11px] text-foreground-500">
-                    Updated live
-                  </p>
-                )}
+                <div className="flex items-center gap-3 flex-wrap pb-1">
+                  {!regsLoading && registrations.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant={showNeedingPlayers ? "solid" : "flat"}
+                      color={showNeedingPlayers ? "warning" : "default"}
+                      onPress={toggleShowNeedingPlayers}
+                      aria-pressed={showNeedingPlayers}
+                      aria-label="Toggle show teams needing players"
+                      className="px-2 h-7 text-xs sm:text-tiny"
+                    >
+                      {showNeedingPlayers
+                        ? "Showing Open Teams"
+                        : "Show Open Teams"}
+                    </Button>
+                  )}
+                  {!regsLoading && registrations.length > 0 && (
+                    <span
+                      className="inline-flex items-center group relative"
+                      aria-label="Registrations update in real time"
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"
+                        aria-hidden="true"
+                      />
+                      <button
+                        type="button"
+                        className="text-[11px] text-foreground-400 underline decoration-dotted underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60 rounded-sm"
+                        aria-label="Real-time updates info"
+                        onFocus={(e) =>
+                          e.currentTarget.setAttribute("data-focus", "true")
+                        }
+                        onBlur={(e) =>
+                          e.currentTarget.removeAttribute("data-focus")
+                        }
+                      >
+                        Live
+                      </button>
+                      <span
+                        role="tooltip"
+                        className="pointer-events-none opacity-0 group-hover:opacity-100 group-[&_:focus[data-focus]]:opacity-100 transition-opacity absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-content2 text-foreground text-[10px] px-2 py-1 rounded-md shadow-sm border border-default-200 whitespace-nowrap drop-shadow-lg"
+                      >
+                        Updates in real time as teams register.
+                      </span>
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
@@ -662,83 +707,124 @@ const TournamentDetailPage: React.FC = () => {
                     No teams registered yet.
                   </p>
                 ) : (
-                  <ScrollShadow className="max-h-80 pr-1">
+                  <ScrollShadow className="md:max-h-80 pr-1">
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {registrations.map((reg, idx) => {
-                        const team = Array.isArray(reg.team) ? reg.team : [];
-                        const dateStr = reg.registeredAt?.toDate
-                          ? new Date(
-                              reg.registeredAt.toDate()
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          : "";
-                        return (
-                          <div
-                            key={reg.id}
-                            className="rounded-md border border-default-200 bg-content2/60 hover:bg-content2 transition-colors p-3 flex flex-col gap-2"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex -space-x-2">
-                                {team.map((m, i) => {
-                                  const memberUser = usersMap.get(
-                                    (m as any).id
-                                  );
-                                  const src = memberUser
-                                    ? (memberUser as any).profileURL ||
-                                      (memberUser as any).photoURL
-                                    : undefined;
-                                  const label = (
-                                    m.displayName ||
-                                    m.id ||
-                                    ""
-                                  ).toString();
-                                  return (
-                                    <UserAvatar
-                                      key={m.id || i}
-                                      size="sm"
-                                      src={src}
-                                      name={label}
-                                      className="border border-default-200"
-                                      alt={label}
-                                    />
-                                  );
-                                })}
+                      {registrations
+                        .filter((reg) => {
+                          if (!showNeedingPlayers || !tournament) return true;
+                          const team = Array.isArray(reg.team) ? reg.team : [];
+                          return (
+                            team.length < (tournament.players || team.length)
+                          );
+                        })
+                        .map((reg) => {
+                          const originalIdx = registrations.findIndex(
+                            (r) => r.id === reg.id
+                          );
+                          const team = Array.isArray(reg.team) ? reg.team : [];
+                          const dateStr = reg.registeredAt?.toDate
+                            ? new Date(
+                                reg.registeredAt.toDate()
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
+                            : "";
+                          const maxPlayers = tournament.players || team.length;
+                          const openSpots = Math.max(
+                            maxPlayers - team.length,
+                            0
+                          );
+                          return (
+                            <div
+                              key={reg.id}
+                              className={`rounded-md border transition-colors p-3 flex flex-col h-full gap-2 relative group ${
+                                openSpots > 0
+                                  ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
+                                  : "border-default-200 bg-content2/60 hover:bg-content2"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex -space-x-2">
+                                  {team.map((m, i) => {
+                                    const memberUser = usersMap.get(
+                                      (m as any).id
+                                    );
+                                    const src = memberUser
+                                      ? (memberUser as any).profileURL ||
+                                        (memberUser as any).photoURL
+                                      : undefined;
+                                    const label = (
+                                      m.displayName ||
+                                      m.id ||
+                                      ""
+                                    ).toString();
+                                    return (
+                                      <UserAvatar
+                                        key={m.id || i}
+                                        size="sm"
+                                        src={src}
+                                        name={label}
+                                        className="border border-default-200"
+                                        alt={label}
+                                      />
+                                    );
+                                  })}
+                                  {openSpots > 0 && (
+                                    <div
+                                      className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
+                                      aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
+                                      title={`${openSpots} open spot${openSpots === 1 ? "" : "s"}`}
+                                    >
+                                      +{openSpots}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
+                                    Team {originalIdx + 1}
+                                  </p>
+                                  <ul className="text-sm font-medium leading-snug space-y-0.5">
+                                    {team.map((m, i) => (
+                                      <li key={i} className="truncate">
+                                        {m.displayName || m.id}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {openSpots > 0 && (
+                                    <p className="mt-1 text-[11px] font-medium text-warning flex items-center gap-1">
+                                      <Icon
+                                        icon="lucide:alert-circle"
+                                        className="w-3.5 h-3.5"
+                                        aria-hidden="true"
+                                      />
+                                      {openSpots === 1
+                                        ? "1 Spot Open"
+                                        : `${openSpots} Spots Open`}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
-                                  Team {idx + 1}
-                                </p>
-                                <ul className="text-sm font-medium leading-snug space-y-0.5">
-                                  {team.map((m, i) => (
-                                    <li key={i} className="truncate">
-                                      {m.displayName || m.id}
-                                    </li>
-                                  ))}
-                                </ul>
+                              <div className="mt-auto flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
+                                <span className="flex items-center gap-1">
+                                  <Icon
+                                    icon="lucide:calendar-clock"
+                                    className="w-3.5 h-3.5"
+                                  />
+                                  {dateStr}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Icon
+                                    icon="lucide:users"
+                                    className="w-3.5 h-3.5"
+                                  />
+                                  {team.length}
+                                </span>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
-                              <span className="flex items-center gap-1">
-                                <Icon
-                                  icon="lucide:calendar-clock"
-                                  className="w-3.5 h-3.5"
-                                />
-                                {dateStr}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Icon
-                                  icon="lucide:users"
-                                  className="w-3.5 h-3.5"
-                                />
-                                {team.length}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                     </div>
                   </ScrollShadow>
                 )}

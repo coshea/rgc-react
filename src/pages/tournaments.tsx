@@ -1,7 +1,11 @@
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import TournamentEditor from "@/components/tournament-editor";
+const TournamentEditor = React.lazy(() =>
+  import("@/components/tournament-editor").then((m) => ({
+    default: m.TournamentEditor,
+  }))
+);
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import {
@@ -276,12 +280,24 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
       {isCreating || editingTournament ? (
         isAdmin ? (
-          <TournamentEditor
-            tournament={editingTournament}
-            initialValues={initialValues}
-            onSave={handleSaveTournament}
-            onCancel={handleCancelEdit}
-          />
+          <React.Suspense
+            fallback={
+              <div className="p-8 flex flex-col items-center gap-3">
+                <Icon
+                  icon="lucide:loader"
+                  className="animate-spin text-2xl text-primary"
+                />
+                <p className="text-sm text-foreground-500">Loading editor...</p>
+              </div>
+            }
+          >
+            <TournamentEditor
+              tournament={editingTournament}
+              initialValues={initialValues}
+              onSave={handleSaveTournament}
+              onCancel={handleCancelEdit}
+            />
+          </React.Suspense>
         ) : (
           <div className="p-6 bg-content1 rounded-lg border border-default-200">
             <p className="text-foreground-500">

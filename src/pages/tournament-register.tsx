@@ -285,7 +285,12 @@ const TournamentRegister: React.FC = () => {
         description: "Your team has been registered.",
         color: "success",
       });
-      navigate("/tournaments");
+      // After successful registration or update, return user to the tournament detail page
+      if (tournament.firestoreId) {
+        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
+      } else {
+        navigate("/tournaments", { replace: true });
+      }
     } catch (err) {
       console.error("Failed to register:", err);
       addToast({
@@ -348,13 +353,6 @@ const TournamentRegister: React.FC = () => {
                 </p>
               ) : null}
             </div>
-            {tournament.icon ? (
-              <img
-                src={tournament.icon}
-                alt={tournament.title}
-                className="w-16 h-16 rounded-md object-cover border border-default-200"
-              />
-            ) : null}
           </div>
 
           <Divider className="my-4" />
