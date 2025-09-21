@@ -24,7 +24,7 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 
 ## 4. Auth & Admin Detection
 
-- Admin = OR of: `users/{uid}.admin === true`, document `admin/{uid}.isAdmin === true`, or ID token claim `admin` (see logic in `membership-directory.tsx`). Maintain this tri-source pattern—don’t consolidate unless rules change.
+- Admin = OR of: document `admin/{uid}.isAdmin === true`, or ID token claim `admin` (see logic in `membership-directory.tsx`). Maintain this bi-source pattern—don’t consolidate unless rules change.
 - `RequireAdmin` component currently only checks `userProfile.admin`; if extending, mirror the full tri-source logic consistently.
 
 ## 5. Domain Models & State
