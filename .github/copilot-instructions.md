@@ -40,6 +40,7 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 - Modals: existing pattern = lightweight fixed overlay divs (see membership directory & tournament editor). Follow that pattern or refactor to a reusable component—avoid `window.confirm`.
 - Form validation: local state `errors` object + HeroUI `isInvalid`/`errorMessage` props (see `tournament-editor.tsx`). Extend this pattern if adding fields.
 - Phone numbers: normalize to digits, format `(xxx) xxx-xxxx` when length 10 (helpers in directory page & CSV service). Reuse instead of re-implementing.
+- Always prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML elements (`button`, `input`, `select`, `textarea`, ad‑hoc div role="button") unless: (a) no equivalent exists, or (b) you are building a highly specialized, performance‑critical primitive. If you must use raw elements, wrap them in an accessible component and document why. Migrate legacy raw interactive elements to HeroUI during nearby edits (do not open a dedicated refactor PR solely for this unless broad changes are required).
 
 ## 7. React Query Patterns
 

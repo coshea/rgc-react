@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  Card,
-  CardBody,
-  Avatar,
-  AvatarGroup,
-  Button,
-  Tooltip,
-} from "@heroui/react";
+import { Card, CardBody, AvatarGroup, Button, Tooltip } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
@@ -101,12 +95,14 @@ export const RegistrationsList: React.FC<Props> = ({
                         : undefined;
                       const label = (m.displayName || m.id || "").toString();
                       return (
-                        <Avatar key={m.id || i} size="sm" src={src} alt={label}>
-                          {label
-                            .split(" ")
-                            .map((s: string) => s[0])
-                            .join("")}
-                        </Avatar>
+                        <UserAvatar
+                          key={m.id || i}
+                          size="sm"
+                          src={src}
+                          name={label}
+                          alt={label}
+                          className="border border-default-200"
+                        />
                       );
                     })}
                   </AvatarGroup>

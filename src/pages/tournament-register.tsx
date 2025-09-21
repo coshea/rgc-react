@@ -5,7 +5,6 @@ import {
   CardBody,
   Button,
   Divider,
-  Avatar,
   addToast,
   Select,
   SelectItem,
@@ -25,7 +24,7 @@ import {
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { getUsers, User } from "@/api/users";
+import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 
 const TournamentRegister: React.FC = () => {
@@ -34,8 +33,7 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [, setUsersLoading] = React.useState(false);
+  const { users } = useUsers();
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
@@ -106,26 +104,6 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
-    // Fetch users separately
-    const fetchUsers = async () => {
-      setUsersLoading(true);
-      try {
-        const list = await getUsers();
-        setUsers(list);
-        console.debug("Loaded users:", list.length);
-      } catch (err) {
-        console.error("Failed to load users", err);
-        addToast({
-          title: "Error",
-          description: "Failed to load users",
-          color: "danger",
-        });
-      } finally {
-        setUsersLoading(false);
-      }
-    };
-
-    fetchUsers();
   }, [firestoreId]);
 
   // Redirect unauthenticated users to login when they land on the register page
@@ -370,7 +348,13 @@ const TournamentRegister: React.FC = () => {
                 </p>
               ) : null}
             </div>
-            <Avatar size="lg" src={tournament.icon} />
+            {tournament.icon ? (
+              <img
+                src={tournament.icon}
+                alt={tournament.title}
+                className="w-16 h-16 rounded-md object-cover border border-default-200"
+              />
+            ) : null}
           </div>
 
           <Divider className="my-4" />

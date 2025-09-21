@@ -79,6 +79,12 @@ export const siteConfig = {
       link: "/tournaments",
       icon: "lucide:calendar",
     },
+    moneyList: {
+      title: "Money List",
+      description: "Yearly prize money standings",
+      link: "/money-list",
+      icon: "lucide:badge-dollar-sign",
+    },
     verifyEmail: {
       title: "Verify Email",
       description: "Confirm your email address",

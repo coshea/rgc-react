@@ -1,11 +1,5 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-  Avatar,
-  Chip,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Divider, Chip } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { ChampionItem } from "../types/ChampionItem";
 
@@ -49,10 +43,12 @@ const YearGroup = ({ year, tournaments }: YearGroupProps) => {
                   className={`flex items-center gap-3 p-3 rounded-medium
                     ${champion.runnerUp ? "bg-content2" : "bg-content1 shadow-small"}`}
                 >
-                  <Avatar
-                    src={`https://img.heroui.chat/image/avatar?w=64&h=64&u=${champion.playerId}`}
-                    className={champion.runnerUp ? "opacity-80" : ""}
+                  <UserAvatar
+                    src={undefined}
+                    name={champion.playerName}
+                    className={`w-12 h-12 ${champion.runnerUp ? "opacity-80" : ""}`}
                     size="md"
+                    alt={champion.playerName}
                   />
                   <div className="flex flex-col">
                     <span

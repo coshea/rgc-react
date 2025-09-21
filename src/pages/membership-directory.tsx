@@ -1,16 +1,24 @@
 import { useEffect, useState, useRef } from "react";
-import { Button, Input, Avatar, addToast, Tooltip } from "@heroui/react";
-import { PlusIcon } from "@heroicons/react/24/solid";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { addToast } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
 import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
-import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
-import { updateUser, deleteUser } from "@/api/users";
+import { isAllowedBoardRole } from "@/types/roles";
+import { updateUser, deleteUser, bulkCreateUsers } from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
+import { formatPhone } from "@/utils/phone";
+import {
+  DirectoryHeader,
+  DirectorySearchBar,
+  MembersList,
+  EditMemberModal,
+  DeleteMemberModal,
+  CsvPreviewModal,
+} from "@/components/membership"; // barrel export to be created if not present (fallback to individual imports)
+// preflightCsv imported via barrel if needed later
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
@@ -33,25 +41,7 @@ export default function MembershipDirectoryPage() {
   // search filter
   const [filter, setFilter] = useState("");
 
-  // Phone helpers: normalize to digits and format as (xxx) xxx-xxxx when possible
-  function normalizePhone(value?: string) {
-    if (!value) return "";
-    return String(value).replace(/\D/g, "");
-  }
-
-  // CSV parsing moved to `src/services/csv.ts` (parseUsersCsv)
-
-  function formatPhone(value?: string) {
-    const digits = normalizePhone(value);
-    if (digits.length === 10) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-    }
-    if (digits.length === 7) {
-      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-    }
-    // fallback: return original trimmed value (if any)
-    return value ? String(value).trim() : "";
-  }
+  // Phone helpers moved to utils/phone.ts
 
   useEffect(() => {
     if (!loading && !userLoggedIn) {
@@ -60,49 +50,42 @@ export default function MembershipDirectoryPage() {
       return;
     }
 
-    // admin detection: prefer userProfile.admin (client cache), then admin doc, then token claim
     let unsubAdminDoc: (() => void) | undefined;
     let unsubUsers: (() => void) | undefined;
-    function init() {
+
+    const initAdmin = () => {
       if (!user?.uid) return;
 
-      // track three possible admin signals and OR them together
-      let userAdmin = false;
+      // Only rely on admin doc + custom claim now
       let adminDocFlag = false;
       let tokenAdmin = false;
-
-      const userRef = doc(db, "users", user.uid);
-      const unsubUser = onSnapshot(userRef, (snap) => {
-        const data = snap.data();
-        userAdmin = data?.admin === true;
-        setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
-      });
 
       const adminRef = doc(db, "admin", user.uid);
       const unsubAdminLocal = onSnapshot(adminRef, (snap) => {
         const data = snap.data();
-        adminDocFlag = data?.isAdmin === true;
-        setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
+        adminDocFlag =
+          data?.isAdmin === true ||
+          data?.admin === true ||
+          data?.admin === "true";
+        setIsAdmin(adminDocFlag || tokenAdmin);
       });
 
-      // token claim check once
       (user as any)
         .getIdTokenResult()
         .then((tr: any) => {
           tokenAdmin = tr?.claims?.admin === true;
-          setIsAdmin(userAdmin || adminDocFlag || tokenAdmin);
+          setIsAdmin(adminDocFlag || tokenAdmin);
         })
         .catch(() => {
           /* ignore */
         });
 
       unsubAdminDoc = () => {
-        unsubUser();
         unsubAdminLocal();
       };
-    }
+    };
 
-    init();
+    initAdmin();
 
     // subscribe to users collection only when authenticated (avoid permission-denied)
     if (user && userLoggedIn) {
@@ -125,7 +108,6 @@ export default function MembershipDirectoryPage() {
           setMembers(arr);
         },
         (err) => {
-          // Log permission errors and clear members to avoid stale view
           console.error("Users snapshot error:", err);
           if (err && (err as any).code === "permission-denied") {
             setMembers([]);
@@ -135,40 +117,45 @@ export default function MembershipDirectoryPage() {
     }
 
     return () => {
-      if (unsubUsers) unsubUsers();
-      if (unsubAdminDoc) unsubAdminDoc();
+      unsubAdminDoc?.();
+      unsubUsers?.();
     };
-  }, [loading, user, userLoggedIn, navigate]);
+  }, [user, userLoggedIn, loading, navigate]);
 
+  // ----- Helper Actions -----
   function openAdd() {
     setEditing(null);
-    setForm({});
-    setOpen(true);
-  }
-
-  function openEdit(user: User) {
-    setEditing(user);
-    // Preserve legacy role temporarily if not allowed yet (so it can be migrated) but UI will not let saving invalid role.
-    const legacyRole = (user as any).role || "";
     setForm({
-      displayName: user.displayName || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      boardMember: (user as any).boardMember || false,
-      role: legacyRole,
+      displayName: "",
+      email: "",
+      phone: "",
+      boardMember: false,
+      role: "",
     });
     setOpen(true);
   }
 
-  function requestDelete(user: User) {
-    setConfirmDelete(user);
+  function openEdit(u: User) {
+    setEditing(u);
+    setForm({
+      displayName: u.displayName || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      boardMember: !!u.boardMember,
+      role: u.boardMember ? u.role || "" : "",
+    });
+    setOpen(true);
+  }
+
+  function requestDelete(u: User) {
+    setConfirmDelete(u);
   }
 
   function onSelectCsv() {
     fileInputRef.current?.click();
   }
 
-  function handleFile(e: any) {
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     const reader = new FileReader();
@@ -179,47 +166,82 @@ export default function MembershipDirectoryPage() {
       setCsvOpen(true);
     };
     reader.readAsText(f);
-    // clear the input so the same file can be reselected if needed
-    e.target.value = null;
+    // clear input so same file can be re-selected
+    e.target.value = "";
   }
 
   async function uploadCsv() {
-    if (!isAdmin || csvRows.length === 0) return;
+    if (!isAdmin) {
+      addToast({
+        title: "Not Authorized",
+        description: "You are not an admin.",
+        color: "danger",
+      });
+      return;
+    }
+    if (csvRows.length === 0) return;
+    // Preflight: disallow boardMember/role in bulk CSV to match security expectations.
+    const invalidBoard = csvRows.some(
+      (r: any) =>
+        r.boardMember === true || (typeof r.role === "string" && r.role.trim())
+    );
+    if (invalidBoard) {
+      addToast({
+        title: "Invalid CSV",
+        description:
+          "Bulk upload cannot assign board roles. Remove boardMember/role columns.",
+        color: "warning",
+      });
+      return;
+    }
+    // Basic validation: ensure every row has a non-empty email (rules now enforce this)
+    const missingEmail = csvRows.filter((r) => !r.email?.trim());
+    if (missingEmail.length) {
+      addToast({
+        title: "Invalid CSV",
+        description: `${missingEmail.length} row${missingEmail.length === 1 ? "" : "s"} missing email.`,
+        color: "danger",
+      });
+      console.warn(
+        "[Directory] CSV rows missing email, aborting bulk upload",
+        missingEmail.slice(0, 5)
+      );
+      return;
+    }
     setUploading(true);
     try {
-      console.log("[Directory] Starting CSV upload", { rows: csvRows.length });
-      for (const r of csvRows) {
-        // r already conforms to UserProfilePayload from parseUsersCsv
-        // Ensure nullable strings are empty string instead of undefined
-        const docPayload: Record<string, any> = {
-          displayName: r.displayName || "",
-          email: r.email || "",
-          phone: r.phone || "",
-          ghinNumber: r.ghinNumber || "",
-          photoURL: r.photoURL ?? null,
-        };
-        if (typeof r.active === "boolean") docPayload.active = r.active;
-        if (typeof r.registered === "boolean")
-          docPayload.registered = r.registered;
-
-        await addDoc(collection(db, "users"), docPayload as any);
+      console.log("[Directory] Starting CSV bulk upload", {
+        rows: csvRows.length,
+        sample: csvRows.slice(0, 3),
+        isAdmin,
+      });
+      const boardIntended = csvRows.filter(
+        (r) => (r as any).boardMember === true || (r as any).role
+      )?.length;
+      if (boardIntended) {
+        console.log(
+          "[Directory] (diagnostic) rows contained board member intent which is stripped by preflight",
+          { boardIntended }
+        );
       }
+      const count = await bulkCreateUsers(csvRows);
       setCsvOpen(false);
       setCsvRows([]);
       addToast({
         title: "Upload Complete",
-        description: `${csvRows.length} member${csvRows.length === 1 ? "" : "s"} imported successfully`,
+        description: `${count} member${count === 1 ? "" : "s"} imported successfully`,
         color: "success",
       });
-      console.log("[Directory] CSV upload success", { count: csvRows.length });
+      console.log("[Directory] CSV bulk upload success", { count });
+      console.log("[Directory] CSV bulk upload success", { count });
     } catch (e) {
-      console.error("CSV upload error", e);
+      console.error("CSV bulk upload error", e);
       addToast({
         title: "Upload Failed",
-        description: "One or more rows failed to import",
+        description: "Bulk upload failed. Check console for details.",
         color: "danger",
       });
-      console.log("[Directory] CSV upload failed", e);
+      console.log("[Directory] CSV bulk upload failed", e);
     } finally {
       setUploading(false);
     }
@@ -324,446 +346,47 @@ export default function MembershipDirectoryPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Membership Directory</h1>
-        {isAdmin && (
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={handleFile}
-            />
-            <Button onPress={onSelectCsv} variant="flat">
-              Bulk Upload
-            </Button>
-            <Button
-              color="primary"
-              startContent={<PlusIcon className="w-4 h-4" />}
-              onPress={openAdd}
-              className="font-medium"
-            >
-              Add Member
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <Input
-          isClearable
-          size="sm"
-          radius="full"
-          placeholder="Search by name or email..."
-          startContent={
-            <MagnifyingGlassIcon className="w-4 h-4 text-default-400" />
-          }
-          value={filter}
-          onClear={() => setFilter("")}
-          onValueChange={(v: string) => setFilter(v)}
-          className="sm:max-w-sm"
-        />
-        <div className="text-xs text-default-400">
-          Showing {filter ? "filtered" : "all"} {members.length} member
-          {members.length === 1 ? "" : "s"}
-        </div>
-      </div>
-
-      <div className="bg-background rounded-lg shadow-sm">
-        {/* desktop header only */}
-        <div className="hidden md:grid items-center gap-4 p-4 border-b text-sm text-default-500 font-medium grid-cols-[2fr_4fr_2fr_2fr]">
-          <div>NAME</div>
-          <div>EMAIL</div>
-          <div>PHONE</div>
-          {isAdmin ? <div className="text-right pr-4">ACTIONS</div> : <div />}
-        </div>
-
-        <div className="divide-y">
-          {members
-            .filter((m) => {
-              if (!filter.trim()) return true;
-              const q = filter.toLowerCase();
-              return (
-                (m.displayName || "").toLowerCase().includes(q) ||
-                (m.email || "").toLowerCase().includes(q)
-              );
-            })
-            .map((m) => (
-              <div key={m.id}>
-                {/* desktop row */}
-                <div className="hidden md:grid items-center gap-4 p-4 grid-cols-[2fr_4fr_2fr_2fr]">
-                  <div className="flex items-center gap-4">
-                    <Avatar
-                      className="w-8 h-8"
-                      src={(m.photoURL as string) || undefined}
-                      alt={m.displayName || m.email}
-                    />
-                    <div className="text-sm text-default-500">
-                      {m.displayName || "(no name)"}
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-default-500 whitespace-nowrap">
-                    {m.email}
-                  </div>
-
-                  <div className="text-sm text-default-500 whitespace-nowrap">
-                    {m.phone ? formatPhone(m.phone) : "—"}
-                  </div>
-                  {isAdmin ? (
-                    <div className="flex justify-end gap-2 pr-2">
-                      <Tooltip content="Edit member">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => openEdit(m)}
-                          aria-label="Edit member"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-4 h-4 text-default-600"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
-                          </svg>
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="Delete member" color="danger">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => requestDelete(m)}
-                          aria-label="Delete member"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-4 h-4"
-                          >
-                            <path d="M3 6h18" />
-                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
-                          </svg>
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  ) : (
-                    <div />
-                  )}
-                </div>
-
-                {/* mobile stacked card */}
-                <div className="block md:hidden p-4">
-                  <div className="flex items-center gap-4 mb-2">
-                    <Avatar
-                      className="w-8 h-8"
-                      src={(m.photoURL as string) || undefined}
-                      alt={m.displayName || m.email}
-                    />
-                    <div className="text-sm text-default-500 font-medium">
-                      {m.displayName || "(no name)"}
-                    </div>
-                  </div>
-                  <div className="text-sm text-default-500 mb-1 flex items-center gap-2 whitespace-normal break-words">
-                    <span className="font-medium">Email:</span>
-                    <span className="block break-words whitespace-normal">
-                      {m.email}
-                    </span>
-                  </div>
-                  <div className="text-sm text-default-500">
-                    <span className="font-medium">Phone: </span>
-                    <span>{m.phone ? formatPhone(m.phone) : "—"}</span>
-                  </div>
-                  {isAdmin && (
-                    <div className="mt-3 flex gap-2">
-                      <Tooltip content="Edit member">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => openEdit(m)}
-                          aria-label="Edit member"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-4 h-4 text-default-600"
-                          >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
-                          </svg>
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="Delete member" color="danger">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          onPress={() => requestDelete(m)}
-                          aria-label="Delete member"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-4 h-4"
-                          >
-                            <path d="M3 6h18" />
-                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
-                          </svg>
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setOpen(false)}
-          />
-          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">
-                {editing ? "Edit Member" : "Add Member"}
-              </h3>
-              <button
-                className="text-default-500"
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="space-y-3">
-              <Input
-                placeholder="Name"
-                value={form.displayName || ""}
-                onChange={(e: any) =>
-                  setForm({ ...form, displayName: e.target.value })
-                }
-              />
-              <Input
-                placeholder="Email"
-                value={form.email || ""}
-                onChange={(e: any) =>
-                  setForm({ ...form, email: e.target.value })
-                }
-              />
-              <Input
-                placeholder="Phone"
-                value={form.phone || ""}
-                onChange={(e: any) =>
-                  setForm({ ...form, phone: e.target.value })
-                }
-                onBlur={() =>
-                  setForm({ ...form, phone: formatPhone(form.phone) })
-                }
-              />
-              <div className="pt-2 border-t border-default-200 space-y-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="accent-primary h-4 w-4"
-                    checked={!!form.boardMember}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setForm((prev: any) => ({
-                        ...prev,
-                        boardMember: checked,
-                        role: checked ? prev.role || "Board Member" : "",
-                      }));
-                    }}
-                  />
-                  <span>Board Member</span>
-                </label>
-                {form.boardMember ? (
-                  <div className="space-y-1">
-                    {(() => {
-                      const ROLE_OPTIONS =
-                        ALLOWED_BOARD_ROLES as readonly string[];
-                      const hasLegacy =
-                        form.role && !ROLE_OPTIONS.includes(form.role);
-                      const options = hasLegacy
-                        ? [form.role, ...ROLE_OPTIONS]
-                        : ROLE_OPTIONS;
-                      return (
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs font-medium text-default-600">
-                            Role <span className="text-danger">*</span>
-                          </label>
-                          <select
-                            className="border rounded-md px-3 py-2 bg-default-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                            value={form.role || ""}
-                            onChange={(e) =>
-                              setForm({ ...form, role: e.target.value })
-                            }
-                          >
-                            <option value="" disabled>
-                              Select a role
-                            </option>
-                            {options.map((r) => (
-                              <option key={r} value={r}>
-                                {r}
-                              </option>
-                            ))}
-                          </select>
-                          {!form.role?.trim() && (
-                            <p className="text-[11px] text-danger mt-1">
-                              Required for board members
-                            </p>
-                          )}
-                          {form.role?.trim() &&
-                            form.boardMember &&
-                            !isAllowedBoardRole(form.role) && (
-                              <p className="text-[11px] text-danger mt-1">
-                                Legacy/unrecognized role, please pick a valid
-                                one.
-                              </p>
-                            )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-default-500">
-                    Check "Board Member" to assign a role (e.g. President,
-                    Treasurer).
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="flat" onPress={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button onPress={save} color="secondary">
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setConfirmDelete(null)}
-          />
-          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-sm z-10">
-            <h3 className="text-lg font-medium mb-2">Delete Member</h3>
-            <p className="text-sm text-default-600 mb-4">
-              Are you sure you want to permanently delete{" "}
-              <span className="font-medium">
-                {confirmDelete.displayName ||
-                  confirmDelete.email ||
-                  "this user"}
-              </span>
-              ? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="flat" onPress={() => setConfirmDelete(null)}>
-                Cancel
-              </Button>
-              <Button color="danger" onPress={confirmDeleteUser}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CSV Preview Modal */}
-      {csvOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setCsvOpen(false)}
-          />
-          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-2xl z-10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">CSV Upload Preview</h3>
-              <button
-                className="text-default-500"
-                onClick={() => setCsvOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="max-h-96 overflow-auto border rounded mb-4">
-              <table className="w-full text-sm">
-                <thead className="bg-default-50">
-                  <tr>
-                    {csvRows.length > 0 &&
-                      Object.keys(csvRows[0]).map((k) => (
-                        <th key={k} className="p-2 text-left">
-                          {k}
-                        </th>
-                      ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvRows.map((r, i) => (
-                    <tr key={i} className="border-b">
-                      {Object.values(r).map((v, j) => (
-                        <td key={j} className="p-2 truncate max-w-xs">
-                          {v}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="flat" onPress={() => setCsvOpen(false)}>
-                Cancel
-              </Button>
-              <Button onPress={uploadCsv} color="secondary">
-                {uploading ? "Uploading..." : "Upload"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DirectoryHeader
+        isAdmin={isAdmin}
+        onAdd={openAdd}
+        onBulk={onSelectCsv}
+        ref={fileInputRef}
+        onFileChange={handleFile}
+      />
+      <DirectorySearchBar
+        filter={filter}
+        onFilterChange={setFilter}
+        total={members.length}
+        isFiltered={!!filter}
+      />
+      <MembersList
+        members={members}
+        filter={filter}
+        isAdmin={isAdmin}
+        onEdit={openEdit}
+        onDelete={requestDelete}
+      />
+      <EditMemberModal
+        open={open}
+        editing={editing}
+        form={form}
+        onChange={setForm as any}
+        onClose={() => setOpen(false)}
+        onSave={save}
+      />
+      <DeleteMemberModal
+        user={confirmDelete}
+        selfId={user?.uid}
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={confirmDeleteUser}
+      />
+      <CsvPreviewModal
+        open={csvOpen}
+        rows={csvRows}
+        onClose={() => setCsvOpen(false)}
+        onUpload={uploadCsv}
+        uploading={uploading}
+      />
     </div>
   );
 }
