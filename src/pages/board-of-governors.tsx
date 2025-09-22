@@ -46,8 +46,6 @@ const BoardOfGovernorsPage: React.FC = () => {
           {boardMembers.map((member) => {
             const meta = member.roleMeta;
             const isPresident = member.isPresident;
-            const avatarSrc =
-              (member as any).profileURL || (member as any).photoURL;
             const chipStart =
               !isPresident && meta ? (
                 <Icon icon={meta.icon} className="w-3 h-3" />
@@ -61,12 +59,7 @@ const BoardOfGovernorsPage: React.FC = () => {
                 <CardHeader className="pb-0 flex flex-col items-center text-center">
                   <div className="relative mb-3">
                     <UserAvatar
-                      src={avatarSrc || undefined}
-                      name={
-                        member.displayName ||
-                        (member as any).name ||
-                        member.email
-                      }
+                      user={member as any}
                       className={`w-20 h-20 text-large ${isPresident ? "border-2 border-warning" : ""}`}
                       size="lg"
                       alt={

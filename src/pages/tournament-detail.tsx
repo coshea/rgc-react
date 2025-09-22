@@ -746,10 +746,6 @@ const TournamentDetailPage: React.FC = () => {
                                     const memberUser = usersMap.get(
                                       (m as any).id
                                     );
-                                    const src = memberUser
-                                      ? (memberUser as any).profileURL ||
-                                        (memberUser as any).photoURL
-                                      : undefined;
                                     const label = (
                                       m.displayName ||
                                       m.id ||
@@ -759,8 +755,8 @@ const TournamentDetailPage: React.FC = () => {
                                       <UserAvatar
                                         key={m.id || i}
                                         size="sm"
-                                        src={src}
-                                        name={label}
+                                        user={memberUser as any}
+                                        name={memberUser ? undefined : label}
                                         className="border border-default-200"
                                         alt={label}
                                       />

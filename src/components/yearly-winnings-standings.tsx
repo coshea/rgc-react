@@ -70,15 +70,13 @@ export function YearlyWinningsStandings({ year }: Props) {
                   const display =
                     (u && ((u as any).displayName || (u as any).name)) ||
                     topThree[1].displayName;
-                  const src =
-                    (u as any)?.photoURL || (u as any)?.profileURL || undefined;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[1].userId}
                         name={display}
-                        src={src}
+                        user={u}
                         className="shadow-sm mb-1"
                       />
                       <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
@@ -106,15 +104,13 @@ export function YearlyWinningsStandings({ year }: Props) {
                   const display =
                     (u && ((u as any).displayName || (u as any).name)) ||
                     topThree[0].displayName;
-                  const src =
-                    (u as any)?.photoURL || (u as any)?.profileURL || undefined;
                   return (
                     <>
                       <UserAvatar
                         size="md"
                         userId={topThree[0].userId}
                         name={display}
-                        src={src}
+                        user={u}
                         className="shadow-md ring-2 ring-warning mb-1"
                       />
                       <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
@@ -139,15 +135,13 @@ export function YearlyWinningsStandings({ year }: Props) {
                   const display =
                     (u && ((u as any).displayName || (u as any).name)) ||
                     topThree[2].displayName;
-                  const src =
-                    (u as any)?.photoURL || (u as any)?.profileURL || undefined;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[2].userId}
                         name={display}
-                        src={src}
+                        user={u}
                         className="shadow-sm mb-1"
                       />
                       <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">

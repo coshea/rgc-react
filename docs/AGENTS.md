@@ -66,6 +66,35 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 11. Accessibility: Provide `aria-label` for icon-only buttons; ensure modals trap focus if expanded beyond current simple overlays.
 12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
 
+### UserAvatar Fallback Contract
+
+Centralized avatar behavior lives in `src/components/avatar.tsx` (`UserAvatar`). Do NOT re‑implement fallback logic in consuming components.
+
+Resolution precedence (highest → lowest):
+
+1. Explicit `src` prop passed to `UserAvatar`.
+2. `user.profileURL` (preferred custom uploaded profile picture).
+3. `user.photoURL` (Firebase auth provider photo or legacy field).
+4. Generated initials from `name` prop OR `user.displayName` OR `user.name` OR `user.email`.
+
+Usage Guidelines:
+
+- Pass the full `user` object as `user={user}` whenever you have it; avoid manually computing `profileURL || photoURL`.
+- Only supply `name` when you do NOT pass a `user` object or you need to override display text.
+- Avoid sprinkling custom fallback chains (`u.profileURL || u.photoURL`)—this leads to inconsistency and was intentionally removed.
+- Provide `alt` only to override the default (which uses the resolved display name); omit otherwise for automatic accessibility labeling.
+- Sizes: use HeroUI sizing semantics via the `size` prop (`sm`, `md`, `lg`). Custom width/height Tailwind classes are acceptable for special layouts but keep `size` aligned to semantic intent.
+- Do not forward internal identifiers (e.g., `userId`) to DOM; `UserAvatar` already strips non‑DOM props.
+- For grouped/team displays, pass the user object; if data is still loading you may pass just a `name` to show stable initials.
+
+Testing:
+
+- Contract is enforced by `src/__tests__/avatar-fallback.spec.tsx`. Update that test if the precedence changes.
+- When adding new avatar‑related features (status rings, presence indicators, etc.), extend `UserAvatar`; do not fork it.
+
+Rationale:
+Consolidation eliminates subtle mismatches (e.g., stale `photoURL`, inconsistent initials) and reduces duplication across leaderboards, registrations, and board roster components.
+
 ### Event Handling: `onPress` vs `onClick`
 
 HeroUI components (Button, Input variants, Menu items, etc.) expose a unified `onPress` abstraction that normalizes pointer, keyboard, and assistive tech activation. Previous anti-patterns fixed in the codebase included:
@@ -92,4 +121,4 @@ Rationale: Ensures consistent accessibility behavior (Enter/Space support), prev
 
 ## Metadata
 
-Last updated: 2025-09-17 (pruned outdated libs, removed verbose examples, added architecture snapshot & cross-link)
+Last updated: 2025-09-22 (added UserAvatar fallback contract section; previous 2025-09-17 update pruned outdated libs, removed verbose examples, added architecture snapshot & cross-link)

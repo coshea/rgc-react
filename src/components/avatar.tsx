@@ -6,6 +6,7 @@ export interface UserAvatarProps {
   userId?: string; // used for generated image seed
   name?: string; // display name for initials fallback
   src?: string; // explicit image URL if available
+  user?: any; // full user object (expects displayName/profileURL/photoURL)
   size?: "sm" | "md" | "lg";
   className?: string;
   squared?: boolean;
@@ -30,6 +31,7 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       userId, // intentionally extracted so it is NOT forwarded to DOM / HeroUI Avatar
       name,
       src,
+      user,
       size = "sm",
       className,
       squared = false,
@@ -46,6 +48,18 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
 
     // If we need the userId later for generated images we can hook here; suppress unused warning for now.
     void userId;
+
+    // Resolve display name priority: explicit name prop > user.displayName > user.name > user.email
+    const resolvedName =
+      name ||
+      (user && (user.displayName || (user as any).name || (user as any).email));
+
+    // Resolve image source precedence: explicit src prop > user.profileURL > user.photoURL
+    const resolvedSrc =
+      src ||
+      (user &&
+        ((user as any).profileURL || (user as any).photoURL || undefined)) ||
+      undefined;
 
     // Compose click handler: respect both provided onClick and onPress (mapping onPress -> onClick)
     const handleClick: React.MouseEventHandler<HTMLElement> | undefined =
@@ -80,7 +94,7 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       const combo = (fi + li).trim();
       return combo || "?";
     };
-    const initials = computeInitials(name);
+    const initials = computeInitials(resolvedName);
 
     return (
       <Avatar
@@ -90,8 +104,8 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         name={initials}
         size={size}
         className={clsx(className)}
-        src={src || undefined}
-        alt={alt || name}
+        src={resolvedSrc}
+        alt={alt || resolvedName}
         isBordered={isBordered}
         color={color as any}
         as={as}

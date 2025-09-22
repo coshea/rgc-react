@@ -89,17 +89,14 @@ export const RegistrationsList: React.FC<Props> = ({
                       const memberUser = users.find(
                         (u) => u.id === (m as any).id
                       );
-                      const src = memberUser
-                        ? (memberUser as any).profileURL ||
-                          (memberUser as any).photoURL
-                        : undefined;
+                      // Pass full user when available for centralized fallback (profileURL > photoURL > initials)
                       const label = (m.displayName || m.id || "").toString();
                       return (
                         <UserAvatar
                           key={m.id || i}
                           size="sm"
-                          src={src}
-                          name={label}
+                          user={memberUser as any}
+                          name={memberUser ? undefined : label}
                           alt={label}
                           className="border border-default-200"
                         />

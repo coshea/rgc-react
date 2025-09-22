@@ -50,20 +50,20 @@ export function TournamentBreakdown({ year }: Props) {
         const rows: ResultRow[] = [];
         const winnerIds = new Set<string>();
         (t.winners || []).forEach((w: Winner) => {
-          w.userIds.forEach((uid, idx) => {
+          // Keep pairing strictly by index of userIds -> displayNames if lengths align; fallback gracefully.
+          const ids = w.userIds;
+          const names = w.displayNames || [];
+          ids.forEach((uid, idx) => {
             winnerIds.add(uid);
-            const name =
-              (w.displayNames && w.displayNames[idx]) ||
-              (w.displayNames && w.displayNames[0]) ||
-              uid;
             rows.push({
               id: `${t.firestoreId}-${w.place}-${uid}`,
               position: w.place,
               userId: uid,
-              name,
+              // Store provisional name; final authoritative name will be resolved at render from usersMap if available.
+              name: names[idx] || names[0] || uid,
               prize: w.prizeAmount || 0,
               score: w.score,
-              teamSize: w.userIds.length,
+              teamSize: ids.length,
             });
           });
         });
@@ -178,10 +178,10 @@ export function TournamentBreakdown({ year }: Props) {
                 <TableBody items={rows} emptyContent="No results">
                   {(item: ResultRow) => {
                     const user = usersMap.get(item.userId);
-                    const src =
-                      (user as any)?.photoURL ||
-                      (user as any)?.profileURL ||
-                      undefined;
+                    const resolvedName =
+                      (user &&
+                        ((user as any).displayName || (user as any).name)) ||
+                      item.name;
                     return (
                       <TableRow key={item.id}>
                         <TableCell>{renderPosition(item.position)}</TableCell>
@@ -193,13 +193,13 @@ export function TournamentBreakdown({ year }: Props) {
                               <UserAvatar
                                 size="sm"
                                 className="hidden sm:flex"
-                                name={item.name}
+                                name={resolvedName}
                                 userId={item.userId}
-                                src={src}
+                                user={user}
                               />
                             )}
                             <div>
-                              <p className="font-medium">{item.name}</p>
+                              <p className="font-medium">{resolvedName}</p>
                               {/* team size detail removed per requirements */}
                             </div>
                           </div>

@@ -16,6 +16,7 @@ import { useUsersMap } from "@/hooks/useUsers";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 interface Props {
   year: number;
@@ -83,6 +84,9 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
         <Input
           placeholder="Search player"
+          startContent={
+            <MagnifyingGlassIcon className="w-4 h-4 text-default-400" />
+          }
           size="sm"
           value={filter}
           onValueChange={setFilter}
@@ -113,11 +117,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                           (u && (u.displayName || (u as any).name)) ||
                           topThree[1].displayName
                         }
-                        src={
-                          (u as any)?.photoURL ||
-                          (u as any)?.profileURL ||
-                          undefined
-                        }
+                        user={u}
                         className="shadow-sm mb-1"
                       />
                       <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
@@ -152,11 +152,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                           (u && (u.displayName || (u as any).name)) ||
                           topThree[0].displayName
                         }
-                        src={
-                          (u as any)?.photoURL ||
-                          (u as any)?.profileURL ||
-                          undefined
-                        }
+                        user={u}
                         className="shadow-md ring-2 ring-warning mb-1"
                       />
                       <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
@@ -188,11 +184,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                           (u && (u.displayName || (u as any).name)) ||
                           topThree[2].displayName
                         }
-                        src={
-                          (u as any)?.photoURL ||
-                          (u as any)?.profileURL ||
-                          undefined
-                        }
+                        user={u}
                         className="shadow-sm mb-1"
                       />
                       <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
@@ -251,8 +243,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
               const u = usersMap.get(item.userId);
               const display =
                 (u && (u.displayName || (u as any).name)) || item.displayName;
-              const src =
-                (u as any)?.photoURL || (u as any)?.profileURL || undefined;
               return (
                 <TableRow
                   key={item.userId}
@@ -275,10 +265,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                         );
                       case "player": {
                         const user = usersMap.get(item.userId);
-                        const photo =
-                          (user as any)?.photoURL ||
-                          (user as any)?.profileURL ||
-                          src;
                         return (
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -290,7 +276,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                                   className="hidden sm:flex"
                                   name={display}
                                   userId={item.userId}
-                                  src={photo}
+                                  user={user}
                                 />
                               )}
                               <div className="min-w-0">

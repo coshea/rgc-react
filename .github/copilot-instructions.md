@@ -42,6 +42,10 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 - Phone numbers: normalize to digits, format `(xxx) xxx-xxxx` when length 10 (helpers in directory page & CSV service). Reuse instead of re-implementing.
 - Always prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML elements (`button`, `input`, `select`, `textarea`, ad‑hoc div role="button") unless: (a) no equivalent exists, or (b) you are building a highly specialized, performance‑critical primitive. If you must use raw elements, wrap them in an accessible component and document why. Migrate legacy raw interactive elements to HeroUI during nearby edits (do not open a dedicated refactor PR solely for this unless broad changes are required).
 
+### Avatar (UserAvatar) Fallback Contract
+
+Use `UserAvatar` with: explicit `src` > `user.profileURL` > `user.photoURL` > initials (derived from name/displayName/email). Pass the full `user` object when available; do NOT manually repeat `(profileURL || photoURL)` chains in components. Only provide `name` if no `user` is passed or you need to override display text. Alt text auto-derives from resolved name unless overridden.
+
 ## 7. React Query Patterns
 
 - Query keys: `['userProfile', uid]` convention—extend with similar tuple patterns (`['tournaments']`, `['tournament', id]`) for cache clarity.
@@ -70,4 +74,4 @@ Prefer: read existing analogous file → replicate pattern → minimal diff. If 
 
 ---
 
-Last generated: 2025-09-17
+Last generated: 2025-09-22
