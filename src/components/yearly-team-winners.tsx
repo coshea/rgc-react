@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardBody, Skeleton, Chip, Tooltip } from "@heroui/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Winner } from "@/types/winner";
 import { Icon } from "@iconify/react";
+import { SearchInput } from "@/components/search-input";
 
 interface Props {
   year: number;
@@ -97,9 +98,37 @@ export function YearlyTeamWinners({ year }: Props) {
     );
   }
 
-  if (!teams.length) {
+  const [filter, setFilter] = useState("");
+  const filtered = useMemo(() => {
+    if (!filter.trim()) return teams;
+    const q = filter.toLowerCase();
+    return teams.filter((t) =>
+      t.displayNames.join(" ").toLowerCase().includes(q)
+    );
+  }, [filter, teams]);
+
+  if (!filtered.length) {
     return (
-      <p className="text-xs text-default-500">No team results for {year}.</p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Icon icon="lucide:users" className="text-primary" />
+          <h2 className="text-lg font-semibold tracking-tight">
+            {year} Team Performance
+          </h2>
+        </div>
+        <div className="max-w-sm">
+          <SearchInput
+            value={filter}
+            onChange={setFilter}
+            placeholder="Search team"
+            ariaLabel="Search teams"
+            onClear={() => setFilter("")}
+          />
+        </div>
+        <p className="text-xs text-default-500">
+          {filter ? "No teams match filter." : `No team results for ${year}.`}
+        </p>
+      </div>
     );
   }
 
@@ -110,10 +139,19 @@ export function YearlyTeamWinners({ year }: Props) {
         <h2 className="text-lg font-semibold tracking-tight">
           {year} Team Performance
         </h2>
-        <span className="text-xs text-default-500">{teams.length} teams</span>
+        <span className="text-xs text-default-500">{filtered.length} team{filtered.length === 1 ? "" : "s"}</span>
+      </div>
+      <div className="max-w-sm">
+        <SearchInput
+          value={filter}
+            onChange={setFilter}
+          placeholder="Search team"
+          ariaLabel="Search teams"
+          onClear={() => setFilter("")}
+        />
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {teams.map((team) => (
+        {filtered.map((team) => (
           <Card
             key={team.key}
             className="border border-default-200/60 dark:border-default-100/10"

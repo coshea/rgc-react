@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Card, CardBody, Input, Button } from "@heroui/react";
+import { Card, CardBody, Button } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
+import { SearchInput } from "@/components/search-input";
 import { useUsersMap } from "@/hooks/useUsers";
 
 interface Props {
@@ -167,14 +168,12 @@ export function YearlyWinningsStandings({ year }: Props) {
 
       {/* Search & meta moved below podium, above table */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <Input
-          placeholder="Search player"
-          size="sm"
+        <SearchInput
           value={filter}
-          onValueChange={setFilter}
-          aria-label="Filter players"
+          onChange={setFilter}
+          placeholder="Search player"
+          ariaLabel="Filter players"
           className="w-full sm:w-64"
-          isClearable
           onClear={() => setFilter("")}
         />
         <div className="text-[11px] text-default-500">

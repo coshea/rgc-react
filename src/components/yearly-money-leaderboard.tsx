@@ -6,7 +6,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Input,
   Chip,
   Skeleton,
 } from "@heroui/react";
@@ -16,7 +15,7 @@ import { useUsersMap } from "@/hooks/useUsers";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { SearchInput } from "@/components/search-input";
 
 interface Props {
   year: number;
@@ -82,17 +81,12 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <Input
-          placeholder="Search player"
-          startContent={
-            <MagnifyingGlassIcon className="w-4 h-4 text-default-400" />
-          }
-          size="sm"
+        <SearchInput
           value={filter}
-          onValueChange={setFilter}
-          aria-label="Filter players"
+          onChange={setFilter}
+          placeholder="Search player"
+          ariaLabel="Filter players"
           className="w-full sm:w-64"
-          isClearable
           onClear={() => setFilter("")}
         />
         <div className="text-[11px] text-default-500">

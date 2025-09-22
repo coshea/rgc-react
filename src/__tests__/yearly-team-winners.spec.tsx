@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
@@ -95,5 +95,19 @@ describe("YearlyTeamWinners", () => {
     const carolStats = getStatsLine("Carol • Dan");
     expect(carolStats.textContent).toMatch(/0\s+win/);
     expect(carolStats.textContent).toMatch(/1\s+podium/);
+  });
+
+  it("filters teams via search input", () => {
+    render(<YearlyTeamWinners year={2025} />);
+    const input = screen.getByPlaceholderText(/search team/i);
+    // Initially shows all three team name combinations
+    screen.getByText("Alice • Bob");
+    screen.getByText("Evan • Frank");
+    screen.getByText("Carol • Dan");
+    fireEvent.change(input, { target: { value: "alice" } });
+    // Now only the Alice • Bob team should be visible
+    screen.getByText("Alice • Bob");
+    expect(screen.queryByText("Evan • Frank")).toBeNull();
+    expect(screen.queryByText("Carol • Dan")).toBeNull();
   });
 });
