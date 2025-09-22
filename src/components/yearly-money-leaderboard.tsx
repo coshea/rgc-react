@@ -273,36 +273,46 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                             </span>
                           </TableCell>
                         );
-                      case "player":
+                      case "player": {
+                        const user = usersMap.get(item.userId);
+                        const photo =
+                          (user as any)?.photoURL ||
+                          (user as any)?.profileURL ||
+                          src;
                         return (
                           <TableCell>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
+                              {isLoading ? (
+                                <Skeleton className="hidden h-8 w-8 rounded-full sm:flex" />
+                              ) : (
                                 <UserAvatar
                                   size="sm"
-                                  userId={item.userId}
-                                  name={display}
-                                  src={src}
                                   className="hidden sm:flex"
+                                  name={display}
+                                  userId={item.userId}
+                                  src={photo}
                                 />
-                                <p className="font-medium leading-tight max-w-[160px] truncate">
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-medium leading-tight truncate max-w-[160px]">
                                   {display}
                                 </p>
-                              </div>
-                              <div className="sm:hidden mt-1 text-[10px] text-default-500 flex gap-2">
-                                <span className="whitespace-nowrap">
-                                  {item.played} played
-                                </span>
-                                {item.wins > 0 && (
+                                <div className="sm:hidden mt-1 text-[10px] text-default-500 flex gap-2">
                                   <span className="whitespace-nowrap">
-                                    {item.wins}{" "}
-                                    {item.wins === 1 ? "win" : "wins"}
+                                    {item.played} played
                                   </span>
-                                )}
+                                  {item.wins > 0 && (
+                                    <span className="whitespace-nowrap">
+                                      {item.wins}{" "}
+                                      {item.wins === 1 ? "win" : "wins"}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
                         );
+                      }
                       case "played":
                         return (
                           <TableCell className="hidden sm:table-cell">

@@ -15,7 +15,7 @@ import {
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { useNavigate } from "react-router-dom";
-import { teeColorClasses } from "@/utils/teeStyles";
+import { TeeBadge } from "@/components/tee-badge";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -52,8 +52,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }).format(amount);
   };
 
-  // Removed inline teeColorClasses function
-
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
@@ -81,49 +79,41 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       return null;
     }
 
-    // Sort winners by place
-    const sortedWinners = [...(tournament.winners || [])].sort(
-      (a, b) => a.place - b.place
-    );
+    // Filter only first-place winner entries (there should typically be one)
+    const firstPlace = (tournament.winners || []).filter((w) => w.place === 1);
+    if (!firstPlace.length) return null;
+
+    const champion = firstPlace[0];
+    const placeLabel = "1st"; // always 1st here
+    const names = champion.displayNames.join(", ");
 
     return (
       <div className="mt-2">
-        <p className="text-xs text-foreground-500 mb-1">Winners:</p>
+        <p className="text-xs text-foreground-500 mb-1">Winner:</p>
         <div className="flex flex-wrap gap-1">
-          {sortedWinners.map((winner) => {
-            const place =
-              winner.place === 1
-                ? "1st"
-                : winner.place === 2
-                  ? "2nd"
-                  : winner.place === 3
-                    ? "3rd"
-                    : `${winner.place}th`;
-
-            return (
-              <Tooltip
-                key={winner.place}
-                content={
-                  <div className="px-1 py-2">
-                    <p className="font-medium">{place} Place</p>
-                    <p>{winner.displayNames.join(", ")}</p>
-                    <p className="text-xs mt-1">
-                      ${winner.prizeAmount} per person
-                    </p>
-                  </div>
-                }
-              >
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={winner.place === 1 ? "warning" : "primary"}
-                  className="cursor-help"
-                >
-                  {place}: {winner.displayNames.join(", ")}
-                </Chip>
-              </Tooltip>
-            );
-          })}
+          <Tooltip
+            content={
+              <div className="px-1 py-2">
+                <p className="font-medium">{placeLabel} Place</p>
+                <p>{names}</p>
+                {typeof champion.prizeAmount === "number" && (
+                  <p className="text-xs mt-1">
+                    ${champion.prizeAmount} per person
+                  </p>
+                )}
+              </div>
+            }
+          >
+            <Chip
+              size="sm"
+              variant="flat"
+              color="warning"
+              className="cursor-help"
+              startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
+            >
+              {names}
+            </Chip>
+          </Tooltip>
         </div>
       </div>
     );
@@ -189,12 +179,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   <Icon icon="lucide:calendar" className="w-3.5 h-3.5" />
                   {formatDate(tournament.date)}
                 </span>
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
-                >
-                  <Icon icon="lucide:flag" className="w-3 h-3 opacity-70" />
-                  {tournament.tee || "Mixed"}
-                </span>
+                <TeeBadge
+                  tee={tournament.tee as any}
+                  size="xs"
+                  ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
+                />
               </div>
               <p className="text-xs text-foreground-500 mt-2 line-clamp-2">
                 {tournament.description}
@@ -340,19 +329,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center">
-                    <Chip
+                    <TeeBadge
+                      tee={tournament.tee as any}
                       size="sm"
-                      variant="flat"
-                      className={teeColorClasses(tournament.tee)}
-                    >
-                      <span className="flex items-center gap-1">
-                        <Icon
-                          icon="lucide:flag"
-                          className="w-3.5 h-3.5 opacity-70"
-                        />
-                        {tournament.tee || "Mixed"}
-                      </span>
-                    </Chip>
+                      ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
+                    />
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>

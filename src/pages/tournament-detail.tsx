@@ -23,7 +23,7 @@ import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { teeColorClasses } from "@/utils/teeStyles";
+import { TeeBadge } from "@/components/tee-badge";
 const TournamentEditor = React.lazy(() =>
   import("@/components/tournament-editor").then((m) => ({
     default: m.TournamentEditor,
@@ -375,12 +375,11 @@ const TournamentDetailPage: React.FC = () => {
                 <Icon icon="lucide:users" className="w-4 h-4" />
                 Players: {tournament.players}
               </span>
-              <span
-                className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${teeColorClasses(tournament.tee)}`}
-              >
-                <Icon icon="lucide:flag" className="w-3.5 h-3.5 opacity-70" />
-                {tournament.tee || "Mixed"}
-              </span>
+              <TeeBadge
+                tee={tournament.tee as any}
+                size="xs"
+                ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
+              />
               {tournament.registrationOpen && (
                 <Chip color="warning" size="sm" variant="flat">
                   Registration Open
@@ -456,15 +455,11 @@ const TournamentDetailPage: React.FC = () => {
                       <div>
                         <p className="font-medium">Tee</p>
                         <p>
-                          <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${teeColorClasses(tournament.tee)}`}
-                          >
-                            <Icon
-                              icon="lucide:flag"
-                              className="w-3 h-3 opacity-70"
-                            />
-                            {tournament.tee || "Mixed"}
-                          </span>
+                          <TeeBadge
+                            tee={tournament.tee as any}
+                            size="xs"
+                            ariaLabel={`Tournament tee: ${tournament.tee || "Mixed"}`}
+                          />
                         </p>
                       </div>
                     </div>

@@ -24,11 +24,11 @@ export default function MoneyListPage() {
   // Errors are handled within sub components via toasts if needed
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-medium text-foreground">Money List</h2>
-          <p className="text-xs text-default-500 mt-1">
+    <div className="p-4 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="space-y-1">
+          <h1 className="text-lg font-semibold tracking-tight">Money List</h1>
+          <p className="text-[11px] text-default-500">
             Yearly prize earnings & tournament results.
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function MoneyListPage() {
       </div>
 
       {/* Mobile view selector */}
-      <div className="sm:hidden">
+      <div className="sm:hidden mb-4">
         <Select
           aria-label="Select leaderboard view"
           size="sm"
@@ -74,7 +74,7 @@ export default function MoneyListPage() {
       </div>
 
       {/* Desktop tabs */}
-      <div className="hidden sm:block">
+      <div className="hidden sm:block mb-6">
         <Tabs
           aria-label="Leaderboard views"
           selectedKey={tab}
@@ -89,15 +89,15 @@ export default function MoneyListPage() {
       </div>
 
       {/* Content */}
-      <div>
+      <div className="mb-6">
         {tab === "yearly" && <YearlyWinningsStandings year={year} />}
         {tab === "tournaments" && <TournamentBreakdown year={year} />}
         {tab === "teams" && <YearlyTeamWinners year={year} />}
       </div>
 
-      <p className="text-[11px] text-default-400 leading-relaxed">
+      <p className="text-[10px] text-default-400 leading-relaxed">
         Prize amounts are per-person shares; team winnings shown per member.
-        Data loads live from tournaments.
+        Data updates live from tournaments.
       </p>
     </div>
   );

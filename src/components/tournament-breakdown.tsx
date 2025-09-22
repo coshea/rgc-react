@@ -13,6 +13,7 @@ import {
   Skeleton,
 } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
+import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
@@ -43,28 +44,32 @@ export function TournamentBreakdown({ year }: Props) {
   const { usersMap, isLoading: usersLoading } = useUsersMap();
 
   const tournamentRows = useMemo(() => {
-    return tournaments.map((t) => {
-      const rows: ResultRow[] = [];
-      (t.winners || []).forEach((w: Winner) => {
-        w.userIds.forEach((uid, idx) => {
-          const name =
-            (w.displayNames && w.displayNames[idx]) ||
-            (w.displayNames && w.displayNames[0]) ||
-            uid;
-          rows.push({
-            id: `${t.firestoreId}-${w.place}-${uid}`,
-            position: w.place,
-            userId: uid,
-            name,
-            prize: w.prizeAmount || 0,
-            score: w.score,
-            teamSize: w.userIds.length,
+    return tournaments
+      .filter((t) => (t.winners || []).length > 0) // only include tournaments with at least one winner assigned
+      .map((t) => {
+        const rows: ResultRow[] = [];
+        const winnerIds = new Set<string>();
+        (t.winners || []).forEach((w: Winner) => {
+          w.userIds.forEach((uid, idx) => {
+            winnerIds.add(uid);
+            const name =
+              (w.displayNames && w.displayNames[idx]) ||
+              (w.displayNames && w.displayNames[0]) ||
+              uid;
+            rows.push({
+              id: `${t.firestoreId}-${w.place}-${uid}`,
+              position: w.place,
+              userId: uid,
+              name,
+              prize: w.prizeAmount || 0,
+              score: w.score,
+              teamSize: w.userIds.length,
+            });
           });
         });
+        rows.sort((a, b) => a.position - b.position);
+        return { tournament: t, rows, winnersCount: winnerIds.size };
       });
-      rows.sort((a, b) => a.position - b.position);
-      return { tournament: t, rows };
-    });
   }, [tournaments]);
 
   const renderPosition = (pos: number) => {
@@ -94,9 +99,11 @@ export function TournamentBreakdown({ year }: Props) {
     );
   }
 
-  if (!tournaments.length) {
+  if (!tournamentRows.length) {
     return (
-      <p className="text-xs text-default-500">No tournaments for {year}.</p>
+      <p className="text-xs text-default-500">
+        No tournament results for {year}.
+      </p>
     );
   }
 
@@ -108,7 +115,7 @@ export function TournamentBreakdown({ year }: Props) {
         onSelectionChange={(keys: any) => setOpen(new Set(keys))}
         className="px-0"
       >
-        {tournamentRows.map(({ tournament, rows }) => (
+        {tournamentRows.map(({ tournament, rows, winnersCount }) => (
           <AccordionItem
             key={tournament.firestoreId || tournament.title}
             aria-label={tournament.title}
@@ -128,12 +135,28 @@ export function TournamentBreakdown({ year }: Props) {
                   <Chip size="sm" variant="flat" color="success">
                     ${tournament.prizePool.toLocaleString()} Prize Pool
                   </Chip>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    className="font-medium"
+                    startContent={
+                      <Icon icon="lucide:award" className="w-3 h-3" />
+                    }
+                  >
+                    {winnersCount} {winnersCount === 1 ? "Winner" : "Winners"}
+                  </Chip>
                 </div>
               </div>
             }
             subtitle={
-              <div className="mt-1 text-xs text-default-500">
-                {tournament.players} players • {tournament.tee || "Tee"}
+              <div className="mt-1 text-[11px] text-default-500 flex items-center gap-2">
+                <TeeBadge tee={tournament.tee as any} size="xs" />
+                <span className="h-1 w-1 rounded-full bg-default-300" />
+                <span className="inline-flex items-center gap-1">
+                  <Icon icon="lucide:medal" className="w-3 h-3 opacity-60" />
+                  {winnersCount} {winnersCount === 1 ? "winner" : "winners"}
+                </span>
               </div>
             }
           >
@@ -177,11 +200,7 @@ export function TournamentBreakdown({ year }: Props) {
                             )}
                             <div>
                               <p className="font-medium">{item.name}</p>
-                              {item.teamSize > 1 && (
-                                <p className="text-[10px] text-default-400">
-                                  Team of {item.teamSize}
-                                </p>
-                              )}
+                              {/* team size detail removed per requirements */}
                             </div>
                           </div>
                         </TableCell>
