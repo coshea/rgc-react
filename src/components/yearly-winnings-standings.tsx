@@ -299,12 +299,19 @@ export function YearlyWinningsStandings({ year }: Props) {
                           </td>
                           <td className="px-3 sm:px-4 py-2 font-medium truncate max-w-[200px] sm:max-w-[240px] align-top">
                             <div className="flex items-center gap-2 min-w-0">
-                              <UserAvatar
-                                size="sm"
-                                userId={row.userId}
-                                name={row.displayName}
-                                className="flex-shrink-0"
-                              />
+                              {(() => {
+                                const user = usersMap.get(row.userId);
+                                return (
+                                  <UserAvatar
+                                    size="sm"
+                                    userId={row.userId}
+                                    user={user}
+                                    // only pass name when user not yet resolved
+                                    name={user ? undefined : row.displayName}
+                                    className="flex-shrink-0"
+                                  />
+                                );
+                              })()}
                               <div className="flex flex-col min-w-0">
                                 <span className="truncate max-w-[140px] sm:max-w-[200px] leading-tight">
                                   {row.displayName}

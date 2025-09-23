@@ -139,12 +139,14 @@ export function YearlyTeamWinners({ year }: Props) {
         <h2 className="text-lg font-semibold tracking-tight">
           {year} Team Performance
         </h2>
-        <span className="text-xs text-default-500">{filtered.length} team{filtered.length === 1 ? "" : "s"}</span>
+        <span className="text-xs text-default-500">
+          {filtered.length} team{filtered.length === 1 ? "" : "s"}
+        </span>
       </div>
       <div className="max-w-sm">
         <SearchInput
           value={filter}
-            onChange={setFilter}
+          onChange={setFilter}
           placeholder="Search team"
           ariaLabel="Search teams"
           onClear={() => setFilter("")}

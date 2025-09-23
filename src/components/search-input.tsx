@@ -42,7 +42,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       isClearable
       size={size}
       radius={radius}
-      startContent={<MagnifyingGlassIcon className="w-4 h-4 text-default-400" />}
+      startContent={
+        <MagnifyingGlassIcon className="w-4 h-4 text-default-400" />
+      }
       placeholder={placeholder}
       aria-label={ariaLabel}
       value={value}
