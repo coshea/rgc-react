@@ -88,6 +88,16 @@ export function YearlyTeamWinners({ year }: Props) {
     return arr;
   }, [tournaments]);
 
+  // Filter state must be declared before any early returns to maintain stable hook order
+  const [filter, setFilter] = useState("");
+  const filtered = useMemo(() => {
+    if (!filter.trim()) return teams;
+    const q = filter.toLowerCase();
+    return teams.filter((t) =>
+      t.displayNames.join(" ").toLowerCase().includes(q)
+    );
+  }, [filter, teams]);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -97,15 +107,6 @@ export function YearlyTeamWinners({ year }: Props) {
       </div>
     );
   }
-
-  const [filter, setFilter] = useState("");
-  const filtered = useMemo(() => {
-    if (!filter.trim()) return teams;
-    const q = filter.toLowerCase();
-    return teams.filter((t) =>
-      t.displayNames.join(" ").toLowerCase().includes(q)
-    );
-  }, [filter, teams]);
 
   if (!filtered.length) {
     return (
@@ -120,8 +121,8 @@ export function YearlyTeamWinners({ year }: Props) {
           <SearchInput
             value={filter}
             onChange={setFilter}
-            placeholder="Search team"
-            ariaLabel="Search teams"
+            placeholder="Search player"
+            ariaLabel="Search player"
             onClear={() => setFilter("")}
           />
         </div>
@@ -147,8 +148,8 @@ export function YearlyTeamWinners({ year }: Props) {
         <SearchInput
           value={filter}
           onChange={setFilter}
-          placeholder="Search team"
-          ariaLabel="Search teams"
+          placeholder="Search player"
+          ariaLabel="Search player"
           onClear={() => setFilter("")}
         />
       </div>

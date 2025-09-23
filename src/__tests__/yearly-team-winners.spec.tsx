@@ -99,7 +99,8 @@ describe("YearlyTeamWinners", () => {
 
   it("filters teams via search input", () => {
     render(<YearlyTeamWinners year={2025} />);
-    const input = screen.getByPlaceholderText(/search team/i);
+    // SearchInput uses provided placeholder "Search team" but querying by aria-label is more robust
+    const input = screen.getByRole("textbox", { name: /search player?/i });
     // Initially shows all three team name combinations
     screen.getByText("Alice • Bob");
     screen.getByText("Evan • Frank");
