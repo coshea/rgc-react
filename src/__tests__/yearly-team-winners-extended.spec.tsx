@@ -86,14 +86,14 @@ describe("YearlyTeamWinners - extended coverage", () => {
       ]),
     ];
     render(<YearlyTeamWinners year={2025} />);
-  const input = screen.getByPlaceholderText(/search player/i);
+    const input = screen.getByPlaceholderText(/search player/i);
     fireEvent.change(input, { target: { value: "zzzzz" } });
     screen.getByText("No teams match filter.");
   });
 
   it("sorts teams by wins, podiums, totalPerPlayer, then team size (with team size tiebreaker)", () => {
-  // Team AB: 2 wins -> always first
-  // Teams CD vs EFG: 0 wins each, 3 podiums each, equal totalPerPlayer after adjustment -> size tiebreaker puts EFG (size 3) before CD (size 2)
+    // Team AB: 2 wins -> always first
+    // Teams CD vs EFG: 0 wins each, 3 podiums each, equal totalPerPlayer after adjustment -> size tiebreaker puts EFG (size 3) before CD (size 2)
     mockData.tournaments = [
       makeTournament("t1", "Event 1", new Date(2025, 0, 1), [
         { place: 1, users: ["A", "B"], names: ["A", "B"], prize: 60 },
@@ -103,7 +103,7 @@ describe("YearlyTeamWinners - extended coverage", () => {
       makeTournament("t2", "Event 2", new Date(2025, 1, 1), [
         { place: 1, users: ["A", "B"], names: ["A", "B"], prize: 60 },
         { place: 2, users: ["E", "F", "G"], names: ["E", "F", "G"], prize: 40 },
-  { place: 3, users: ["C", "D"], names: ["C", "D"], prize: 30 }, // adjust to force total tie with EFG
+        { place: 3, users: ["C", "D"], names: ["C", "D"], prize: 30 }, // adjust to force total tie with EFG
       ]),
       makeTournament("t3", "Event 3", new Date(2025, 2, 1), [
         { place: 2, users: ["C", "D"], names: ["C", "D"], prize: 40 },
@@ -132,7 +132,7 @@ describe("YearlyTeamWinners - extended coverage", () => {
     ];
     const { container } = render(<YearlyTeamWinners year={2025} />);
     const chipTexts = Array.from(
-      container.querySelectorAll('.flex.flex-wrap span.flex-1')
+      container.querySelectorAll(".flex.flex-wrap span.flex-1")
     )
       .map((el) => (el.textContent || "").trim())
       .filter((t) => /Event: /.test(t));
@@ -158,7 +158,9 @@ describe("YearlyTeamWinners - extended coverage", () => {
       ]),
     ];
     const { container } = render(<YearlyTeamWinners year={2025} />);
-    const chipTexts = Array.from(container.querySelectorAll(".flex.flex-wrap span, .flex.flex-wrap div"))
+    const chipTexts = Array.from(
+      container.querySelectorAll(".flex.flex-wrap span, .flex.flex-wrap div")
+    )
       .map((el) => el.textContent || "")
       .filter((t) => /(One|Two|Three|Four):/.test(t));
     expect(chipTexts).toContain("One: 🏆 $25");
