@@ -430,8 +430,17 @@ export function TournamentBreakdown({ year }: Props) {
                     </Button>
                   </div>
 
-                  {isOpen && (
-                    <div id={`results-${id}`} className="mt-2">
+                  <div
+                    id={`results-${id}`}
+                    aria-hidden={!isOpen}
+                    className={[
+                      "mt-2 overflow-hidden transition-all duration-300 ease-in-out",
+                      isOpen
+                        ? "max-h-[640px] opacity-100"
+                        : "max-h-0 opacity-0",
+                    ].join(" ")}
+                  >
+                    {isOpen && (
                       <Table
                         aria-label={`${tournament.title} full results`}
                         removeWrapper
@@ -454,7 +463,6 @@ export function TournamentBreakdown({ year }: Props) {
                                 ((user as any).displayName ||
                                   (user as any).name)) ||
                               item.name;
-                            // Per-player suffix removed – each row already represents the individual's share.
                             return (
                               <TableRow key={item.id}>
                                 <TableCell>
@@ -499,8 +507,8 @@ export function TournamentBreakdown({ year }: Props) {
                           }}
                         </TableBody>
                       </Table>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </CardBody>
               </Card>
             </article>

@@ -6,16 +6,26 @@ import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
 import { useUsersMap } from "@/hooks/useUsers";
+import { getPlaceMeta, formatPlaceLabel } from "@/utils/placeMeta";
 
 interface Props {
   year: number;
 }
 
-/**
- * YearlyWinningsStandings
- * Shows podium (top 3) + condensed standings table (rank, player, total winnings).
- * Breakdown chips intentionally excluded; see YearlyWinningsBreakdown component.
- */
+interface WinningsRow {
+  userId: string;
+  displayName: string;
+  total: number;
+  breakdown?: Array<{
+    tournamentId: string;
+    title: string;
+    place: number;
+    amount: number;
+    date: string | number | Date;
+  }>;
+  rank: number;
+}
+
 export function YearlyWinningsStandings({ year }: Props) {
   const { userLoggedIn } = useAuth();
   const { winnings, isLoading } = useYearlyWinnings({
@@ -24,30 +34,21 @@ export function YearlyWinningsStandings({ year }: Props) {
   });
   const { usersMap } = useUsersMap();
 
-  // Build rows with stable rank based on full winnings ordering
-  const rows = useMemo(
-    () =>
-      winnings.map((w, idx) => ({
-        ...w,
-        rank: idx + 1,
-      })),
-    [winnings]
-  );
+  const rows: WinningsRow[] = useMemo(() => {
+    const sorted = [...(winnings || [])].sort((a, b) => b.total - a.total);
+    return sorted.map((w, idx) => ({ ...w, rank: idx + 1 }));
+  }, [winnings]);
 
-  // Filtering
+  const topThree = useMemo(() => rows.slice(0, 3), [rows]);
+
   const [filter, setFilter] = useState("");
   const filtered = useMemo(() => {
     if (!filter.trim()) return rows;
     const q = filter.toLowerCase();
     return rows.filter((r) => r.displayName.toLowerCase().includes(q));
-  }, [filter, rows]);
+  }, [rows, filter]);
 
-  // Podium should always reflect overall (unfiltered) top 3
-  const topThree = useMemo(() => rows.slice(0, 3), [rows]);
-
-  // Track which user rows are expanded (store userId set)
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
   const toggle = useCallback((userId: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -59,10 +60,10 @@ export function YearlyWinningsStandings({ year }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Podium Section */}
-      {!isLoading && topThree.length > 0 && (
-        <div className="mx-auto w-full max-w-3xl">
-          <div className="flex items-end justify-center gap-3 sm:gap-8 py-1 sm:py-2">
+      {/* Podium */}
+      {!isLoading && rows.length > 0 && (
+        <div className="flex justify-center">
+          <div className="flex items-end gap-4 sm:gap-8 py-2">
             {/* Second */}
             <div className="flex flex-col items-center w-20 sm:w-24">
               {topThree[1] &&
@@ -76,17 +77,22 @@ export function YearlyWinningsStandings({ year }: Props) {
                       <UserAvatar
                         size="sm"
                         userId={topThree[1].userId}
-                        name={display}
                         user={u}
+                        name={display}
                         className="shadow-sm mb-1"
                       />
-                      <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
-                        <Icon
-                          icon="lucide:medal"
-                          className="w-3 h-3 text-default-400"
-                        />
-                        <span>2nd</span>
-                      </div>
+                      {(() => {
+                        const meta = getPlaceMeta(2);
+                        return (
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                            <Icon
+                              icon={meta.icon}
+                              className={["w-3 h-3", meta.colorClass].join(" ")}
+                            />
+                            <span>2nd</span>
+                          </div>
+                        );
+                      })()}
                       <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
                         {display}
                       </p>
@@ -110,14 +116,22 @@ export function YearlyWinningsStandings({ year }: Props) {
                       <UserAvatar
                         size="md"
                         userId={topThree[0].userId}
-                        name={display}
                         user={u}
+                        name={display}
                         className="shadow-md ring-2 ring-warning mb-1"
                       />
-                      <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
-                        <Icon icon="lucide:trophy" className="w-4 h-4" />
-                        <span>1st</span>
-                      </div>
+                      {(() => {
+                        const meta = getPlaceMeta(1);
+                        return (
+                          <div className="flex items-center gap-1 text-[12px] font-semibold text-warning-600">
+                            <Icon
+                              icon={meta.icon}
+                              className={["w-4 h-4", meta.colorClass].join(" ")}
+                            />
+                            <span>1st</span>
+                          </div>
+                        );
+                      })()}
                       <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
                         {display}
                       </p>
@@ -141,17 +155,22 @@ export function YearlyWinningsStandings({ year }: Props) {
                       <UserAvatar
                         size="sm"
                         userId={topThree[2].userId}
-                        name={display}
                         user={u}
+                        name={display}
                         className="shadow-sm mb-1"
                       />
-                      <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
-                        <Icon
-                          icon="lucide:medal"
-                          className="w-3 h-3 text-amber-700"
-                        />
-                        <span>3rd</span>
-                      </div>
+                      {(() => {
+                        const meta = getPlaceMeta(3);
+                        return (
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                            <Icon
+                              icon={meta.icon}
+                              className={["w-3 h-3", meta.colorClass].join(" ")}
+                            />
+                            <span>3rd</span>
+                          </div>
+                        );
+                      })()}
                       <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
                         {display}
                       </p>
@@ -166,7 +185,7 @@ export function YearlyWinningsStandings({ year }: Props) {
         </div>
       )}
 
-      {/* Search & meta moved below podium, above table */}
+      {/* Search */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
         <SearchInput
           value={filter}
@@ -227,29 +246,23 @@ export function YearlyWinningsStandings({ year }: Props) {
                 )}
                 {!isLoading &&
                   filtered.map((row) => {
-                    const idx = row.rank - 1; // stable original index
                     const isExpanded = expanded.has(row.userId);
-                    // Removed special highlighting for top 3 ranks to keep rows uniform
-                    const highlight = "";
-                    const base =
-                      idx % 2 === 0
-                        ? "bg-background"
-                        : "bg-default-50 dark:bg-default-100/30";
+                    const played = row.breakdown?.length || 0;
+                    const wins =
+                      row.breakdown?.filter((b) => b.place === 1).length || 0;
                     const amountDisplay = row.total.toLocaleString("en-US", {
                       style: "currency",
                       currency: "USD",
                       minimumFractionDigits: 0,
                     });
-                    const played = row.breakdown?.length || 0;
-                    const wins =
-                      row.breakdown?.filter((b: any) => b.place === 1).length ||
-                      0;
+                    const striped = row.rank % 2 === 0; // zebra
                     return (
                       <React.Fragment key={row.userId}>
                         <tr
                           className={[
-                            base,
-                            highlight,
+                            striped
+                              ? "bg-default-50/50 dark:bg-default-50/10"
+                              : "bg-background",
                             "transition-colors group cursor-pointer hover:bg-primary-50/50 dark:hover:bg-primary-50/10",
                             isExpanded
                               ? "border-b border-default-200 dark:border-default-100"
@@ -258,7 +271,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                             .filter(Boolean)
                             .join(" ")}
                           onClick={(e) => {
-                            // Avoid double toggle if button inside cell was clicked
                             if (
                               (e.target as HTMLElement).closest(
                                 "button[data-expander]"
@@ -276,13 +288,13 @@ export function YearlyWinningsStandings({ year }: Props) {
                                 size="sm"
                                 variant="light"
                                 onPress={() => toggle(row.userId)}
+                                data-expander
                                 aria-expanded={isExpanded}
                                 aria-label={
                                   isExpanded
                                     ? `Collapse winnings for ${row.displayName}`
                                     : `Expand winnings for ${row.displayName}`
                                 }
-                                data-expander
                                 className="min-w-0 h-auto p-0 text-default-400 hover:text-default-600"
                               >
                                 <Icon
@@ -292,7 +304,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                                       : "lucide:chevron-right"
                                   }
                                   className="w-4 h-4"
-                                  aria-hidden="true"
                                 />
                               </Button>
                             </div>
@@ -306,7 +317,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                                     size="sm"
                                     userId={row.userId}
                                     user={user}
-                                    // only pass name when user not yet resolved
                                     name={user ? undefined : row.displayName}
                                     className="flex-shrink-0"
                                   />
@@ -333,67 +343,118 @@ export function YearlyWinningsStandings({ year }: Props) {
                             {amountDisplay}
                           </td>
                         </tr>
-                        {isExpanded && (
-                          <tr className="bg-default-50/70 dark:bg-default-50/5">
-                            <td colSpan={5} className="px-6 pb-4 pt-2">
-                              {row.breakdown && row.breakdown.length > 0 ? (
-                                <div className="space-y-2">
-                                  <div className="text-[11px] uppercase tracking-wide text-default-500 font-medium">
-                                    Earnings Breakdown
-                                  </div>
-                                  <ul className="space-y-1">
-                                    {row.breakdown.map((b) => (
-                                      <li
-                                        key={
-                                          b.tournamentId + b.place + b.amount
-                                        }
-                                        className="flex flex-wrap items-center gap-2 text-xs bg-content2/60 dark:bg-content2/30 rounded-md px-2 py-1 border border-default-200/50 dark:border-default-100/10"
-                                      >
-                                        <span
-                                          className="font-medium truncate max-w-[140px]"
-                                          title={b.title}
-                                        >
-                                          {b.title}
-                                        </span>
-                                        <span className="text-default-400">
-                                          •
-                                        </span>
-                                        <span className="tabular-nums">
-                                          Place {b.place}
-                                        </span>
-                                        <span className="text-default-400">
-                                          •
-                                        </span>
-                                        <span className="font-semibold tabular-nums">
-                                          $
-                                          {b.amount.toLocaleString("en-US", {
-                                            minimumFractionDigits: 0,
-                                          })}
-                                        </span>
-                                        <span className="text-default-400">
-                                          •
-                                        </span>
-                                        <span className="text-default-500 tabular-nums">
-                                          {new Date(b.date).toLocaleDateString(
-                                            "en-US",
-                                            {
-                                              month: "short",
-                                              day: "numeric",
-                                            }
-                                          )}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                        <tr aria-hidden={!isExpanded}>
+                          <td colSpan={5} className="px-0 pb-0 pt-0">
+                            <div
+                              className={[
+                                "overflow-hidden transition-all duration-300 ease-in-out",
+                                isExpanded
+                                  ? "max-h-[700px] opacity-100"
+                                  : "max-h-0 opacity-0",
+                              ].join(" ")}
+                            >
+                              {isExpanded && (
+                                <div className="bg-default-50/70 dark:bg-default-50/5 px-6 pt-2 pb-4 border-t border-default-200/60 dark:border-default-100/10">
+                                  {row.breakdown && row.breakdown.length > 0 ? (
+                                    <div className="space-y-2">
+                                      <div className="text-[11px] uppercase tracking-wide text-default-500 font-medium">
+                                        Earnings Breakdown
+                                      </div>
+                                      <ul className="space-y-1.5 overflow-x-hidden">
+                                        {row.breakdown.map((b) => {
+                                          const dateLabel = new Date(
+                                            b.date
+                                          ).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                          });
+                                          // (badge styling now handled inline with icon-based trophy/medal styles)
+                                          return (
+                                            <li
+                                              key={
+                                                b.tournamentId +
+                                                b.place +
+                                                b.amount
+                                              }
+                                              className="group relative overflow-hidden rounded-md border border-default-200/60 dark:border-default-100/10 bg-content2/70 dark:bg-content2/20 hover:bg-content2/90 dark:hover:bg-content2/30 transition-colors"
+                                            >
+                                              <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/10 group-hover:from-primary group-hover:via-primary/70 group-hover:to-primary/30 transition-colors" />
+                                              <div className="pl-3 pr-2 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                  <span
+                                                    className="font-medium truncate max-w-[150px] sm:max-w-[200px]"
+                                                    title={b.title}
+                                                  >
+                                                    {b.title}
+                                                  </span>
+                                                  <span className="hidden sm:inline text-default-300 dark:text-default-600">
+                                                    •
+                                                  </span>
+                                                  {(() => {
+                                                    const meta = getPlaceMeta(
+                                                      b.place
+                                                    );
+                                                    return (
+                                                      <span
+                                                        className={[
+                                                          "inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 tabular-nums ring-1 ring-black/5 dark:ring-white/5",
+                                                          meta.badgeBg,
+                                                        ].join(" ")}
+                                                        aria-label={formatPlaceLabel(
+                                                          b.place
+                                                        )}
+                                                      >
+                                                        <Icon
+                                                          icon={meta.icon}
+                                                          className={[
+                                                            "w-3 h-3",
+                                                            b.place === 1
+                                                              ? ""
+                                                              : "opacity-80",
+                                                          ].join(" ")}
+                                                        />
+                                                        <span>
+                                                          {formatPlaceLabel(
+                                                            b.place
+                                                          )}
+                                                        </span>
+                                                      </span>
+                                                    );
+                                                  })()}
+                                                </div>
+                                                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] sm:justify-end">
+                                                  <span className="font-semibold tabular-nums text-default-800 dark:text-default-200">
+                                                    $
+                                                    {b.amount.toLocaleString(
+                                                      "en-US",
+                                                      {
+                                                        minimumFractionDigits: 0,
+                                                      }
+                                                    )}
+                                                  </span>
+                                                  <span className="text-default-400 hidden sm:inline">
+                                                    •
+                                                  </span>
+                                                  <span className="text-default-500 tabular-nums">
+                                                    {dateLabel}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </li>
+                                          );
+                                        })}
+                                      </ul>
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-default-400 py-3">
+                                      No per-tournament breakdown available.
+                                    </p>
+                                  )}
                                 </div>
-                              ) : (
-                                <p className="text-xs text-default-400">
-                                  No per-tournament breakdown available.
-                                </p>
                               )}
-                            </td>
-                          </tr>
-                        )}
+                            </div>
+                          </td>
+                        </tr>
                       </React.Fragment>
                     );
                   })}
