@@ -38,6 +38,13 @@ export default function MembershipDirectoryPage() {
   const [csvOpen, setCsvOpen] = useState(false);
   const [csvRows, setCsvRows] = useState<UserProfilePayload[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    processed: number;
+    total: number;
+  }>({
+    processed: 0,
+    total: 0,
+  });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // search filter
   const [filter, setFilter] = useState("");
@@ -269,13 +276,25 @@ export default function MembershipDirectoryPage() {
       strippedBoardRows: boardIntendedRows.length,
     });
     setUploading(true);
+    setUploadProgress({ processed: 0, total: finalRows.length });
     try {
       console.log("[Directory] Starting CSV bulk upload", {
         rows: finalRows.length,
         sample: finalRows.slice(0, 3),
         isAdmin,
       });
-      const count = await bulkCreateUsers(finalRows);
+      const count = await bulkCreateUsers(finalRows, {
+        onProgress: (processed, total) => {
+          setUploadProgress({ processed, total });
+          // occasional console progress (every 25 or full)
+          if (processed === total || processed % 25 === 0) {
+            console.log("[Directory] Bulk upload progress", {
+              processed,
+              total,
+            });
+          }
+        },
+      });
       setCsvOpen(false);
       setCsvRows([]);
       addToast({
@@ -287,9 +306,31 @@ export default function MembershipDirectoryPage() {
       console.log("[Directory] CSV bulk upload success", { count });
     } catch (e) {
       console.error("CSV bulk upload error", e);
+      // Surface more informative message if available (e.g. aggregated partial failures)
+      let baseMessage = "Bulk upload failed";
+      if (e instanceof Error && e.message) baseMessage = e.message;
+      // Summarize first few distinct reasons if details present
+      let detailSummary = "";
+      const anyErr: any = e as any;
+      if (anyErr?.details?.errors && Array.isArray(anyErr.details.errors)) {
+        const reasons: Record<string, number> = {};
+        anyErr.details.errors.forEach((er: any) => {
+          const r = String(er.reason || "unknown");
+          reasons[r] = (reasons[r] || 0) + 1;
+        });
+        const top = Object.entries(reasons)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([r, c]) => `${r}(${c})`)
+          .join(", ");
+        if (top) detailSummary = top;
+      }
+      const description = detailSummary
+        ? `${baseMessage}. Reasons: ${detailSummary}`
+        : `${baseMessage}. Check console for details.`;
       addToast({
         title: "Upload Failed",
-        description: "Bulk upload failed. Check console for details.",
+        description,
         color: "danger",
       });
       console.log("[Directory] CSV bulk upload failed", e);
@@ -339,11 +380,6 @@ export default function MembershipDirectoryPage() {
         await addDoc(collection(db, "users"), {
           firstName: (form.firstName || "").trim() || undefined,
           lastName: (form.lastName || "").trim() || undefined,
-          // displayName derived server-side by update flows; provide here for immediate list ordering
-          displayName: [form.firstName, form.lastName]
-            .filter(Boolean)
-            .join(" ")
-            .trim(),
           email: form.email || "",
           phone: phoneToSave || "",
           boardMember: !!form.boardMember,
@@ -444,6 +480,7 @@ export default function MembershipDirectoryPage() {
         onClose={() => setCsvOpen(false)}
         onUpload={uploadCsv}
         uploading={uploading}
+        progress={uploadProgress}
       />
     </div>
   );

@@ -5,12 +5,12 @@ import {
   serverTimestamp,
   getDoc,
   collection,
+  addDoc,
   getDocs,
   query,
   orderBy,
   updateDoc,
   deleteDoc,
-  writeBatch,
 } from "firebase/firestore";
 
 export type UserProfilePayload = {
@@ -161,130 +161,87 @@ export async function deleteUser(uid: string) {
 }
 
 /**
- * Bulk create user documents (admin-only pathway). Uses Firestore write batches
- * with a max of 500 operations per batch. Each payload is sanitized to ensure
- * string fields are at least empty strings (preventing undefined fields when
- * UI expects string). Board / role fields are passed through verbatim; security
- * rules will enforce validity.
+ * Bulk create user documents (admin-only pathway) – sequential version.
+ * Replaces batched writes with per-row `addDoc` (or `setDoc` if we later need deterministic IDs).
+ * Pros: simpler, clearer error attribution, avoids batch abort semantics.
+ * Cons: slower (one network round trip per row) and non-atomic (partial success possible).
  *
- * Returns total number of documents attempted. Throws on the first batch error.
+ * Returns number of successfully created documents. If at least one row succeeds and others fail,
+ * it throws an aggregated error AFTER processing all rows, attaching partial results to `error.details`.
  */
 export async function bulkCreateUsers(
-  rows: UserProfilePayload[]
+  rows: UserProfilePayload[],
+  opts?: { onProgress?: (processed: number, total: number) => void }
 ): Promise<number> {
   if (!rows.length) return 0;
 
-  // Firestore limitation: 500 writes per batch
-  const MAX = 500;
-  let processed = 0;
-  for (let i = 0; i < rows.length; i += MAX) {
-    const slice = rows.slice(i, i + MAX);
-    const batch = writeBatch(db);
-    slice.forEach((r) => {
-      const ref = doc(collection(db, "users"));
+  const perRowErrors: { index: number; reason: string }[] = [];
+  let succeeded = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    try {
       const first = (r.firstName || "").trim();
       const last = (r.lastName || "").trim();
-      const combined = computeDisplayName({
-        firstName: first,
-        lastName: last,
-        displayName: "", // ignore any legacy displayName from CSV input
-      });
       const payload: Record<string, any> = {
         firstName: first || undefined,
         lastName: last || undefined,
-        displayName: combined,
         email: r.email || "",
         phone: r.phone || "",
         ghinNumber: r.ghinNumber || "",
         photoURL: r.photoURL ?? null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
       if (typeof r.active === "boolean") payload.active = r.active;
       if (typeof r.registered === "boolean") payload.registered = r.registered;
       if (typeof r.boardMember === "boolean")
         payload.boardMember = r.boardMember;
       if (r.role) payload.role = r.role;
-      payload.createdAt = serverTimestamp();
-      payload.updatedAt = serverTimestamp();
-      batch.set(ref, payload);
-    });
-    try {
-      await batch.commit();
-      processed += slice.length;
+
+      console.log("[bulkCreateUsers] creating user", payload);
+
+      await addDoc(collection(db, "users"), payload);
+      succeeded++;
     } catch (err: any) {
-      // Provide granular diagnostics by retrying each write individually.
-      console.error(
-        "[bulkCreateUsers] Batch commit failed — attempting per-row isolation",
-        err
-      );
-      const perRowErrors: { index: number; reason: string }[] = [];
-      let successfulThisSlice = 0;
-      for (let localIdx = 0; localIdx < slice.length; localIdx++) {
-        const r = slice[localIdx];
-        try {
-          const ref = doc(collection(db, "users"));
-          const first = (r.firstName || "").trim();
-          const last = (r.lastName || "").trim();
-          const combined = computeDisplayName({
-            firstName: first,
-            lastName: last,
-            displayName: "",
-          });
-          const payload: Record<string, any> = {
-            firstName: first || undefined,
-            lastName: last || undefined,
-            displayName: combined,
-            email: r.email || "",
-            phone: r.phone || "",
-            ghinNumber: r.ghinNumber || "",
-            photoURL: r.photoURL ?? null,
-          };
-          if (typeof r.active === "boolean") payload.active = r.active;
-          if (typeof r.registered === "boolean")
-            payload.registered = r.registered;
-          if (typeof r.boardMember === "boolean")
-            payload.boardMember = r.boardMember;
-          if (r.role) payload.role = r.role;
-          payload.createdAt = serverTimestamp();
-          payload.updatedAt = serverTimestamp();
-          await setDoc(ref, payload);
-          successfulThisSlice++;
-        } catch (rowErr: any) {
-          const code = rowErr?.code || rowErr?.message || "unknown";
-          // Common pattern detection for clarity
-          let reason = String(code);
-          if (code === "permission-denied") {
-            if (!auth.currentUser) {
-              reason = "permission-denied (unauthenticated)";
-            } else {
-              reason =
-                "permission-denied (rules rejection: likely not admin or email missing)";
-            }
-          } else if (/missing|email/i.test(code) && !slice[localIdx].email) {
-            reason = "missing-email";
-          }
-          perRowErrors.push({ index: i + localIdx, reason });
-        }
+      const code = err?.code || err?.message || "unknown";
+      let reason = String(code);
+      if (code === "permission-denied") {
+        if (!auth.currentUser) reason = "permission-denied (unauthenticated)";
+        else
+          reason =
+            "permission-denied (rules rejection: not admin or missing email)";
+      } else if (/missing|email/i.test(code) && !r.email) {
+        reason = "missing-email";
       }
-      processed += successfulThisSlice;
-      if (perRowErrors.length) {
-        const summary = {
-          attempted: slice.length,
-          succeeded: successfulThisSlice,
-          failed: perRowErrors.length,
-          errors: perRowErrors.slice(0, 10), // limit log volume
-        };
-        console.error("[bulkCreateUsers] Partial failures", summary);
-        // Throw aggregated error so caller can surface succinct message
-        const errMsg = `Bulk create partially failed: ${successfulThisSlice}/${slice.length} succeeded. First errors: ${perRowErrors
-          .slice(0, 5)
-          .map((e) => `#${e.index}:${e.reason}`)
-          .join(", ")}`;
-        const aggregate = new Error(errMsg);
-        // @ts-ignore attach metadata
-        aggregate.details = summary;
-        throw aggregate;
-      }
+      perRowErrors.push({ index: i, reason });
     }
+    // invoke progress after each row (success or failure)
+    opts?.onProgress?.(i + 1, rows.length);
   }
-  return processed;
+
+  if (perRowErrors.length) {
+    const summary = {
+      attempted: rows.length,
+      succeeded,
+      failed: perRowErrors.length,
+      errors: perRowErrors.slice(0, 25),
+    };
+    console.error("[bulkCreateUsers] Partial/failed upload", summary);
+    const errMsg =
+      succeeded === 0
+        ? `Bulk create failed: 0/${rows.length} succeeded. First errors: ${perRowErrors
+            .slice(0, 5)
+            .map((e) => `#${e.index}:${e.reason}`)
+            .join(", ")}`
+        : `Bulk create partially failed: ${succeeded}/${rows.length} succeeded. First errors: ${perRowErrors
+            .slice(0, 5)
+            .map((e) => `#${e.index}:${e.reason}`)
+            .join(", ")}`;
+    const aggregate = new Error(errMsg);
+    // @ts-ignore attach metadata
+    aggregate.details = summary;
+    throw aggregate;
+  }
+
+  return succeeded;
 }

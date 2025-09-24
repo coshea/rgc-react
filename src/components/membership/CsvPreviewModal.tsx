@@ -7,6 +7,7 @@ interface CsvPreviewModalProps {
   onClose: () => void;
   onUpload: () => void;
   uploading: boolean;
+  progress?: { processed: number; total: number };
 }
 
 export function CsvPreviewModal({
@@ -15,8 +16,13 @@ export function CsvPreviewModal({
   onClose,
   onUpload,
   uploading,
+  progress,
 }: CsvPreviewModalProps) {
   if (!open) return null;
+  const pct =
+    uploading && progress && progress.total > 0
+      ? Math.round((progress.processed / progress.total) * 100)
+      : 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -78,11 +84,29 @@ export function CsvPreviewModal({
             </tbody>
           </table>
         </div>
+        {uploading && (
+          <div className="mb-4">
+            <div className="flex justify-between text-xs mb-1 text-default-500">
+              <span>Uploading...</span>
+              {progress?.total ? (
+                <span>
+                  {progress.processed}/{progress.total} ({pct}%)
+                </span>
+              ) : null}
+            </div>
+            <div className="h-2 w-full rounded bg-default-100 overflow-hidden">
+              <div
+                className="h-full bg-secondary transition-all duration-200"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex justify-end gap-2">
-          <Button variant="flat" onPress={onClose}>
+          <Button variant="flat" onPress={onClose} disabled={uploading}>
             Cancel
           </Button>
-          <Button onPress={onUpload} color="secondary">
+          <Button onPress={onUpload} color="secondary" disabled={uploading}>
             {uploading ? "Uploading..." : "Upload"}
           </Button>
         </div>
