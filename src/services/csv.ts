@@ -69,13 +69,28 @@ export function parseUsersCsv(text: string): UserProfilePayload[] {
       );
     }
 
+    const firstName =
+      row["firstname"] ||
+      row["first_name"] ||
+      row["first name"] ||
+      row["given_name"] ||
+      row["given name"] ||
+      "";
+    const lastName =
+      row["lastname"] ||
+      row["last_name"] ||
+      row["last name"] ||
+      row["surname"] ||
+      row["family_name"] ||
+      row["family name"] ||
+      "";
+
+    let derivedFirst = firstName.trim();
+    let derivedLast = lastName.trim();
+
     const payload: UserProfilePayload = {
-      displayName:
-        row["displayname"] ||
-        row["name"] ||
-        row["full_name"] ||
-        row["full name"] ||
-        "",
+      firstName: derivedFirst,
+      lastName: derivedLast,
       // Accept broader email header variants
       email:
         row["email"] ||
@@ -102,7 +117,8 @@ export function parseUsersCsv(text: string): UserProfilePayload[] {
     };
     // Skip empty rows: if all core textual fields are blank and no booleans set
     const coreFields = [
-      payload.displayName,
+      payload.firstName,
+      payload.lastName,
       payload.email,
       payload.phone,
       payload.ghinNumber,

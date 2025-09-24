@@ -126,7 +126,8 @@ export default function MembershipDirectoryPage() {
   function openAdd() {
     setEditing(null);
     setForm({
-      displayName: "",
+      firstName: "",
+      lastName: "",
       email: "",
       phone: "",
       boardMember: false,
@@ -138,7 +139,8 @@ export default function MembershipDirectoryPage() {
   function openEdit(u: User) {
     setEditing(u);
     setForm({
-      displayName: u.displayName || "",
+      firstName: u.firstName || "",
+      lastName: u.lastName || "",
       email: u.email || "",
       phone: u.phone || "",
       boardMember: !!u.boardMember,
@@ -271,7 +273,8 @@ export default function MembershipDirectoryPage() {
       }
       if (editing) {
         await updateUser(editing.id, {
-          displayName: form.displayName || "",
+          firstName: (form.firstName || "").trim(),
+          lastName: (form.lastName || "").trim(),
           email: form.email || "",
           phone: phoneToSave || "",
           boardMember: !!form.boardMember,
@@ -279,13 +282,19 @@ export default function MembershipDirectoryPage() {
         });
         addToast({
           title: "User Updated",
-          description: `${form.displayName || form.email || "User"} updated successfully`,
+          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} updated successfully`,
           color: "success",
         });
         console.log("[Directory] User updated", { id: editing.id, ...form });
       } else {
         await addDoc(collection(db, "users"), {
-          displayName: form.displayName || "",
+          firstName: (form.firstName || "").trim() || undefined,
+          lastName: (form.lastName || "").trim() || undefined,
+          // displayName derived server-side by update flows; provide here for immediate list ordering
+          displayName: [form.firstName, form.lastName]
+            .filter(Boolean)
+            .join(" ")
+            .trim(),
           email: form.email || "",
           phone: phoneToSave || "",
           boardMember: !!form.boardMember,
@@ -293,7 +302,7 @@ export default function MembershipDirectoryPage() {
         });
         addToast({
           title: "User Added",
-          description: `${form.displayName || form.email || "User"} added successfully`,
+          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} added successfully`,
           color: "success",
         });
         console.log("[Directory] User added", { ...form });

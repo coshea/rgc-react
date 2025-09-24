@@ -34,28 +34,47 @@ export function CsvPreviewModal({
             ×
           </Button>
         </div>
+        <p className="text-xs text-default-500 mb-2">
+          Preview uses structured First/Last columns. If a legacy full name was
+          provided, it is split automatically. Rows lacking both first and last
+          will fall back to the legacy value in the Full column only.
+        </p>
         <div className="max-h-96 overflow-auto border rounded mb-4">
           <table className="w-full text-sm">
             <thead className="bg-default-50">
               <tr>
-                {rows.length > 0 &&
-                  Object.keys(rows[0]).map((k) => (
-                    <th key={k} className="p-2 text-left">
-                      {k}
-                    </th>
-                  ))}
+                <th className="p-2 text-left">First Name</th>
+                <th className="p-2 text-left">Last Name</th>
+                <th className="p-2 text-left">Full (Derived)</th>
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-left">Phone</th>
+                <th className="p-2 text-left">GHIN</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
-                <tr key={i} className="border-b">
-                  {Object.values(r).map((v, j) => (
-                    <td key={j} className="p-2 truncate max-w-xs">
-                      {v}
+              {rows.map((r, i) => {
+                const legacy = (r as any).displayName || "";
+                const first = (r as any).firstName || "";
+                const last = (r as any).lastName || "";
+                let full = [first, last].filter(Boolean).join(" ");
+                if (!full && legacy) full = legacy; // legacy fallback
+                return (
+                  <tr key={i} className="border-b">
+                    <td className="p-2 truncate max-w-[8rem]">{first}</td>
+                    <td className="p-2 truncate max-w-[8rem]">{last}</td>
+                    <td className="p-2 truncate max-w-[10rem]">{full}</td>
+                    <td className="p-2 truncate max-w-[14rem]">
+                      {r.email || ""}
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    <td className="p-2 truncate max-w-[10rem]">
+                      {r.phone || ""}
+                    </td>
+                    <td className="p-2 truncate max-w-[6rem]">
+                      {r.ghinNumber || ""}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -14,6 +14,8 @@ import {
 } from "firebase/firestore";
 
 export type UserProfilePayload = {
+  firstName?: string;
+  lastName?: string;
   displayName?: string;
   email?: string;
   phone?: string;
@@ -33,9 +35,28 @@ export type User = UserProfilePayload & {
 };
 
 /**
+ * Utility: derive a normalized display name from first + last names.
+ * Falls back to existing displayName value if first/last not provided.
+ * Collapses internal whitespace and trims.
+ */
+export function computeDisplayName(
+  data: Pick<UserProfilePayload, "firstName" | "lastName" | "displayName">
+): string {
+  const first = (data.firstName || "").trim();
+  const last = (data.lastName || "").trim();
+  if (first || last) {
+    return [first, last].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  }
+  return (data.displayName || "").trim();
+}
+
+/**
  * Save or merge a user profile to users/{uid}
  */
 export async function saveUserProfile(uid: string, data: UserProfilePayload) {
+  // Derive displayName from first + last if provided (trim + collapse spaces)
+  const computedDisplay = computeDisplayName(data);
+  if (computedDisplay) data.displayName = computedDisplay;
   const payload = {
     ...data,
     updatedAt: serverTimestamp(),
@@ -118,7 +139,19 @@ export async function updateUser(
   data: Partial<UserProfilePayload>
 ) {
   const ref = doc(db, "users", uid);
-  await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
+  // If caller passed first/last (or legacy displayName), recompute.
+  const computed = computeDisplayName({
+    firstName: data.firstName,
+    lastName: data.lastName,
+    displayName: data.displayName,
+  });
+  const payload: Record<string, any> = {};
+  Object.entries(data).forEach(([k, v]) => {
+    if (v !== undefined) payload[k] = v; // avoid undefined writes (Firestore rejects)
+  });
+  if (computed) payload.displayName = computed;
+  payload.updatedAt = serverTimestamp();
+  await updateDoc(ref, payload);
 }
 
 /** Admin-only: delete a user profile document. */
@@ -149,8 +182,17 @@ export async function bulkCreateUsers(
     const batch = writeBatch(db);
     slice.forEach((r) => {
       const ref = doc(collection(db, "users"));
+      const first = (r.firstName || "").trim();
+      const last = (r.lastName || "").trim();
+      const combined = computeDisplayName({
+        firstName: first,
+        lastName: last,
+        displayName: "", // ignore any legacy displayName from CSV input
+      });
       const payload: Record<string, any> = {
-        displayName: r.displayName || "",
+        firstName: first || undefined,
+        lastName: last || undefined,
+        displayName: combined,
         email: r.email || "",
         phone: r.phone || "",
         ghinNumber: r.ghinNumber || "",
@@ -180,8 +222,17 @@ export async function bulkCreateUsers(
         const r = slice[localIdx];
         try {
           const ref = doc(collection(db, "users"));
+          const first = (r.firstName || "").trim();
+          const last = (r.lastName || "").trim();
+          const combined = computeDisplayName({
+            firstName: first,
+            lastName: last,
+            displayName: "",
+          });
           const payload: Record<string, any> = {
-            displayName: r.displayName || "",
+            firstName: first || undefined,
+            lastName: last || undefined,
+            displayName: combined,
             email: r.email || "",
             phone: r.phone || "",
             ghinNumber: r.ghinNumber || "",

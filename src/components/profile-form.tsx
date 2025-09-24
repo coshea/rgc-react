@@ -8,7 +8,9 @@ import { saveUserProfile, getUserProfile } from "@/api/users";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface FormData {
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  displayName: string; // derived
   email: string;
   phone: string;
   ghinNumber: string;
@@ -16,7 +18,8 @@ interface FormData {
 }
 
 interface FormErrors {
-  displayName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   ghinNumber?: string;
@@ -24,6 +27,8 @@ interface FormErrors {
 
 export function ProfileForm() {
   const [formData, setFormData] = React.useState<FormData>({
+    firstName: "",
+    lastName: "",
     displayName: "",
     email: "",
     phone: "",
@@ -52,6 +57,8 @@ export function ProfileForm() {
           const profile = userProfile;
           setFormData((prev) => ({
             ...prev,
+            firstName: (profile as any)?.firstName || "",
+            lastName: (profile as any)?.lastName || "",
             displayName: profile?.displayName || user.displayName || "",
             email: profile?.email || user.email || "",
             phone: profile?.phone || (user.phoneNumber as string) || "",
@@ -64,6 +71,8 @@ export function ProfileForm() {
           if (profile) {
             setFormData((prev) => ({
               ...prev,
+              firstName: (profile as any).firstName || "",
+              lastName: (profile as any).lastName || "",
               displayName: profile.displayName || user.displayName || "",
               email: profile.email || user.email || "",
               phone: profile.phone || (user.phoneNumber as string) || "",
@@ -75,6 +84,9 @@ export function ProfileForm() {
             // Fallback to auth user data
             setFormData((prev) => ({
               ...prev,
+              firstName: (user.displayName || "").split(" ")[0] || "",
+              lastName:
+                (user.displayName || "").split(" ").slice(1).join(" ") || "",
               displayName: user.displayName || "",
               email: user.email || "",
               phone: (user.phoneNumber as string) || "",
@@ -112,8 +124,11 @@ export function ProfileForm() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.displayName.trim()) {
-      newErrors.displayName = "Name is required";
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
     }
 
     if (!formData.email.trim()) {
@@ -142,7 +157,14 @@ export function ProfileForm() {
   };
 
   const handleInputChange = (field: keyof FormData) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value } as FormData;
+      next.displayName = [next.firstName, next.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      return next;
+    });
 
     // Clear error when user types
     if (errors[field as keyof FormErrors]) {
@@ -196,7 +218,9 @@ export function ProfileForm() {
 
       // Prepare data to save (do not include File objects)
       const payload = {
-        displayName: formData.displayName,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        displayName: formData.displayName, // server will recompute anyway
         email: formData.email,
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
@@ -212,6 +236,20 @@ export function ProfileForm() {
       }
 
       console.log("Profile saved to Firestore for uid:", user.uid);
+      // After successful save, normalize (trim) name fields in local state so UI reflects canonical values
+      setFormData((prev) => {
+        const trimmedFirst = prev.firstName.trim();
+        const trimmedLast = prev.lastName.trim();
+        return {
+          ...prev,
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          displayName: [trimmedFirst, trimmedLast]
+            .filter(Boolean)
+            .join(" ")
+            .trim(),
+        };
+      });
       setIsSuccess(true);
 
       // Reset success message after 3 seconds
@@ -276,18 +314,32 @@ export function ProfileForm() {
         </div>
 
         <div className="space-y-4">
-          <Input
-            label="Full Name"
-            placeholder="Enter your full name"
-            value={formData.displayName}
-            onValueChange={handleInputChange("displayName")}
-            isRequired
-            isInvalid={!!errors.displayName}
-            errorMessage={errors.displayName}
-            startContent={
-              <Icon icon="lucide:user" className="text-default-400 text-lg" />
-            }
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              placeholder="Enter first name"
+              value={formData.firstName}
+              onValueChange={handleInputChange("firstName")}
+              isRequired
+              isInvalid={!!errors.firstName}
+              errorMessage={errors.firstName}
+              startContent={
+                <Icon icon="lucide:user" className="text-default-400 text-lg" />
+              }
+            />
+            <Input
+              label="Last Name"
+              placeholder="Enter last name"
+              value={formData.lastName}
+              onValueChange={handleInputChange("lastName")}
+              isRequired
+              isInvalid={!!errors.lastName}
+              errorMessage={errors.lastName}
+              startContent={
+                <Icon icon="lucide:user" className="text-default-400 text-lg" />
+              }
+            />
+          </div>
 
           <Input
             label="Email"

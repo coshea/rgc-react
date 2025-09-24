@@ -19,13 +19,13 @@ export const siteConfig = {
       title: "Membership",
       description: "Join the Ridgefield Golf Club",
       link: "/membership",
-      icon: "lucide:users",
+      icon: "lucide:users-plus",
     },
     directory: {
       title: "Member Directory",
       description: "View all members",
       link: "/membership/member-directory",
-      icon: "lucide:user",
+      icon: "lucide:users",
     },
     board: {
       title: "Board of Governors",

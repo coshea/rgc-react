@@ -41,13 +41,22 @@ export function EditMemberModal({
           </Button>
         </div>
         <div className="space-y-3">
-          <Input
-            placeholder="Name"
-            value={form.displayName || ""}
-            onChange={(e: any) =>
-              onChange({ ...form, displayName: e.target.value })
-            }
-          />
+          <div className="flex gap-2">
+            <Input
+              placeholder="First Name"
+              value={form.firstName || ""}
+              onChange={(e: any) =>
+                onChange({ ...form, firstName: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Last Name"
+              value={form.lastName || ""}
+              onChange={(e: any) =>
+                onChange({ ...form, lastName: e.target.value })
+              }
+            />
+          </div>
           <Input
             placeholder="Email"
             value={form.email || ""}

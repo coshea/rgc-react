@@ -35,7 +35,13 @@ export function useUserProfile() {
         photoURL = await uploadProfilePicture(uid, payload.file);
       }
 
-      const toSave = { ...payload.data, photoURL };
+      // Derive displayName client-side as well for immediate optimistic consistency
+      const first = (payload.data.firstName || "").trim();
+      const last = (payload.data.lastName || "").trim();
+      let displayName = payload.data.displayName?.trim();
+      if (first || last)
+        displayName = [first, last].filter(Boolean).join(" ").trim();
+      const toSave = { ...payload.data, displayName, photoURL };
       await saveUserProfile(uid, toSave);
       return toSave as UserProfilePayload;
     },
@@ -50,6 +56,17 @@ export function useUserProfile() {
           ({
             ...(old || {}),
             ...(vars.data || {}),
+            displayName:
+              (vars.data.firstName || "").trim() ||
+              (vars.data.lastName || "").trim()
+                ? [
+                    (vars.data.firstName || "").trim(),
+                    (vars.data.lastName || "").trim(),
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim()
+                : vars.data.displayName,
             photoURL: vars.file ? "__pending_upload__" : vars.data.photoURL,
           }) as UserProfilePayload
       );

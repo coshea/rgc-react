@@ -13,6 +13,26 @@ export const DirectoryHeader = forwardRef<
   HTMLInputElement,
   DirectoryHeaderProps
 >(function DirectoryHeader({ isAdmin, onAdd, onBulk, onFileChange }, ref) {
+  function downloadTemplate() {
+    const headers = [
+      "firstName",
+      "lastName",
+      "email",
+      "phone",
+      "ghinNumber",
+      // Optional columns (uncomment if documenting): 'active','registered'
+    ];
+    const csv = headers.join(",") + "\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "membership-template.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   return (
     <div className="mb-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
       <h1 className="text-2xl font-semibold leading-tight">
@@ -37,6 +57,13 @@ export const DirectoryHeader = forwardRef<
           </Button>
           <Button onPress={onBulk} variant="flat" className="w-full sm:w-auto">
             Bulk Upload
+          </Button>
+          <Button
+            onPress={downloadTemplate}
+            variant="bordered"
+            className="w-full sm:w-auto"
+          >
+            CSV Template
           </Button>
         </div>
       )}
