@@ -34,7 +34,7 @@ import { TournamentWinners } from "@/components/tournament-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDocAdminFlag } from "@/components/membership/hooks";
 
 interface RegistrationDoc {
   id: string;
@@ -47,12 +47,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { userProfile } = useUserProfile();
-  const isAdmin = !!(
-    user &&
-    userProfile &&
-    (userProfile as any).admin === true
-  );
+  const { isAdmin } = useDocAdminFlag(user as any);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);

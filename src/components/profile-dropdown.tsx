@@ -9,12 +9,14 @@ import {
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDocAdminFlag } from "@/components/membership/hooks";
 import { ThemeSwitch } from "./theme-switch";
 import { siteConfig } from "@/config/site";
 
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth(); // Get user object and logout function
   const { userProfile } = useUserProfile();
+  const { isAdmin } = useDocAdminFlag(user as any);
 
   return (
     <>
@@ -22,21 +24,32 @@ export const ProfileDropdown = () => {
         <ThemeSwitch />
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
-            <UserAvatar
-              as="button"
-              isBordered
-              color="secondary"
-              className="transition-transform"
-              name={userProfile?.displayName || user?.displayName || "User"}
-              size="sm"
-              src={
-                (userProfile?.photoURL as string | undefined) ||
-                (user?.photoURL as string | undefined)
-              }
-              alt={userProfile?.displayName || user?.displayName || "User"}
-              role="button"
-              tabIndex={0}
-            />
+            <div className="relative inline-block" aria-label="Profile menu">
+              <UserAvatar
+                as="button"
+                isBordered
+                color={isAdmin ? "secondary" : "default"}
+                className="transition-transform"
+                name={userProfile?.displayName || user?.displayName || "User"}
+                size="sm"
+                src={
+                  (userProfile?.photoURL as string | undefined) ||
+                  (user?.photoURL as string | undefined)
+                }
+                alt={userProfile?.displayName || user?.displayName || "User"}
+                role="button"
+                tabIndex={0}
+              />
+              {isAdmin && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
+                  aria-label="Admin user"
+                  title="Admin"
+                >
+                  <span className="block w-[6px] h-[6px] rounded-full bg-white/90" />
+                </span>
+              )}
+            </div>
           </DropdownTrigger>
           <DropdownMenu aria-label="Profile Actions" variant="flat">
             <DropdownItem key="profile" className="h-14 gap-2">
@@ -52,7 +65,7 @@ export const ProfileDropdown = () => {
             </DropdownItem>
 
             {/* Admin-only menu: Manage Tournaments */}
-            {userProfile?.admin === true ? (
+            {isAdmin ? (
               <DropdownItem
                 key="manage_tournaments"
                 as={Link}

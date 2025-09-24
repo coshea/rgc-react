@@ -3,46 +3,26 @@ import { db } from "@/config/firebase";
 import { doc, onSnapshot, collection } from "firebase/firestore";
 import type { User as DirectoryUser } from "@/api/users";
 
-// Hook: useAdminFlag - merges admin doc + token claim
-export function useAdminFlag(
-  user: { uid?: string; getIdTokenResult?: () => Promise<any> } | null
-) {
+// Doc-only admin hook (ignores custom claims intentionally)
+export function useDocAdminFlag(user: { uid?: string } | null) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingAdmin, setLoadingAdmin] = useState(!!user);
-
   useEffect(() => {
     if (!user?.uid) {
       setIsAdmin(false);
       setLoadingAdmin(false);
       return;
     }
-    let unsub: (() => void) | undefined;
-    let docFlag = false;
-    let claimFlag = false;
-
     const adminRef = doc(db, "admin", user.uid);
-    unsub = onSnapshot(adminRef, (snap) => {
-      const data = snap.data();
-      docFlag =
-        data?.isAdmin === true ||
-        data?.admin === true ||
-        data?.admin === "true";
-      setIsAdmin(docFlag || claimFlag);
+    const unsub = onSnapshot(adminRef, (snap) => {
+      const d = snap.data();
+      const flag =
+        d?.isAdmin === true || d?.admin === true || d?.admin === "true";
+      setIsAdmin(flag);
+      setLoadingAdmin(false);
     });
-    user
-      .getIdTokenResult?.()
-      .then((tr) => {
-        claimFlag = tr?.claims?.admin === true;
-        setIsAdmin(docFlag || claimFlag);
-      })
-      .catch(() => {
-        /* ignore */
-      })
-      .finally(() => setLoadingAdmin(false));
-
-    return () => unsub?.();
+    return () => unsub();
   }, [user?.uid]);
-
   return { isAdmin, loadingAdmin };
 }
 

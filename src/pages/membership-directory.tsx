@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { addToast } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
-import { collection, onSnapshot, addDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
@@ -17,14 +17,15 @@ import {
   EditMemberModal,
   DeleteMemberModal,
   CsvPreviewModal,
-} from "@/components/membership"; // barrel export to be created if not present (fallback to individual imports)
+} from "@/components/membership"; // barrel export
+import { useDocAdminFlag } from "@/components/membership/hooks";
 // preflightCsv imported via barrel if needed later
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState<User[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin } = useDocAdminFlag(user as any);
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -50,42 +51,7 @@ export default function MembershipDirectoryPage() {
       return;
     }
 
-    let unsubAdminDoc: (() => void) | undefined;
     let unsubUsers: (() => void) | undefined;
-
-    const initAdmin = () => {
-      if (!user?.uid) return;
-
-      // Only rely on admin doc + custom claim now
-      let adminDocFlag = false;
-      let tokenAdmin = false;
-
-      const adminRef = doc(db, "admin", user.uid);
-      const unsubAdminLocal = onSnapshot(adminRef, (snap) => {
-        const data = snap.data();
-        adminDocFlag =
-          data?.isAdmin === true ||
-          data?.admin === true ||
-          data?.admin === "true";
-        setIsAdmin(adminDocFlag || tokenAdmin);
-      });
-
-      (user as any)
-        .getIdTokenResult()
-        .then((tr: any) => {
-          tokenAdmin = tr?.claims?.admin === true;
-          setIsAdmin(adminDocFlag || tokenAdmin);
-        })
-        .catch(() => {
-          /* ignore */
-        });
-
-      unsubAdminDoc = () => {
-        unsubAdminLocal();
-      };
-    };
-
-    initAdmin();
 
     // subscribe to users collection only when authenticated (avoid permission-denied)
     if (user && userLoggedIn) {
@@ -117,7 +83,6 @@ export default function MembershipDirectoryPage() {
     }
 
     return () => {
-      unsubAdminDoc?.();
       unsubUsers?.();
     };
   }, [user, userLoggedIn, loading, navigate]);
@@ -182,51 +147,135 @@ export default function MembershipDirectoryPage() {
       return;
     }
     if (csvRows.length === 0) return;
-    // Preflight: disallow boardMember/role in bulk CSV to match security expectations.
-    const invalidBoard = csvRows.some(
+    // Enhanced Preflight Validation
+    // 1. Sanitize & trim all relevant string fields
+    const sanitized = csvRows.map((r, idx) => {
+      const firstName = (r.firstName || "").trim();
+      const lastName = (r.lastName || "").trim();
+      const email = (r.email || "").trim();
+      const phone = (r.phone || "").trim();
+      const ghinNumber = (r.ghinNumber || "").trim();
+      return {
+        ...r,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        email,
+        phone,
+        ghinNumber,
+        // Board fields will be stripped later but preserve for diagnostics initially
+        __index: idx,
+      } as any;
+    });
+
+    // 2. Disallow boardMember/role assignments; gather diagnostics instead of immediate abort
+    const boardIntendedRows = sanitized.filter(
       (r: any) =>
         r.boardMember === true || (typeof r.role === "string" && r.role.trim())
     );
-    if (invalidBoard) {
+    if (boardIntendedRows.length) {
+      console.warn(
+        "[Directory] Stripping boardMember/role fields from bulk CSV rows",
+        boardIntendedRows.slice(0, 5).map((r: any) => ({
+          row: r.__index + 1,
+          boardMember: r.boardMember,
+          role: r.role,
+        }))
+      );
+      boardIntendedRows.forEach((r) => {
+        delete r.boardMember;
+        delete r.role;
+      });
       addToast({
-        title: "Invalid CSV",
-        description:
-          "Bulk upload cannot assign board roles. Remove boardMember/role columns.",
+        title: "Board Fields Ignored",
+        description: `${boardIntendedRows.length} row${boardIntendedRows.length === 1 ? "" : "s"} had board/role data stripped`,
         color: "warning",
       });
-      return;
     }
-    // Basic validation: ensure every row has a non-empty email (rules now enforce this)
-    const missingEmail = csvRows.filter((r) => !r.email?.trim());
-    if (missingEmail.length) {
+
+    // 3. Email validation (non-empty + rudimentary format)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // simple, sufficient client-side
+    const invalidEmailRows: { row: number; email: string; reason: string }[] =
+      [];
+    sanitized.forEach((r: any) => {
+      if (!r.email) {
+        invalidEmailRows.push({
+          row: r.__index + 1,
+          email: r.email,
+          reason: "missing",
+        });
+      } else if (!emailRegex.test(r.email)) {
+        invalidEmailRows.push({
+          row: r.__index + 1,
+          email: r.email,
+          reason: "format",
+        });
+      }
+    });
+    if (invalidEmailRows.length) {
+      console.warn(
+        "[Directory] Invalid emails detected",
+        invalidEmailRows.slice(0, 10)
+      );
       addToast({
-        title: "Invalid CSV",
-        description: `${missingEmail.length} row${missingEmail.length === 1 ? "" : "s"} missing email.`,
+        title: "Invalid Emails",
+        description: `${invalidEmailRows.length} invalid email row${invalidEmailRows.length === 1 ? "" : "s"}. Fix and retry.`,
         color: "danger",
       });
-      console.warn(
-        "[Directory] CSV rows missing email, aborting bulk upload",
-        missingEmail.slice(0, 5)
-      );
       return;
     }
+
+    // 4. Duplicate email detection (case-insensitive)
+    const emailMap = new Map<string, number[]>();
+    sanitized.forEach((r: any) => {
+      const key = r.email.toLowerCase();
+      if (!emailMap.has(key)) emailMap.set(key, []);
+      emailMap.get(key)!.push(r.__index + 1);
+    });
+    const duplicateEmails = Array.from(emailMap.entries())
+      .filter(([, rows]) => rows.length > 1)
+      .map(([email, rows]) => ({ email, rows }));
+    if (duplicateEmails.length) {
+      console.warn(
+        "[Directory] Duplicate emails in CSV preflight",
+        duplicateEmails.slice(0, 10)
+      );
+      addToast({
+        title: "Duplicate Emails",
+        description: `${duplicateEmails.length} duplicate email group${duplicateEmails.length === 1 ? "" : "s"} found. Resolve and re-upload.`,
+        color: "danger",
+      });
+      return;
+    }
+
+    // 5. Prepare final rows for bulk create (strip preflight artifacts)
+    const finalRows = sanitized.map((r: any) => {
+      const { __index, boardMember, role, ...rest } = r; // board fields intentionally omitted
+      return rest;
+    });
+
+    // 6. Diagnostic sample logging
+    console.table(
+      finalRows.slice(0, 5).map((r, i) => ({
+        sampleRow: i + 1,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+        phone: r.phone,
+        ghinNumber: r.ghinNumber,
+      }))
+    );
+    console.log("[Directory] CSV preflight passed", {
+      total: finalRows.length,
+      strippedBoardRows: boardIntendedRows.length,
+    });
     setUploading(true);
     try {
       console.log("[Directory] Starting CSV bulk upload", {
-        rows: csvRows.length,
-        sample: csvRows.slice(0, 3),
+        rows: finalRows.length,
+        sample: finalRows.slice(0, 3),
         isAdmin,
       });
-      const boardIntended = csvRows.filter(
-        (r) => (r as any).boardMember === true || (r as any).role
-      )?.length;
-      if (boardIntended) {
-        console.log(
-          "[Directory] (diagnostic) rows contained board member intent which is stripped by preflight",
-          { boardIntended }
-        );
-      }
-      const count = await bulkCreateUsers(csvRows);
+      const count = await bulkCreateUsers(finalRows);
       setCsvOpen(false);
       setCsvRows([]);
       addToast({

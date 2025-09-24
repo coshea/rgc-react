@@ -1,6 +1,6 @@
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDocAdminFlag } from "@/components/membership/hooks";
 const TournamentEditor = React.lazy(() =>
   import("@/components/tournament-editor").then((m) => ({
     default: m.TournamentEditor,
@@ -52,12 +52,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   >(undefined);
 
   const { user } = useAuth();
-  const { userProfile } = useUserProfile();
-  const isAdmin = !!(
-    user &&
-    userProfile &&
-    (userProfile as any).admin === true
-  );
+  const { isAdmin } = useDocAdminFlag(user as any);
 
   React.useEffect(() => {
     setIsLoading(true);

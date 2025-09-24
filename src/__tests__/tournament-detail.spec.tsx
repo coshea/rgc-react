@@ -5,12 +5,13 @@ import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
 
-// Mock hooks & Firestore layer
+// Mock hooks & Auth only (admin now determined via admin doc subscription)
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "user1" } }),
 }));
+// Remove legacy userProfile admin mock (doc-based now)
 vi.mock("@/hooks/useUserProfile", () => ({
-  useUserProfile: () => ({ userProfile: { admin: true } }),
+  useUserProfile: () => ({ userProfile: {} }),
 }));
 
 // Dynamic Firestore doc snapshot simulation
@@ -135,7 +136,6 @@ describe("TournamentDetailPage", () => {
       winners: [],
     });
     await screen.findByText("Club Championship");
-    // At least one occurrence of Registration Open (chip text). Use getAllByText to avoid multiple match error.
     expect(screen.getAllByText(/Registration Open/i).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("button", { name: /Register/i })
@@ -145,9 +145,7 @@ describe("TournamentDetailPage", () => {
   it("shows registered state when user is part of a team", async () => {
     renderWithRoute("reg1");
     emitDoc("tournaments/reg1", { ...baseTournament, registrationOpen: true });
-    // First empty registrations snapshot
     emitCollection("tournaments/reg1/registrations", []);
-    // Then snapshot containing a registration referencing current user
     emitCollection("tournaments/reg1/registrations", [
       {
         id: "r1",
@@ -189,18 +187,21 @@ describe("TournamentDetailPage", () => {
       ],
     });
     await screen.findByText("Club Championship");
-    // Both Champ and Runner should appear now with ordinal labels
     expect(screen.getByText(/1st: Champ/)).toBeInTheDocument();
     expect(screen.getByText(/2nd: Runner/)).toBeInTheDocument();
   });
 
   it("shows admin action buttons when user is admin", async () => {
     renderWithRoute("admin1");
+    // Emit admin doc first so hook sets isAdmin before tournament UI renders buttons
+    emitDoc("admin/user1", { isAdmin: true });
     emitDoc("tournaments/admin1", baseTournament);
     await screen.findByText("Club Championship");
-    expect(
-      screen.getByRole("button", { name: /Edit tournament/i })
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Edit tournament/i })
+      ).toBeInTheDocument()
+    );
     expect(
       screen.getByRole("button", { name: /Delete tournament/i })
     ).toBeInTheDocument();
@@ -212,7 +213,6 @@ describe("TournamentDetailPage", () => {
   it("highlights teams with open spots", async () => {
     renderWithRoute("spots1");
     emitDoc("tournaments/spots1", { ...baseTournament, players: 4 });
-    // Registration snapshot with a team of 2 (so 2 open spots)
     emitCollection("tournaments/spots1/registrations", [
       {
         id: "r1",
@@ -227,16 +227,13 @@ describe("TournamentDetailPage", () => {
       },
     ]);
     await screen.findByText("Club Championship");
-    // Expect the open spots indicator text
     expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
-    // Expect the +2 badge (aria-label)
     expect(screen.getByLabelText(/2 open team spots?/i)).toBeInTheDocument();
   });
 
   it("filters to show only teams needing players when toggle active", async () => {
     renderWithRoute("filter1");
     emitDoc("tournaments/filter1", { ...baseTournament, players: 4 });
-    // Two registrations: one full (4 players), one needing 2 players
     emitCollection("tournaments/filter1/registrations", [
       {
         id: "full1",
@@ -264,21 +261,17 @@ describe("TournamentDetailPage", () => {
       },
     ]);
     await screen.findByText("Club Championship");
-    // Both teams visible initially
     expect(screen.getByText(/Team 1/i)).toBeInTheDocument();
     expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
-    // Activate filter
     const toggleBtn = screen.getByRole("button", {
       name: /Toggle show teams needing players/i,
     });
     await act(async () => {
       toggleBtn.click();
     });
-    // Wait for filter to hide full team
     await waitFor(() => expect(screen.queryByText(/Team 1/i)).toBeNull());
     expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
     expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
-    // Toggle off restores full team
     await act(async () => {
       toggleBtn.click();
     });

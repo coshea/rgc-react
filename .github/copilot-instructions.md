@@ -24,8 +24,13 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 
 ## 4. Auth & Admin Detection
 
-- Admin = OR of: document `admin/{uid}.isAdmin === true`, or ID token claim `admin` (see logic in `membership-directory.tsx`). Maintain this bi-source pattern—don’t consolidate unless rules change.
-- `RequireAdmin` component currently only checks `userProfile.admin`; if extending, mirror the full tri-source logic consistently.
+- UI logic now treats the Firestore doc `admin/{uid}` as the single source of truth for admin capabilities. A user is considered an admin client‑side when the admin doc exists with a truthy `isAdmin` (or legacy `admin`) field.
+- Firestore security rules still accept either the custom claim OR the admin doc for backward compatibility, but **no new UI code should rely on the token claim**. This keeps admin revocation instantaneous (doc delete) without requiring token refresh.
+- To check admin status in components:
+  - Prefer the hook: `useDocAdminFlag(user)` (real‑time subscription, returns `{ isAdmin, loadingAdmin }`).
+  - For one‑off / guard style checks, use utilities in `@/utils/admin` (`isDocAdmin`, `requireDocAdmin`).
+- `RequireAdmin` has been refactored to rely solely on the admin doc (no `userProfile.admin` fallback). It renders a transient "Checking access..." state while resolving, then redirects to `/` if not authorized.
+- When writing tests that need admin privileges, emit a snapshot for the path `admin/<testUid>` with `{ isAdmin: true }` before asserting on admin‑only UI.
 
 ## 5. Domain Models & State
 

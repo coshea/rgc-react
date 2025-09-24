@@ -17,7 +17,7 @@ import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDocAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
 import { Winner } from "@/types/winner";
@@ -80,12 +80,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [adding, setAdding] = React.useState(false);
 
   const { user } = useAuth();
-  const { userProfile } = useUserProfile();
-  const isAdmin = !!(
-    user &&
-    userProfile &&
-    (userProfile as any).admin === true
-  );
+  const { isAdmin } = useDocAdminFlag(user as any);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
