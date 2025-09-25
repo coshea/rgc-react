@@ -6,6 +6,8 @@ import { formatPhone } from "@/utils/phone";
 interface MemberCardMobileProps {
   user: User;
   isAdmin: boolean;
+  isActive: boolean;
+  activeYear: number;
   onEdit: (u: User) => void;
   onDelete: (u: User) => void;
 }
@@ -13,12 +15,14 @@ interface MemberCardMobileProps {
 export function MemberCardMobile({
   user,
   isAdmin,
+  isActive,
+  activeYear,
   onEdit,
   onDelete,
 }: MemberCardMobileProps) {
   return (
-    <div className="block md:hidden p-4">
-      <div className="flex items-center gap-4 mb-2">
+  <div className="block md:hidden p-4 w-full overflow-x-hidden break-words">
+  <div className="flex items-center gap-4 mb-2 min-w-0">
         <UserAvatar
           className="w-8 h-8"
           size="sm"
@@ -27,7 +31,7 @@ export function MemberCardMobile({
           src={(user.photoURL as string) || undefined}
           alt={user.displayName || user.email}
         />
-        <div className="text-sm text-default-500 font-medium">
+        <div className="text-sm text-default-500 font-medium truncate">
           {user.displayName || "(no name)"}
         </div>
       </div>
@@ -40,6 +44,22 @@ export function MemberCardMobile({
       <div className="text-sm text-default-500">
         <span className="font-medium">Phone: </span>
         <span>{user.phone ? formatPhone(user.phone) : "—"}</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+        {isActive ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-100 text-success-600 font-medium">
+            Active {activeYear}
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-default-100 text-default-500 font-medium">
+            Inactive
+          </span>
+        )}
+        {user.membershipType && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-100 text-primary-600 font-medium capitalize">
+            {user.membershipType}
+          </span>
+        )}
       </div>
       {isAdmin && (
         <div className="mt-3 flex gap-3 flex-row flex-wrap">

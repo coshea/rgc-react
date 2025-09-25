@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { addToast } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { db } from "@/config/firebase";
-import { collection, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
@@ -18,14 +18,18 @@ import {
   DeleteMemberModal,
   CsvPreviewModal,
 } from "@/components/membership"; // barrel export
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
+import { useMembers } from "@/hooks/useMembers";
+import { Switch } from "@heroui/react";
 // preflightCsv imported via barrel if needed later
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
-  const [members, setMembers] = useState<User[]>([]);
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user as any); // local check for early redirect logic unchanged
+  const currentYear = new Date().getFullYear();
+  const membersHook = useMembers(currentYear);
+  const members = membersHook.isAdmin ? membersHook.allMembers : membersHook.members;
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -48,6 +52,8 @@ export default function MembershipDirectoryPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // search filter
   const [filter, setFilter] = useState("");
+  const [activeOnly, setActiveOnly] = useState(false);
+  const activeSet = membersHook.activeSet;
 
   // Phone helpers moved to utils/phone.ts
 
@@ -57,41 +63,6 @@ export default function MembershipDirectoryPage() {
       navigate(`/login?next=${next}`);
       return;
     }
-
-    let unsubUsers: (() => void) | undefined;
-
-    // subscribe to users collection only when authenticated (avoid permission-denied)
-    if (user && userLoggedIn) {
-      const usersCol = collection(db, "users");
-      unsubUsers = onSnapshot(
-        usersCol,
-        (snap) => {
-          const arr: User[] = [];
-          snap.forEach((d) => {
-            arr.push({ id: d.id, ...(d.data() as any) } as User);
-          });
-          // ensure alphabetical order (displayName fallback to email)
-          arr.sort((a, b) => {
-            const A = (a.displayName || a.email || "").toLowerCase();
-            const B = (b.displayName || b.email || "").toLowerCase();
-            if (A < B) return -1;
-            if (A > B) return 1;
-            return 0;
-          });
-          setMembers(arr);
-        },
-        (err) => {
-          console.error("Users snapshot error:", err);
-          if (err && (err as any).code === "permission-denied") {
-            setMembers([]);
-          }
-        }
-      );
-    }
-
-    return () => {
-      unsubUsers?.();
-    };
   }, [user, userLoggedIn, loading, navigate]);
 
   // ----- Helper Actions -----
@@ -439,7 +410,10 @@ export default function MembershipDirectoryPage() {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div
+      className="px-4 py-4 max-w-4xl mx-auto w-full overflow-x-hidden"
+      data-testid="membership-directory-root"
+    >
       <DirectoryHeader
         isAdmin={isAdmin}
         onAdd={openAdd}
@@ -453,10 +427,25 @@ export default function MembershipDirectoryPage() {
         total={members.length}
         isFiltered={!!filter}
       />
+      {isAdmin && (
+        <div className="flex items-center justify-end mb-2">
+          <Switch
+            size="sm"
+            isSelected={activeOnly}
+            onValueChange={setActiveOnly}
+            aria-label="Toggle active members only"
+          >
+            Active {currentYear} Only
+          </Switch>
+        </div>
+      )}
       <MembersList
-        members={members}
+        members={isAdmin && activeOnly ? members.filter(m => activeSet.has(m.id)) : members}
         filter={filter}
         isAdmin={isAdmin}
+        activeSet={activeSet}
+        activeOnly={activeOnly}
+        activeYear={currentYear}
         onEdit={openEdit}
         onDelete={requestDelete}
       />
@@ -467,6 +456,7 @@ export default function MembershipDirectoryPage() {
         onChange={setForm as any}
         onClose={() => setOpen(false)}
         onSave={save}
+        isAdmin={isAdmin}
       />
       <DeleteMemberModal
         user={confirmDelete}

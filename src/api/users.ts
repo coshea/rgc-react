@@ -28,6 +28,9 @@ export type UserProfilePayload = {
   // board governance fields
   boardMember?: boolean; // true if on Board of Governors
   role?: string; // e.g. 'president', 'secretary', 'treasurer'
+  // membership tracking (denormalized convenience fields)
+  membershipType?: "full" | "handicap";
+  lastPaidYear?: number; // highest year for which member has confirmed payment
 };
 
 export type User = UserProfilePayload & {

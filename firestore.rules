@@ -122,6 +122,21 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
     }
 
+    // Membership payment records: /memberPayments/{userId_year}
+    // Naming convention enforced at write time via client (userId_year). Rules here:
+    // - Read: any authenticated user may read (to allow directory active status / profile views)
+    // - Create: admins only. Creates are idempotent (client checks) but rules don't enforce idempotency.
+    // - Update/Delete: admins only. Normal flow should rarely update except to correct status or refund.
+    match /memberPayments/{paymentId} {
+      allow read: if request.auth != null;
+      allow create: if isAdmin() && request.auth != null &&
+        request.resource.data.userId is string &&
+        request.resource.data.year is int &&
+        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
+        request.resource.data.membershipType in ['full', 'handicap'];
+      allow update, delete: if isAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

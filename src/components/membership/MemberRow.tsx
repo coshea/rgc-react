@@ -6,13 +6,26 @@ import { formatPhone } from "@/utils/phone";
 interface MemberRowProps {
   user: User;
   isAdmin: boolean;
+  isActive: boolean;
+  activeYear: number;
   onEdit: (u: User) => void;
   onDelete: (u: User) => void;
 }
 
-export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
+export function MemberRow({
+  user,
+  isAdmin,
+  isActive,
+  activeYear,
+  onEdit,
+  onDelete,
+}: MemberRowProps) {
+  const baseClasses = "hidden md:grid items-center gap-4 p-4 overflow-x-hidden";
+  const grid = isAdmin
+    ? "grid-cols-[2fr_3fr_2fr_2fr_2fr]"
+    : "grid-cols-[2fr_3fr_2fr]";
   return (
-    <div className="hidden md:grid items-center gap-4 p-4 grid-cols-[2fr_4fr_2fr_2fr]">
+    <div className={`${baseClasses} ${grid}`}>
       <div className="flex items-center gap-4">
         <UserAvatar
           className="w-8 h-8"
@@ -26,13 +39,31 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
           {user.displayName || "(no name)"}
         </div>
       </div>
-      <div className="text-sm text-default-500 whitespace-nowrap">
+      <div className="text-sm text-default-500 whitespace-nowrap overflow-hidden text-ellipsis">
         {user.email}
       </div>
-      <div className="text-sm text-default-500 whitespace-nowrap">
+      <div className="text-sm text-default-500 whitespace-nowrap overflow-hidden text-ellipsis">
         {user.phone ? formatPhone(user.phone) : "—"}
       </div>
-      {isAdmin ? (
+      {isAdmin && (
+        <div className="text-sm text-default-500 whitespace-nowrap flex items-center gap-2">
+          {isActive ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-100 text-success-600 text-xs font-medium">
+              Active {activeYear}
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-default-100 text-default-500 text-xs font-medium">
+              Inactive
+            </span>
+          )}
+          {user.membershipType && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-100 text-primary-600 text-xs font-medium capitalize">
+              {user.membershipType}
+            </span>
+          )}
+        </div>
+      )}
+      {isAdmin && (
         <div className="flex justify-end gap-2 pr-2">
           <Tooltip content="Edit member">
             <Button
@@ -85,8 +116,6 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
             </Button>
           </Tooltip>
         </div>
-      ) : (
-        <div />
       )}
     </div>
   );
