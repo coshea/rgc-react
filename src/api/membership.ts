@@ -123,10 +123,7 @@ export async function updateMembershipPayment(params: {
   userId: string;
   year: number;
   updates: Partial<
-    Pick<
-      MembershipPayment,
-  "amount" | "method" | "membershipType" | "status"
-    >
+    Pick<MembershipPayment, "amount" | "method" | "membershipType" | "status">
   >;
 }): Promise<{ created?: boolean; confirmed?: boolean }> {
   const { userId, year, updates } = params;
@@ -137,17 +134,24 @@ export async function updateMembershipPayment(params: {
   if (!existing.exists()) {
     // CREATE path: permit creating either confirmed OR pending record when membershipType provided.
     if (updates.membershipType) {
-      const status: MembershipPayment["status"] = (updates.status as any) || "pending";
+      const status: MembershipPayment["status"] =
+        (updates.status as any) || "pending";
       const confirmedCreate = status === "confirmed";
       // Build base payload (paidAt only when confirmed)
-      const payload: Partial<MembershipPayment> & { userId: string; year: number } = {
+      const payload: Partial<MembershipPayment> & {
+        userId: string;
+        year: number;
+      } = {
         userId,
         year,
         membershipType: updates.membershipType,
         status,
         paidAt: confirmedCreate ? serverTimestamp() : null,
         amount: updates.amount == null ? null : updates.amount,
-        method: updates.method == null || updates.method === '' ? null : updates.method,
+        method:
+          updates.method == null || updates.method === ""
+            ? null
+            : updates.method,
         recordedBy: auth.currentUser?.uid ?? null,
       } as any;
       await setDoc(ref, payload);
@@ -161,18 +165,26 @@ export async function updateMembershipPayment(params: {
         },
         { merge: true }
       );
-      logFsSuccess("updateMembershipPayment", { userId, year, created: true, status });
+      logFsSuccess("updateMembershipPayment", {
+        userId,
+        year,
+        created: true,
+        status,
+      });
       return { created: true, confirmed: confirmedCreate };
     }
-    throw new Error("Membership payment record does not exist and no membershipType provided to create");
+    throw new Error(
+      "Membership payment record does not exist and no membershipType provided to create"
+    );
   }
   try {
-  const payload: any = { ...updates, updatedAt: serverTimestamp() };
-  // Normalize undefined -> null or delete for Firestore compatibility
-  if (payload.amount === undefined) delete payload.amount;
-  if (payload.method === undefined || payload.method === '') payload.method = null;
-  if (payload.membershipType === undefined) delete payload.membershipType;
-  if (payload.status === undefined) delete payload.status;
+    const payload: any = { ...updates, updatedAt: serverTimestamp() };
+    // Normalize undefined -> null or delete for Firestore compatibility
+    if (payload.amount === undefined) delete payload.amount;
+    if (payload.method === undefined || payload.method === "")
+      payload.method = null;
+    if (payload.membershipType === undefined) delete payload.membershipType;
+    if (payload.status === undefined) delete payload.status;
     await setDoc(ref, payload, { merge: true });
     if (updates.membershipType || updates.status === "confirmed") {
       await setDoc(

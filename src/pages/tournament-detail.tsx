@@ -1,13 +1,11 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db } from "@/config/firebase";
 import {
-  doc,
-  onSnapshot,
-  collection,
-  query,
-  orderBy,
-} from "firebase/firestore";
+  onTournament,
+  onTournamentRegistrations,
+  mapTournamentDoc,
+  deleteTournament as apiDeleteTournament,
+} from "@/api/tournaments";
 import {
   Card,
   CardBody,
@@ -75,11 +73,10 @@ const TournamentDetailPage: React.FC = () => {
   React.useEffect(() => {
     if (!firestoreId) return;
     setLoading(true);
-    const ref = doc(db, "tournaments", firestoreId);
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        if (!snap.exists()) {
+    const unsub = onTournament(
+      firestoreId,
+      (snap: any) => {
+        if (!snap.exists?.()) {
           addToast({
             title: "Not found",
             description: "Tournament not found",
@@ -88,29 +85,7 @@ const TournamentDetailPage: React.FC = () => {
           navigate("/tournaments");
           return;
         }
-        const data: any = snap.data();
-        const dateField =
-          data.date && typeof data.date.toDate === "function"
-            ? data.date.toDate()
-            : data.date
-              ? new Date(data.date)
-              : new Date();
-        setTournament({
-          firestoreId: snap.id,
-          title: data.title,
-          date: dateField,
-          description: data.description,
-          detailsMarkdown: data.detailsMarkdown || data.details || "",
-          players: data.players,
-          completed: data.completed || false,
-          canceled: data.canceled || false,
-          registrationOpen: data.registrationOpen || false,
-          icon: data.icon,
-          href: data.href,
-          prizePool: data.prizePool || 0,
-          winners: data.winners || [],
-          tee: data.tee || "Mixed",
-        });
+        setTournament(mapTournamentDoc(snap) as any);
         setLoading(false);
       },
       (err) => {
@@ -129,12 +104,10 @@ const TournamentDetailPage: React.FC = () => {
   React.useEffect(() => {
     if (!firestoreId) return;
     setRegsLoading(true);
-    const regCol = collection(db, "tournaments", firestoreId, "registrations");
-    const qRegs = query(regCol, orderBy("registeredAt", "asc"));
-    const unsub = onSnapshot(
-      qRegs,
-      (snap) => {
-        const list: RegistrationDoc[] = snap.docs.map((d) => ({
+    const unsub = onTournamentRegistrations(
+      firestoreId,
+      (snap: any) => {
+        const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
           id: d.id,
           ...(d.data() as any),
         }));
@@ -253,9 +226,7 @@ const TournamentDetailPage: React.FC = () => {
     if (!isAdmin || !tournament?.firestoreId) return;
     setDeleting(true);
     try {
-      const ref = doc(db, "tournaments", tournament.firestoreId);
-      const { deleteDoc } = await import("firebase/firestore");
-      await deleteDoc(ref);
+      await apiDeleteTournament(tournament.firestoreId);
       addToast({
         title: "Deleted",
         description: "Tournament removed.",

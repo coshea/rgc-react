@@ -21,15 +21,11 @@ import {
   RadioGroup,
   Radio,
 } from "@heroui/react";
-import { db } from "@/config/firebase";
 import {
-  collection,
-  query,
-  orderBy,
-  doc,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
+  onAllTournaments,
+  mapTournamentDoc,
+  deleteTournament as apiDeleteTournament,
+} from "@/api/tournaments";
 import { Icon } from "@iconify/react";
 
 interface TournamentsProps {}
@@ -56,40 +52,20 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   React.useEffect(() => {
     setIsLoading(true);
-    const colRef = collection(db, "tournaments");
-    const qCol = query(colRef, orderBy("date", "asc"));
-    const unsub = onSnapshot(
-      qCol,
-      (snap) => {
-        const items: Tournament[] = snap.docs.map((d) => {
-          const data: any = d.data();
-          const dateField =
-            data.date && typeof data.date.toDate === "function"
-              ? data.date.toDate()
-              : data.date
-                ? new Date(data.date)
-                : new Date();
-          return {
-            firestoreId: d.id,
-            title: data.title,
-            date: dateField,
-            description: data.description,
-            detailsMarkdown: data.detailsMarkdown || data.details || "",
-            players: data.players,
-            completed: data.completed || false,
-            canceled: data.canceled || false,
-            registrationOpen: data.registrationOpen || false,
-            icon: data.icon,
-            href: data.href,
-            prizePool: data.prizePool || 0,
-            winners: data.winners || [],
-            tee: data.tee || "Mixed",
-          } as Tournament;
-        });
-        setTournaments(items);
-        setIsLoading(false);
+    const unsub = onAllTournaments(
+      (snap: any) => {
+        try {
+          const items: Tournament[] = snap.docs.map(
+            (d: any) => mapTournamentDoc(d) as Tournament
+          );
+          setTournaments(items);
+        } catch (err) {
+          console.error("Map tournaments failed", err);
+        } finally {
+          setIsLoading(false);
+        }
       },
-      (error) => {
+      (error: any) => {
         console.error("Error listening to tournaments:", error);
         addToast({
           title: "Error",
@@ -167,10 +143,10 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     try {
       if (typeof id === "string") {
         try {
-          await deleteDoc(doc(db, "tournaments", id));
+          await apiDeleteTournament(id);
         } catch (err) {
           console.warn(
-            "Failed to delete Firestore document, continuing to remove locally",
+            "Failed to delete Firestore tournament document, continuing to remove locally",
             err
           );
         }

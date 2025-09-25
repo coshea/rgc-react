@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
-import { useMembersSubscription, useDocAdminFlag } from '@/components/membership/hooks';
-import { useActiveMembers } from '@/hooks/useActiveMembers';
-import { useAuth } from '@/providers/AuthProvider';
+import { useMemo } from "react";
+import {
+  useMembersSubscription,
+  useDocAdminFlag,
+} from "@/components/membership/hooks";
+import { useActiveMembers } from "@/hooks/useActiveMembers";
+import { useAuth } from "@/providers/AuthProvider";
 
 /**
  * useMembers
@@ -18,9 +21,8 @@ export function useMembers(year = new Date().getFullYear()) {
   const { members, loadingMembers, error } = useMembersSubscription(
     !!user && userLoggedIn
   );
-  const { data: activeRecords, isLoading: loadingActive } = useActiveMembers(
-    year
-  );
+  const { data: activeRecords, isLoading: loadingActive } =
+    useActiveMembers(year);
 
   const activeSet = useMemo(
     () => new Set(activeRecords?.map((r) => r.userId) || []),

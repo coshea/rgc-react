@@ -8,14 +8,14 @@ import "@testing-library/jest-dom";
 
 // Mocks
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user-1" } }),
+  useAuth: () => ({ user: { uid: "u1", membershipType: "full" } }),
 }));
 
 vi.mock("@/hooks/useUsers", () => ({
   useUsers: () => ({
     users: [
-      { id: "u1", displayName: "Alpha" },
-      { id: "u2", displayName: "Beta" },
+      { id: "u1", displayName: "Alpha", membershipType: "full" },
+      { id: "u2", displayName: "Beta", membershipType: "full" },
     ],
   }),
 }));
@@ -96,7 +96,7 @@ describe("TournamentRegister redirect", () => {
     );
 
     // Wait for tournament title to render
-    await screen.findByText(/Register for Fall Classic/i);
+    await screen.findByText(/Register for\s+Fall Classic/i);
 
     // Select first teammate (Team Leader / You select)
     // The select is a controlled HeroUI Select; simplest is to simulate updating the state by selecting option text.

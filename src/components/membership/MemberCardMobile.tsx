@@ -21,8 +21,8 @@ export function MemberCardMobile({
   onDelete,
 }: MemberCardMobileProps) {
   return (
-  <div className="block md:hidden p-4 w-full overflow-x-hidden break-words">
-  <div className="flex items-center gap-4 mb-2 min-w-0">
+    <div className="block md:hidden p-4 w-full overflow-x-hidden break-words">
+      <div className="flex items-center gap-4 mb-2 min-w-0">
         <UserAvatar
           className="w-8 h-8"
           size="sm"

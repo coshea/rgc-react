@@ -1,12 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { addToast } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
-import { db } from "@/config/firebase";
-import { collection, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
-import { updateUser, deleteUser, bulkCreateUsers } from "@/api/users";
+import {
+  updateUser,
+  deleteUser,
+  bulkCreateUsers,
+  createUser,
+} from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
 import { formatPhone } from "@/utils/phone";
@@ -29,7 +32,9 @@ export default function MembershipDirectoryPage() {
   const { isAdmin } = useDocAdminFlag(user as any); // local check for early redirect logic unchanged
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
-  const members = membersHook.isAdmin ? membersHook.allMembers : membersHook.members;
+  const members = membersHook.isAdmin
+    ? membersHook.allMembers
+    : membersHook.members;
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -348,7 +353,7 @@ export default function MembershipDirectoryPage() {
         });
         console.log("[Directory] User updated", { id: editing.id, ...form });
       } else {
-        await addDoc(collection(db, "users"), {
+        await createUser({
           firstName: (form.firstName || "").trim() || undefined,
           lastName: (form.lastName || "").trim() || undefined,
           email: form.email || "",
@@ -440,7 +445,11 @@ export default function MembershipDirectoryPage() {
         </div>
       )}
       <MembersList
-        members={isAdmin && activeOnly ? members.filter(m => activeSet.has(m.id)) : members}
+        members={
+          isAdmin && activeOnly
+            ? members.filter((m) => activeSet.has(m.id))
+            : members
+        }
         filter={filter}
         isAdmin={isAdmin}
         activeSet={activeSet}

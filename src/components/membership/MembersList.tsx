@@ -33,7 +33,7 @@ export function MembersList({
     );
   });
   return (
-  <div className="bg-background rounded-lg shadow-sm w-full overflow-x-hidden">
+    <div className="bg-background rounded-lg shadow-sm w-full overflow-x-hidden">
       <div
         className={
           isAdmin

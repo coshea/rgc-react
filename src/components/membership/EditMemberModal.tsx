@@ -1,7 +1,10 @@
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { getMembershipPayment, updateMembershipPayment } from "@/api/membership";
-import { useQueryClient } from '@tanstack/react-query';
+import {
+  getMembershipPayment,
+  updateMembershipPayment,
+} from "@/api/membership";
+import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
 import type { User } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
@@ -195,7 +198,9 @@ export function EditMemberModal({
                         size="sm"
                         aria-label="Board Role"
                         placeholder="Select a role"
-                        selectedKeys={form.role ? new Set([form.role]) : new Set()}
+                        selectedKeys={
+                          form.role ? new Set([form.role]) : new Set()
+                        }
                         onSelectionChange={(keys) => {
                           const v = Array.from(keys as Set<string>)[0];
                           onChange({ ...form, role: v });
@@ -259,7 +264,11 @@ export function EditMemberModal({
                     size="sm"
                     aria-label="Membership Type"
                     placeholder="Type"
-                    selectedKeys={payment.membershipType ? new Set([payment.membershipType]) : new Set()}
+                    selectedKeys={
+                      payment.membershipType
+                        ? new Set([payment.membershipType])
+                        : new Set()
+                    }
                     onSelectionChange={(keys) => {
                       const v = Array.from(keys as Set<string>)[0];
                       setPayment((p) => ({ ...p, membershipType: v }));
