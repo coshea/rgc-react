@@ -134,7 +134,10 @@ service cloud.firestore {
         request.resource.data.year is int &&
         request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
         request.resource.data.membershipType in ['full', 'handicap'];
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() &&
+        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
+        request.resource.data.membershipType in ['full', 'handicap'];
+      allow delete: if isAdmin();
     }
 
     // Default: deny everything else

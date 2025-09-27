@@ -80,7 +80,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [adding, setAdding] = React.useState(false);
 
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};

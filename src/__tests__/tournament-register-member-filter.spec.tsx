@@ -16,24 +16,28 @@ vi.mock("@/config/firebase", () => ({
 }));
 
 // API mocks for tournaments
-vi.mock("@/api/tournaments", () => ({
-  fetchTournament: vi.fn(async () => ({
-    firestoreId: "t1",
-    title: "Member Only Event",
-    date: new Date(),
-    description: "Desc",
-    players: 2,
-    registrationOpen: true,
-    completed: false,
-    canceled: false,
-    prizePool: 0,
-    winners: [],
-    tee: "Mixed",
-  })),
-  fetchUserRegistration: vi.fn(async () => null),
-  upsertRegistration: vi.fn(async () => {}),
-  deleteRegistration: vi.fn(async () => {}),
-}));
+vi.mock("@/api/tournaments", async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...(original as any),
+    fetchTournament: vi.fn(async () => ({
+      firestoreId: "t1",
+      title: "Member Only Event",
+      date: new Date(),
+      description: "Desc",
+      players: 2,
+      registrationOpen: true,
+      completed: false,
+      canceled: false,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    })),
+    fetchUserRegistration: vi.fn(async () => null),
+    upsertRegistration: vi.fn(async () => {}),
+    deleteRegistration: vi.fn(async () => {}),
+  };
+});
 
 // Mock auth provider: current user (u2) is NOT a full member
 vi.mock("@/providers/AuthProvider", () => ({

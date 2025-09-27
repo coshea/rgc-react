@@ -102,15 +102,13 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
               {topThree[1] &&
                 (() => {
                   const u = usersMap.get(topThree[1].userId);
+                  const display = u?.displayName || topThree[1].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[1].userId}
-                        name={
-                          (u && (u.displayName || (u as any).name)) ||
-                          topThree[1].displayName
-                        }
+                        name={u ? undefined : display}
                         user={u}
                         className="shadow-sm mb-1"
                       />
@@ -122,8 +120,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                         <span>2nd</span>
                       </div>
                       <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                        {(u && (u.displayName || (u as any).name)) ||
-                          topThree[1].displayName}
+                        {display}
                       </p>
                       <p className="text-[11px] font-semibold text-success-600 mt-0.5">
                         ${topThree[1].winnings.toLocaleString("en-US")}
@@ -137,15 +134,13 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
               {topThree[0] &&
                 (() => {
                   const u = usersMap.get(topThree[0].userId);
+                  const display = u?.displayName || topThree[0].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="md"
                         userId={topThree[0].userId}
-                        name={
-                          (u && (u.displayName || (u as any).name)) ||
-                          topThree[0].displayName
-                        }
+                        name={u ? undefined : display}
                         user={u}
                         className="shadow-md ring-2 ring-warning mb-1"
                       />
@@ -154,8 +149,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                         <span>1st</span>
                       </div>
                       <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
-                        {(u && (u.displayName || (u as any).name)) ||
-                          topThree[0].displayName}
+                        {display}
                       </p>
                       <p className="text-[12px] font-bold text-success-700 mt-0.5">
                         ${topThree[0].winnings.toLocaleString("en-US")}
@@ -169,15 +163,13 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
               {topThree[2] &&
                 (() => {
                   const u = usersMap.get(topThree[2].userId);
+                  const display = u?.displayName || topThree[2].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[2].userId}
-                        name={
-                          (u && (u.displayName || (u as any).name)) ||
-                          topThree[2].displayName
-                        }
+                        name={u ? undefined : display}
                         user={u}
                         className="shadow-sm mb-1"
                       />
@@ -189,8 +181,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                         <span>3rd</span>
                       </div>
                       <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                        {(u && (u.displayName || (u as any).name)) ||
-                          topThree[2].displayName}
+                        {display}
                       </p>
                       <p className="text-[11px] font-semibold text-success-600 mt-0.5">
                         ${topThree[2].winnings.toLocaleString("en-US")}
@@ -235,8 +226,7 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
           >
             {(item: any) => {
               const u = usersMap.get(item.userId);
-              const display =
-                (u && (u.displayName || (u as any).name)) || item.displayName;
+              const display = u?.displayName || item.displayName;
               return (
                 <TableRow
                   key={item.userId}

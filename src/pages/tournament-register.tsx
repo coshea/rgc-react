@@ -15,6 +15,7 @@ import { Tournament } from "@/types/tournament";
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
+import type { User } from "@/api/users";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -23,10 +24,16 @@ const TournamentRegister: React.FC = () => {
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
   const { users } = useUsers();
+  // Refine types and avoid any-casts with a small type guard
+  const isFullMember = React.useCallback(
+    (u: User): u is User & { membershipType: "full" } =>
+      u.membershipType === "full",
+    []
+  );
   // Filter to full members only for selection (business rule: only full members can register / be teammates)
   const fullMembers = React.useMemo(
-    () => users.filter((u) => (u as any).membershipType === "full"),
-    [users]
+    () => users.filter(isFullMember),
+    [users, isFullMember]
   );
 
   // registration-related state must be declared before effects that use them
@@ -40,8 +47,8 @@ const TournamentRegister: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const currentUserIsFull = React.useMemo(
     () =>
-      !!users.find(
-        (u: any) => u.id === user?.uid && u.membershipType === "full"
+      users.some(
+        (u: User) => u.id === user?.uid && u.membershipType === "full"
       ),
     [users, user?.uid]
   );

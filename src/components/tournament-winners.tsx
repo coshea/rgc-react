@@ -81,15 +81,12 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
                 <div className="flex -space-x-2 ml-1">
                   {w.userIds?.slice(0, 4).map((uid) => {
                     const user = usersMap.get(uid);
-                    const name =
-                      (user &&
-                        ((user as any).displayName || (user as any).name)) ||
-                      uid;
+                    const name = user?.displayName || user?.email || uid;
                     return (
                       <UserAvatar
                         key={uid}
                         size="sm"
-                        user={user as any}
+                        user={user}
                         name={user ? undefined : name}
                         userId={uid}
                         className="ring-1 ring-background"

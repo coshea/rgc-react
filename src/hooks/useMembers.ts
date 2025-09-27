@@ -17,7 +17,7 @@ import { useAuth } from "@/providers/AuthProvider";
  */
 export function useMembers(year = new Date().getFullYear()) {
   const { user, userLoggedIn, loading: authLoading } = useAuth();
-  const { isAdmin, loadingAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin, loadingAdmin } = useDocAdminFlag(user);
   const { members, loadingMembers, error } = useMembersSubscription(
     !!user && userLoggedIn
   );

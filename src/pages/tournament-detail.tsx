@@ -1,6 +1,11 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-// Note: tournaments API is now dynamically imported where needed to keep bundle small
+import {
+  onTournament,
+  onTournamentRegistrations,
+  mapTournamentDoc,
+  deleteTournament as apiDeleteTournament,
+} from "@/api/tournaments";
 import {
   Card,
   CardBody,
@@ -40,7 +45,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -60,87 +65,61 @@ const TournamentDetailPage: React.FC = () => {
     return registrations.some(
       (r) =>
         r.ownerId === userId ||
-        (Array.isArray(r.team) && r.team.some((m) => (m as any).id === userId))
+        (Array.isArray(r.team) && r.team.some((m) => m.id === userId))
     );
   }, [registrations, userId]);
 
   // Load tournament document (real-time)
   React.useEffect(() => {
     if (!firestoreId) return;
-    let unsub: (() => void) | undefined;
     setLoading(true);
-    (async () => {
-      try {
-        const api = await import("@/api/tournaments");
-        unsub = api.onTournament(
-          firestoreId,
-          (snap: any) => {
-            if (!snap.exists?.()) {
-              addToast({
-                title: "Not found",
-                description: "Tournament not found",
-                color: "danger",
-              });
-              navigate("/tournaments");
-              return;
-            }
-            setTournament(api.mapTournamentDoc(snap) as any);
-            setLoading(false);
-          },
-          (err: any) => {
-            console.error(err);
-            addToast({
-              title: "Error",
-              description: "Failed to load tournament",
-              color: "danger",
-            });
-            setLoading(false);
-          }
-        );
-      } catch (e) {
-        console.error("Failed to init tournament listener", e);
+    const unsub = onTournament(
+      firestoreId,
+      (snap: any) => {
+        if (!snap.exists?.()) {
+          addToast({
+            title: "Not found",
+            description: "Tournament not found",
+            color: "danger",
+          });
+          navigate("/tournaments");
+          return;
+        }
+        setTournament(mapTournamentDoc(snap) as any);
+        setLoading(false);
+      },
+      (err) => {
+        console.error(err);
+        addToast({
+          title: "Error",
+          description: "Failed to load tournament",
+          color: "danger",
+        });
         setLoading(false);
       }
-    })();
-    return () => {
-      try {
-        unsub && unsub();
-      } catch (_) {}
-    };
+    );
+    return () => unsub();
   }, [firestoreId, navigate]);
 
   React.useEffect(() => {
     if (!firestoreId) return;
-    let unsub: (() => void) | undefined;
     setRegsLoading(true);
-    (async () => {
-      try {
-        const api = await import("@/api/tournaments");
-        unsub = api.onTournamentRegistrations(
-          firestoreId,
-          (snap: any) => {
-            const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
-              id: d.id,
-              ...(d.data() as any),
-            }));
-            setRegistrations(list);
-            setRegsLoading(false);
-          },
-          (err: any) => {
-            console.error("Failed to load registrations", err);
-            setRegsLoading(false);
-          }
-        );
-      } catch (e) {
-        console.error("Failed to init registrations listener", e);
+    const unsub = onTournamentRegistrations(
+      firestoreId,
+      (snap: any) => {
+        const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
+          id: d.id,
+          ...(d.data() as any),
+        }));
+        setRegistrations(list);
+        setRegsLoading(false);
+      },
+      (err) => {
+        console.error("Failed to load registrations", err);
         setRegsLoading(false);
       }
-    })();
-    return () => {
-      try {
-        unsub && unsub();
-      } catch (_) {}
-    };
+    );
+    return () => unsub();
   }, [firestoreId]);
 
   // Users are now loaded globally via React Query (useUsersMap)
@@ -247,8 +226,7 @@ const TournamentDetailPage: React.FC = () => {
     if (!isAdmin || !tournament?.firestoreId) return;
     setDeleting(true);
     try {
-      const { deleteTournament } = await import("@/api/tournaments");
-      await deleteTournament(tournament.firestoreId);
+      await apiDeleteTournament(tournament.firestoreId);
       addToast({
         title: "Deleted",
         description: "Tournament removed.",
@@ -676,9 +654,7 @@ const TournamentDetailPage: React.FC = () => {
                               <div className="flex items-start gap-3">
                                 <div className="flex -space-x-2">
                                   {team.map((m, i) => {
-                                    const memberUser = usersMap.get(
-                                      (m as any).id
-                                    );
+                                    const memberUser = usersMap.get(m.id);
                                     const label = (
                                       m.displayName ||
                                       m.id ||
@@ -688,7 +664,7 @@ const TournamentDetailPage: React.FC = () => {
                                       <UserAvatar
                                         key={m.id || i}
                                         size="sm"
-                                        user={memberUser as any}
+                                        user={memberUser}
                                         name={memberUser ? undefined : label}
                                         className="border border-default-200"
                                         alt={label}

@@ -51,10 +51,8 @@ export const RegistrationsList: React.FC<Props> = ({
     if (!selectedRegistration || !Array.isArray(selectedRegistration.team))
       return [] as string[];
     return selectedRegistration.team.map((m) => {
-      const u = users.find((x) => x.id === (m as any).id);
-      return (
-        u?.displayName || (m as any).displayName || (m as any).id || "(unknown)"
-      );
+      const u = users.find((x) => x.id === m.id);
+      return u?.displayName || m.displayName || m.id || "(unknown)";
     });
   }, [selectedRegistration, users]);
 
@@ -86,16 +84,14 @@ export const RegistrationsList: React.FC<Props> = ({
                 <div className="flex items-center gap-3">
                   <AvatarGroup isBordered>
                     {team.map((m, i) => {
-                      const memberUser = users.find(
-                        (u) => u.id === (m as any).id
-                      );
+                      const memberUser = users.find((u) => u.id === m.id);
                       // Pass full user when available for centralized fallback (profileURL > photoURL > initials)
                       const label = (m.displayName || m.id || "").toString();
                       return (
                         <UserAvatar
                           key={m.id || i}
                           size="sm"
-                          user={memberUser as any}
+                          user={memberUser}
                           name={memberUser ? undefined : label}
                           alt={label}
                           className="border border-default-200"

@@ -29,7 +29,7 @@ import { Switch } from "@heroui/react";
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
-  const { isAdmin } = useDocAdminFlag(user as any); // local check for early redirect logic unchanged
+  const { isAdmin } = useDocAdminFlag(user); // local check for early redirect logic unchanged
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
   const members = membersHook.isAdmin
@@ -132,7 +132,9 @@ export default function MembershipDirectoryPage() {
     if (csvRows.length === 0) return;
     // Enhanced Preflight Validation
     // 1. Sanitize & trim all relevant string fields
-    const sanitized = csvRows.map((r, idx) => {
+    const sanitized: Array<
+      UserProfilePayload & { __index: number; email: string }
+    > = csvRows.map((r, idx) => {
       const firstName = (r.firstName || "").trim();
       const lastName = (r.lastName || "").trim();
       const email = (r.email || "").trim();
@@ -147,18 +149,18 @@ export default function MembershipDirectoryPage() {
         ghinNumber,
         // Board fields will be stripped later but preserve for diagnostics initially
         __index: idx,
-      } as any;
+      } as UserProfilePayload & { __index: number; email: string };
     });
 
     // 2. Disallow boardMember/role assignments; gather diagnostics instead of immediate abort
     const boardIntendedRows = sanitized.filter(
-      (r: any) =>
+      (r) =>
         r.boardMember === true || (typeof r.role === "string" && r.role.trim())
     );
     if (boardIntendedRows.length) {
       console.warn(
         "[Directory] Stripping boardMember/role fields from bulk CSV rows",
-        boardIntendedRows.slice(0, 5).map((r: any) => ({
+        boardIntendedRows.slice(0, 5).map((r) => ({
           row: r.__index + 1,
           boardMember: r.boardMember,
           role: r.role,
@@ -179,7 +181,7 @@ export default function MembershipDirectoryPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // simple, sufficient client-side
     const invalidEmailRows: { row: number; email: string; reason: string }[] =
       [];
-    sanitized.forEach((r: any) => {
+    sanitized.forEach((r) => {
       if (!r.email) {
         invalidEmailRows.push({
           row: r.__index + 1,
@@ -209,7 +211,7 @@ export default function MembershipDirectoryPage() {
 
     // 4. Duplicate email detection (case-insensitive)
     const emailMap = new Map<string, number[]>();
-    sanitized.forEach((r: any) => {
+    sanitized.forEach((r) => {
       const key = r.email.toLowerCase();
       if (!emailMap.has(key)) emailMap.set(key, []);
       emailMap.get(key)!.push(r.__index + 1);
@@ -231,7 +233,7 @@ export default function MembershipDirectoryPage() {
     }
 
     // 5. Prepare final rows for bulk create (strip preflight artifacts)
-    const finalRows = sanitized.map((r: any) => {
+    const finalRows: UserProfilePayload[] = sanitized.map((r) => {
       const { __index, boardMember, role, ...rest } = r; // board fields intentionally omitted
       return rest;
     });
@@ -287,11 +289,13 @@ export default function MembershipDirectoryPage() {
       if (e instanceof Error && e.message) baseMessage = e.message;
       // Summarize first few distinct reasons if details present
       let detailSummary = "";
-      const anyErr: any = e as any;
+      const anyErr = e as unknown as {
+        details?: { errors?: Array<{ reason?: string }> };
+      };
       if (anyErr?.details?.errors && Array.isArray(anyErr.details.errors)) {
         const reasons: Record<string, number> = {};
-        anyErr.details.errors.forEach((er: any) => {
-          const r = String(er.reason || "unknown");
+        anyErr.details.errors.forEach((er) => {
+          const r = String(er?.reason || "unknown");
           reasons[r] = (reasons[r] || 0) + 1;
         });
         const top = Object.entries(reasons)
@@ -462,7 +466,7 @@ export default function MembershipDirectoryPage() {
         open={open}
         editing={editing}
         form={form}
-        onChange={setForm as any}
+        onChange={(next) => setForm(next as Record<string, any>)}
         onClose={() => setOpen(false)}
         onSave={save}
         isAdmin={isAdmin}

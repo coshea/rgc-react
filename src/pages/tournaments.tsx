@@ -44,7 +44,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   >(undefined);
 
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user);
 
   React.useEffect(() => {
     setIsLoading(true);
@@ -214,7 +214,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             <RadioGroup
               label="How would you like to start?"
               value={createMethod}
-              onValueChange={(v) => setCreateMethod(v as any)}
+              onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
             >
               <Radio value="scratch">Create from scratch</Radio>
               <Radio value="copy">Copy from previous</Radio>

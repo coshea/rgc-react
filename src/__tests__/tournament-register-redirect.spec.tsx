@@ -20,23 +20,27 @@ vi.mock("@/hooks/useUsers", () => ({
 }));
 
 const upsertSpy = vi.fn(async () => {});
-vi.mock("@/api/tournaments", () => ({
-  fetchTournament: vi.fn(async () => ({
-    firestoreId: "abc123",
-    title: "Fall Classic",
-    date: new Date(),
-    description: "Desc",
-    players: 2,
-    completed: false,
-    canceled: false,
-    registrationOpen: true,
-    prizePool: 0,
-    winners: [],
-    tee: "Mixed",
-  })),
-  fetchUserRegistration: vi.fn(async () => null),
-  upsertRegistration: (...args: any[]) => upsertSpy.apply(null, args as any),
-}));
+vi.mock("@/api/tournaments", async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...(original as any),
+    fetchTournament: vi.fn(async () => ({
+      firestoreId: "abc123",
+      title: "Fall Classic",
+      date: new Date(),
+      description: "Desc",
+      players: 2,
+      completed: false,
+      canceled: false,
+      registrationOpen: true,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    })),
+    fetchUserRegistration: vi.fn(async () => null),
+    upsertRegistration: (...args: any[]) => upsertSpy.apply(null, args as any),
+  };
+});
 
 vi.mock("@/config/firebase", () => ({ db: {} }));
 

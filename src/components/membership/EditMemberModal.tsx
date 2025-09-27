@@ -71,41 +71,36 @@ export function EditMemberModal({
   async function handleSave() {
     // First run existing onSave for user profile
     await onSave();
-    if (!isAdmin || !editing) return;
-    if (!paymentDirty) return; // nothing membership-related changed
+    if (!isAdmin || !editing || !paymentDirty) {
+      return; // Nothing to do for membership payment
+    }
+
     try {
-      const membershipType = (payment.membershipType || "").trim() as
-        | "full"
-        | "handicap"
-        | "";
-      const amountNum = payment.amount ? Number(payment.amount) : undefined;
-      const status = payment.markPaid
-        ? "confirmed"
-        : (payment.status as any) || "pending";
-      let result: { confirmed?: boolean; created?: boolean } | undefined;
-      if (membershipType && payment.markPaid) {
-        result = await updateMembershipPayment({
-          userId: editing.id,
-          year: currentYear,
-          updates: {
-            membershipType: membershipType as any,
-            amount: amountNum,
-            method: payment.method || undefined,
-            status,
-          },
-        });
-      } else if (membershipType && status === "pending") {
-        result = await updateMembershipPayment({
-          userId: editing.id,
-          year: currentYear,
-          updates: {
-            membershipType: membershipType as any,
-            amount: amountNum,
-            method: payment.method || undefined,
-            status: "pending",
-          },
-        });
+      const membershipType = (payment.membershipType || "").trim();
+      if (membershipType !== "full" && membershipType !== "handicap") {
+        // Don't proceed if membership type is invalid or missing.
+        // A toast message could be added here for better UX.
+        return;
       }
+
+      const updates: Partial<
+        Pick<
+          import("@/api/membership").MembershipPayment,
+          "amount" | "method" | "membershipType" | "status"
+        >
+      > = {
+        membershipType,
+        amount: payment.amount ? Number(payment.amount) : undefined,
+        method: payment.method || undefined,
+        status: payment.markPaid ? "confirmed" : "pending",
+      };
+
+      const result = await updateMembershipPayment({
+        userId: editing.id,
+        year: currentYear,
+        updates,
+      });
+
       // Invalidate active members so UI reflects new status immediately
       if (result?.confirmed || result?.created) {
         qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
