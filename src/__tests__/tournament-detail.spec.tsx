@@ -5,21 +5,24 @@ import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
 
-// Mock hooks & Auth only (admin now determined via admin doc subscription)
+// Mock hooks & Auth
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "user1" } }),
 }));
-// Remove legacy userProfile admin mock (doc-based now)
 vi.mock("@/hooks/useUserProfile", () => ({
   useUserProfile: () => ({ userProfile: {} }),
 }));
+// Control admin flag via membership hook (avoid Firestore admin doc mocks)
+let isAdminMock = false;
+vi.mock("@/components/membership/hooks", () => ({
+  useDocAdminFlag: () => ({ isAdmin: isAdminMock, loadingAdmin: false }),
+}));
 
-// Dynamic Firestore doc snapshot simulation
-const listeners: Record<string, Function[]> = {};
-
+// API-level listeners simulation
+const apiListeners: Record<string, Function[]> = {};
 function emitDoc(path: string, data: any) {
   act(() => {
-    (listeners[path] || []).forEach((cb) =>
+    (apiListeners[path] || []).forEach((cb) =>
       cb({
         exists: () => !!data,
         id: path.split("/").pop(),
@@ -28,34 +31,36 @@ function emitDoc(path: string, data: any) {
     );
   });
 }
-
 function emitCollection(
   path: string,
   docs: Array<{ id: string; data: () => any }>
 ) {
   act(() => {
-    (listeners[path] || []).forEach((cb) => cb({ docs }));
+    (apiListeners[path] || []).forEach((cb) => cb({ docs }));
   });
 }
 
-vi.mock("firebase/firestore", async () => {
-  return {
-    doc: (_db: any, col: string, id: string) => `${col}/${id}`,
-    collection: (_db: any, col: string, id?: string, sub?: string) =>
-      id && sub ? `${col}/${id}/${sub}` : `${col}`,
-    query: (c: any) => c,
-    orderBy: () => ({}),
-    onSnapshot: (ref: any, next: any) => {
-      listeners[ref] = listeners[ref] || [];
-      listeners[ref].push(next);
-      return () => {
-        listeners[ref] = listeners[ref].filter((fn) => fn !== next);
-      };
-    },
-  };
-});
+vi.mock("@/api/tournaments", () => ({
+  onTournament: (id: string, next: any) => {
+    const key = `tournaments/${id}`;
+    apiListeners[key] = apiListeners[key] || [];
+    apiListeners[key].push(next);
+    return () => {
+      apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
+    };
+  },
+  onTournamentRegistrations: (id: string, next: any) => {
+    const key = `tournaments/${id}/registrations`;
+    apiListeners[key] = apiListeners[key] || [];
+    apiListeners[key].push(next);
+    return () => {
+      apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
+    };
+  },
+  mapTournamentDoc: (snap: any) => ({ firestoreId: snap.id, ...snap.data() }),
+  deleteTournament: vi.fn(async () => {}),
+}));
 
-vi.mock("@/config/firebase", () => ({ db: {} }));
 vi.mock("@/api/users", () => ({ getUsers: async () => [] }));
 
 // Avoid rendering markdown heavy component cost
@@ -103,7 +108,8 @@ const baseTournament = {
 
 describe("TournamentDetailPage", () => {
   beforeEach(() => {
-    Object.keys(listeners).forEach((k) => delete listeners[k]);
+    Object.keys(apiListeners).forEach((k) => delete apiListeners[k]);
+    isAdminMock = false;
   });
 
   it("renders loading then tournament title", async () => {
@@ -193,8 +199,8 @@ describe("TournamentDetailPage", () => {
 
   it("shows admin action buttons when user is admin", async () => {
     renderWithRoute("admin1");
-    // Emit admin doc first so hook sets isAdmin before tournament UI renders buttons
-    emitDoc("admin/user1", { isAdmin: true });
+    // Set admin flag via hook mock
+    isAdminMock = true;
     emitDoc("tournaments/admin1", baseTournament);
     await screen.findByText("Club Championship");
     await waitFor(() =>

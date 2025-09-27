@@ -15,28 +15,24 @@ vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "u2" } },
 }));
 
-// Firestore operations used in page
-vi.mock("firebase/firestore", () => ({
-  doc: vi.fn(() => ({})),
-  getDoc: vi.fn(async () => ({
-    exists: () => true,
-    id: "t1",
-    data: () => ({
-      title: "Member Only Event",
-      date: new Date(),
-      description: "Desc",
-      players: 2,
-      registrationOpen: true,
-    }),
+// API mocks for tournaments
+vi.mock("@/api/tournaments", () => ({
+  fetchTournament: vi.fn(async () => ({
+    firestoreId: "t1",
+    title: "Member Only Event",
+    date: new Date(),
+    description: "Desc",
+    players: 2,
+    registrationOpen: true,
+    completed: false,
+    canceled: false,
+    prizePool: 0,
+    winners: [],
+    tee: "Mixed",
   })),
-  collection: vi.fn(() => ({})),
-  query: vi.fn(() => ({})),
-  where: vi.fn(() => ({})),
-  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
-  addDoc: vi.fn(async () => ({})),
-  setDoc: vi.fn(async () => ({})),
-  deleteDoc: vi.fn(async () => ({})),
-  serverTimestamp: vi.fn(() => new Date()),
+  fetchUserRegistration: vi.fn(async () => null),
+  upsertRegistration: vi.fn(async () => {}),
+  deleteRegistration: vi.fn(async () => {}),
 }));
 
 // Mock auth provider: current user (u2) is NOT a full member

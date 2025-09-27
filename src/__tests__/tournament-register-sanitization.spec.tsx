@@ -24,31 +24,23 @@ vi.mock("@/hooks/useUsers", () => {
   };
 });
 
-vi.mock("firebase/firestore", () => ({
-  doc: vi.fn(),
-  getDoc: vi.fn(async () => ({
-    exists: () => true,
-    id: "t1",
-    data: () => ({
-      title: "Test Tournament",
-      date: new Date(),
-      description: "desc",
-      players: 4,
-      completed: false,
-      canceled: false,
-      registrationOpen: true,
-      prizePool: 0,
-      winners: [],
-    }),
+vi.mock("@/api/tournaments", () => ({
+  fetchTournament: vi.fn(async () => ({
+    firestoreId: "t1",
+    title: "Test Tournament",
+    date: new Date(),
+    description: "desc",
+    players: 4,
+    completed: false,
+    canceled: false,
+    registrationOpen: true,
+    prizePool: 0,
+    winners: [],
+    tee: "Mixed",
   })),
-  collection: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
-  addDoc: vi.fn(async () => ({})),
-  setDoc: vi.fn(async () => ({})),
-  deleteDoc: vi.fn(async () => ({})),
-  serverTimestamp: () => new Date(),
+  fetchUserRegistration: vi.fn(async () => null),
+  upsertRegistration: vi.fn(async () => {}),
+  deleteRegistration: vi.fn(async () => {}),
 }));
 
 vi.mock("@/config/firebase", () => ({ db: {} }));

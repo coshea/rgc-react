@@ -1,11 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  onTournament,
-  onTournamentRegistrations,
-  mapTournamentDoc,
-  deleteTournament as apiDeleteTournament,
-} from "@/api/tournaments";
+// Note: tournaments API is now dynamically imported where needed to keep bundle small
 import {
   Card,
   CardBody,
@@ -72,54 +67,80 @@ const TournamentDetailPage: React.FC = () => {
   // Load tournament document (real-time)
   React.useEffect(() => {
     if (!firestoreId) return;
+    let unsub: (() => void) | undefined;
     setLoading(true);
-    const unsub = onTournament(
-      firestoreId,
-      (snap: any) => {
-        if (!snap.exists?.()) {
-          addToast({
-            title: "Not found",
-            description: "Tournament not found",
-            color: "danger",
-          });
-          navigate("/tournaments");
-          return;
-        }
-        setTournament(mapTournamentDoc(snap) as any);
-        setLoading(false);
-      },
-      (err) => {
-        console.error(err);
-        addToast({
-          title: "Error",
-          description: "Failed to load tournament",
-          color: "danger",
-        });
+    (async () => {
+      try {
+        const api = await import("@/api/tournaments");
+        unsub = api.onTournament(
+          firestoreId,
+          (snap: any) => {
+            if (!snap.exists?.()) {
+              addToast({
+                title: "Not found",
+                description: "Tournament not found",
+                color: "danger",
+              });
+              navigate("/tournaments");
+              return;
+            }
+            setTournament(api.mapTournamentDoc(snap) as any);
+            setLoading(false);
+          },
+          (err: any) => {
+            console.error(err);
+            addToast({
+              title: "Error",
+              description: "Failed to load tournament",
+              color: "danger",
+            });
+            setLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Failed to init tournament listener", e);
         setLoading(false);
       }
-    );
-    return () => unsub();
+    })();
+    return () => {
+      try {
+        unsub && unsub();
+      } catch (_) {}
+    };
   }, [firestoreId, navigate]);
 
   React.useEffect(() => {
     if (!firestoreId) return;
+    let unsub: (() => void) | undefined;
     setRegsLoading(true);
-    const unsub = onTournamentRegistrations(
-      firestoreId,
-      (snap: any) => {
-        const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
-        setRegistrations(list);
-        setRegsLoading(false);
-      },
-      (err) => {
-        console.error("Failed to load registrations", err);
+    (async () => {
+      try {
+        const api = await import("@/api/tournaments");
+        unsub = api.onTournamentRegistrations(
+          firestoreId,
+          (snap: any) => {
+            const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
+              id: d.id,
+              ...(d.data() as any),
+            }));
+            setRegistrations(list);
+            setRegsLoading(false);
+          },
+          (err: any) => {
+            console.error("Failed to load registrations", err);
+            setRegsLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Failed to init registrations listener", e);
         setRegsLoading(false);
       }
-    );
-    return () => unsub();
+    })();
+    return () => {
+      try {
+        unsub && unsub();
+      } catch (_) {}
+    };
   }, [firestoreId]);
 
   // Users are now loaded globally via React Query (useUsersMap)
@@ -226,7 +247,8 @@ const TournamentDetailPage: React.FC = () => {
     if (!isAdmin || !tournament?.firestoreId) return;
     setDeleting(true);
     try {
-      await apiDeleteTournament(tournament.firestoreId);
+      const { deleteTournament } = await import("@/api/tournaments");
+      await deleteTournament(tournament.firestoreId);
       addToast({
         title: "Deleted",
         description: "Tournament removed.",

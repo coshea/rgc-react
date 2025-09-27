@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import * as FS from "firebase/firestore";
 import { render, screen, act, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,19 +19,24 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-vi.mock("firebase/firestore", () => {
-  return {
-    getDoc: vi.fn(),
-    addDoc: vi.fn(),
-    setDoc: vi.fn(),
-    getDocs: vi.fn(),
-    where: vi.fn(),
-    query: vi.fn(),
-    collection: vi.fn(),
-    doc: vi.fn(),
-    serverTimestamp: vi.fn(() => ({ _ts: true })),
-  };
-});
+const upsertSpy = vi.fn(async () => {});
+vi.mock("@/api/tournaments", () => ({
+  fetchTournament: vi.fn(async () => ({
+    firestoreId: "abc123",
+    title: "Fall Classic",
+    date: new Date(),
+    description: "Desc",
+    players: 2,
+    completed: false,
+    canceled: false,
+    registrationOpen: true,
+    prizePool: 0,
+    winners: [],
+    tee: "Mixed",
+  })),
+  fetchUserRegistration: vi.fn(async () => null),
+  upsertRegistration: (...args: any[]) => upsertSpy.apply(null, args as any),
+}));
 
 vi.mock("@/config/firebase", () => ({ db: {} }));
 
@@ -62,29 +66,9 @@ describe("TournamentRegister redirect", () => {
       );
     };
 
-    // Mock implementation details
-    const tournamentData = {
-      title: "Fall Classic",
-      date: new Date(),
-      description: "Desc",
-      players: 2,
-      completed: false,
-      canceled: false,
-      registrationOpen: true,
-      winners: [],
-      prizePool: 0,
-    };
+    // Mock implementation details handled by API vi.mock above
 
-    // getDoc returns a tournament snapshot
-    (FS.getDoc as any).mockResolvedValueOnce({
-      exists: () => true,
-      id: "abc123",
-      data: () => tournamentData,
-    });
-    // No pre-existing registration (stable for any calls)
-    (FS.getDocs as any).mockResolvedValue({ empty: true, docs: [] });
-
-    (FS.addDoc as any).mockResolvedValueOnce({ id: "newReg" });
+    // API mocks already set via vi.mock above
 
     const qc = new QueryClient();
     render(

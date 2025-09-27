@@ -21,11 +21,7 @@ import {
   RadioGroup,
   Radio,
 } from "@heroui/react";
-import {
-  onAllTournaments,
-  mapTournamentDoc,
-  deleteTournament as apiDeleteTournament,
-} from "@/api/tournaments";
+// tournaments API is imported dynamically where used
 import { Icon } from "@iconify/react";
 
 interface TournamentsProps {}
@@ -52,30 +48,43 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   React.useEffect(() => {
     setIsLoading(true);
-    const unsub = onAllTournaments(
-      (snap: any) => {
-        try {
-          const items: Tournament[] = snap.docs.map(
-            (d: any) => mapTournamentDoc(d) as Tournament
-          );
-          setTournaments(items);
-        } catch (err) {
-          console.error("Map tournaments failed", err);
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      (error: any) => {
-        console.error("Error listening to tournaments:", error);
-        addToast({
-          title: "Error",
-          description: "Failed to load tournaments",
-          color: "danger",
-        });
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const api = await import("@/api/tournaments");
+        unsub = api.onAllTournaments(
+          (snap: any) => {
+            try {
+              const items: Tournament[] = snap.docs.map(
+                (d: any) => api.mapTournamentDoc(d) as Tournament
+              );
+              setTournaments(items);
+            } catch (err) {
+              console.error("Map tournaments failed", err);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+          (error: any) => {
+            console.error("Error listening to tournaments:", error);
+            addToast({
+              title: "Error",
+              description: "Failed to load tournaments",
+              color: "danger",
+            });
+            setIsLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Failed to init tournaments listener", e);
         setIsLoading(false);
       }
-    );
-    return () => unsub();
+    })();
+    return () => {
+      try {
+        unsub && unsub();
+      } catch (_) {}
+    };
   }, []);
 
   const handleCreateTournament = () => {
@@ -143,7 +152,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     try {
       if (typeof id === "string") {
         try {
-          await apiDeleteTournament(id);
+          const { deleteTournament } = await import("@/api/tournaments");
+          await deleteTournament(id);
         } catch (err) {
           console.warn(
             "Failed to delete Firestore tournament document, continuing to remove locally",
