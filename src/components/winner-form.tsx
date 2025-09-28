@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Card,
@@ -12,7 +12,7 @@ import {
 import { Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Winner } from "@/types/winner";
-import { getUsers, User } from "@/api/users";
+import { useUsers } from "@/hooks/useUsers";
 
 interface WinnerFormProps {
   winners: Winner[];
@@ -29,33 +29,17 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   prizePool,
   isCompleted,
 }) => {
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const fetchedUsers = await getUsers();
-        setUsers(fetchedUsers);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        // Optionally, show a toast or error message to the user
-      }
-    };
-
-    fetchUsers();
-  }, []);
+  const { users, isLoading: usersLoading } = useUsers();
 
   const addWinner = () => {
     const nextPlace =
       winners.length > 0 ? Math.max(...winners.map((w) => w.place)) + 1 : 1;
-
     const newWinner: Winner = {
       place: nextPlace,
       userIds: [],
       displayNames: [],
       prizeAmount: 0,
     };
-
     onWinnersChange([...winners, newWinner]);
   };
 
@@ -110,6 +94,37 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   // Sort winners by place
   const sortedWinners = [...winners].sort((a, b) => a.place - b.place);
+
+  // Build a set of valid user ids for quick membership checks
+  const validUserIds = React.useMemo(
+    () => new Set(users.map((u) => u.id)),
+    [users]
+  );
+
+  // Auto-sanitize any winner entries that reference users no longer in the list
+  React.useEffect(() => {
+    if (!users || users.length === 0) return;
+    let changed = false;
+    const cleaned = winners.map((w) => {
+      const filteredIds = (w.userIds || []).filter((id) =>
+        validUserIds.has(id)
+      );
+      if (filteredIds.length !== w.userIds.length) {
+        changed = true;
+        const filteredUsers = users.filter((u) => filteredIds.includes(u.id));
+        return {
+          ...w,
+          userIds: filteredIds,
+          displayNames: filteredUsers.map((u) => u.displayName || ""),
+        };
+      }
+      return w;
+    });
+    if (changed) {
+      onWinnersChange(cleaned);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
 
   if (!isCompleted) {
     return (
@@ -191,7 +206,14 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                         teamSize > 1 ? "Select team members" : "Select winner"
                       }
                       selectionMode={teamSize > 1 ? "multiple" : "single"}
-                      selectedKeys={new Set(winner.userIds)}
+                      // ensure selectedKeys only includes currently valid user ids
+                      selectedKeys={
+                        new Set(
+                          (winner.userIds || []).filter((id) =>
+                            validUserIds.has(id)
+                          )
+                        )
+                      }
                       onSelectionChange={(keys) => {
                         const selectedKeys = Array.from(keys);
                         handleUserSelection(
@@ -201,6 +223,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       }}
                       isRequired
                       className="w-full"
+                      isDisabled={usersLoading}
                       isInvalid={winner.userIds.length === 0}
                       errorMessage={
                         winner.userIds.length === 0 ? "Winner is required" : ""

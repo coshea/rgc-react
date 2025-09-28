@@ -1,15 +1,9 @@
 import React from "react";
-import {
-  Card,
-  CardBody,
-  Avatar,
-  AvatarGroup,
-  Button,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Card, CardBody, AvatarGroup, Button, Tooltip } from "@heroui/react";
+import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
+import RegistrationEditor from "@/components/registration-editor";
 
 type Registration = {
   id: string;
@@ -57,10 +51,8 @@ export const RegistrationsList: React.FC<Props> = ({
     if (!selectedRegistration || !Array.isArray(selectedRegistration.team))
       return [] as string[];
     return selectedRegistration.team.map((m) => {
-      const u = users.find((x) => x.id === (m as any).id);
-      return (
-        u?.displayName || (m as any).displayName || (m as any).id || "(unknown)"
-      );
+      const u = users.find((x) => x.id === m.id);
+      return u?.displayName || m.displayName || m.id || "(unknown)";
     });
   }, [selectedRegistration, users]);
 
@@ -72,32 +64,8 @@ export const RegistrationsList: React.FC<Props> = ({
     onStartEdit(reg);
   };
 
-  const updateSlot = (
-    regId: string,
-    index: number,
-    value: string | undefined
-  ) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [""];
-      current[index] = value || "";
-      return { ...s, [regId]: current };
-    });
-  };
-
-  const addSlot = (regId: string) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [""];
-      if (current.length < players) current.push("");
-      return { ...s, [regId]: current };
-    });
-  };
-
-  const removeSlot = (regId: string, index: number) => {
-    setLocalTeams((s) => {
-      const current = s[regId] ? [...s[regId]] : [];
-      current.splice(index, 1);
-      return { ...s, [regId]: current };
-    });
+  const updateLocal = (regId: string, ids: string[]) => {
+    setLocalTeams((s) => ({ ...s, [regId]: ids }));
   };
 
   return (
@@ -116,21 +84,18 @@ export const RegistrationsList: React.FC<Props> = ({
                 <div className="flex items-center gap-3">
                   <AvatarGroup isBordered>
                     {team.map((m, i) => {
-                      const memberUser = users.find(
-                        (u) => u.id === (m as any).id
-                      );
-                      const src = memberUser
-                        ? (memberUser as any).profileURL ||
-                          (memberUser as any).photoURL
-                        : undefined;
+                      const memberUser = users.find((u) => u.id === m.id);
+                      // Pass full user when available for centralized fallback (profileURL > photoURL > initials)
                       const label = (m.displayName || m.id || "").toString();
                       return (
-                        <Avatar key={m.id || i} size="sm" src={src} alt={label}>
-                          {label
-                            .split(" ")
-                            .map((s: string) => s[0])
-                            .join("")}
-                        </Avatar>
+                        <UserAvatar
+                          key={m.id || i}
+                          size="sm"
+                          user={memberUser}
+                          name={memberUser ? undefined : label}
+                          alt={label}
+                          className="border border-default-200"
+                        />
                       );
                     })}
                   </AvatarGroup>
@@ -200,103 +165,105 @@ export const RegistrationsList: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        onPress={() =>
-                          onSave(
-                            reg.id,
-                            (localTeams[reg.id] || []).filter(Boolean)
-                          )
-                        }
+                      <Tooltip
+                        content="Save"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="light"
-                        onPress={() => onCancelEdit()}
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          onPress={() =>
+                            onSave(
+                              reg.id,
+                              (localTeams[reg.id] || []).filter(Boolean)
+                            )
+                          }
+                          startContent={
+                            <Icon icon="lucide:save" className="w-4 h-4" />
+                          }
+                          aria-label="Save registration"
+                        >
+                          <span className="hidden sm:inline">Save</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content="Cancel"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        Cancel
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => onCancelEdit()}
+                          startContent={
+                            <Icon icon="lucide:x" className="w-4 h-4" />
+                          }
+                          aria-label="Cancel editing"
+                        >
+                          <span className="hidden sm:inline">Cancel</span>
+                        </Button>
+                      </Tooltip>
                     </>
                   ) : (
                     <>
-                      <Button size="sm" onPress={() => startEditing(reg)}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        color="danger"
-                        variant="light"
-                        onPress={() => {
-                          setDeletingId(reg.id);
-                          setConfirmOpen(true);
-                        }}
+                      <Tooltip
+                        content="Edit"
+                        placement="top"
+                        closeDelay={0}
+                        offset={6}
                       >
-                        Delete
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => startEditing(reg)}
+                          startContent={
+                            <Icon icon="lucide:edit" className="w-4 h-4" />
+                          }
+                          aria-label="Edit registration"
+                        >
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        content="Delete"
+                        placement="top"
+                        color="danger"
+                        closeDelay={0}
+                        offset={6}
+                      >
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          color="danger"
+                          onPress={() => {
+                            setDeletingId(reg.id);
+                            setConfirmOpen(true);
+                          }}
+                          startContent={
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                          }
+                          aria-label="Delete registration"
+                        >
+                          <span className="hidden sm:inline">Delete</span>
+                        </Button>
+                      </Tooltip>
                     </>
                   )}
                 </div>
               </div>
 
               {isEditing && (
-                <div className="mt-3 space-y-2">
-                  {(local || []).map((uid, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Select
-                          label={
-                            idx === 0 ? "Team Leader" : `Teammate ${idx + 1}`
-                          }
-                          placeholder="Select user"
-                          selectionMode="single"
-                          selectedKeys={uid ? new Set([uid]) : new Set()}
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(
-                              keys as Set<string>
-                            )[0] as string | undefined;
-                            updateSlot(reg.id, idx, selected);
-                          }}
-                          className="w-full"
-                        >
-                          {users.map((u) => (
-                            <SelectItem key={u.id}>
-                              {u.displayName || u.email || u.id}
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {local.length > 1 && (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => removeSlot(reg.id, idx)}
-                          >
-                            <Icon icon="lucide:trash-2" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={() => addSlot(reg.id)}
-                      isDisabled={(local || []).length >= players}
-                    >
-                      Add Teammate
-                    </Button>
-                    <div className="text-sm text-foreground-500">
-                      {(local || []).length}/{players}
-                    </div>
-                  </div>
+                <div className="mt-3">
+                  <RegistrationEditor
+                    value={local}
+                    onChange={(ids) => updateLocal(reg.id, ids)}
+                    users={users}
+                    maxSize={players}
+                  />
                 </div>
               )}
             </CardBody>

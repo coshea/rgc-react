@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "[pre-commit] Running ESLint..." 
+npm run lint
+if [ $? -ne 0 ]; then
+	echo "[pre-commit] Lint failed. Fix issues before committing." >&2
+	exit 1
+fi
+
+echo "[pre-commit] Running TypeScript type check..." 
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+	echo "[pre-commit] Type check failed. Fix type errors before committing." >&2
+	exit 1
+fi
+
+echo "[pre-commit] Passed lint + type check. (Full build will run in CI / pre-push)"

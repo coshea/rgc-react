@@ -19,13 +19,19 @@ export const siteConfig = {
       title: "Membership",
       description: "Join the Ridgefield Golf Club",
       link: "/membership",
-      icon: "lucide:users",
+      icon: "lucide:user-plus",
     },
     directory: {
       title: "Member Directory",
       description: "View all members",
       link: "/membership/member-directory",
-      icon: "lucide:user",
+      icon: "lucide:users",
+    },
+    board: {
+      title: "Board of Governors",
+      description: "Club leadership team",
+      link: "/board",
+      icon: "lucide:shield",
     },
     about: {
       title: "About",
@@ -72,6 +78,18 @@ export const siteConfig = {
       description: "Ridgefield Golf Club tournaments",
       link: "/tournaments",
       icon: "lucide:calendar",
+    },
+    moneyList: {
+      title: "Money List",
+      description: "Yearly prize money standings",
+      link: "/money-list",
+      icon: "lucide:badge-dollar-sign",
+    },
+    verifyEmail: {
+      title: "Verify Email",
+      description: "Confirm your email address",
+      link: "/verify-email",
+      icon: "lucide:check-circle",
     },
   },
 };

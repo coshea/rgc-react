@@ -5,28 +5,17 @@ import {
   CardBody,
   Button,
   Divider,
-  Avatar,
   addToast,
   Select,
   SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
-import { db } from "@/config/firebase";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  setDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { getUsers, User } from "@/api/users";
+// Firestore access now centralized in '@/api/tournaments'. We dynamically import for
+// potential bundle splitting since registration flow is a narrower usage path.
+import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
+import type { User } from "@/api/users";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -34,8 +23,18 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [, setUsersLoading] = React.useState(false);
+  const { users } = useUsers();
+  // Refine types and avoid any-casts with a small type guard
+  const isFullMember = React.useCallback(
+    (u: User): u is User & { membershipType: "full" } =>
+      u.membershipType === "full",
+    []
+  );
+  // Filter to full members only for selection (business rule: only full members can register / be teammates)
+  const fullMembers = React.useMemo(
+    () => users.filter(isFullMember),
+    [users, isFullMember]
+  );
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
@@ -46,6 +45,13 @@ const TournamentRegister: React.FC = () => {
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const currentUserIsFull = React.useMemo(
+    () =>
+      users.some(
+        (u: User) => u.id === user?.uid && u.membershipType === "full"
+      ),
+    [users, user?.uid]
+  );
 
   React.useEffect(() => {
     const fetchTournament = async () => {
@@ -60,9 +66,9 @@ const TournamentRegister: React.FC = () => {
       }
 
       try {
-        const ref = doc(db, "tournaments", firestoreId);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
+        const api = await import("@/api/tournaments");
+        const data = await api.fetchTournament(firestoreId);
+        if (!data) {
           addToast({
             title: "Not found",
             description: "Tournament not found",
@@ -71,28 +77,7 @@ const TournamentRegister: React.FC = () => {
           setLoading(false);
           return;
         }
-        const data: any = snap.data();
-        const dateField =
-          data.date && typeof data.date.toDate === "function"
-            ? data.date.toDate()
-            : data.date
-              ? new Date(data.date)
-              : new Date();
-
-        setTournament({
-          firestoreId: snap.id,
-          title: data.title,
-          date: dateField,
-          description: data.description,
-          players: data.players,
-          completed: data.completed || false,
-          canceled: data.canceled || false,
-          registrationOpen: data.registrationOpen || false,
-          icon: data.icon,
-          href: data.href,
-          prizePool: data.prizePool || 0,
-          winners: data.winners || [],
-        } as Tournament);
+        setTournament(data as Tournament);
       } catch (error) {
         console.error("Error loading tournament:", error);
         addToast({
@@ -106,26 +91,6 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
-    // Fetch users separately
-    const fetchUsers = async () => {
-      setUsersLoading(true);
-      try {
-        const list = await getUsers();
-        setUsers(list);
-        console.debug("Loaded users:", list.length);
-      } catch (err) {
-        console.error("Failed to load users", err);
-        addToast({
-          title: "Error",
-          description: "Failed to load users",
-          color: "danger",
-        });
-      } finally {
-        setUsersLoading(false);
-      }
-    };
-
-    fetchUsers();
   }, [firestoreId]);
 
   // Redirect unauthenticated users to login when they land on the register page
@@ -151,20 +116,12 @@ const TournamentRegister: React.FC = () => {
     const fetchExistingRegistration = async () => {
       if (!firestoreId || !user || !user.uid) return;
       try {
-        const regCol = collection(
-          db,
-          "tournaments",
-          firestoreId,
-          "registrations"
-        );
-        const q = query(regCol, where("ownerId", "==", user.uid));
-        const snaps = await getDocs(q);
-        if (!snaps.empty) {
-          const regDoc = snaps.docs[0];
-          const regData: any = regDoc.data();
-          setRegistrationId(regDoc.id);
-          if (Array.isArray(regData.team) && regData.team.length > 0) {
-            const ids = regData.team.map((m: any) => m.id || "");
+        const api = await import("@/api/tournaments");
+        const existing = await api.fetchUserRegistration(firestoreId, user.uid);
+        if (existing) {
+          setRegistrationId(existing.id);
+          if (Array.isArray(existing.team) && existing.team.length > 0) {
+            const ids = existing.team.map((m: any) => m.id || "");
             setTeammates(ids.length ? ids : [""]);
           }
         }
@@ -178,10 +135,39 @@ const TournamentRegister: React.FC = () => {
 
   const maxTeamSize = tournament?.players ?? 1;
 
+  // Sanitize teammate IDs if users list changes (remove ids not present anymore)
+  React.useEffect(() => {
+    if (!users || users.length === 0) return;
+    const valid = new Set(fullMembers.map((u) => u.id));
+    let changed = false;
+    const cleaned = teammates.map((id) =>
+      id && valid.has(id) ? id : id === "" ? "" : ""
+    );
+    // If a non-empty id was removed due to being invalid, mark changed
+    if (cleaned.some((id, i) => id !== teammates[i])) changed = true;
+    // Ensure at least one slot
+    if (cleaned.length === 0) cleaned.push("");
+    if (changed) setTeammates(cleaned);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
   if (loading) return <div>Loading...</div>;
 
   if (!tournament) {
     return <div>Unable to find tournament.</div>;
+  }
+
+  if (tournament && !currentUserIsFull) {
+    return (
+      <div className="max-w-xl mx-auto p-6 space-y-4">
+        <h2 className="text-xl font-semibold">Registration Restricted</h2>
+        <p className="text-sm text-foreground-600">
+          Only full members are eligible to register for tournaments. Your
+          account isn't marked as a full member. If you believe this is an
+          error, please contact an administrator.
+        </p>
+      </div>
+    );
   }
 
   const addTeammate = () => {
@@ -227,6 +213,18 @@ const TournamentRegister: React.FC = () => {
 
     // validate teammates - ensure no empty selections
     const selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    // Ensure all selected teammates are full members
+    const allFull = selectedIds.every((id) =>
+      fullMembers.some((m) => m.id === id)
+    );
+    if (!allFull) {
+      addToast({
+        title: "Invalid Team",
+        description: "All teammates must be full members.",
+        color: "danger",
+      });
+      return;
+    }
     if (selectedIds.length === 0) {
       addToast({
         title: "Error",
@@ -238,7 +236,7 @@ const TournamentRegister: React.FC = () => {
 
     // map ids to display names
     const members = selectedIds.map((id) => {
-      const u = users.find((x) => x.id === id);
+      const u = fullMembers.find((x) => x.id === id);
       return {
         id,
         displayName: u?.displayName || u?.email || id,
@@ -258,40 +256,23 @@ const TournamentRegister: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // write to subcollection tournaments/{id}/registrations
-      const regCol = collection(
-        db,
-        "tournaments",
-        tournament.firestoreId,
-        "registrations"
-      );
-
-      const registration = {
+      const api = await import("@/api/tournaments");
+      await api.upsertRegistration(tournament.firestoreId, registrationId, {
         team: members,
         ownerId: user.uid,
-        registeredAt: serverTimestamp(),
-      } as any;
-
-      if (registrationId) {
-        // update existing registration
-        const regRef = doc(
-          db,
-          "tournaments",
-          tournament.firestoreId,
-          "registrations",
-          registrationId
-        );
-        await setDoc(regRef, registration, { merge: true });
-      } else {
-        await addDoc(regCol, registration);
-      }
+      });
 
       addToast({
         title: "Registered",
         description: "Your team has been registered.",
         color: "success",
       });
-      navigate("/tournaments");
+      // After successful registration or update, return user to the tournament detail page
+      if (tournament.firestoreId) {
+        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
+      } else {
+        navigate("/tournaments", { replace: true });
+      }
     } catch (err) {
       console.error("Failed to register:", err);
       addToast({
@@ -308,14 +289,8 @@ const TournamentRegister: React.FC = () => {
     if (!registrationId || !tournament?.firestoreId) return;
     setDeleting(true);
     try {
-      const regRef = doc(
-        db,
-        "tournaments",
-        tournament.firestoreId,
-        "registrations",
-        registrationId
-      );
-      await deleteDoc(regRef);
+      const api = await import("@/api/tournaments");
+      await api.deleteRegistration(tournament.firestoreId, registrationId);
       addToast({
         title: "Cancelled",
         description: "Your registration has been removed.",
@@ -354,7 +329,6 @@ const TournamentRegister: React.FC = () => {
                 </p>
               ) : null}
             </div>
-            <Avatar size="lg" src={tournament.icon} />
           </div>
 
           <Divider className="my-4" />
@@ -378,7 +352,7 @@ const TournamentRegister: React.FC = () => {
                     }}
                     className="w-full"
                   >
-                    {users.map((u) => (
+                    {fullMembers.map((u) => (
                       <SelectItem key={u.id}>
                         {u.displayName || u.email || u.id}
                       </SelectItem>

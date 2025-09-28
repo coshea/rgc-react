@@ -2,6 +2,7 @@ import { Tournament } from "@/types/tournament";
 import { db } from "@/config/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import React from "react";
+import { Link } from "react-router-dom";
 
 export function NewsPage() {
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
@@ -112,12 +113,17 @@ export function NewsPage() {
                     })}
                     .
                   </p>
-                  <a
-                    href={lastCompletedTournament.href || "#"}
+                  <Link
+                    to={
+                      lastCompletedTournament.firestoreId
+                        ? `/tournaments/${lastCompletedTournament.firestoreId}`
+                        : lastCompletedTournament.href || "#"
+                    }
                     className="text-primary hover:underline"
+                    aria-label={`View details for ${lastCompletedTournament.title}`}
                   >
                     View the results
-                  </a>
+                  </Link>
                 </div>
               )}
 
@@ -134,12 +140,17 @@ export function NewsPage() {
                     })}
                     . Register now!
                   </p>
-                  <a
-                    href={nextTournament.href || "#"}
+                  <Link
+                    to={
+                      nextTournament.firestoreId
+                        ? `/tournaments/${nextTournament.firestoreId}`
+                        : nextTournament.href || "#"
+                    }
                     className="text-primary hover:underline"
+                    aria-label={`Read more about ${nextTournament.title}`}
                   >
                     Read more
-                  </a>
+                  </Link>
                 </div>
               )}
             </>

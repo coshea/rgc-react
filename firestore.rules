@@ -4,11 +4,13 @@ service cloud.firestore {
     // Helper: returns true if the requester is a super-admin (custom claim)
     // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
     function isAdmin() {
+      let adminDoc = get(/databases/$(database)/documents/admin/$(request.auth.uid));
       return request.auth != null && (
-        // custom claim override
+        // Custom claim OR explicit admin doc flags only
         request.auth.token.admin == true
-        // OR user has an admin document set to true
-        || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+        || adminDoc.data.isAdmin == true
+        || adminDoc.data.admin == true
+        || adminDoc.data.admin == 'true'
       );
     }
 
@@ -18,15 +20,49 @@ service cloud.firestore {
       // Allow users to write their own profile. Also allow admins to create or modify
       // other users' profiles (so admins can add members). Admin check uses custom
       // claim `request.auth.token.admin == true` or the admin collection lookup.
-      allow create, update, delete: if request.auth != null && (
-        request.auth.uid == userId || request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      function isSelfOrAdmin() {
+        return request.auth != null && (
+          request.auth.uid == userId || isAdmin()
+        );
+      }
+      // Validate board fields: only admins may set boardMember true or assign a role.
+      // Validate board fields only when boardMember asserted. Roles must be in the allow list.
+      function boardRoleValid(newData) {
+        let allowed = [
+          'President',
+          'Treasurer',
+          'Handicap Chairman',
+          'Tournament Chairman',
+          'Webmaster',
+          'Board Member'
+        ];
+        return !(newData.boardMember == true) || (
+          newData.role is string && newData.role != '' && allowed.hasAny([newData.role])
+        );
+      }
+      function boardFieldsUnchanged() {
+        return resource == null || (
+          resource.data.boardMember == request.resource.data.boardMember &&
+          resource.data.role == request.resource.data.role
+        );
+      }
+      // Enforce minimal integrity: email must be a non-empty string on create.
+      function hasBaselineFields(d) {
+        return d.email is string && d.email != '';
+      }
+      // Core write gate with board field restrictions
+      // Permit admins to create any user doc; permit non-admin authenticated users to create
+      // their own user doc (without board fields). Bulk upload relies on admin path.
+      allow create: if request.auth != null && hasBaselineFields(request.resource.data) && (
+        // Admin full create
+        isAdmin() && boardRoleValid(request.resource.data)
+        // Self-create with no board fields
+        || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
-      // allow set (write) to be same as create/update above
-      allow write: if request.auth != null && (
-        request.auth.uid == userId || request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+      allow update: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
+        isAdmin() || boardFieldsUnchanged()
       );
+      allow delete: if isSelfOrAdmin();
     }
 
     // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
@@ -40,16 +76,25 @@ service cloud.firestore {
       // tournaments/{tournamentId}/registrations/{registrationId}
       // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
       match /registrations/{registrationId} {
-        // Create: only authenticated user, ownerId must match auth uid, and tournament must be open for registration
+        // Create:
+        // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
+        // - Admins: may create regardless of registrationOpen; ownerId can be "__admin__" or their own uid.
         allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.ownerId
-          && get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
           && request.resource.data.team is list
           && request.resource.data.team.size() > 0
-          // enforce max team size based on tournament players field when available
-          && ( ! (get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int) ||
-               request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
-          ;
+          && ( !(get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int)
+               || request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
+          && (
+            (
+              request.auth.uid == request.resource.data.ownerId &&
+              get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
+            )
+            || (
+              isAdmin() && (
+                request.resource.data.ownerId == "__admin__" || request.resource.data.ownerId == request.auth.uid
+              )
+            )
+          );
 
         // Owner or admin can update or delete the registration. Use isAdmin()
         // so that admins defined under /admin/{uid} (isAdmin == true) are
@@ -58,12 +103,9 @@ service cloud.firestore {
           request.auth.uid == resource.data.ownerId || isAdmin()
         );
 
-        // Reading registrations: owner or admin only (registrations are private by default)
-        // Allow the document owner or an admin. Use the isAdmin() helper so admins
-        // defined in /admin/{uid} (isAdmin == true) can read registrations as well
-        allow read: if request.auth != null && (
-          request.auth.uid == resource.data.ownerId || isAdmin()
-        );
+  // Reading registrations: any authenticated user can read to view who is registered.
+  // This broadens visibility from just owner/admin to all signed-in members.
+  allow read: if request.auth != null;
       }
     }
 
@@ -72,11 +114,30 @@ service cloud.firestore {
     // Admin documents can be read by the user themselves or by super-admins.
     match /admin/{adminId} {
       // Allow users to read their own admin doc (so client can check quickly)
-      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true || isAdmin());
+      // IMPORTANT: cannot call isAdmin() here (would recurse). Only allow if user reads own doc or already has claim.
+      allow read: if request.auth != null && (request.auth.uid == adminId || request.auth.token.admin == true);
 
       // Only custom-claim super-admins may create/update/delete admin documents.
       // This prevents arbitrary users from granting themselves admin rights.
       allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Membership payment records: /memberPayments/{userId_year}
+    // Naming convention enforced at write time via client (userId_year). Rules here:
+    // - Read: any authenticated user may read (to allow directory active status / profile views)
+    // - Create: admins only. Creates are idempotent (client checks) but rules don't enforce idempotency.
+    // - Update/Delete: admins only. Normal flow should rarely update except to correct status or refund.
+    match /memberPayments/{paymentId} {
+      allow read: if request.auth != null;
+      allow create: if isAdmin() && request.auth != null &&
+        request.resource.data.userId is string &&
+        request.resource.data.year is int &&
+        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
+        request.resource.data.membershipType in ['full', 'handicap'];
+      allow update: if isAdmin() &&
+        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
+        request.resource.data.membershipType in ['full', 'handicap'];
+      allow delete: if isAdmin();
     }
 
     // Default: deny everything else

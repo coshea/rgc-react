@@ -1,24 +1,30 @@
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { TournamentForm } from "@/components/tournament-form";
+import { useDocAdminFlag } from "@/components/membership/hooks";
+const TournamentEditor = React.lazy(() =>
+  import("@/components/tournament-editor").then((m) => ({
+    default: m.TournamentEditor,
+  }))
+);
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
-import { addToast } from "@heroui/react";
-import { db } from "@/config/firebase";
 import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
+  addToast,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Select,
+  SelectItem,
+  RadioGroup,
+  Radio,
+} from "@heroui/react";
+// tournaments API is imported dynamically where used
 import { Icon } from "@iconify/react";
 
-interface TournamentsProps {
-  // You can add props here if needed
-}
+interface TournamentsProps {}
 
 const Tournaments: React.FC<TournamentsProps> = () => {
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
@@ -26,64 +32,67 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     React.useState<Tournament | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { user } = useAuth();
-  const { userProfile } = useUserProfile();
 
-  const isAdmin = !!(user && userProfile && userProfile.admin === true);
+  // Create flow state
+  const [createModeOpen, setCreateModeOpen] = React.useState(false);
+  const [createMethod, setCreateMethod] = React.useState<"scratch" | "copy">(
+    "scratch"
+  );
+  const [templateId, setTemplateId] = React.useState<string | null>(null);
+  const [initialValues, setInitialValues] = React.useState<
+    Partial<Tournament> | undefined
+  >(undefined);
+
+  const { user } = useAuth();
+  const { isAdmin } = useDocAdminFlag(user);
 
   React.useEffect(() => {
-    // Fetch tournaments from Firestore and map to local Tournament objects
-    const fetchTournaments = async () => {
-      setIsLoading(true);
+    setIsLoading(true);
+    let unsub: (() => void) | undefined;
+    (async () => {
       try {
-        const colRef = collection(db, "tournaments");
-        const q = query(colRef, orderBy("date", "asc"));
-        const snap = await getDocs(q);
-        const items: Tournament[] = snap.docs.map((doc) => {
-          const data: any = doc.data();
-          // Convert Firestore Timestamp to JS Date if necessary
-          const dateField =
-            data.date && typeof data.date.toDate === "function"
-              ? data.date.toDate()
-              : data.date
-                ? new Date(data.date)
-                : new Date();
-
-          return {
-            firestoreId: doc.id,
-            title: data.title,
-            date: dateField,
-            description: data.description,
-            players: data.players,
-            completed: data.completed || false,
-            canceled: data.canceled || false,
-            registrationOpen: data.registrationOpen || false,
-            icon: data.icon,
-            href: data.href,
-            prizePool: data.prizePool || 0,
-            winners: data.winners || [],
-          } as Tournament;
-        });
-
-        setTournaments(items);
-      } catch (error) {
-        console.error("Error fetching tournaments:", error);
-        addToast({
-          title: "Error",
-          description: "Failed to load tournaments",
-          color: "danger",
-        });
-      } finally {
+        const api = await import("@/api/tournaments");
+        unsub = api.onAllTournaments(
+          (snap: any) => {
+            try {
+              const items: Tournament[] = snap.docs.map(
+                (d: any) => api.mapTournamentDoc(d) as Tournament
+              );
+              setTournaments(items);
+            } catch (err) {
+              console.error("Map tournaments failed", err);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+          (error: any) => {
+            console.error("Error listening to tournaments:", error);
+            addToast({
+              title: "Error",
+              description: "Failed to load tournaments",
+              color: "danger",
+            });
+            setIsLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Failed to init tournaments listener", e);
         setIsLoading(false);
       }
+    })();
+    return () => {
+      try {
+        unsub && unsub();
+      } catch (_) {}
     };
-
-    fetchTournaments();
   }, []);
 
   const handleCreateTournament = () => {
     setEditingTournament(null);
-    setIsCreating(true);
+    setCreateMethod("scratch");
+    setTemplateId(null);
+    setInitialValues(undefined);
+    setCreateModeOpen(true);
   };
 
   const handleEditTournament = (tournament: Tournament) => {
@@ -93,11 +102,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   const handleSaveTournament = async (tournament: Tournament) => {
     setIsLoading(true);
-
     try {
-      // In a real app, save to Firestore (done in TournamentForm)
       if (editingTournament) {
-        // Update existing tournament in local state (match by firestoreId)
         setTournaments((prev) =>
           prev.map((t) =>
             t.firestoreId &&
@@ -113,7 +119,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           color: "success",
         });
       } else {
-        // Append newly created tournament (TournamentForm will include firestoreId when created)
         setTournaments((prev) => [...prev, tournament]);
         addToast({
           title: "Tournament Created",
@@ -132,25 +137,26 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       setIsLoading(false);
       setEditingTournament(null);
       setIsCreating(false);
+      setInitialValues(undefined);
     }
   };
 
   const handleCancelEdit = () => {
     setEditingTournament(null);
     setIsCreating(false);
+    setInitialValues(undefined);
   };
 
   const handleDeleteTournament = async (id?: string | number) => {
     setIsLoading(true);
-
     try {
-      // If id is a Firestore document id (string), delete the doc
       if (typeof id === "string") {
         try {
-          await deleteDoc(doc(db, "tournaments", id));
+          const { deleteTournament } = await import("@/api/tournaments");
+          await deleteTournament(id);
         } catch (err) {
           console.warn(
-            "Failed to delete Firestore document, continuing to remove locally",
+            "Failed to delete Firestore tournament document, continuing to remove locally",
             err
           );
         }
@@ -173,16 +179,106 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     }
   };
 
+  const onContinueCreate = () => {
+    let init: Partial<Tournament> | undefined = undefined;
+    if (createMethod === "copy" && templateId) {
+      const tpl = tournaments.find((t) => t.firestoreId === templateId);
+      if (tpl) {
+        init = {
+          title: tpl.title,
+          description: tpl.description,
+          detailsMarkdown: tpl.detailsMarkdown,
+          players: tpl.players,
+          prizePool: tpl.prizePool,
+          registrationOpen: false,
+          completed: false,
+          canceled: false,
+          tee: tpl.tee,
+        };
+      }
+    }
+    setInitialValues(init);
+    setCreateModeOpen(false);
+    setEditingTournament(null);
+    setIsCreating(true);
+  };
+
   return (
     <div className="space-y-6">
+      <Modal isOpen={createModeOpen} onClose={() => setCreateModeOpen(false)}>
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            New Tournament
+          </ModalHeader>
+          <ModalBody>
+            <RadioGroup
+              label="How would you like to start?"
+              value={createMethod}
+              onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
+            >
+              <Radio value="scratch">Create from scratch</Radio>
+              <Radio value="copy">Copy from previous</Radio>
+            </RadioGroup>
+            {createMethod === "copy" && (
+              <Select
+                label="Choose a previous tournament"
+                selectedKeys={templateId ? [templateId] : []}
+                onSelectionChange={(keys) => {
+                  const id = Array.from(keys)[0] as string | undefined;
+                  setTemplateId(id || null);
+                }}
+              >
+                {tournaments
+                  .filter((t) => !!t.firestoreId)
+                  .map((t) => {
+                    const year = t.date
+                      ? new Date(t.date).getFullYear()
+                      : undefined;
+                    const label = year ? `${t.title} (${year})` : t.title;
+                    return (
+                      <SelectItem key={t.firestoreId!} textValue={label}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
+              </Select>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setCreateModeOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={createMethod === "copy" && !templateId}
+              onPress={onContinueCreate}
+            >
+              Continue
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {isCreating || editingTournament ? (
-        // Only allow creating/editing if user is admin
         isAdmin ? (
-          <TournamentForm
-            tournament={editingTournament}
-            onSave={handleSaveTournament}
-            onCancel={handleCancelEdit}
-          />
+          <React.Suspense
+            fallback={
+              <div className="p-8 flex flex-col items-center gap-3">
+                <Icon
+                  icon="lucide:loader"
+                  className="animate-spin text-2xl text-primary"
+                />
+                <p className="text-sm text-foreground-500">Loading editor...</p>
+              </div>
+            }
+          >
+            <TournamentEditor
+              tournament={editingTournament}
+              initialValues={initialValues}
+              onSave={handleSaveTournament}
+              onCancel={handleCancelEdit}
+            />
+          </React.Suspense>
         ) : (
           <div className="p-6 bg-content1 rounded-lg border border-default-200">
             <p className="text-foreground-500">
@@ -197,14 +293,22 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               Scheduled Tournaments
             </h2>
             {isAdmin && (
-              <button
-                onClick={handleCreateTournament}
-                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors"
-                disabled={isLoading}
+              <Button
+                color="primary"
+                size="sm"
+                startContent={
+                  <Icon icon="lucide:plus" className="w-4 h-4 sm:w-5 sm:h-5" />
+                }
+                className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
+                onPress={handleCreateTournament}
+                isDisabled={isLoading}
+                aria-label="Create new tournament"
               >
-                <Icon icon="lucide:plus" />
-                <span>New Tournament</span>
-              </button>
+                <span className="hidden xs:inline sm:inline">
+                  New Tournament
+                </span>
+                <span className="sm:hidden sr-only">New Tournament</span>
+              </Button>
             )}
           </div>
 

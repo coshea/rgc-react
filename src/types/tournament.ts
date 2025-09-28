@@ -4,6 +4,8 @@ export interface Tournament {
   title: string;
   date: Date;
   description: string;
+  // Extended markdown capable details (optional rich content)
+  detailsMarkdown?: string;
   players: number;
   completed: boolean;
   canceled: boolean;
@@ -13,4 +15,6 @@ export interface Tournament {
   href?: string;
   prizePool: number;
   winners?: import("./winner").Winner[];
+  // Tee selection for the tournament round
+  tee?: "Blue" | "White" | "Gold" | "Red" | "Mixed";
 }

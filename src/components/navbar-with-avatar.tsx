@@ -25,21 +25,37 @@ import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const menuItemsDesktop = {
   Home: [siteConfig.pages.home],
-  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
-  Membership: [siteConfig.pages.membership, siteConfig.pages.directory],
+  Tournaments: [
+    siteConfig.pages.tournaments,
+    siteConfig.pages.moneyList,
+    siteConfig.pages.pastchampions,
+  ],
+  Membership: [
+    siteConfig.pages.membership,
+    siteConfig.pages.directory,
+    siteConfig.pages.board,
+  ],
   "Policies/Rules": [siteConfig.pages.policies],
   "Contact Us": [siteConfig.pages.contact],
 };
 
 const menuItemsMobile = {
   Home: [siteConfig.pages.home],
-  Tournaments: [siteConfig.pages.tournaments, siteConfig.pages.pastchampions],
-  Membership: [siteConfig.pages.membership, siteConfig.pages.directory],
+  Tournaments: [
+    siteConfig.pages.tournaments,
+    siteConfig.pages.moneyList,
+    siteConfig.pages.pastchampions,
+  ],
+  Membership: [
+    siteConfig.pages.membership,
+    siteConfig.pages.directory,
+    siteConfig.pages.board,
+  ],
   "Policies/Rules": [siteConfig.pages.policies],
   "Contact Us": [siteConfig.pages.contact],
 };
 
-export const MainNavbarWithAvatar = (_props: NavbarProps) => {
+export const MainNavbar = (_props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userLoggedIn, loading } = useAuth(); // Get auth state
   const navigate = useNavigate();
@@ -148,11 +164,13 @@ dark:bg-default-100/50"
         </NavbarMenu>
 
         <NavbarBrand>
-          <Link href={siteConfig.pages.home.link} aria-label="Home">
-            <div className="rounded-full bg-foreground text-background">
-              <div>
-                <RGCLogo />
-              </div>
+          <Link
+            href={siteConfig.pages.home.link}
+            aria-label="Home"
+            className="flex items-center gap-2"
+          >
+            <div>
+              <RGCLogo />
             </div>
           </Link>
         </NavbarBrand>
@@ -195,7 +213,7 @@ dark:bg-default-100/50"
       {/* Right Content */}
 
       {/* Profile Dropdown */}
-      <NavbarContent justify="end">
+      <NavbarContent justify="end" className="pr-3 sm:pr-5">
         {loading ? (
           // Optional: Show a loading spinner or placeholder
           <div className="w-8 h-8" /> // Simple placeholder
