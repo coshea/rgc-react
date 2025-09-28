@@ -338,7 +338,7 @@ const TournamentDetailPage: React.FC = () => {
                 Players: {tournament.players}
               </span>
               <TeeBadge
-                tee={tournament.tee as any}
+                tee={tournament.tee}
                 size="xs"
                 ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
               />
