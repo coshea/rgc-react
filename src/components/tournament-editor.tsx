@@ -62,9 +62,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [registrationOpen, setRegistrationOpen] = React.useState(
     !!seed.registrationOpen
   );
-  const [tee, setTee] = React.useState<
-    "Blue" | "White" | "Gold" | "Red" | "Mixed"
-  >(((seed.tee as any) || "Mixed") as any);
+  type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
+  const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
+  function isTeeColor(value: any): value is TeeColor {
+    return TEE_COLORS.includes(value);
+  }
+  const [tee, setTee] = React.useState<TeeColor>(
+    isTeeColor(seed.tee) ? seed.tee : "Mixed"
+  );
   const [date, setDate] = React.useState<DateValue | null>(
     seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null
   );
