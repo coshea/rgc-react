@@ -85,7 +85,7 @@ export async function getActiveMemberIdsForYear(
   const snap = await getDocs(q);
   const ids = new Set<string>();
   snap.forEach((d) => {
-    const data = d.data() as any;
+    const data = d.data() as MembershipPayment;
     if (data.userId) ids.add(data.userId);
   });
   return ids;
