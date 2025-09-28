@@ -153,7 +153,7 @@ export async function updateMembershipPayment(params: {
             ? null
             : updates.method,
         recordedBy: auth.currentUser?.uid ?? null,
-      } as any;
+      };
       await setDoc(ref, payload);
       // denormalize membershipType always; lastPaidYear only when confirmed
       await setDoc(
