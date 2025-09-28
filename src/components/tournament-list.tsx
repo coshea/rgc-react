@@ -180,7 +180,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   {formatDate(tournament.date)}
                 </span>
                 <TeeBadge
-                  tee={tournament.tee as any}
+                  tee={tournament.tee}
                   size="xs"
                   ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
                 />
