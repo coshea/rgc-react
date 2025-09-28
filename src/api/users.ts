@@ -28,11 +28,33 @@ export type UserProfilePayload = {
   // board governance fields
   boardMember?: boolean; // true if on Board of Governors
   role?: string; // e.g. 'president', 'secretary', 'treasurer'
+  // membership tracking (denormalized convenience fields)
+  membershipType?: "full" | "handicap";
+  lastPaidYear?: number; // highest year for which member has confirmed payment
 };
 
 export type User = UserProfilePayload & {
   id: string;
 };
+
+/** Create a new user document (admin action). */
+export async function createUser(data: UserProfilePayload) {
+  const first = (data.firstName || "").trim();
+  const last = (data.lastName || "").trim();
+  const payload: Record<string, any> = {
+    firstName: first || undefined,
+    lastName: last || undefined,
+    email: data.email || "",
+    phone: data.phone || "",
+    ghinNumber: data.ghinNumber || "",
+    photoURL: data.photoURL ?? null,
+    boardMember: !!data.boardMember,
+    role: data.boardMember ? data.role || null : null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  return await addDoc(collection(db, "users"), payload);
+}
 
 /**
  * Utility: derive a normalized display name from first + last names.

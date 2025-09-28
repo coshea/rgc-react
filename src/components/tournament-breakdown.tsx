@@ -314,12 +314,7 @@ export function TournamentBreakdown({ year }: Props) {
                       // Aggregate names for multi-player teams per position
                       const resolvedNames = g.players.map((p) => {
                         const user = usersMap.get(p.userId);
-                        return (
-                          (user &&
-                            ((user as any).displayName ||
-                              (user as any).name)) ||
-                          p.name
-                        );
+                        return user?.displayName || user?.email || p.name;
                       });
                       const nameList = resolvedNames.join(" • ");
                       let nameContent: ReactNode;
@@ -357,10 +352,7 @@ export function TournamentBreakdown({ year }: Props) {
                             {g.players.slice(0, 4).map((p) => {
                               const user = usersMap.get(p.userId);
                               const resolvedName =
-                                (user &&
-                                  ((user as any).displayName ||
-                                    (user as any).name)) ||
-                                p.name;
+                                user?.displayName || user?.email || p.name;
                               return (
                                 <UserAvatar
                                   key={p.userId}
@@ -459,10 +451,7 @@ export function TournamentBreakdown({ year }: Props) {
                           {(item: ResultRow) => {
                             const user = usersMap.get(item.userId);
                             const resolvedName =
-                              (user &&
-                                ((user as any).displayName ||
-                                  (user as any).name)) ||
-                              item.name;
+                              user?.displayName || user?.email || item.name;
                             return (
                               <TableRow key={item.id}>
                                 <TableCell>

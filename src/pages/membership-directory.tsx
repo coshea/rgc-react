@@ -1,12 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { addToast } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
-import { db } from "@/config/firebase";
-import { collection, onSnapshot, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
-import { updateUser, deleteUser, bulkCreateUsers } from "@/api/users";
+import {
+  updateUser,
+  deleteUser,
+  bulkCreateUsers,
+  createUser,
+} from "@/api/users";
 import type { UserProfilePayload } from "@/api/users";
 import { parseUsersCsv } from "@/services/csv";
 import { formatPhone } from "@/utils/phone";
@@ -18,14 +21,20 @@ import {
   DeleteMemberModal,
   CsvPreviewModal,
 } from "@/components/membership"; // barrel export
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
+import { useMembers } from "@/hooks/useMembers";
+import { Switch } from "@heroui/react";
 // preflightCsv imported via barrel if needed later
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
-  const [members, setMembers] = useState<User[]>([]);
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user); // local check for early redirect logic unchanged
+  const currentYear = new Date().getFullYear();
+  const membersHook = useMembers(currentYear);
+  const members = membersHook.isAdmin
+    ? membersHook.allMembers
+    : membersHook.members;
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -48,6 +57,8 @@ export default function MembershipDirectoryPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // search filter
   const [filter, setFilter] = useState("");
+  const [activeOnly, setActiveOnly] = useState(false);
+  const activeSet = membersHook.activeSet;
 
   // Phone helpers moved to utils/phone.ts
 
@@ -57,41 +68,6 @@ export default function MembershipDirectoryPage() {
       navigate(`/login?next=${next}`);
       return;
     }
-
-    let unsubUsers: (() => void) | undefined;
-
-    // subscribe to users collection only when authenticated (avoid permission-denied)
-    if (user && userLoggedIn) {
-      const usersCol = collection(db, "users");
-      unsubUsers = onSnapshot(
-        usersCol,
-        (snap) => {
-          const arr: User[] = [];
-          snap.forEach((d) => {
-            arr.push({ id: d.id, ...(d.data() as any) } as User);
-          });
-          // ensure alphabetical order (displayName fallback to email)
-          arr.sort((a, b) => {
-            const A = (a.displayName || a.email || "").toLowerCase();
-            const B = (b.displayName || b.email || "").toLowerCase();
-            if (A < B) return -1;
-            if (A > B) return 1;
-            return 0;
-          });
-          setMembers(arr);
-        },
-        (err) => {
-          console.error("Users snapshot error:", err);
-          if (err && (err as any).code === "permission-denied") {
-            setMembers([]);
-          }
-        }
-      );
-    }
-
-    return () => {
-      unsubUsers?.();
-    };
   }, [user, userLoggedIn, loading, navigate]);
 
   // ----- Helper Actions -----
@@ -156,7 +132,9 @@ export default function MembershipDirectoryPage() {
     if (csvRows.length === 0) return;
     // Enhanced Preflight Validation
     // 1. Sanitize & trim all relevant string fields
-    const sanitized = csvRows.map((r, idx) => {
+    const sanitized: Array<
+      UserProfilePayload & { __index: number; email: string }
+    > = csvRows.map((r, idx) => {
       const firstName = (r.firstName || "").trim();
       const lastName = (r.lastName || "").trim();
       const email = (r.email || "").trim();
@@ -171,18 +149,18 @@ export default function MembershipDirectoryPage() {
         ghinNumber,
         // Board fields will be stripped later but preserve for diagnostics initially
         __index: idx,
-      } as any;
+      } as UserProfilePayload & { __index: number; email: string };
     });
 
     // 2. Disallow boardMember/role assignments; gather diagnostics instead of immediate abort
     const boardIntendedRows = sanitized.filter(
-      (r: any) =>
+      (r) =>
         r.boardMember === true || (typeof r.role === "string" && r.role.trim())
     );
     if (boardIntendedRows.length) {
       console.warn(
         "[Directory] Stripping boardMember/role fields from bulk CSV rows",
-        boardIntendedRows.slice(0, 5).map((r: any) => ({
+        boardIntendedRows.slice(0, 5).map((r) => ({
           row: r.__index + 1,
           boardMember: r.boardMember,
           role: r.role,
@@ -203,7 +181,7 @@ export default function MembershipDirectoryPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // simple, sufficient client-side
     const invalidEmailRows: { row: number; email: string; reason: string }[] =
       [];
-    sanitized.forEach((r: any) => {
+    sanitized.forEach((r) => {
       if (!r.email) {
         invalidEmailRows.push({
           row: r.__index + 1,
@@ -233,7 +211,7 @@ export default function MembershipDirectoryPage() {
 
     // 4. Duplicate email detection (case-insensitive)
     const emailMap = new Map<string, number[]>();
-    sanitized.forEach((r: any) => {
+    sanitized.forEach((r) => {
       const key = r.email.toLowerCase();
       if (!emailMap.has(key)) emailMap.set(key, []);
       emailMap.get(key)!.push(r.__index + 1);
@@ -255,7 +233,7 @@ export default function MembershipDirectoryPage() {
     }
 
     // 5. Prepare final rows for bulk create (strip preflight artifacts)
-    const finalRows = sanitized.map((r: any) => {
+    const finalRows: UserProfilePayload[] = sanitized.map((r) => {
       const { __index, boardMember, role, ...rest } = r; // board fields intentionally omitted
       return rest;
     });
@@ -311,11 +289,13 @@ export default function MembershipDirectoryPage() {
       if (e instanceof Error && e.message) baseMessage = e.message;
       // Summarize first few distinct reasons if details present
       let detailSummary = "";
-      const anyErr: any = e as any;
+      const anyErr = e as unknown as {
+        details?: { errors?: Array<{ reason?: string }> };
+      };
       if (anyErr?.details?.errors && Array.isArray(anyErr.details.errors)) {
         const reasons: Record<string, number> = {};
-        anyErr.details.errors.forEach((er: any) => {
-          const r = String(er.reason || "unknown");
+        anyErr.details.errors.forEach((er) => {
+          const r = String(er?.reason || "unknown");
           reasons[r] = (reasons[r] || 0) + 1;
         });
         const top = Object.entries(reasons)
@@ -377,7 +357,7 @@ export default function MembershipDirectoryPage() {
         });
         console.log("[Directory] User updated", { id: editing.id, ...form });
       } else {
-        await addDoc(collection(db, "users"), {
+        await createUser({
           firstName: (form.firstName || "").trim() || undefined,
           lastName: (form.lastName || "").trim() || undefined,
           email: form.email || "",
@@ -439,7 +419,10 @@ export default function MembershipDirectoryPage() {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div
+      className="px-4 py-4 max-w-4xl mx-auto w-full overflow-x-hidden"
+      data-testid="membership-directory-root"
+    >
       <DirectoryHeader
         isAdmin={isAdmin}
         onAdd={openAdd}
@@ -453,10 +436,29 @@ export default function MembershipDirectoryPage() {
         total={members.length}
         isFiltered={!!filter}
       />
+      {isAdmin && (
+        <div className="flex items-center justify-end mb-2">
+          <Switch
+            size="sm"
+            isSelected={activeOnly}
+            onValueChange={setActiveOnly}
+            aria-label="Toggle active members only"
+          >
+            Active {currentYear} Only
+          </Switch>
+        </div>
+      )}
       <MembersList
-        members={members}
+        members={
+          isAdmin && activeOnly
+            ? members.filter((m) => activeSet.has(m.id))
+            : members
+        }
         filter={filter}
         isAdmin={isAdmin}
+        activeSet={activeSet}
+        activeOnly={activeOnly}
+        activeYear={currentYear}
         onEdit={openEdit}
         onDelete={requestDelete}
       />
@@ -464,9 +466,10 @@ export default function MembershipDirectoryPage() {
         open={open}
         editing={editing}
         form={form}
-        onChange={setForm as any}
+        onChange={(next) => setForm(next as Record<string, any>)}
         onClose={() => setOpen(false)}
         onSave={save}
+        isAdmin={isAdmin}
       />
       <DeleteMemberModal
         user={confirmDelete}

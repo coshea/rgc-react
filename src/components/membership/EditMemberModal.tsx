@@ -1,4 +1,10 @@
-import { Button, Input } from "@heroui/react";
+import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { useEffect, useState } from "react";
+import {
+  getMembershipPayment,
+  updateMembershipPayment,
+} from "@/api/membership";
+import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
 import type { User } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
@@ -9,7 +15,8 @@ interface EditMemberModalProps {
   form: Record<string, any>;
   onChange: (next: Record<string, any>) => void;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => void; // existing user save callback (name/board fields)
+  isAdmin?: boolean; // gate membership editing
 }
 
 export function EditMemberModal({
@@ -19,7 +26,90 @@ export function EditMemberModal({
   onChange,
   onClose,
   onSave,
+  isAdmin,
 }: EditMemberModalProps) {
+  const currentYear = new Date().getFullYear();
+  const qc = useQueryClient();
+  const [loadingPayment, setLoadingPayment] = useState(false);
+  const [paymentDirty, setPaymentDirty] = useState(false);
+  const [payment, setPayment] = useState<{
+    membershipType?: string;
+    amount?: string;
+    method?: string;
+    status?: string;
+    markPaid?: boolean;
+  }>({});
+
+  // Load existing payment record when modal opens for an existing user
+  useEffect(() => {
+    if (open && editing && isAdmin) {
+      setLoadingPayment(true);
+      getMembershipPayment(editing.id, currentYear)
+        .then((p) => {
+          if (p) {
+            setPayment({
+              membershipType: p.membershipType,
+              amount: p.amount != null ? String(p.amount) : "",
+              method: p.method || "",
+              status: p.status,
+              markPaid: p.status === "confirmed",
+            });
+          } else {
+            setPayment({
+              membershipType: editing.membershipType || "",
+              markPaid: false,
+            });
+          }
+        })
+        .finally(() => setLoadingPayment(false));
+    } else if (!open) {
+      setPaymentDirty(false);
+      setPayment({});
+    }
+  }, [open, editing, isAdmin, currentYear]);
+
+  async function handleSave() {
+    // First run existing onSave for user profile
+    await onSave();
+    if (!isAdmin || !editing || !paymentDirty) {
+      return; // Nothing to do for membership payment
+    }
+
+    try {
+      const membershipType = (payment.membershipType || "").trim();
+      if (membershipType !== "full" && membershipType !== "handicap") {
+        // Don't proceed if membership type is invalid or missing.
+        // A toast message could be added here for better UX.
+        return;
+      }
+
+      const updates: Partial<
+        Pick<
+          import("@/api/membership").MembershipPayment,
+          "amount" | "method" | "membershipType" | "status"
+        >
+      > = {
+        membershipType,
+        amount: payment.amount ? Number(payment.amount) : undefined,
+        method: payment.method || undefined,
+        status: payment.markPaid ? "confirmed" : "pending",
+      };
+
+      const result = await updateMembershipPayment({
+        userId: editing.id,
+        year: currentYear,
+        updates,
+      });
+
+      // Invalidate active members so UI reflects new status immediately
+      if (result?.confirmed || result?.created) {
+        qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
+      }
+    } catch (e) {
+      console.error("[EditMemberModal] membership save error", e);
+    }
+  }
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -99,22 +189,23 @@ export function EditMemberModal({
                       <label className="text-xs font-medium text-default-600">
                         Role <span className="text-danger">*</span>
                       </label>
-                      <select
-                        className="border rounded-md px-3 py-2 bg-default-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        value={form.role || ""}
-                        onChange={(e) =>
-                          onChange({ ...form, role: e.target.value })
+                      <Select
+                        size="sm"
+                        aria-label="Board Role"
+                        placeholder="Select a role"
+                        selectedKeys={
+                          form.role ? new Set([form.role]) : new Set()
                         }
+                        onSelectionChange={(keys) => {
+                          const v = Array.from(keys as Set<string>)[0];
+                          onChange({ ...form, role: v });
+                        }}
+                        className="max-w-full"
                       >
-                        <option value="" disabled>
-                          Select a role
-                        </option>
                         {options.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
+                          <SelectItem key={r}>{r}</SelectItem>
                         ))}
-                      </select>
+                      </Select>
                       {!form.role?.trim() && (
                         <p className="text-[11px] text-danger mt-1">
                           Required for board members
@@ -139,11 +230,85 @@ export function EditMemberModal({
             )}
           </div>
         </div>
+        {isAdmin && (
+          <div className="mt-6 pt-4 border-t border-default-200 space-y-3 text-sm">
+            <h4 className="text-sm font-medium">
+              Membership Payment ({currentYear})
+            </h4>
+            {loadingPayment ? (
+              <p className="text-xs text-default-500">Loading payment…</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      className="accent-primary h-4 w-4"
+                      checked={!!payment.markPaid}
+                      onChange={(e) => {
+                        setPayment((p) => ({
+                          ...p,
+                          markPaid: e.target.checked,
+                        }));
+                        setPaymentDirty(true);
+                      }}
+                    />
+                    <span>Paid / Confirmed</span>
+                  </label>
+                  <Select
+                    size="sm"
+                    aria-label="Membership Type"
+                    placeholder="Type"
+                    selectedKeys={
+                      payment.membershipType
+                        ? new Set([payment.membershipType])
+                        : new Set()
+                    }
+                    onSelectionChange={(keys) => {
+                      const v = Array.from(keys as Set<string>)[0];
+                      setPayment((p) => ({ ...p, membershipType: v }));
+                      setPaymentDirty(true);
+                    }}
+                    className="min-w-[130px]"
+                  >
+                    <SelectItem key="full">Full</SelectItem>
+                    <SelectItem key="handicap">Handicap</SelectItem>
+                  </Select>
+                  <Input
+                    size="sm"
+                    placeholder="Amount"
+                    value={payment.amount || ""}
+                    className="max-w-[100px]"
+                    onChange={(e: any) => {
+                      setPayment((p) => ({ ...p, amount: e.target.value }));
+                      setPaymentDirty(true);
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    size="sm"
+                    placeholder="Method (cash / check / stripe / comp)"
+                    value={payment.method || ""}
+                    onChange={(e: any) => {
+                      setPayment((p) => ({ ...p, method: e.target.value }));
+                      setPaymentDirty(true);
+                    }}
+                  />
+                </div>
+                <p className="text-[11px] text-default-500 leading-snug">
+                  Marking Paid will create/update a membership payment record
+                  for {currentYear}. Leaving it unchecked keeps status pending.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="flat" onPress={onClose}>
             Cancel
           </Button>
-          <Button onPress={onSave} color="secondary">
+          <Button onPress={handleSave} color="secondary">
             Save
           </Button>
         </div>

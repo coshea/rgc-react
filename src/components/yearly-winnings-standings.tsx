@@ -69,16 +69,14 @@ export function YearlyWinningsStandings({ year }: Props) {
               {topThree[1] &&
                 (() => {
                   const u = usersMap.get(topThree[1].userId);
-                  const display =
-                    (u && ((u as any).displayName || (u as any).name)) ||
-                    topThree[1].displayName;
+                  const display = u?.displayName || topThree[1].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[1].userId}
                         user={u}
-                        name={display}
+                        name={u ? undefined : display}
                         className="shadow-sm mb-1"
                       />
                       {(() => {
@@ -108,16 +106,14 @@ export function YearlyWinningsStandings({ year }: Props) {
               {topThree[0] &&
                 (() => {
                   const u = usersMap.get(topThree[0].userId);
-                  const display =
-                    (u && ((u as any).displayName || (u as any).name)) ||
-                    topThree[0].displayName;
+                  const display = u?.displayName || topThree[0].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="md"
                         userId={topThree[0].userId}
                         user={u}
-                        name={display}
+                        name={u ? undefined : display}
                         className="shadow-md ring-2 ring-warning mb-1"
                       />
                       {(() => {
@@ -147,16 +143,14 @@ export function YearlyWinningsStandings({ year }: Props) {
               {topThree[2] &&
                 (() => {
                   const u = usersMap.get(topThree[2].userId);
-                  const display =
-                    (u && ((u as any).displayName || (u as any).name)) ||
-                    topThree[2].displayName;
+                  const display = u?.displayName || topThree[2].displayName;
                   return (
                     <>
                       <UserAvatar
                         size="sm"
                         userId={topThree[2].userId}
                         user={u}
-                        name={display}
+                        name={u ? undefined : display}
                         className="shadow-sm mb-1"
                       />
                       {(() => {

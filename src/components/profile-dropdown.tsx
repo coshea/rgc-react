@@ -16,7 +16,7 @@ import { siteConfig } from "@/config/site";
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth(); // Get user object and logout function
   const { userProfile } = useUserProfile();
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user);
 
   return (
     <>

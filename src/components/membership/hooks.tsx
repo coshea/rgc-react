@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "@/config/firebase";
-import { doc, onSnapshot, collection } from "firebase/firestore";
+import { onAdminDoc, onUsersCollection } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
 
 // Doc-only admin hook (ignores custom claims intentionally)
@@ -13,8 +12,7 @@ export function useDocAdminFlag(user: { uid?: string } | null) {
       setLoadingAdmin(false);
       return;
     }
-    const adminRef = doc(db, "admin", user.uid);
-    const unsub = onSnapshot(adminRef, (snap) => {
+    const unsub = onAdminDoc(user.uid, (snap: any) => {
       const d = snap.data();
       const flag =
         d?.isAdmin === true || d?.admin === true || d?.admin === "true";
@@ -38,12 +36,10 @@ export function useMembersSubscription(enabled: boolean) {
       setLoadingMembers(false);
       return;
     }
-    const usersCol = collection(db, "users");
-    const unsub = onSnapshot(
-      usersCol,
-      (snap) => {
+    const unsub = onUsersCollection(
+      (snap: any) => {
         const arr: DirectoryUser[] = [];
-        snap.forEach((d) =>
+        snap.forEach((d: any) =>
           arr.push({ id: d.id, ...(d.data() as any) } as DirectoryUser)
         );
         arr.sort((a, b) => {

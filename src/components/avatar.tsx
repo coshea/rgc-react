@@ -1,12 +1,20 @@
 import React from "react";
 import { Avatar } from "@heroui/react";
 import clsx from "clsx";
+// We accept a subset of the app's User fields without re-exporting the full type here
+type AvatarUserShape = Partial<{
+  id: string;
+  displayName: string;
+  email: string;
+  photoURL: string | null;
+  profileURL: string | null;
+}>;
 
 export interface UserAvatarProps {
   userId?: string; // used for generated image seed
   name?: string; // display name for initials fallback
   src?: string; // explicit image URL if available
-  user?: any; // full user object (expects displayName/profileURL/photoURL)
+  user?: AvatarUserShape; // full user object (expects displayName/profileURL/photoURL)
   size?: "sm" | "md" | "lg";
   className?: string;
   squared?: boolean;
@@ -50,16 +58,11 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
     void userId;
 
     // Resolve display name priority: explicit name prop > user.displayName > user.name > user.email
-    const resolvedName =
-      name ||
-      (user && (user.displayName || (user as any).name || (user as any).email));
+    const resolvedName = name || user?.displayName || user?.email;
 
     // Resolve image source precedence: explicit src prop > user.profileURL > user.photoURL
     const resolvedSrc =
-      src ||
-      (user &&
-        ((user as any).profileURL || (user as any).photoURL || undefined)) ||
-      undefined;
+      src || (user?.profileURL ?? undefined) || (user?.photoURL ?? undefined);
 
     // Compose click handler: respect both provided onClick and onPress (mapping onPress -> onClick)
     const handleClick: React.MouseEventHandler<HTMLElement> | undefined =

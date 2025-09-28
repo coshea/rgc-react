@@ -80,3 +80,11 @@ Prefer: read existing analogous file → replicate pattern → minimal diff. If 
 ---
 
 Last generated: 2025-09-22
+
+## 12. Type-safety guardrail: user fields (no any-casts)
+
+- Do NOT use `(x as any)` to access user fields such as `displayName`, `name`, or `membershipType`.
+- Always use the `User` type from `src/api/users.ts` and prefer optional chaining with explicit fallbacks, e.g. `u?.displayName || fallbackFromRow`.
+- For avatars/names in UI, rely on the `UserAvatar` contract: pass `user` when available; only pass `name` when `user` is not provided or you need to override display text. Avoid repeating manual `(profileURL || photoURL)` chains.
+- If a conditional check is required (e.g., membership gating), write a small type guard (e.g., `function isFullMember(u: User | undefined): u is User { return !!u && u.membershipType === 'full'; }`).
+- When adding new code, reject PRs that include `(u as any)` patterns for user data access; refactor to the above approach instead.

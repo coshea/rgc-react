@@ -59,18 +59,14 @@ const BoardOfGovernorsPage: React.FC = () => {
                 <CardHeader className="pb-0 flex flex-col items-center text-center">
                   <div className="relative mb-3">
                     <UserAvatar
-                      user={member as any}
+                      user={member}
                       className={`w-20 h-20 text-large ${isPresident ? "border-2 border-warning" : ""}`}
                       size="lg"
-                      alt={
-                        member.displayName ||
-                        (member as any).name ||
-                        member.email
-                      }
+                      alt={member.displayName || member.email}
                     />
                   </div>
                   <h3 className="font-semibold text-base">
-                    {member.displayName || (member as any).name || member.email}
+                    {member.displayName || member.email}
                   </h3>
                   <div className="mt-2">
                     {meta ? (
@@ -122,9 +118,9 @@ const BoardOfGovernorsPage: React.FC = () => {
             Club President
           </h2>
           <p className="text-foreground-600 text-sm md:text-base leading-relaxed mb-4">
-            {president.displayName || (president as any).name} leads the board
-            in supporting member experience, fairness in competition, and
-            long-term club success.
+            {president.displayName || president.email} leads the board in
+            supporting member experience, fairness in competition, and long-term
+            club success.
           </p>
         </div>
       )}

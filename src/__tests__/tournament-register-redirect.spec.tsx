@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from "vitest";
-import * as FS from "firebase/firestore";
 import { render, screen, act, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,29 +7,38 @@ import "@testing-library/jest-dom";
 
 // Mocks
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user-1" } }),
+  useAuth: () => ({ user: { uid: "u1", membershipType: "full" } }),
 }));
 
 vi.mock("@/hooks/useUsers", () => ({
   useUsers: () => ({
     users: [
-      { id: "u1", displayName: "Alpha" },
-      { id: "u2", displayName: "Beta" },
+      { id: "u1", displayName: "Alpha", membershipType: "full" },
+      { id: "u2", displayName: "Beta", membershipType: "full" },
     ],
   }),
 }));
 
-vi.mock("firebase/firestore", () => {
+const upsertSpy = vi.fn(async () => {});
+vi.mock("@/api/tournaments", async (importOriginal) => {
+  const original = await importOriginal();
   return {
-    getDoc: vi.fn(),
-    addDoc: vi.fn(),
-    setDoc: vi.fn(),
-    getDocs: vi.fn(),
-    where: vi.fn(),
-    query: vi.fn(),
-    collection: vi.fn(),
-    doc: vi.fn(),
-    serverTimestamp: vi.fn(() => ({ _ts: true })),
+    ...(original as any),
+    fetchTournament: vi.fn(async () => ({
+      firestoreId: "abc123",
+      title: "Fall Classic",
+      date: new Date(),
+      description: "Desc",
+      players: 2,
+      completed: false,
+      canceled: false,
+      registrationOpen: true,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    })),
+    fetchUserRegistration: vi.fn(async () => null),
+    upsertRegistration: (...args: any[]) => upsertSpy.apply(null, args as any),
   };
 });
 
@@ -62,29 +70,9 @@ describe("TournamentRegister redirect", () => {
       );
     };
 
-    // Mock implementation details
-    const tournamentData = {
-      title: "Fall Classic",
-      date: new Date(),
-      description: "Desc",
-      players: 2,
-      completed: false,
-      canceled: false,
-      registrationOpen: true,
-      winners: [],
-      prizePool: 0,
-    };
+    // Mock implementation details handled by API vi.mock above
 
-    // getDoc returns a tournament snapshot
-    (FS.getDoc as any).mockResolvedValueOnce({
-      exists: () => true,
-      id: "abc123",
-      data: () => tournamentData,
-    });
-    // No pre-existing registration (stable for any calls)
-    (FS.getDocs as any).mockResolvedValue({ empty: true, docs: [] });
-
-    (FS.addDoc as any).mockResolvedValueOnce({ id: "newReg" });
+    // API mocks already set via vi.mock above
 
     const qc = new QueryClient();
     render(
@@ -96,7 +84,7 @@ describe("TournamentRegister redirect", () => {
     );
 
     // Wait for tournament title to render
-    await screen.findByText(/Register for Fall Classic/i);
+    await screen.findByText(/Register for\s+Fall Classic/i);
 
     // Select first teammate (Team Leader / You select)
     // The select is a controlled HeroUI Select; simplest is to simulate updating the state by selecting option text.

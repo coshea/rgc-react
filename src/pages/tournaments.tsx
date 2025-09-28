@@ -21,15 +21,7 @@ import {
   RadioGroup,
   Radio,
 } from "@heroui/react";
-import { db } from "@/config/firebase";
-import {
-  collection,
-  query,
-  orderBy,
-  doc,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
+// tournaments API is imported dynamically where used
 import { Icon } from "@iconify/react";
 
 interface TournamentsProps {}
@@ -52,54 +44,47 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   >(undefined);
 
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user as any);
+  const { isAdmin } = useDocAdminFlag(user);
 
   React.useEffect(() => {
     setIsLoading(true);
-    const colRef = collection(db, "tournaments");
-    const qCol = query(colRef, orderBy("date", "asc"));
-    const unsub = onSnapshot(
-      qCol,
-      (snap) => {
-        const items: Tournament[] = snap.docs.map((d) => {
-          const data: any = d.data();
-          const dateField =
-            data.date && typeof data.date.toDate === "function"
-              ? data.date.toDate()
-              : data.date
-                ? new Date(data.date)
-                : new Date();
-          return {
-            firestoreId: d.id,
-            title: data.title,
-            date: dateField,
-            description: data.description,
-            detailsMarkdown: data.detailsMarkdown || data.details || "",
-            players: data.players,
-            completed: data.completed || false,
-            canceled: data.canceled || false,
-            registrationOpen: data.registrationOpen || false,
-            icon: data.icon,
-            href: data.href,
-            prizePool: data.prizePool || 0,
-            winners: data.winners || [],
-            tee: data.tee || "Mixed",
-          } as Tournament;
-        });
-        setTournaments(items);
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error("Error listening to tournaments:", error);
-        addToast({
-          title: "Error",
-          description: "Failed to load tournaments",
-          color: "danger",
-        });
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const api = await import("@/api/tournaments");
+        unsub = api.onAllTournaments(
+          (snap: any) => {
+            try {
+              const items: Tournament[] = snap.docs.map(
+                (d: any) => api.mapTournamentDoc(d) as Tournament
+              );
+              setTournaments(items);
+            } catch (err) {
+              console.error("Map tournaments failed", err);
+            } finally {
+              setIsLoading(false);
+            }
+          },
+          (error: any) => {
+            console.error("Error listening to tournaments:", error);
+            addToast({
+              title: "Error",
+              description: "Failed to load tournaments",
+              color: "danger",
+            });
+            setIsLoading(false);
+          }
+        );
+      } catch (e) {
+        console.error("Failed to init tournaments listener", e);
         setIsLoading(false);
       }
-    );
-    return () => unsub();
+    })();
+    return () => {
+      try {
+        unsub && unsub();
+      } catch (_) {}
+    };
   }, []);
 
   const handleCreateTournament = () => {
@@ -167,10 +152,11 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     try {
       if (typeof id === "string") {
         try {
-          await deleteDoc(doc(db, "tournaments", id));
+          const { deleteTournament } = await import("@/api/tournaments");
+          await deleteTournament(id);
         } catch (err) {
           console.warn(
-            "Failed to delete Firestore document, continuing to remove locally",
+            "Failed to delete Firestore tournament document, continuing to remove locally",
             err
           );
         }
@@ -228,7 +214,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             <RadioGroup
               label="How would you like to start?"
               value={createMethod}
-              onValueChange={(v) => setCreateMethod(v as any)}
+              onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
             >
               <Radio value="scratch">Create from scratch</Radio>
               <Radio value="copy">Copy from previous</Radio>

@@ -12,8 +12,8 @@ if (!(globalThis as any).CSS.escape) {
 }
 vi.mock("@/hooks/useUsers", () => {
   let usersState = [
-    { id: "u1", displayName: "Alpha" },
-    { id: "u2", displayName: "Bravo" },
+    { id: "u1", displayName: "Alpha", membershipType: "full" },
+    { id: "u2", displayName: "Bravo", membershipType: "full" },
   ];
   return {
     useUsers: () => ({ users: usersState }),
@@ -24,12 +24,12 @@ vi.mock("@/hooks/useUsers", () => {
   };
 });
 
-vi.mock("firebase/firestore", () => ({
-  doc: vi.fn(),
-  getDoc: vi.fn(async () => ({
-    exists: () => true,
-    id: "t1",
-    data: () => ({
+vi.mock("@/api/tournaments", async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...(original as any),
+    fetchTournament: vi.fn(async () => ({
+      firestoreId: "t1",
       title: "Test Tournament",
       date: new Date(),
       description: "desc",
@@ -39,21 +39,17 @@ vi.mock("firebase/firestore", () => ({
       registrationOpen: true,
       prizePool: 0,
       winners: [],
-    }),
-  })),
-  collection: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
-  addDoc: vi.fn(async () => ({})),
-  setDoc: vi.fn(async () => ({})),
-  deleteDoc: vi.fn(async () => ({})),
-  serverTimestamp: () => new Date(),
-}));
+      tee: "Mixed",
+    })),
+    fetchUserRegistration: vi.fn(async () => null),
+    upsertRegistration: vi.fn(async () => {}),
+    deleteRegistration: vi.fn(async () => {}),
+  };
+});
 
 vi.mock("@/config/firebase", () => ({ db: {} }));
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user-auth" } }),
+  useAuth: () => ({ user: { uid: "u1", membershipType: "full" } }),
 }));
 
 // Import after mocks so they take effect
@@ -85,7 +81,7 @@ describe("TournamentRegister teammate selection sanitization", () => {
     );
 
     // Wait for initial load
-    const heading = await screen.findByText(/Register for Test Tournament/i);
+    const heading = await screen.findByText(/Register for\s+Test Tournament/i);
     expect(heading).toBeTruthy();
 
     // Open the select (Team Leader / You)
@@ -100,7 +96,9 @@ describe("TournamentRegister teammate selection sanitization", () => {
 
     // Remove Bravo from users list, leaving only Alpha
     await act(async () => {
-      __setMockUsers([{ id: "u1", displayName: "Alpha" }]);
+      __setMockUsers([
+        { id: "u1", displayName: "Alpha", membershipType: "full" },
+      ]);
     });
 
     // Ensure no HeroUI missing key warnings were produced
