@@ -91,5 +91,11 @@ export const siteConfig = {
       link: "/verify-email",
       icon: "lucide:check-circle",
     },
+    findGame: {
+      title: "Find a Game",
+      description: "Find playing partners",
+      link: "/find-a-game",
+      icon: "lucide:handshake",
+    },
   },
 };

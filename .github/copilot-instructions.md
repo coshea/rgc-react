@@ -28,7 +28,7 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 - Firestore security rules still accept either the custom claim OR the admin doc for backward compatibility, but **no new UI code should rely on the token claim**. This keeps admin revocation instantaneous (doc delete) without requiring token refresh.
 - To check admin status in components:
   - Prefer the hook: `useDocAdminFlag(user)` (real‑time subscription, returns `{ isAdmin, loadingAdmin }`).
-  - For one‑off / guard style checks, use utilities in `@/utils/admin` (`isDocAdmin`, `requireDocAdmin`).
+  - For one‑off / guard style checks, use utilities in `@/utils/admin` (`isAdminUser`, `requireAdmin`).
 - `RequireAdmin` has been refactored to rely solely on the admin doc (no `userProfile.admin` fallback). It renders a transient "Checking access..." state while resolving, then redirects to `/` if not authorized.
 - When writing tests that need admin privileges, emit a snapshot for the path `admin/<testUid>` with `{ isAdmin: true }` before asserting on admin‑only UI.
 

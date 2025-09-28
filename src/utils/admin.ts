@@ -5,7 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
  * One-shot doc-based admin check. Ignores custom claims intentionally.
  * Returns true if /admin/{uid} has isAdmin/admin flag true (or string 'true').
  */
-export async function isDocAdmin(
+export async function isAdminUser(
   uid: string | undefined | null
 ): Promise<boolean> {
   if (!uid) return false;
@@ -19,10 +19,10 @@ export async function isDocAdmin(
 /**
  * Convenience helper that throws if not doc-admin; for guarding imperative flows.
  */
-export async function requireDocAdmin(
+export async function requireAdmin(
   uid: string | undefined | null
 ): Promise<void> {
-  const ok = await isDocAdmin(uid);
+  const ok = await isAdminUser(uid);
   if (!ok)
     throw new Error("Not authorized: admin doc not present or not flagged.");
 }
