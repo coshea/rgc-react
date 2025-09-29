@@ -20,6 +20,7 @@ import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
 import FindAGamePage from "@/pages/find-a-game";
+import RequireAuth from "@/components/require-auth";
 
 function App() {
   return (
@@ -61,7 +62,11 @@ function App() {
         path={siteConfig.pages.verifyEmail.link}
       />
       <Route
-        element={<FindAGamePage />}
+        element={
+          <RequireAuth>
+            <FindAGamePage />
+          </RequireAuth>
+        }
         path={siteConfig.pages.findGame.link}
       />
       <Route element={<NotFoundPage />} path="*" />

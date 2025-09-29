@@ -43,7 +43,6 @@ export async function createPartnerPost(input: CreatePostInput) {
   if (!input.date || !/\d{4}-\d{2}-\d{2}/.test(input.date))
     throw new Error("Invalid date format (expected YYYY-MM-DD)");
   if (input.type === "needPlayers") {
-    if (!input.time) throw new Error("Time is required for 'need players'");
     if (
       typeof input.openSpots !== "number" ||
       input.openSpots < 1 ||
@@ -164,11 +163,10 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   if (nextType === "needPlayers") {
     const t = updates.time ?? data.time;
     const s = updates.openSpots ?? data.openSpots;
-    if (!t) throw new Error("Time is required for 'need players'");
     const n = Number(s);
     if (!Number.isFinite(n) || n < 1 || n > 3)
       throw new Error("Open spots must be 1-3 for 'need players'");
-    nextTime = String(t);
+    nextTime = t ? String(t) : null;
     nextSpots = n;
   } else {
     nextTime = null;
