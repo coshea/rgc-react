@@ -25,7 +25,7 @@ Removed (do NOT reference unless intentionally added later): Axios, Styled-compo
 
 - Use HeroUI primitives (`Button`, `Input`, `Avatar`, etc.) and Tailwind utilities.
 - Keep components focused & small; extract sub-parts into `src/components/`.
-- Use `onPress` instead of `onClick` for HeroUI components.
+- Use `onPress` instead of `onClick` for HeroUI components. Do NOT attach `onPress` to native elements; if you need a pressable wrapper, use HeroUI `Button`/`Link` and place `onPress` there.
 - Normalize & format phone numbers consistently (see membership directory + `parseUsersCsv`).
 - Use dynamic imports for large Firestore interactions in admin/editor contexts (see `tournament-editor.tsx`).
 
@@ -54,7 +54,7 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 ## Core Rules
 
 1. Identity: When asked your name, answer exactly: `GitHub Copilot`.
-2. UI: HeroUI + Tailwind only; use `onPress`; no raw `div` wrappers when a semantic/component alternative exists.
+2. UI: HeroUI + Tailwind only; use `onPress` on HeroUI components; avoid raw `div` wrappers—prefer composition (`Dropdown` + `DropdownTrigger` + `Button`, `Tooltip` + `Button`).
 3. Modals: Use custom overlay pattern (see directory & tournament editor) for confirmations; never `window.confirm`.
 4. Membership Directory: Show avatar, name, email, phone only (unless explicitly extending). Use `User` model; admin-only edits persist to `users` collection.
 5. Admin Detection (must OR all): `users/{uid}.admin` OR `admin/{uid}.isAdmin` OR ID token claim `admin`.
@@ -105,11 +105,11 @@ HeroUI components (Button, Input variants, Menu items, etc.) expose a unified `o
 
 Current standard:
 
-1. Use `onPress` for all interactive HeroUI components (Buttons, Tabs, Dropdown items, custom pressable wrappers).
-2. Only use native `onClick` on plain semantic elements (`<a>`, `<div role="button">`) when a HeroUI component is not suitable.
+1. Use `onPress` for all interactive HeroUI components (Buttons, Tabs, Dropdown items, etc.).
+2. For native elements, use `onClick` only. If you need unified press behavior, wrap content in a HeroUI `Button` and attach `onPress` to it.
 3. Filter non-DOM props before spreading to native elements to avoid React unknown prop warnings (pattern implemented in `avatar.tsx`).
-4. Do not alias `onPress` to `onClick`; import and pass the correct prop explicitly for clarity.
-5. Tests asserting interaction should fire `fireEvent.click` or RTL `userEvent.click` on the element—HeroUI maps these to `onPress` internally.
+4. Do not pass `onPress` down to native DOM nodes. For `UserAvatar`, wrap in a HeroUI `Button` for clickability (e.g., dropdown trigger).
+5. Tests asserting interaction should use RTL `userEvent.click` or `fireEvent.click`; HeroUI will translate to `onPress` as needed.
 
 Rationale: Ensures consistent accessibility behavior (Enter/Space support), prevents duplicate event semantics, and removes noisy React warnings that obscure real issues.
 
@@ -121,4 +121,4 @@ Rationale: Ensures consistent accessibility behavior (Enter/Space support), prev
 
 ## Metadata
 
-Last updated: 2025-09-22 (added UserAvatar fallback contract section; previous 2025-09-17 update pruned outdated libs, removed verbose examples, added architecture snapshot & cross-link)
+Last updated: 2025-09-29 (aligned HeroUI v3 guidance: composition-first, onPress usage rules, UserAvatar wrapping guidance)

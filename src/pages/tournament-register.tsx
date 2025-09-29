@@ -5,10 +5,10 @@ import {
   CardBody,
   Button,
   Divider,
-  addToast,
   Select,
   SelectItem,
 } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for

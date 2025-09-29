@@ -88,7 +88,6 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
                         size="sm"
                         user={user}
                         name={user ? undefined : name}
-                        userId={uid}
                         className="ring-1 ring-background"
                       />
                     );

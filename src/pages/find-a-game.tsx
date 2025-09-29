@@ -7,7 +7,7 @@ import {
   Chip,
   Button,
 } from "@heroui/react";
-import { addToast } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import {
@@ -57,9 +57,10 @@ export default function FindAGamePage() {
       });
     })();
     return () => {
-      try {
-        unsub?.();
-      } catch (_) {}
+      // safely unsubscribe if listener was set
+      if (typeof unsub === "function") {
+        unsub();
+      }
     };
   }, []);
 

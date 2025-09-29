@@ -61,11 +61,8 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-// Silence toasts
-vi.mock("@heroui/react", async (orig) => {
-  const mod: any = await orig();
-  return { ...mod, addToast: vi.fn() };
-});
+// Silence toasts via provider
+vi.mock("@/providers/toast", () => ({ addToast: vi.fn() }));
 
 describe("TournamentRegister teammate options (full members only)", () => {
   it("shows only full members in teammate Select options", async () => {

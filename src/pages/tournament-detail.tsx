@@ -13,9 +13,9 @@ import {
   Chip,
   Button,
   Divider,
-  addToast,
   ScrollShadow,
 } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";

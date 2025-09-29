@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { addToast } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
@@ -234,7 +234,7 @@ export default function MembershipDirectoryPage() {
 
     // 5. Prepare final rows for bulk create (strip preflight artifacts)
     const finalRows: UserProfilePayload[] = sanitized.map((r) => {
-      const { __index, boardMember, role, ...rest } = r; // board fields intentionally omitted
+      const { __index, boardMember: _boardMember, role: _role, ...rest } = r; // board fields intentionally omitted
       return rest;
     });
 

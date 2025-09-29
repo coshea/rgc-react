@@ -359,7 +359,6 @@ export function TournamentBreakdown({ year }: Props) {
                                   size="sm"
                                   className="ring-1 ring-background"
                                   name={resolvedName}
-                                  userId={p.userId}
                                   user={user}
                                 />
                               );
@@ -466,7 +465,6 @@ export function TournamentBreakdown({ year }: Props) {
                                         size="sm"
                                         className="hidden sm:flex"
                                         name={resolvedName}
-                                        userId={item.userId}
                                         user={user}
                                       />
                                     )}

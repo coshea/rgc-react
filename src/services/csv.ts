@@ -42,6 +42,12 @@ function normalizePhone(value?: string) {
   return String(value).trim();
 }
 
+function parseBoolean(val?: string | undefined) {
+  if (val == null || val === "") return undefined;
+  const v = String(val).trim().toLowerCase();
+  return v === "true" || v === "1" || v === "yes" || v === "y" || v === "on";
+}
+
 export function parseUsersCsv(text: string): UserProfilePayload[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length === 0) return [];
@@ -61,13 +67,7 @@ export function parseUsersCsv(text: string): UserProfilePayload[] {
       row[header[j]] = (cols[j] || "").trim();
     }
 
-    function parseBoolean(val?: string | undefined) {
-      if (!val) return undefined;
-      const v = String(val).trim().toLowerCase();
-      return (
-        v === "true" || v === "1" || v === "yes" || v === "y" || v === "on"
-      );
-    }
+    // helper defined at top-level in file
 
     const firstName =
       row["firstname"] ||

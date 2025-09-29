@@ -1,5 +1,6 @@
 import { auth, db } from "@/config/firebase";
 import { isAdminUser } from "@/utils/admin";
+import type { FieldValue } from "firebase/firestore";
 
 /** YYYY-MM-DD string (local date) used for query bucketing */
 export type YMD = string;
@@ -15,6 +16,21 @@ export interface FindAGamePost {
   ownerId: string;
   createdAt: Date;
 }
+
+// Firestore document shape for writes
+type FindAGameDocWrite = {
+  type: PartnerPostType;
+  date: YMD;
+  ownerId: string;
+  createdAt: FieldValue;
+  time?: string | null;
+  openSpots?: number | null;
+};
+
+// Firestore update shape (exclude createdAt/ownerId)
+type FindAGameDocUpdate = Partial<
+  Omit<FindAGameDocWrite, "createdAt" | "ownerId">
+>;
 
 export interface CreatePostInput {
   type: PartnerPostType;
@@ -55,7 +71,7 @@ export async function createPartnerPost(input: CreatePostInput) {
     "firebase/firestore"
   );
   const col = collection(db, "findAGame");
-  const payload: any = {
+  const payload: FindAGameDocWrite = {
     type: input.type,
     date: input.date,
     ownerId: user.uid,
@@ -69,7 +85,8 @@ export async function createPartnerPost(input: CreatePostInput) {
 
   // Handle type-specific fields
   if (input.type === "needPlayers") {
-    payload.openSpots = Number(input.openSpots || 0);
+    // input.openSpots is validated above to be a number in [1,3]
+    payload.openSpots = input.openSpots!;
   }
   const ref = await addDoc(col, payload);
   return ref.id;
@@ -137,7 +154,7 @@ export async function onFuturePosts(
             typeof data.openSpots === "number" ? data.openSpots : undefined,
           ownerId: data.ownerId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
-        };
+        } satisfies FindAGamePost;
       });
       next(rows);
     },
@@ -165,7 +182,7 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   if (!nextDate || !/\d{4}-\d{2}-\d{2}/.test(nextDate))
     throw new Error("Invalid date format (expected YYYY-MM-DD)");
 
-  const updatePayload: any = {
+  const updatePayload: FindAGameDocUpdate = {
     type: nextType,
     date: nextDate,
   };
@@ -173,8 +190,7 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   if (nextType === "needPlayers") {
     const t = updates.time ?? data.time;
     const s = updates.openSpots ?? data.openSpots;
-    const n = Number(s);
-    if (!Number.isFinite(n) || n < 1 || n > 3)
+    if (typeof s !== "number" || s < 1 || s > 3)
       throw new Error("Open spots must be 1-3 for 'need players'");
 
     // Only include time if provided and not empty
@@ -184,7 +200,7 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
       // Explicitly remove time field if empty
       updatePayload.time = null;
     }
-    updatePayload.openSpots = n;
+    updatePayload.openSpots = s;
   } else {
     // For needGroup, remove time and openSpots fields
     updatePayload.time = null;

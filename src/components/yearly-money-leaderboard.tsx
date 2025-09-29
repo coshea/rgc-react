@@ -107,7 +107,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                     <>
                       <UserAvatar
                         size="sm"
-                        userId={topThree[1].userId}
                         name={u ? undefined : display}
                         user={u}
                         className="shadow-sm mb-1"
@@ -139,7 +138,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                     <>
                       <UserAvatar
                         size="md"
-                        userId={topThree[0].userId}
                         name={u ? undefined : display}
                         user={u}
                         className="shadow-md ring-2 ring-warning mb-1"
@@ -168,7 +166,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                     <>
                       <UserAvatar
                         size="sm"
-                        userId={topThree[2].userId}
                         name={u ? undefined : display}
                         user={u}
                         className="shadow-sm mb-1"
@@ -259,7 +256,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
                                   size="sm"
                                   className="hidden sm:flex"
                                   name={display}
-                                  userId={item.userId}
                                   user={user}
                                 />
                               )}
