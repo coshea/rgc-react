@@ -178,6 +178,7 @@ export default function FindAGamePage() {
             color="primary"
             isDisabled={!userLoggedIn}
             onPress={() => setCreateOpen(true)}
+            startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
           >
             New Post
           </Button>

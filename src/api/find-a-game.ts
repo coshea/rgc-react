@@ -58,12 +58,19 @@ export async function createPartnerPost(input: CreatePostInput) {
   const payload: any = {
     type: input.type,
     date: input.date,
-    time: input.time || null,
-    openSpots:
-      input.type === "needPlayers" ? Number(input.openSpots || 0) : null,
     ownerId: user.uid,
     createdAt: serverTimestamp(),
   };
+
+  // Only include time if provided and not empty
+  if (input.time && input.time.trim() !== "") {
+    payload.time = input.time.trim();
+  }
+
+  // Handle type-specific fields
+  if (input.type === "needPlayers") {
+    payload.openSpots = Number(input.openSpots || 0);
+  }
   const ref = await addDoc(col, payload);
   return ref.id;
 }
@@ -158,27 +165,33 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   if (!nextDate || !/\d{4}-\d{2}-\d{2}/.test(nextDate))
     throw new Error("Invalid date format (expected YYYY-MM-DD)");
 
-  let nextTime: string | null = null;
-  let nextSpots: number | null = null;
+  const updatePayload: any = {
+    type: nextType,
+    date: nextDate,
+  };
+
   if (nextType === "needPlayers") {
     const t = updates.time ?? data.time;
     const s = updates.openSpots ?? data.openSpots;
     const n = Number(s);
     if (!Number.isFinite(n) || n < 1 || n > 3)
       throw new Error("Open spots must be 1-3 for 'need players'");
-    nextTime = t ? String(t) : null;
-    nextSpots = n;
+
+    // Only include time if provided and not empty
+    if (t && String(t).trim() !== "") {
+      updatePayload.time = String(t).trim();
+    } else {
+      // Explicitly remove time field if empty
+      updatePayload.time = null;
+    }
+    updatePayload.openSpots = n;
   } else {
-    nextTime = null;
-    nextSpots = null;
+    // For needGroup, remove time and openSpots fields
+    updatePayload.time = null;
+    updatePayload.openSpots = null;
   }
 
-  await updateDoc(ref, {
-    type: nextType,
-    date: nextDate,
-    time: nextTime,
-    openSpots: nextSpots,
-  });
+  await updateDoc(ref, updatePayload);
 }
 
 export async function deletePartnerPost(id: string) {
