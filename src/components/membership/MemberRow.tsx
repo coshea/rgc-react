@@ -6,20 +6,11 @@ import { formatPhone } from "@/utils/phone";
 interface MemberRowProps {
   user: User;
   isAdmin: boolean;
-  isActive: boolean;
-  activeYear: number;
   onEdit: (u: User) => void;
   onDelete: (u: User) => void;
 }
 
-export function MemberRow({
-  user,
-  isAdmin,
-  isActive,
-  activeYear,
-  onEdit,
-  onDelete,
-}: MemberRowProps) {
+export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
   const baseClasses = "hidden md:grid items-center gap-4 p-4 overflow-x-hidden";
   const grid = isAdmin
     ? "grid-cols-[2fr_3fr_2fr_2fr_2fr]"
@@ -47,19 +38,18 @@ export function MemberRow({
       </div>
       {isAdmin && (
         <div className="text-sm text-default-500 whitespace-nowrap flex items-center gap-2">
-          {isActive ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-100 text-success-600 text-xs font-medium">
-              Active {activeYear}
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-default-100 text-default-500 text-xs font-medium">
-              Inactive
-            </span>
-          )}
-          {user.membershipType && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-100 text-primary-600 text-xs font-medium capitalize">
+          {user.membershipType ? (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                user.membershipType === "full"
+                  ? "bg-success-100 text-success-600"
+                  : "bg-primary-100 text-primary-600"
+              }`}
+            >
               {user.membershipType}
             </span>
+          ) : (
+            <span className="text-default-400 text-xs">—</span>
           )}
         </div>
       )}

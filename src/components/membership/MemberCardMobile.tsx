@@ -6,8 +6,6 @@ import { formatPhone } from "@/utils/phone";
 interface MemberCardMobileProps {
   user: User;
   isAdmin: boolean;
-  isActive: boolean;
-  activeYear: number;
   onEdit: (u: User) => void;
   onDelete: (u: User) => void;
 }
@@ -15,8 +13,6 @@ interface MemberCardMobileProps {
 export function MemberCardMobile({
   user,
   isAdmin,
-  isActive,
-  activeYear,
   onEdit,
   onDelete,
 }: MemberCardMobileProps) {
@@ -46,19 +42,18 @@ export function MemberCardMobile({
         <span>{user.phone ? formatPhone(user.phone) : "—"}</span>
       </div>
       <div className="mt-2 flex flex-wrap gap-2 text-xs">
-        {isActive ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-success-100 text-success-600 font-medium">
-            Active {activeYear}
-          </span>
-        ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-default-100 text-default-500 font-medium">
-            Inactive
-          </span>
-        )}
-        {user.membershipType && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-100 text-primary-600 font-medium capitalize">
+        {user.membershipType ? (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium capitalize ${
+              user.membershipType === "full"
+                ? "bg-success-100 text-success-600"
+                : "bg-primary-100 text-primary-600"
+            }`}
+          >
             {user.membershipType}
           </span>
+        ) : (
+          <span className="text-default-400">No membership type</span>
         )}
       </div>
       {isAdmin && (

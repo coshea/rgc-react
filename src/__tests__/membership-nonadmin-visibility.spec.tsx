@@ -28,7 +28,6 @@ function DirectoryFragmentNonAdmin() {
         isAdmin={isAdmin}
         activeSet={activeSet}
         activeOnly={activeOnly}
-        activeYear={currentYear}
         onEdit={() => {}}
         onDelete={() => {}}
       />
