@@ -8,7 +8,6 @@ interface MembersListProps {
   isAdmin: boolean;
   activeSet: Set<string>;
   activeOnly: boolean;
-  activeYear: number;
   onEdit: (u: User) => void;
   onDelete: (u: User) => void;
 }
@@ -19,7 +18,6 @@ export function MembersList({
   isAdmin,
   activeSet,
   activeOnly,
-  activeYear,
   onEdit,
   onDelete,
 }: MembersListProps) {
@@ -53,16 +51,12 @@ export function MembersList({
             <MemberRow
               user={m}
               isAdmin={isAdmin}
-              isActive={activeSet.has(m.id)}
-              activeYear={activeYear}
               onEdit={onEdit}
               onDelete={onDelete}
             />
             <MemberCardMobile
               user={m}
               isAdmin={isAdmin}
-              isActive={activeSet.has(m.id)}
-              activeYear={activeYear}
               onEdit={onEdit}
               onDelete={onDelete}
             />

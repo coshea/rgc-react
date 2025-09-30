@@ -74,7 +74,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                     <>
                       <UserAvatar
                         size="sm"
-                        userId={topThree[1].userId}
                         user={u}
                         name={u ? undefined : display}
                         className="shadow-sm mb-1"
@@ -111,7 +110,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                     <>
                       <UserAvatar
                         size="md"
-                        userId={topThree[0].userId}
                         user={u}
                         name={u ? undefined : display}
                         className="shadow-md ring-2 ring-warning mb-1"
@@ -148,7 +146,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                     <>
                       <UserAvatar
                         size="sm"
-                        userId={topThree[2].userId}
                         user={u}
                         name={u ? undefined : display}
                         className="shadow-sm mb-1"
@@ -309,7 +306,6 @@ export function YearlyWinningsStandings({ year }: Props) {
                                 return (
                                   <UserAvatar
                                     size="sm"
-                                    userId={row.userId}
                                     user={user}
                                     name={user ? undefined : row.displayName}
                                     className="flex-shrink-0"

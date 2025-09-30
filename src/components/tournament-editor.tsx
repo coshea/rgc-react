@@ -9,10 +9,10 @@ import {
   Checkbox,
   NumberInput,
   Divider,
-  addToast,
   Select,
   SelectItem,
 } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { auth } from "@/config/firebase";

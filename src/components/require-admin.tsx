@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { useEffect, useState } from "react";
-import { isDocAdmin } from "@/utils/admin";
+import { isAdminUser } from "@/utils/admin";
 
 export const RequireAdmin: React.FC<{ children: React.ReactElement }> = ({
   children,
@@ -15,7 +15,7 @@ export const RequireAdmin: React.FC<{ children: React.ReactElement }> = ({
     let active = true;
     setChecking(true);
     if (user?.uid) {
-      isDocAdmin(user.uid)
+      isAdminUser(user.uid)
         .then((flag) => {
           if (active) setDocAdmin(flag);
         })

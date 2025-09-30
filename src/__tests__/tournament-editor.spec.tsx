@@ -16,11 +16,13 @@ vi.mock("@/hooks/useUserProfile", () => ({
 
 // Capture toast calls
 const addToastMock = vi.fn();
+vi.mock("@/providers/toast", () => ({
+  addToast: (args: any) => addToastMock(args),
+}));
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {
     ...mod,
-    addToast: (args: any) => addToastMock(args),
     DatePicker: ({ label, value, onChange }: any) => (
       <div>
         <label>{label}</label>
@@ -36,8 +38,8 @@ vi.mock("@heroui/react", async (orig) => {
 });
 
 // Firestore mocks
-const addDocMock = vi.fn(async () => ({ id: "new123" }));
-const updateDocMock = vi.fn(async () => {});
+const addDocMock = vi.fn(async (..._args: any[]) => ({ id: "new123" }));
+const updateDocMock = vi.fn(async (..._args: any[]) => {});
 
 vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "user1" } },
@@ -46,8 +48,8 @@ vi.mock("@/config/firebase", () => ({
 
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn(() => ({})),
-  addDoc: (...args: any[]) => addDocMock.apply(null, args as any),
-  updateDoc: (...args: any[]) => updateDocMock.apply(null, args as any),
+  addDoc: (...args: any[]) => addDocMock(...args),
+  updateDoc: (...args: any[]) => updateDocMock(...args),
   doc: vi.fn(() => ({})),
   parseDate: vi.fn(),
   onSnapshot: vi.fn(() => () => {}),

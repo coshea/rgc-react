@@ -33,6 +33,7 @@ const menuItemsDesktop = {
   Membership: [
     siteConfig.pages.membership,
     siteConfig.pages.directory,
+    siteConfig.pages.findGame,
     siteConfig.pages.board,
   ],
   "Policies/Rules": [siteConfig.pages.policies],
@@ -49,6 +50,7 @@ const menuItemsMobile = {
   Membership: [
     siteConfig.pages.membership,
     siteConfig.pages.directory,
+    siteConfig.pages.findGame,
     siteConfig.pages.board,
   ],
   "Policies/Rules": [siteConfig.pages.policies],

@@ -15,7 +15,7 @@ export async function uploadProfilePicture(
       "uploadProfilePicture: current auth uid=",
       auth.currentUser?.uid
     );
-  } catch (e) {
+  } catch {
     // ignore
   }
 

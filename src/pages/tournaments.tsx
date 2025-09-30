@@ -9,7 +9,6 @@ const TournamentEditor = React.lazy(() =>
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import {
-  addToast,
   Modal,
   ModalContent,
   ModalHeader,
@@ -21,10 +20,11 @@ import {
   RadioGroup,
   Radio,
 } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 // tournaments API is imported dynamically where used
 import { Icon } from "@iconify/react";
 
-interface TournamentsProps {}
+type TournamentsProps = Record<string, never>;
 
 const Tournaments: React.FC<TournamentsProps> = () => {
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
@@ -81,9 +81,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       }
     })();
     return () => {
-      try {
-        unsub && unsub();
-      } catch (_) {}
+      if (typeof unsub === "function") {
+        unsub();
+      }
     };
   }, []);
 

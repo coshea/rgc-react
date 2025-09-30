@@ -28,7 +28,7 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 - Firestore security rules still accept either the custom claim OR the admin doc for backward compatibility, but **no new UI code should rely on the token claim**. This keeps admin revocation instantaneous (doc delete) without requiring token refresh.
 - To check admin status in components:
   - Prefer the hook: `useDocAdminFlag(user)` (real‑time subscription, returns `{ isAdmin, loadingAdmin }`).
-  - For one‑off / guard style checks, use utilities in `@/utils/admin` (`isDocAdmin`, `requireDocAdmin`).
+  - For one‑off / guard style checks, use utilities in `@/utils/admin` (`isAdminUser`, `requireAdmin`).
 - `RequireAdmin` has been refactored to rely solely on the admin doc (no `userProfile.admin` fallback). It renders a transient "Checking access..." state while resolving, then redirects to `/` if not authorized.
 - When writing tests that need admin privileges, emit a snapshot for the path `admin/<testUid>` with `{ isAdmin: true }` before asserting on admin‑only UI.
 
@@ -40,12 +40,20 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 
 ## 6. UI & UX Conventions
 
-- Use HeroUI components with `onPress` (not `onClick`).
+- HeroUI v3 usage: Prefer HeroUI primitives and composition; use `onPress` on HeroUI components, not on native DOM elements.
+- If you need a pressable around a non-HeroUI element, wrap it in a HeroUI `Button` (or `Link`) rather than attaching `onPress` to a `div`/`span`.
+- Specific exception: `UserAvatar` intentionally does NOT forward `onPress` to the DOM to avoid React warnings. If you need a clickable avatar (e.g., dropdown trigger), wrap `UserAvatar` in a HeroUI `Button` and put `onPress` on the button.
 - Toasts: call `addToast({ title, description, color })` (provided globally) for user feedback; prefer success/error semantics already used in editors.
 - Modals: existing pattern = lightweight fixed overlay divs (see membership directory & tournament editor). Follow that pattern or refactor to a reusable component—avoid `window.confirm`.
 - Form validation: local state `errors` object + HeroUI `isInvalid`/`errorMessage` props (see `tournament-editor.tsx`). Extend this pattern if adding fields.
 - Phone numbers: normalize to digits, format `(xxx) xxx-xxxx` when length 10 (helpers in directory page & CSV service). Reuse instead of re-implementing.
 - Always prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML elements (`button`, `input`, `select`, `textarea`, ad‑hoc div role="button") unless: (a) no equivalent exists, or (b) you are building a highly specialized, performance‑critical primitive. If you must use raw elements, wrap them in an accessible component and document why. Migrate legacy raw interactive elements to HeroUI during nearby edits (do not open a dedicated refactor PR solely for this unless broad changes are required).
+
+### HeroUI v3 Alignment (from llms.txt)
+
+- Composition first: build with `Dropdown` + `DropdownTrigger` + `Button`, `Tooltip` + `Button`, etc., not ad‑hoc `div` wrappers.
+- Accessibility: ensure icon-only controls have `aria-label`; keep keyboard focus visible; prefer `onPress` on HeroUI components for unified keyboard/mouse/AT activation.
+- Styling: prefer component props (variant/size/radius/isIconOnly) plus Tailwind utilities; avoid bespoke inline styles unless necessary.
 
 ### Avatar (UserAvatar) Fallback Contract
 
@@ -79,7 +87,7 @@ Prefer: read existing analogous file → replicate pattern → minimal diff. If 
 
 ---
 
-Last generated: 2025-09-22
+Last generated: 2025-09-29
 
 ## 12. Type-safety guardrail: user fields (no any-casts)
 

@@ -19,7 +19,7 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-const upsertSpy = vi.fn(async () => {});
+const upsertSpy = vi.fn(async (..._args: any[]) => {});
 vi.mock("@/api/tournaments", async (importOriginal) => {
   const original = await importOriginal();
   return {
@@ -38,17 +38,14 @@ vi.mock("@/api/tournaments", async (importOriginal) => {
       tee: "Mixed",
     })),
     fetchUserRegistration: vi.fn(async () => null),
-    upsertRegistration: (...args: any[]) => upsertSpy.apply(null, args as any),
+    upsertRegistration: (...args: any[]) => upsertSpy(...args),
   };
 });
 
 vi.mock("@/config/firebase", () => ({ db: {} }));
 
-// Toasts noop
-vi.mock("@heroui/react", async () => {
-  const mod: any = await vi.importActual("@heroui/react");
-  return { ...mod, addToast: () => {} };
-});
+// Toasts noop via centralized provider
+vi.mock("@/providers/toast", () => ({ addToast: () => {} }));
 
 describe("TournamentRegister redirect", () => {
   it("navigates back to tournament detail after successful registration", async () => {

@@ -96,7 +96,7 @@ export function ProfileForm() {
             setImagePreview(user.photoURL || null);
           }
         }
-      } catch (err) {
+      } catch {
         // On error, fallback to auth data
         setFormData((prev) => ({
           ...prev,
@@ -205,16 +205,7 @@ export function ProfileForm() {
         throw new Error("You must be signed in to save your profile");
       }
 
-      // Debug: surface current auth user UID (if available) to help
-      // diagnose permission-denied issues on Firestore writes.
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
-        const firebaseAuth = require("@/config/firebase").auth as any;
-        // eslint-disable-next-line no-console
-        console.debug("auth.currentUser?.uid:", firebaseAuth?.currentUser?.uid);
-      } catch (e) {
-        // ignore import errors here — it's only for debugging in the browser
-      }
+      // Debug logging removed to satisfy lint rules and avoid require() in ESM
 
       // Prepare data to save (do not include File objects)
       const payload = {

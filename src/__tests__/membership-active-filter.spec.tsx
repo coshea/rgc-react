@@ -32,7 +32,6 @@ describe("MembersList active filtering", () => {
         isAdmin={false}
         activeSet={activeSet}
         activeOnly={false}
-        activeYear={2099}
         onEdit={() => {}}
         onDelete={() => {}}
       />
@@ -57,7 +56,6 @@ describe("MembersList active filtering", () => {
         isAdmin={false}
         activeSet={activeSet}
         activeOnly={true}
-        activeYear={2099}
         onEdit={() => {}}
         onDelete={() => {}}
       />

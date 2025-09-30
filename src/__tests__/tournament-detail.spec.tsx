@@ -19,7 +19,7 @@ vi.mock("@/components/membership/hooks", () => ({
 }));
 
 // API-level listeners simulation
-const apiListeners: Record<string, Function[]> = {};
+const apiListeners: Record<string, Array<(value: unknown) => void>> = {};
 function emitDoc(path: string, data: any) {
   act(() => {
     (apiListeners[path] || []).forEach((cb) =>

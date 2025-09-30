@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "findAGame",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,17 +1,10 @@
-import { useEffect, useState, useRef } from "react";
-import { addToast } from "@heroui/react";
+import { useEffect, useState } from "react";
+import { addToast } from "@/providers/toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
-import {
-  updateUser,
-  deleteUser,
-  bulkCreateUsers,
-  createUser,
-} from "@/api/users";
-import type { UserProfilePayload } from "@/api/users";
-import { parseUsersCsv } from "@/services/csv";
+import { updateUser, deleteUser, createUser } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
 import {
   DirectoryHeader,
@@ -19,12 +12,10 @@ import {
   MembersList,
   EditMemberModal,
   DeleteMemberModal,
-  CsvPreviewModal,
 } from "@/components/membership"; // barrel export
 import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
 import { useMembers } from "@/hooks/useMembers";
 import { Switch } from "@heroui/react";
-// preflightCsv imported via barrel if needed later
 
 export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
@@ -43,21 +34,9 @@ export default function MembershipDirectoryPage() {
   // Delete confirmation state
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
 
-  // Bulk CSV upload state
-  const [csvOpen, setCsvOpen] = useState(false);
-  const [csvRows, setCsvRows] = useState<UserProfilePayload[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{
-    processed: number;
-    total: number;
-  }>({
-    processed: 0,
-    total: 0,
-  });
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   // search filter
   const [filter, setFilter] = useState("");
-  const [activeOnly, setActiveOnly] = useState(false);
+  const [activeOnly, setActiveOnly] = useState(true);
   const activeSet = membersHook.activeSet;
 
   // Phone helpers moved to utils/phone.ts
@@ -99,224 +78,6 @@ export default function MembershipDirectoryPage() {
 
   function requestDelete(u: User) {
     setConfirmDelete(u);
-  }
-
-  function onSelectCsv() {
-    fileInputRef.current?.click();
-  }
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = String(ev.target?.result || "");
-      const rows = parseUsersCsv(text);
-      setCsvRows(rows);
-      setCsvOpen(true);
-    };
-    reader.readAsText(f);
-    // clear input so same file can be re-selected
-    e.target.value = "";
-  }
-
-  async function uploadCsv() {
-    if (!isAdmin) {
-      addToast({
-        title: "Not Authorized",
-        description: "You are not an admin.",
-        color: "danger",
-      });
-      return;
-    }
-    if (csvRows.length === 0) return;
-    // Enhanced Preflight Validation
-    // 1. Sanitize & trim all relevant string fields
-    const sanitized: Array<
-      UserProfilePayload & { __index: number; email: string }
-    > = csvRows.map((r, idx) => {
-      const firstName = (r.firstName || "").trim();
-      const lastName = (r.lastName || "").trim();
-      const email = (r.email || "").trim();
-      const phone = (r.phone || "").trim();
-      const ghinNumber = (r.ghinNumber || "").trim();
-      return {
-        ...r,
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        email,
-        phone,
-        ghinNumber,
-        // Board fields will be stripped later but preserve for diagnostics initially
-        __index: idx,
-      } as UserProfilePayload & { __index: number; email: string };
-    });
-
-    // 2. Disallow boardMember/role assignments; gather diagnostics instead of immediate abort
-    const boardIntendedRows = sanitized.filter(
-      (r) =>
-        r.boardMember === true || (typeof r.role === "string" && r.role.trim())
-    );
-    if (boardIntendedRows.length) {
-      console.warn(
-        "[Directory] Stripping boardMember/role fields from bulk CSV rows",
-        boardIntendedRows.slice(0, 5).map((r) => ({
-          row: r.__index + 1,
-          boardMember: r.boardMember,
-          role: r.role,
-        }))
-      );
-      boardIntendedRows.forEach((r) => {
-        delete r.boardMember;
-        delete r.role;
-      });
-      addToast({
-        title: "Board Fields Ignored",
-        description: `${boardIntendedRows.length} row${boardIntendedRows.length === 1 ? "" : "s"} had board/role data stripped`,
-        color: "warning",
-      });
-    }
-
-    // 3. Email validation (non-empty + rudimentary format)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // simple, sufficient client-side
-    const invalidEmailRows: { row: number; email: string; reason: string }[] =
-      [];
-    sanitized.forEach((r) => {
-      if (!r.email) {
-        invalidEmailRows.push({
-          row: r.__index + 1,
-          email: r.email,
-          reason: "missing",
-        });
-      } else if (!emailRegex.test(r.email)) {
-        invalidEmailRows.push({
-          row: r.__index + 1,
-          email: r.email,
-          reason: "format",
-        });
-      }
-    });
-    if (invalidEmailRows.length) {
-      console.warn(
-        "[Directory] Invalid emails detected",
-        invalidEmailRows.slice(0, 10)
-      );
-      addToast({
-        title: "Invalid Emails",
-        description: `${invalidEmailRows.length} invalid email row${invalidEmailRows.length === 1 ? "" : "s"}. Fix and retry.`,
-        color: "danger",
-      });
-      return;
-    }
-
-    // 4. Duplicate email detection (case-insensitive)
-    const emailMap = new Map<string, number[]>();
-    sanitized.forEach((r) => {
-      const key = r.email.toLowerCase();
-      if (!emailMap.has(key)) emailMap.set(key, []);
-      emailMap.get(key)!.push(r.__index + 1);
-    });
-    const duplicateEmails = Array.from(emailMap.entries())
-      .filter(([, rows]) => rows.length > 1)
-      .map(([email, rows]) => ({ email, rows }));
-    if (duplicateEmails.length) {
-      console.warn(
-        "[Directory] Duplicate emails in CSV preflight",
-        duplicateEmails.slice(0, 10)
-      );
-      addToast({
-        title: "Duplicate Emails",
-        description: `${duplicateEmails.length} duplicate email group${duplicateEmails.length === 1 ? "" : "s"} found. Resolve and re-upload.`,
-        color: "danger",
-      });
-      return;
-    }
-
-    // 5. Prepare final rows for bulk create (strip preflight artifacts)
-    const finalRows: UserProfilePayload[] = sanitized.map((r) => {
-      const { __index, boardMember, role, ...rest } = r; // board fields intentionally omitted
-      return rest;
-    });
-
-    // 6. Diagnostic sample logging
-    console.table(
-      finalRows.slice(0, 5).map((r, i) => ({
-        sampleRow: i + 1,
-        firstName: r.firstName,
-        lastName: r.lastName,
-        email: r.email,
-        phone: r.phone,
-        ghinNumber: r.ghinNumber,
-      }))
-    );
-    console.log("[Directory] CSV preflight passed", {
-      total: finalRows.length,
-      strippedBoardRows: boardIntendedRows.length,
-    });
-    setUploading(true);
-    setUploadProgress({ processed: 0, total: finalRows.length });
-    try {
-      console.log("[Directory] Starting CSV bulk upload", {
-        rows: finalRows.length,
-        sample: finalRows.slice(0, 3),
-        isAdmin,
-      });
-      const count = await bulkCreateUsers(finalRows, {
-        onProgress: (processed, total) => {
-          setUploadProgress({ processed, total });
-          // occasional console progress (every 25 or full)
-          if (processed === total || processed % 25 === 0) {
-            console.log("[Directory] Bulk upload progress", {
-              processed,
-              total,
-            });
-          }
-        },
-      });
-      setCsvOpen(false);
-      setCsvRows([]);
-      addToast({
-        title: "Upload Complete",
-        description: `${count} member${count === 1 ? "" : "s"} imported successfully`,
-        color: "success",
-      });
-      console.log("[Directory] CSV bulk upload success", { count });
-      console.log("[Directory] CSV bulk upload success", { count });
-    } catch (e) {
-      console.error("CSV bulk upload error", e);
-      // Surface more informative message if available (e.g. aggregated partial failures)
-      let baseMessage = "Bulk upload failed";
-      if (e instanceof Error && e.message) baseMessage = e.message;
-      // Summarize first few distinct reasons if details present
-      let detailSummary = "";
-      const anyErr = e as unknown as {
-        details?: { errors?: Array<{ reason?: string }> };
-      };
-      if (anyErr?.details?.errors && Array.isArray(anyErr.details.errors)) {
-        const reasons: Record<string, number> = {};
-        anyErr.details.errors.forEach((er) => {
-          const r = String(er?.reason || "unknown");
-          reasons[r] = (reasons[r] || 0) + 1;
-        });
-        const top = Object.entries(reasons)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([r, c]) => `${r}(${c})`)
-          .join(", ");
-        if (top) detailSummary = top;
-      }
-      const description = detailSummary
-        ? `${baseMessage}. Reasons: ${detailSummary}`
-        : `${baseMessage}. Check console for details.`;
-      addToast({
-        title: "Upload Failed",
-        description,
-        color: "danger",
-      });
-      console.log("[Directory] CSV bulk upload failed", e);
-    } finally {
-      setUploading(false);
-    }
   }
 
   async function save() {
@@ -423,13 +184,7 @@ export default function MembershipDirectoryPage() {
       className="px-4 py-4 max-w-4xl mx-auto w-full overflow-x-hidden"
       data-testid="membership-directory-root"
     >
-      <DirectoryHeader
-        isAdmin={isAdmin}
-        onAdd={openAdd}
-        onBulk={onSelectCsv}
-        ref={fileInputRef}
-        onFileChange={handleFile}
-      />
+      <DirectoryHeader isAdmin={isAdmin} onAdd={openAdd} />
       <DirectorySearchBar
         filter={filter}
         onFilterChange={setFilter}
@@ -458,7 +213,6 @@ export default function MembershipDirectoryPage() {
         isAdmin={isAdmin}
         activeSet={activeSet}
         activeOnly={activeOnly}
-        activeYear={currentYear}
         onEdit={openEdit}
         onDelete={requestDelete}
       />
@@ -476,14 +230,6 @@ export default function MembershipDirectoryPage() {
         selfId={user?.uid}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={confirmDeleteUser}
-      />
-      <CsvPreviewModal
-        open={csvOpen}
-        rows={csvRows}
-        onClose={() => setCsvOpen(false)}
-        onUpload={uploadCsv}
-        uploading={uploading}
-        progress={uploadProgress}
       />
     </div>
   );

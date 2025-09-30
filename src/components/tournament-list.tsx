@@ -120,39 +120,38 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   };
 
   // New function to render mobile tournament card
-  const renderStatusChips = (tournament: Tournament) =>
+  const renderStatusChips = (tournament: Tournament) => {
     // Show exactly one status with priority: Canceled > Completed > Registration Open > Scheduled
-    (() => {
-      if (tournament.canceled) {
-        return (
-          <Chip color="danger" size="sm" variant="flat">
-            Canceled
-          </Chip>
-        );
-      }
-
-      if (tournament.completed) {
-        return (
-          <Chip color="success" size="sm" variant="flat">
-            Completed
-          </Chip>
-        );
-      }
-
-      if (tournament.registrationOpen ?? false) {
-        return (
-          <Chip color="warning" size="sm" variant="flat">
-            Registration Open
-          </Chip>
-        );
-      }
-
+    if (tournament.canceled) {
       return (
-        <Chip color="primary" size="sm" variant="flat">
-          Scheduled
+        <Chip color="danger" size="sm" variant="flat">
+          Canceled
         </Chip>
       );
-    })();
+    }
+
+    if (tournament.completed) {
+      return (
+        <Chip color="success" size="sm" variant="flat">
+          Completed
+        </Chip>
+      );
+    }
+
+    if (tournament.registrationOpen ?? false) {
+      return (
+        <Chip color="warning" size="sm" variant="flat">
+          Registration Open
+        </Chip>
+      );
+    }
+
+    return (
+      <Chip color="primary" size="sm" variant="flat">
+        Scheduled
+      </Chip>
+    );
+  };
 
   const renderMobileCard = (tournament: Tournament) => {
     const goToDetails = () => {
@@ -289,15 +288,17 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 }
                 role="link"
                 tabIndex={0}
-                onClick={() =>
-                  tournament.firestoreId &&
-                  navigate(`/tournaments/${tournament.firestoreId}`)
-                }
+                onClick={() => {
+                  if (tournament.firestoreId) {
+                    navigate(`/tournaments/${tournament.firestoreId}`);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    tournament.firestoreId &&
+                    if (tournament.firestoreId) {
                       navigate(`/tournaments/${tournament.firestoreId}`);
+                    }
                   }
                 }}
                 aria-label={`View details for ${tournament.title}`}

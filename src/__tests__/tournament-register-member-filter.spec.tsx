@@ -55,11 +55,8 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-// Capture toasts to avoid errors (noop)
-vi.mock("@heroui/react", async (orig) => {
-  const mod: any = await orig();
-  return { ...mod, addToast: vi.fn() };
-});
+// Capture toasts to avoid errors (noop) via provider
+vi.mock("@/providers/toast", () => ({ addToast: vi.fn() }));
 
 describe("TournamentRegister full member filter", () => {
   it("blocks non-full current user from registering", async () => {

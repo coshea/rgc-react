@@ -114,7 +114,7 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
       // Preserve original error on a property for deeper debugging if needed
       // but throw the new, clearer message upstream.
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
+      // @ts-expect-error attaching non-standard metadata for diagnostics
       e.original = err;
       throw e;
     }
@@ -260,7 +260,7 @@ export async function bulkCreateUsers(
             .map((e) => `#${e.index}:${e.reason}`)
             .join(", ")}`;
     const aggregate = new Error(errMsg);
-    // @ts-ignore attach metadata
+    // @ts-expect-error attach metadata for diagnostics
     aggregate.details = summary;
     throw aggregate;
   }

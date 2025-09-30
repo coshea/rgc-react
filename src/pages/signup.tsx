@@ -1,18 +1,12 @@
-import React, { useEffect } from "react";
-import {
-  Button,
-  Input,
-  Checkbox,
-  Link,
-  Divider,
-  addToast,
-} from "@heroui/react";
+import React from "react";
+import { Button, Input, Checkbox, Link, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { RGCLogo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { addToast } from "@/providers/toast";
 
 export default function SignUpPage() {
   const [isVisible, setIsVisible] = React.useState(false);
@@ -29,9 +23,7 @@ export default function SignUpPage() {
   const toggleVisibility = () => setIsVisible(!isVisible);
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
-  useEffect(() => {
-    // Keep user here unless they manually go elsewhere; no auto redirect when logged in
-  }, [userLoggedIn, authLoading]);
+  // No auto-redirect on sign-up; user chooses navigation explicitly
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,7 +53,11 @@ export default function SignUpPage() {
             description: msg,
             color: "danger",
           });
-        } catch {}
+        } catch (e) {
+          // ignore toast failures in non-DOM test environments
+          // eslint-disable-next-line no-console
+          console.debug("toast unavailable", e);
+        }
         console.error("Email/Password Sign-Up failed:", error);
       }
     }
@@ -81,7 +77,11 @@ export default function SignUpPage() {
           description: msg,
           color: "danger",
         });
-      } catch {}
+      } catch (e) {
+        // ignore toast failures in non-DOM test environments
+        // eslint-disable-next-line no-console
+        console.debug("toast unavailable", e);
+      }
       console.error("Google Sign-Up failed:", error);
     }
   };
