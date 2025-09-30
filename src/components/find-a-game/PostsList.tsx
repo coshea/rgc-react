@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FindAGamePost, deletePartnerPost } from "@/api/find-a-game";
 import { getUserProfile, type UserProfilePayload } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
+import { normalizePhone } from "@/utils/phone";
 
 export interface PostsListProps {
   posts: FindAGamePost[];
@@ -214,7 +215,7 @@ export function PostsList({
                     isIconOnly
                     variant="flat"
                     color="success"
-                    href={`tel:${String(owners[p.ownerId]!.phone).replace(/\D+/g, "")}`}
+                    href={`tel:${normalizePhone(owners[p.ownerId]!.phone)}`}
                     aria-label="Call"
                     className="hover:scale-110 transition-transform"
                   >
