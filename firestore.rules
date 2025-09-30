@@ -182,6 +182,26 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Championships collection for historical and modern championship records
+    match /championships/{championshipId} {
+      // Public read for displaying past champions
+      allow read: if true;
+      
+      // Only admins can create/update/delete championship records
+      allow create: if isAdmin() && request.auth != null &&
+        request.resource.data.year is int &&
+        request.resource.data.championshipType is string &&
+        request.resource.data.winnerNames is list &&
+        request.resource.data.isHistorical is bool &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp;
+        
+      allow update: if isAdmin() && request.auth != null &&
+        request.resource.data.updatedAt is timestamp;
+        
+      allow delete: if isAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

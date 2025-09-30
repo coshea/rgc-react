@@ -1,7 +1,7 @@
 import { TournamentSection } from "@/components/tournament-section";
 import { NewsPage } from "@/pages/news";
 import ContactPage from "./contact";
-import PastChampionsWithAvatars from "./past-champions-avatars";
+import PastChampions from "./past-champions";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -22,7 +22,7 @@ export default function HomePage() {
       <TournamentSection />
       {/* Past Champions */}
       <div id="home-past-champions-section">
-        <PastChampionsWithAvatars showAllYears={false} />
+        <PastChampions showAllYears={false} />
       </div>
       {/* FAQ */}
       {/* Contact Us */}

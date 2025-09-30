@@ -7,6 +7,15 @@
         { "fieldPath": "date", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "championships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isHistorical", "order": "ASCENDING" },
+        { "fieldPath": "year", "order": "DESCENDING" },
+        { "fieldPath": "championshipType", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
