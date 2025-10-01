@@ -66,9 +66,22 @@ export function ChampionshipCard({
       <Divider />
 
       <CardBody className="space-y-3">
+        {/** Determine singular/plural labels based on counts */}
+        {(() => {
+          /* no-op IIFE to keep local consts scoped to body */
+          return null;
+        })()}
         {/* Winners */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-default-600">Champions</h4>
+          {(() => {
+            const winnersCount = championship.winnerNames?.length || 0;
+            const winnersLabel = winnersCount === 1 ? "Champion" : "Champions";
+            return (
+              <h4 className="text-sm font-medium text-default-600">
+                {winnersLabel}
+              </h4>
+            );
+          })()}
           {championship.winnerNames && championship.winnerNames.length > 0 ? (
             championship.winnerNames.map((winnerName, index) => {
               const winnerId = championship.winnerIds?.[index];
@@ -92,9 +105,6 @@ export function ChampionshipCard({
                   />
                   <div className="flex flex-col">
                     <span className="font-semibold">{winnerName}</span>
-                    <span className="text-small text-default-500">
-                      Champion
-                    </span>
                   </div>
                   {winnerId && (
                     <div className="ml-auto">
@@ -123,7 +133,6 @@ export function ChampionshipCard({
               />
               <div className="flex flex-col">
                 <span className="font-semibold">Unknown Champion</span>
-                <span className="text-small text-default-500">Champion</span>
               </div>
             </div>
           )}
@@ -133,9 +142,16 @@ export function ChampionshipCard({
         {championship.runnerUpNames &&
           championship.runnerUpNames.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-default-600">
-                Runners-up
-              </h4>
+              {(() => {
+                const runnerCount = championship.runnerUpNames?.length || 0;
+                const runnerLabel =
+                  runnerCount === 1 ? "Runner-up" : "Runners-up";
+                return (
+                  <h4 className="text-sm font-medium text-default-600">
+                    {runnerLabel}
+                  </h4>
+                );
+              })()}
               {championship.runnerUpNames.map((runnerUpName, index) => {
                 const runnerUpId = championship.runnerUpIds?.[index];
                 const runnerUpUser = runnerUpId
@@ -158,9 +174,6 @@ export function ChampionshipCard({
                     <div className="flex flex-col">
                       <span className="font-semibold text-default-600">
                         {runnerUpName}
-                      </span>
-                      <span className="text-small text-default-500">
-                        Runner-up
                       </span>
                     </div>
                     {runnerUpId && (
