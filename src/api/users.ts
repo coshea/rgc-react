@@ -41,9 +41,14 @@ export type User = UserProfilePayload & {
 export async function createUser(data: UserProfilePayload) {
   const first = (data.firstName || "").trim();
   const last = (data.lastName || "").trim();
+
+  // Compute displayName from first + last names
+  const displayName = computeDisplayName(data);
+
   const payload: Record<string, any> = {
     firstName: first || undefined,
     lastName: last || undefined,
+    displayName: displayName || undefined,
     email: data.email || "",
     phone: data.phone || "",
     ghinNumber: data.ghinNumber || "",

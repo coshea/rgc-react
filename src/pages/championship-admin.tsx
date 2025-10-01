@@ -47,15 +47,13 @@ export default function ChampionshipAdmin() {
     <RequireAdmin>
       <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">
-                Championship Administration
-              </h1>
-              <p className="text-default-600">
-                Manage historical and modern championship records
-              </p>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-4xl font-bold mb-2">
+              Championship Administration
+            </h1>
+            <p className="text-default-600 mb-4">
+              Manage historical and modern championship records
+            </p>
 
             <Button
               color="primary"

@@ -9,6 +9,7 @@ import {
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
+import { useUsersMap } from "@/hooks/useUsers";
 import type { UnifiedChampionship } from "@/types/championship";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 
@@ -23,6 +24,8 @@ export function ChampionshipCard({
   showEditButton = false,
   onEdit,
 }: ChampionshipCardProps) {
+  const { usersMap } = useUsersMap();
+
   const championshipTitle =
     CHAMPIONSHIP_TYPES[
       championship.championshipType as keyof typeof CHAMPIONSHIP_TYPES
@@ -58,14 +61,6 @@ export function ChampionshipCard({
             </Button>
           )}
         </div>
-
-        {championship.isHistorical && (
-          <div className="flex items-center gap-2">
-            <Chip size="sm" variant="flat" color="secondary">
-              Historical Record
-            </Chip>
-          </div>
-        )}
       </CardHeader>
 
       <Divider />
@@ -74,38 +69,50 @@ export function ChampionshipCard({
         {/* Winners */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-default-600">Champions</h4>
-          {championship.winnerNames?.map((winnerName, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-3 p-3 rounded-medium bg-content1 shadow-small"
-            >
-              <UserAvatar
-                src={undefined}
-                name={winnerName}
-                userId={championship.winnerIds?.[index]}
-                className="w-12 h-12"
-                size="md"
-                alt={winnerName}
-              />
-              <div className="flex flex-col">
-                <span className="font-semibold">{winnerName}</span>
-                <span className="text-small text-default-500">Champion</span>
-              </div>
-              {championship.winnerIds?.[index] && (
-                <div className="ml-auto">
-                  <Button
-                    as={Link}
-                    to={`/profile/${championship.winnerIds[index]}`}
-                    size="sm"
-                    variant="flat"
-                    isIconOnly
-                  >
-                    <Icon icon="lucide:user" className="w-4 h-4" />
-                  </Button>
+          {championship.winnerNames && championship.winnerNames.length > 0 ? (
+            championship.winnerNames.map((winnerName, index) => {
+              const winnerId = championship.winnerIds?.[index];
+              const winnerUser =
+                winnerId && usersMap.size > 0
+                  ? usersMap.get(winnerId)
+                  : undefined;
+
+              return (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-3 rounded-medium bg-content1 shadow-small"
+                >
+                  <UserAvatar
+                    user={winnerUser}
+                    name={winnerName}
+                    userId={winnerId}
+                    className="w-12 h-12"
+                    size="md"
+                    alt={winnerName}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{winnerName}</span>
+                    <span className="text-small text-default-500">
+                      Champion
+                    </span>
+                  </div>
+                  {winnerId && (
+                    <div className="ml-auto">
+                      <Button
+                        as={Link}
+                        to={`/profile/${winnerId}`}
+                        size="sm"
+                        variant="flat"
+                        isIconOnly
+                      >
+                        <Icon icon="lucide:user" className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )) || (
+              );
+            })
+          ) : (
             <div className="flex items-center gap-3 p-3 rounded-medium bg-content1 shadow-small">
               <UserAvatar
                 src={undefined}
@@ -129,42 +136,49 @@ export function ChampionshipCard({
               <h4 className="text-sm font-medium text-default-600">
                 Runners-up
               </h4>
-              {championship.runnerUpNames.map((runnerUpName, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-medium bg-content2"
-                >
-                  <UserAvatar
-                    src={undefined}
-                    name={runnerUpName}
-                    userId={championship.runnerUpIds?.[index]}
-                    className="w-12 h-12 opacity-80"
-                    size="md"
-                    alt={runnerUpName}
-                  />
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-default-600">
-                      {runnerUpName}
-                    </span>
-                    <span className="text-small text-default-500">
-                      Runner-up
-                    </span>
-                  </div>
-                  {championship.runnerUpIds?.[index] && (
-                    <div className="ml-auto">
-                      <Button
-                        as={Link}
-                        to={`/profile/${championship.runnerUpIds[index]}`}
-                        size="sm"
-                        variant="flat"
-                        isIconOnly
-                      >
-                        <Icon icon="lucide:user" className="w-4 h-4" />
-                      </Button>
+              {championship.runnerUpNames.map((runnerUpName, index) => {
+                const runnerUpId = championship.runnerUpIds?.[index];
+                const runnerUpUser = runnerUpId
+                  ? usersMap.get(runnerUpId)
+                  : undefined;
+
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-medium bg-content2"
+                  >
+                    <UserAvatar
+                      user={runnerUpUser}
+                      name={runnerUpName}
+                      userId={runnerUpId}
+                      className="w-12 h-12 opacity-80"
+                      size="md"
+                      alt={runnerUpName}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-default-600">
+                        {runnerUpName}
+                      </span>
+                      <span className="text-small text-default-500">
+                        Runner-up
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {runnerUpId && (
+                      <div className="ml-auto">
+                        <Button
+                          as={Link}
+                          to={`/profile/${runnerUpId}`}
+                          size="sm"
+                          variant="flat"
+                          isIconOnly
+                        >
+                          <Icon icon="lucide:user" className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
       </CardBody>

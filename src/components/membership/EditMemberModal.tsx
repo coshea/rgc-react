@@ -70,8 +70,12 @@ export function EditMemberModal({
 
   async function handleSave() {
     // First run existing onSave for user profile
-    await onSave();
-    if (!isAdmin || !editing || !paymentDirty) {
+    const newUserId = await onSave();
+
+    // Determine user ID for payment processing
+    const userIdForPayment = editing?.id || newUserId;
+
+    if (!isAdmin || !userIdForPayment || !paymentDirty) {
       return; // Nothing to do for membership payment
     }
 
@@ -96,7 +100,7 @@ export function EditMemberModal({
       };
 
       const result = await updateMembershipPayment({
-        userId: editing.id,
+        userId: userIdForPayment,
         year: currentYear,
         updates,
       });

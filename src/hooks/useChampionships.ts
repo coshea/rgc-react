@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  fetchAllChampionships,
   fetchHistoricalChampionships,
-  fetchModernChampionships,
 } from "@/api/championships";
 import type { UnifiedChampionship } from "@/types/championship";
 
@@ -21,31 +21,14 @@ export function useAllChampionships({
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      // Fetch both historical and modern championships in parallel
-      const [historical, modern] = await Promise.all([
-        fetchHistoricalChampionships(year),
-        fetchModernChampionships(year),
-      ]);
+      // Use the new simplified function that gets all championships
+      const allChampionships = await fetchAllChampionships(year);
 
-      // Convert historical championships to unified format
-      const unifiedHistorical: UnifiedChampionship[] = historical.map((h) => ({
-        id: h.id,
-        year: h.year,
-        championshipType: h.championshipType,
-        winnerNames: h.winnerNames,
-        winnerIds: h.winnerIds,
-        runnerUpNames: h.runnerUpNames,
-        runnerUpIds: h.runnerUpIds,
-        isHistorical: h.isHistorical,
-      }));
-
-      // Combine and sort all championships by year (desc), then by championship type
-      const allChampionships = [...unifiedHistorical, ...modern].sort(
-        (a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return a.championshipType.localeCompare(b.championshipType);
-        }
-      );
+      // Sort by year (desc), then by championship type
+      allChampionships.sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return a.championshipType.localeCompare(b.championshipType);
+      });
 
       return allChampionships;
     },
@@ -55,6 +38,7 @@ export function useAllChampionships({
     championships: query.data || [],
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error,
     refetch: query.refetch,
   };
 }

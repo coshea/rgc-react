@@ -22,6 +22,41 @@ import type {
   UnifiedChampionship,
 } from "@/types/championship";
 
+// Fetch all championships (both historical and modern) from the championships collection
+export async function fetchAllChampionships(
+  year?: number
+): Promise<UnifiedChampionship[]> {
+  const champCol = collection(db, "championships");
+  const conditions = [];
+
+  if (year) {
+    conditions.push(where("year", "==", year));
+  }
+
+  const q =
+    conditions.length > 0
+      ? query(champCol, ...conditions, orderBy("year", "desc"))
+      : query(champCol, orderBy("year", "desc"));
+
+  const snap = await getDocs(q);
+
+  const championships = snap.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      year: data.year,
+      championshipType: data.championshipType,
+      winnerNames: data.winnerNames,
+      winnerIds: data.winnerIds,
+      runnerUpNames: data.runnerUpNames,
+      runnerUpIds: data.runnerUpIds,
+      isHistorical: data.isHistorical,
+    } as UnifiedChampionship;
+  });
+
+  return championships;
+}
+
 // Fetch all historical championships with optional filtering
 export async function fetchHistoricalChampionships(
   year?: number
@@ -59,42 +94,35 @@ export async function fetchHistoricalChampionships(
 export async function fetchModernChampionships(
   year?: number
 ): Promise<UnifiedChampionship[]> {
-  // Direct Firestore access to avoid circular dependencies with hooks
-  const tournamentsCol = collection(db, "tournaments");
-  const conditions = [];
+  // First, check for modern championships in the championships collection (isHistorical: false)
+  const champCol = collection(db, "championships");
+  const champConditions = [where("isHistorical", "==", false)];
 
   if (year) {
-    const start = new Date(year, 0, 1);
-    const end = new Date(year + 1, 0, 1);
-    conditions.push(where("date", ">=", start), where("date", "<", end));
+    champConditions.push(where("year", "==", year));
   }
 
-  const q = query(tournamentsCol, ...conditions, orderBy("date", "desc"));
-  const snap = await getDocs(q);
+  const champQuery = query(champCol, ...champConditions);
+  const champSnap = await getDocs(champQuery);
 
-  const championships: UnifiedChampionship[] = [];
+  // Convert championship docs to unified format
+  const modernFromChampionships: UnifiedChampionship[] = champSnap.docs.map(
+    (doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        year: data.year,
+        championshipType: data.championshipType,
+        winnerNames: data.winnerNames,
+        winnerIds: data.winnerIds,
+        runnerUpNames: data.runnerUpNames,
+        runnerUpIds: data.runnerUpIds,
+        isHistorical: data.isHistorical,
+      };
+    }
+  );
 
-  snap.docs.forEach((docSnap) => {
-    const data = docSnap.data();
-    const date = data.date?.toDate?.() || new Date(data.date);
-    const winners = data.winners || [];
-
-    // Find championship winners (those marked with isChampion)
-    const championWinners = winners.filter((w: any) => w.isChampion);
-
-    championWinners.forEach((winner: any) => {
-      championships.push({
-        id: `tournament-${docSnap.id}-${winner.place}`,
-        year: date.getFullYear(),
-        championshipType: winner.championshipType || "other",
-        winnerNames: winner.displayNames || ["Unknown"],
-        winnerIds: winner.userIds,
-        isHistorical: false,
-      });
-    });
-  });
-
-  return championships;
+  return modernFromChampionships;
 }
 
 // Create a new historical championship record
