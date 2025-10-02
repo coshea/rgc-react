@@ -149,8 +149,8 @@ export async function fetchHistoricalChampionships(
       ({
         id: docSnap.id,
         ...docSnap.data(),
-        createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-        updatedAt: docSnap.data().updatedAt?.toDate() || new Date(),
+        createdAt: docSnap.data().createdAt?.toDate() ?? null,
+        updatedAt: docSnap.data().updatedAt?.toDate() ?? null,
       }) as HistoricalChampionship
   );
 
