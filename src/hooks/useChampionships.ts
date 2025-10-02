@@ -77,7 +77,7 @@ export function useInfiniteChampionships({
 
   // Flatten all pages into a single array
   const allChampionships =
-    query.data?.pages.flatMap((page: any) => page.championships) || [];
+    query.data?.pages.flatMap((page: ChampionshipPage) => page.championships) || [];
 
   return {
     championships: allChampionships,
