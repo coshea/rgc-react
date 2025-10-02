@@ -16,11 +16,84 @@ import {
   onSnapshot,
   serverTimestamp,
   FirestoreError,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from "firebase/firestore";
 import type {
   HistoricalChampionship,
   UnifiedChampionship,
 } from "@/types/championship";
+
+// Pagination interface for championship queries
+export interface ChampionshipPage {
+  championships: UnifiedChampionship[];
+  nextCursor?: QueryDocumentSnapshot<DocumentData>;
+  hasMore: boolean;
+}
+
+// Fetch championships with pagination support
+export async function fetchChampionshipsWithPagination(
+  options: {
+    year?: number;
+    pageSize?: number;
+    cursor?: QueryDocumentSnapshot<DocumentData>;
+  } = {}
+): Promise<ChampionshipPage> {
+  const { year, pageSize = 20, cursor } = options;
+  const champCol = collection(db, "championships");
+  const conditions = [];
+
+  if (year) {
+    conditions.push(where("year", "==", year));
+  }
+
+  let q = query(
+    champCol,
+    ...conditions,
+    orderBy("year", "desc"),
+    limit(pageSize + 1) // Fetch one extra to check if there are more
+  );
+
+  if (cursor) {
+    q = query(q, startAfter(cursor));
+  }
+
+  const snap = await getDocs(q);
+  const docs = snap.docs;
+
+  // Check if we have more data by looking at the extra document
+  const hasMore = docs.length > pageSize;
+  const championshipsToReturn = hasMore ? docs.slice(0, pageSize) : docs;
+
+  const championships = championshipsToReturn.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      year: data.year,
+      championshipType: data.championshipType,
+      winnerNames: data.winnerNames,
+      winnerIds: data.winnerIds,
+      runnerUpNames: data.runnerUpNames,
+      runnerUpIds: data.runnerUpIds,
+      isHistorical: data.isHistorical,
+    } as UnifiedChampionship;
+  });
+
+  // Sort by championship type in JavaScript since we can't include it in the Firestore query
+  championships.sort((a, b) =>
+    a.championshipType.localeCompare(b.championshipType)
+  );
+
+  return {
+    championships,
+    nextCursor: hasMore
+      ? championshipsToReturn[championshipsToReturn.length - 1]
+      : undefined,
+    hasMore,
+  };
+}
 
 // Fetch all championships (both historical and modern) from the championships collection
 export async function fetchAllChampionships(

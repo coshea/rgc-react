@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Button, Link } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { Button, Link, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ChampionshipsList } from "@/components/championship-display";
 import { ChampionshipsListSkeleton } from "@/components/championship-skeleton";
 import { ChampionshipEditorModal } from "@/components/championship-editor-modal";
-import { useAllChampionships } from "@/hooks/useChampionships";
+import { useInfiniteChampionships } from "@/hooks/useChampionships";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { UnifiedChampionship } from "@/types/championship";
@@ -20,10 +21,31 @@ export default function PastChampions({
   const { isAdmin } = useDocAdminFlag(user);
   const currentYear = new Date().getFullYear();
 
-  const { championships, isLoading, isError, error, refetch } =
-    useAllChampionships({
-      year: showAllYears ? undefined : currentYear - 1,
-    });
+  const {
+    championships,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteChampionships({
+    year: showAllYears ? undefined : currentYear - 1,
+    pageSize: 20,
+  });
+
+  const { targetRef, isIntersecting } = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: "100px",
+  });
+
+  // Trigger fetch when intersection observer detects end of list
+  useEffect(() => {
+    if (isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<
@@ -120,6 +142,25 @@ export default function PastChampions({
             : `No championships found for ${currentYear - 1}`
         }
       />
+
+      {/* Infinite scroll trigger and loading indicator */}
+      {championships.length > 0 && (
+        <div ref={targetRef} className="flex justify-center py-8">
+          {isFetchingNextPage && (
+            <div className="flex items-center gap-2">
+              <Spinner size="sm" />
+              <span className="text-default-500">
+                Loading more championships...
+              </span>
+            </div>
+          )}
+          {!hasNextPage && !isFetchingNextPage && (
+            <p className="text-default-500 text-center">
+              You've reached the end of the championship records.
+            </p>
+          )}
+        </div>
+      )}
 
       {isAdmin && (
         <ChampionshipEditorModal

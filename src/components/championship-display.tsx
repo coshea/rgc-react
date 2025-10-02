@@ -233,7 +233,8 @@ export function ChampionshipYearGroup({
         </Chip>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-4">
+        {" "}
         {Object.entries(groupedByType).map(([, typeChampionships]) =>
           typeChampionships.map((championship) => (
             <ChampionshipCard
@@ -293,7 +294,7 @@ export function ChampionshipsList({
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 overflow-x-hidden">
+    <div className="max-w-7xl mx-auto space-y-12 px-4">
       {years.map((year) => (
         <ChampionshipYearGroup
           key={year}
