@@ -3,8 +3,13 @@ import {
   fetchAllChampionships,
   fetchHistoricalChampionships,
   fetchChampionshipsWithPagination,
+  type ChampionshipPage,
 } from "@/api/championships";
-import type { UnifiedChampionship } from "@/types/championship";
+import type {
+  UnifiedChampionship,
+  HistoricalChampionship,
+} from "@/types/championship";
+import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 interface UseAllChampionshipsOptions {
   year?: number;
@@ -57,27 +62,35 @@ export function useInfiniteChampionships({
   enabled = true,
 }: UseInfiniteChampionshipsOptions = {}) {
   const query = useInfiniteQuery({
-    queryKey: ["infiniteChampionships", year, pageSize],
+    queryKey: ["infiniteChampionships", year ?? "all", pageSize],
     enabled,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
-    queryFn: async ({ pageParam }: { pageParam: any }) => {
+    queryFn: async ({
+      pageParam,
+    }: {
+      pageParam: QueryDocumentSnapshot<DocumentData> | undefined;
+    }) => {
       return await fetchChampionshipsWithPagination({
         year,
         pageSize,
         cursor: pageParam,
       });
     },
-    getNextPageParam: (lastPage: any) => {
+    getNextPageParam: (lastPage: ChampionshipPage) => {
       return lastPage.hasMore ? lastPage.nextCursor : undefined;
     },
-    initialPageParam: undefined,
+    initialPageParam: undefined as
+      | QueryDocumentSnapshot<DocumentData>
+      | undefined,
   });
 
   // Flatten all pages into a single array
-  const allChampionships =
-    query.data?.pages.flatMap((page: ChampionshipPage) => page.championships) || [];
+  const allChampionships: UnifiedChampionship[] =
+    query.data?.pages?.flatMap(
+      (page: ChampionshipPage) => page.championships
+    ) || [];
 
   return {
     championships: allChampionships,
@@ -96,7 +109,7 @@ export function useHistoricalChampionships({
   year,
   enabled = true,
 }: UseAllChampionshipsOptions = {}) {
-  return useQuery({
+  return useQuery<HistoricalChampionship[]>({
     queryKey: ["historicalChampionships", year],
     enabled,
     queryFn: () => fetchHistoricalChampionships(year),
@@ -110,10 +123,18 @@ interface UseUserChampionshipsOptions {
   enabled?: boolean;
 }
 
+interface UserChampionshipsResult {
+  championships: UnifiedChampionship[];
+  isLoading: boolean;
+  isError: boolean;
+  totalChampionships: number;
+  totalRunnerUps: number;
+}
+
 export function useUserChampionships({
   userId,
   enabled = true,
-}: UseUserChampionshipsOptions) {
+}: UseUserChampionshipsOptions): UserChampionshipsResult {
   const { championships, isLoading, isError } = useAllChampionships({
     enabled,
   });

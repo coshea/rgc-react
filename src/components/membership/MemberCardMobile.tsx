@@ -1,4 +1,5 @@
 import { Button, Tooltip } from "@heroui/react";
+import { Link } from "react-router-dom";
 import type { User } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
 import { formatPhone } from "@/utils/phone";
@@ -19,17 +20,22 @@ export function MemberCardMobile({
   return (
     <div className="block md:hidden p-4 w-full overflow-x-hidden break-words">
       <div className="flex items-center gap-4 mb-2 min-w-0">
-        <UserAvatar
-          className="w-8 h-8"
-          size="sm"
-          userId={user.id}
-          name={user.displayName || user.email}
-          src={(user.photoURL as string) || undefined}
-          alt={user.displayName || user.email}
-        />
-        <div className="text-sm text-default-500 font-medium truncate">
-          {user.displayName || "(no name)"}
-        </div>
+        <Link
+          to={`/profile/${user.id}`}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity min-w-0"
+        >
+          <UserAvatar
+            className="w-8 h-8"
+            size="sm"
+            userId={user.id}
+            name={user.displayName || user.email}
+            src={(user.photoURL as string) || undefined}
+            alt={user.displayName || user.email}
+          />
+          <div className="text-sm text-default-500 font-medium truncate hover:text-primary">
+            {user.displayName || "(no name)"}
+          </div>
+        </Link>
       </div>
       <div className="text-sm text-default-500 mb-1 flex items-center gap-2 whitespace-normal break-words">
         <span className="font-medium">Email:</span>

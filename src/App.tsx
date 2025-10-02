@@ -11,6 +11,7 @@ import SignUpPage from "@/pages/signup";
 import PolicyPage from "@/pages/policies";
 import PastChampions from "@/pages/past-champions";
 import ProfilePage from "@/pages/profile";
+import UserProfilePage from "@/pages/user-profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
@@ -36,6 +37,14 @@ function App() {
         path={siteConfig.pages.pastchampions.link}
       />
       <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
+      <Route
+        element={
+          <RequireAuth>
+            <UserProfilePage />
+          </RequireAuth>
+        }
+        path="/profile/:userId"
+      />
       <Route element={<TournamentsPage />} path="/tournaments" />
       <Route
         element={<TournamentDetailPage />}
