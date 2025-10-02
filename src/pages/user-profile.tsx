@@ -7,10 +7,17 @@ import {
   Chip,
   Button,
   Divider,
-  Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  useDisclosure,
+  Skeleton,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { ProfileForm } from "@/components/profile-form";
+import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
 import {
   useUserChampionships,
@@ -18,15 +25,22 @@ import {
   useUserWinnings,
 } from "@/hooks/useUserTournaments";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
+import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
 import type { User } from "@/api/users";
+import { toDate } from "@/api/users";
 
 interface UserProfilePageProps {}
 
 const UserProfilePage: React.FC<UserProfilePageProps> = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const { usersMap, isLoading: usersLoading } = useUsersMap();
   const [user, setUser] = useState<User | null>(null);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
+  // Check if the current user is viewing their own profile
+  const isOwnProfile = currentUser?.uid === userId;
 
   // Fetch championships and tournament wins separately
   const { data: championships = [], isLoading: championshipsLoading } =
@@ -45,8 +59,151 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
 
   if (usersLoading || championshipsLoading || winsLoading || winningsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" color="primary" />
+      <div className="max-w-6xl mx-auto p-6 space-y-4">
+        {/* Back Button Skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-20 rounded-lg" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
+
+        {/* Profile Header Skeleton */}
+        <Card className="bg-gradient-to-r from-primary/10 to-secondary/10">
+          <CardBody className="p-8">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <Skeleton className="w-32 h-32 rounded-full" />
+              <div className="flex-1 text-center md:text-left space-y-3 w-full">
+                <div>
+                  <Skeleton className="h-8 w-64 mx-auto md:mx-0 mb-2 rounded-lg" />
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
+                  </div>
+                </div>
+
+                {/* Member since skeleton */}
+                <div className="flex items-center justify-center md:justify-start gap-2 text-sm">
+                  <Skeleton className="w-4 h-4 rounded" />
+                  <Skeleton className="h-4 w-24 rounded" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-4 h-4 rounded" />
+                    <Skeleton className="h-4 w-32 rounded" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-4 h-4 rounded" />
+                    <Skeleton className="h-4 w-28 rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Tournament Winnings Skeleton */}
+          <Card className="lg:col-span-1">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-5 h-5 rounded" />
+                <Skeleton className="h-6 w-32 rounded" />
+              </div>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <div className="text-center space-y-2">
+                <Skeleton className="h-8 w-24 mx-auto rounded" />
+                <Skeleton className="h-4 w-20 mx-auto rounded" />
+              </div>
+
+              <Divider />
+
+              <div className="text-center space-y-2">
+                <Skeleton className="h-6 w-20 mx-auto rounded" />
+                <Skeleton className="h-4 w-16 mx-auto rounded" />
+              </div>
+
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-20 rounded" />
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <Skeleton className="h-4 w-12 rounded" />
+                    <Skeleton className="h-4 w-16 rounded" />
+                  </div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Championships Skeleton */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-5 h-5 rounded" />
+                <Skeleton className="h-6 w-24 rounded" />
+                <Skeleton className="h-5 w-8 rounded-full" />
+              </div>
+            </CardHeader>
+            <CardBody>
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
+                  >
+                    <Skeleton className="w-8 h-8 rounded mb-2" />
+                    <Skeleton className="h-4 w-20 mb-1 rounded" />
+                    <Skeleton className="h-6 w-12 mb-1 rounded" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+        </div>
+
+        {/* Tournament Wins Skeleton */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-5 h-5 rounded" />
+                <Skeleton className="h-6 w-28 rounded" />
+                <Skeleton className="h-5 w-8 rounded-full" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-6">
+              {[2024, 2023].map((year) => (
+                <div key={year} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-12 rounded" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-content1 border-default-200"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Skeleton className="w-4 h-4 rounded" />
+                          <Skeleton className="h-4 flex-1 rounded" />
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Skeleton className="h-5 w-8 rounded-full" />
+                          <Skeleton className="h-4 w-12 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
       </div>
     );
   }
@@ -89,8 +246,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-4">
-      {/* Back Button */}
-      <div className="flex items-center gap-4">
+      {/* Back Button and Edit Profile */}
+      <div className="flex items-center justify-between">
         <Button
           variant="flat"
           size="sm"
@@ -99,6 +256,18 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
         >
           Back
         </Button>
+
+        {isOwnProfile && (
+          <Button
+            color="primary"
+            variant="flat"
+            size="sm"
+            startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
+            onPress={onOpen}
+          >
+            Edit Profile
+          </Button>
+        )}
       </div>
 
       {/* Profile Header */}
@@ -118,9 +287,37 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
                     "Unknown Member"}
                 </h1>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                  {user.membershipType && (
-                    <Chip color="primary" variant="flat" size="sm">
-                      {user.membershipType} Member
+                  {user.boardMember && (
+                    <Chip
+                      color={
+                        user.role &&
+                        BOARD_ROLE_META[
+                          user.role as keyof typeof BOARD_ROLE_META
+                        ]
+                          ? BOARD_ROLE_META[
+                              user.role as keyof typeof BOARD_ROLE_META
+                            ].color
+                          : "secondary"
+                      }
+                      variant="flat"
+                      size="sm"
+                      startContent={
+                        <Icon
+                          icon={
+                            user.role &&
+                            BOARD_ROLE_META[
+                              user.role as keyof typeof BOARD_ROLE_META
+                            ]
+                              ? BOARD_ROLE_META[
+                                  user.role as keyof typeof BOARD_ROLE_META
+                                ].icon
+                              : "lucide:shield"
+                          }
+                          className="w-3 h-3"
+                        />
+                      }
+                    >
+                      {formatBoardRoleLabel(user.role)}
                     </Chip>
                   )}
                   {majorChampionships.length > 0 && (
@@ -137,6 +334,17 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
                     </Chip>
                   )}
                 </div>
+
+                {/* Member since display */}
+                {user.createdAt && (
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-default-600">
+                    <Icon icon="lucide:calendar" className="w-4 h-4" />
+                    <span>
+                      Member since{" "}
+                      {toDate(user.createdAt)?.getFullYear() || "Unknown"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -367,6 +575,31 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
           )}
         </CardBody>
       </Card>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="2xl"
+        scrollBehavior="inside"
+        placement="center"
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold">Edit Profile</h2>
+                <p className="text-sm text-default-500">
+                  Update your profile information and settings
+                </p>
+              </ModalHeader>
+              <ModalBody className="pb-6">
+                <ProfileForm />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

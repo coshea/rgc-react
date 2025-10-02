@@ -11,7 +11,30 @@ import {
   orderBy,
   updateDoc,
   deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
+
+// Utility type for Firestore timestamp fields that can be either Timestamp or Date
+export type FirestoreTimestamp = Timestamp | Date;
+
+/**
+ * Utility function to safely convert Firestore timestamp to Date
+ */
+export function toDate(timestamp: FirestoreTimestamp | undefined): Date | null {
+  if (!timestamp) return null;
+
+  // If it's a Firestore Timestamp, use toDate() method
+  if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+    return timestamp.toDate();
+  }
+
+  // If it's already a Date, return it
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+
+  return null;
+}
 
 export type UserProfilePayload = {
   firstName?: string;
@@ -35,6 +58,8 @@ export type UserProfilePayload = {
 
 export type User = UserProfilePayload & {
   id: string;
+  createdAt?: FirestoreTimestamp;
+  updatedAt?: FirestoreTimestamp;
 };
 
 /** Create a new user document (admin action). */
