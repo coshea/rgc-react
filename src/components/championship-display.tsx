@@ -35,10 +35,14 @@ export function ChampionshipCard({
 
   return (
     <Card
-      className={`w-full ${isClubChampion ? "border-2 border-primary" : ""}`}
+      className={`w-full transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+        isClubChampion
+          ? "border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10"
+          : "bg-gradient-to-br from-content1 to-content2/50 hover:bg-gradient-to-br hover:from-content1 hover:to-content2"
+      }`}
       shadow={isClubChampion ? "lg" : "md"}
     >
-      <CardHeader className="flex flex-col gap-2">
+      <CardHeader className="flex flex-col gap-1 pb-2">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             {isClubChampion && (
@@ -65,23 +69,9 @@ export function ChampionshipCard({
 
       <Divider />
 
-      <CardBody className="space-y-3">
-        {/** Determine singular/plural labels based on counts */}
-        {(() => {
-          /* no-op IIFE to keep local consts scoped to body */
-          return null;
-        })()}
+      <CardBody className="space-y-4 p-4">
         {/* Winners */}
         <div className="space-y-2">
-          {(() => {
-            const winnersCount = championship.winnerNames?.length || 0;
-            const winnersLabel = winnersCount === 1 ? "Champion" : "Champions";
-            return (
-              <h4 className="text-sm font-medium text-default-600">
-                {winnersLabel}
-              </h4>
-            );
-          })()}
           {championship.winnerNames && championship.winnerNames.length > 0 ? (
             championship.winnerNames.map((winnerName, index) => {
               const winnerId = championship.winnerIds?.[index];
@@ -89,22 +79,31 @@ export function ChampionshipCard({
                 winnerId && usersMap.size > 0
                   ? usersMap.get(winnerId)
                   : undefined;
+              const winnersCount = championship.winnerNames?.length || 0;
+              const winnersLabel =
+                winnersCount === 1 ? "Champion" : "Champions";
 
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 rounded-medium bg-content1 shadow-small"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <UserAvatar
                     user={winnerUser}
                     name={winnerName}
                     userId={winnerId}
-                    className="w-12 h-12"
+                    className="w-12 h-12 ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg"
                     size="md"
                     alt={winnerName}
                   />
-                  <div className="flex flex-col">
-                    <span className="font-semibold">{winnerName}</span>
+                  <div className="flex flex-col flex-1">
+                    <span className="font-bold text-amber-900 dark:text-amber-100">
+                      {winnerName}
+                    </span>
+                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1">
+                      <Icon icon="lucide:trophy" className="w-3 h-3" />
+                      {winnersLabel}
+                    </span>
                   </div>
                   {winnerId && (
                     <div className="ml-auto">
@@ -113,7 +112,9 @@ export function ChampionshipCard({
                         to={`/profile/${winnerId}`}
                         size="sm"
                         variant="flat"
+                        color="warning"
                         isIconOnly
+                        className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800"
                       >
                         <Icon icon="lucide:user" className="w-4 h-4" />
                       </Button>
@@ -123,16 +124,22 @@ export function ChampionshipCard({
               );
             })
           ) : (
-            <div className="flex items-center gap-3 p-3 rounded-medium bg-content1 shadow-small">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md">
               <UserAvatar
                 src={undefined}
                 name="Unknown Champion"
-                className="w-12 h-12"
+                className="w-12 h-12 ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg"
                 size="md"
                 alt="Unknown Champion"
               />
-              <div className="flex flex-col">
-                <span className="font-semibold">Unknown Champion</span>
+              <div className="flex flex-col flex-1">
+                <span className="font-bold text-amber-900 dark:text-amber-100">
+                  Unknown Champion
+                </span>
+                <span className="text-sm text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1">
+                  <Icon icon="lucide:trophy" className="w-3 h-3" />
+                  Champion
+                </span>
               </div>
             </div>
           )}
@@ -142,38 +149,35 @@ export function ChampionshipCard({
         {championship.runnerUpNames &&
           championship.runnerUpNames.length > 0 && (
             <div className="space-y-2">
-              {(() => {
-                const runnerCount = championship.runnerUpNames?.length || 0;
-                const runnerLabel =
-                  runnerCount === 1 ? "Runner-up" : "Runners-up";
-                return (
-                  <h4 className="text-sm font-medium text-default-600">
-                    {runnerLabel}
-                  </h4>
-                );
-              })()}
               {championship.runnerUpNames.map((runnerUpName, index) => {
                 const runnerUpId = championship.runnerUpIds?.[index];
                 const runnerUpUser = runnerUpId
                   ? usersMap.get(runnerUpId)
                   : undefined;
+                const runnerCount = championship.runnerUpNames?.length || 0;
+                const runnerLabel =
+                  runnerCount === 1 ? "Runner-up" : "Runners-up";
 
                 return (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 rounded-medium bg-content2"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-50 to-stone-50 dark:from-slate-950/30 dark:to-stone-950/30 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <UserAvatar
                       user={runnerUpUser}
                       name={runnerUpName}
                       userId={runnerUpId}
-                      className="w-12 h-12 opacity-80"
+                      className="w-11 h-11 ring-2 ring-slate-300 dark:ring-slate-600"
                       size="md"
                       alt={runnerUpName}
                     />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-default-600">
+                    <div className="flex flex-col flex-1">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">
                         {runnerUpName}
+                      </span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1">
+                        <Icon icon="lucide:award" className="w-3 h-3" />
+                        {runnerLabel}
                       </span>
                     </div>
                     {runnerUpId && (
@@ -183,7 +187,9 @@ export function ChampionshipCard({
                           to={`/profile/${runnerUpId}`}
                           size="sm"
                           variant="flat"
+                          color="default"
                           isIconOnly
+                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
                         >
                           <Icon icon="lucide:user" className="w-4 h-4" />
                         </Button>
@@ -226,14 +232,21 @@ export function ChampionshipYearGroup({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Chip size="lg" variant="solid" color="primary" className="text-lg">
+    <div className="space-y-8">
+      <div className="flex items-center gap-3">
+        <div className="w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
+        <Chip
+          size="lg"
+          variant="solid"
+          color="primary"
+          className="text-lg font-bold px-6 py-2 bg-gradient-to-r from-primary to-primary/80"
+        >
           {year}
         </Chip>
+        <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent"></div>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-6">
         {" "}
         {Object.entries(groupedByType).map(([, typeChampionships]) =>
           typeChampionships.map((championship) => (
@@ -294,7 +307,7 @@ export function ChampionshipsList({
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 px-4">
+    <div className="max-w-7xl mx-auto space-y-16 px-4 py-8">
       {years.map((year) => (
         <ChampionshipYearGroup
           key={year}
