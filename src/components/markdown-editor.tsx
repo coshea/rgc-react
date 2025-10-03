@@ -10,6 +10,14 @@ export interface MarkdownEditorProps {
   label?: string;
   placeholder?: string;
   minRows?: number;
+  /** When true, the editor/preview will expand to available parent height */
+  fillHeight?: boolean;
+  /** Called when user clicks the popout button in the toolbar */
+  onPopout?: () => void;
+  /** When true, force the editor mode (disable preview) */
+  forceEdit?: boolean;
+  /** Hide the preview toggle button */
+  hidePreviewToggle?: boolean;
 }
 
 const BUTTONS: Array<{
@@ -82,6 +90,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   label = "Details (Markdown)",
   placeholder = "Use markdown for rich tournament details...",
   minRows = 6,
+  forceEdit = false,
+  hidePreviewToggle = false,
+  fillHeight = false,
+  onPopout,
 }) => {
   const [preview, setPreview] = React.useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -104,8 +116,10 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     });
   }
 
+  const wrapperClass = fillHeight ? "flex flex-col h-full" : "space-y-2";
+
   return (
-    <div className="space-y-2">
+    <div className={wrapperClass}>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">{label}</label>
         <div className="flex items-center gap-1 flex-wrap">
@@ -122,34 +136,82 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               </Button>
             </Tooltip>
           ))}
-          <Button
-            size="sm"
-            variant="flat"
-            onPress={() => setPreview((p) => !p)}
-            aria-label="Toggle preview"
-          >
-            {preview ? "Edit" : "Preview"}
-          </Button>
-        </div>
-      </div>
-      {!preview ? (
-        <Textarea
-          ref={textareaRef as any}
-          placeholder={placeholder}
-          minRows={minRows}
-          value={value}
-          onValueChange={onChange}
-          classNames={{ input: "font-mono text-sm" }}
-        />
-      ) : (
-        <div className="border rounded-md p-3 bg-content2 max-h-80 overflow-auto prose dark:prose-invert text-sm">
-          {value.trim() ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
-          ) : (
-            <div className="text-foreground-500 italic">No content</div>
+          {!hidePreviewToggle && (
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => setPreview((p) => !p)}
+              aria-label="Toggle preview"
+            >
+              {preview ? "Edit" : "Preview"}
+            </Button>
+          )}
+          {onPopout && (
+            <Tooltip content="Popout">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={onPopout}
+                aria-label="Open popout editor"
+              >
+                <Icon icon="lucide:expand" className="w-4 h-4" />
+              </Button>
+            </Tooltip>
           )}
         </div>
-      )}
+      </div>
+      <div className={fillHeight ? "flex-1 min-h-0" : ""}>
+        {forceEdit ? (
+          fillHeight ? (
+            <textarea
+              ref={textareaRef as any}
+              placeholder={placeholder}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
+            />
+          ) : (
+            <Textarea
+              ref={textareaRef as any}
+              placeholder={placeholder}
+              minRows={minRows}
+              value={value}
+              onValueChange={onChange}
+              classNames={{ input: `font-mono text-sm` }}
+            />
+          )
+        ) : !preview ? (
+          fillHeight ? (
+            <textarea
+              ref={textareaRef as any}
+              placeholder={placeholder}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
+            />
+          ) : (
+            <Textarea
+              ref={textareaRef as any}
+              placeholder={placeholder}
+              minRows={minRows}
+              value={value}
+              onValueChange={onChange}
+              classNames={{ input: `font-mono text-sm` }}
+            />
+          )
+        ) : (
+          <div
+            className={`border rounded-md p-3 bg-content2 overflow-auto prose dark:prose-invert text-sm ${fillHeight ? "h-full" : "max-h-80"}`}
+          >
+            {value.trim() ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+            ) : (
+              <div className="text-foreground-500 italic">No content</div>
+            )}
+          </div>
+        )}
+      </div>
       <p className="text-[11px] text-foreground-500">
         Supports Markdown & GFM (tables, strikethrough, task lists).
       </p>

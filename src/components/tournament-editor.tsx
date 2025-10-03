@@ -26,6 +26,8 @@ import { WinnerForm } from "@/components/winner-form";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { PlusIcon } from "@heroicons/react/24/solid";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -83,6 +85,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [addOpen, setAddOpen] = React.useState(false);
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
   const [adding, setAdding] = React.useState(false);
+  const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
 
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
@@ -378,11 +381,17 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
               />
-              <MarkdownEditor
-                value={detailsMarkdown}
-                onChange={setDetailsMarkdown}
-                placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
-              />
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <MarkdownEditor
+                    value={detailsMarkdown}
+                    onChange={setDetailsMarkdown}
+                    placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
+                    minRows={10}
+                    onPopout={() => setDetailsPopoutOpen(true)}
+                  />
+                </div>
+              </div>
               <DatePicker
                 label="Tournament Date"
                 value={date}
@@ -656,6 +665,50 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 >
                   Add
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {detailsPopoutOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setDetailsPopoutOpen(false)}
+            />
+            <div className="bg-background dark:bg-default-100 rounded-lg p-4 w-full max-w-5xl z-10 max-h-[80vh]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium">Details (Popout Editor)</h3>
+                <Button
+                  variant="flat"
+                  onPress={() => setDetailsPopoutOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[70vh]">
+                <div className="col-span-1 h-full">
+                  <div className="h-full">
+                    <MarkdownEditor
+                      value={detailsMarkdown}
+                      onChange={setDetailsMarkdown}
+                      minRows={20}
+                      forceEdit
+                      hidePreviewToggle
+                      fillHeight
+                      label="Editor"
+                      placeholder="Edit tournament details (markdown)"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-1 border rounded-md p-3 bg-content2 h-full overflow-auto prose dark:prose-invert">
+                  {detailsMarkdown.trim() ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {detailsMarkdown}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="text-foreground-500 italic">No content</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
