@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MembersList } from "@/components/membership";
+import { MemoryRouter } from "react-router-dom";
 import type { User } from "@/api/users";
 
 // This test ensures non-admin users do NOT see the STATUS column header or admin-only Active toggle UI.
@@ -19,19 +20,21 @@ function DirectoryFragmentNonAdmin() {
   const activeOnly = false;
   const activeSet = new Set<string>();
   return (
-    <div>
-      {/* Toggle should NOT render when isAdmin is false */}
-      {isAdmin && <div>Active {currentYear} Only</div>}
-      <MembersList
-        members={mockUsers}
-        filter=""
-        isAdmin={isAdmin}
-        activeSet={activeSet}
-        activeOnly={activeOnly}
-        onEdit={() => {}}
-        onDelete={() => {}}
-      />
-    </div>
+    <MemoryRouter>
+      <div>
+        {/* Toggle should NOT render when isAdmin is false */}
+        {isAdmin && <div>Active {currentYear} Only</div>}
+        <MembersList
+          members={mockUsers}
+          filter=""
+          isAdmin={isAdmin}
+          activeSet={activeSet}
+          activeOnly={activeOnly}
+          onEdit={() => {}}
+          onDelete={() => {}}
+        />
+      </div>
+    </MemoryRouter>
   );
 }
 

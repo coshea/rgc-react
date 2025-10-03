@@ -9,8 +9,9 @@ import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
 import PolicyPage from "@/pages/policies";
-import PastChampionsWithAvatars from "@/pages/past-champions-avatars";
+import PastChampions from "@/pages/past-champions";
 import ProfilePage from "@/pages/profile";
+import UserProfilePage from "@/pages/user-profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
@@ -32,10 +33,18 @@ function App() {
       <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />
       <Route element={<PolicyPage />} path={siteConfig.pages.policies.link} />
       <Route
-        element={<PastChampionsWithAvatars showAllYears={true} />}
+        element={<PastChampions showAllYears={true} />}
         path={siteConfig.pages.pastchampions.link}
       />
       <Route element={<ProfilePage />} path={siteConfig.pages.profile.link} />
+      <Route
+        element={
+          <RequireAuth>
+            <UserProfilePage />
+          </RequireAuth>
+        }
+        path="/profile/:userId"
+      />
       <Route element={<TournamentsPage />} path="/tournaments" />
       <Route
         element={<TournamentDetailPage />}

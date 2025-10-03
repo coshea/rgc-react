@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { MembersList } from "@/components/membership";
 import type { User } from "@/api/users";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 // Minimal test to assert filtering and badge rendering logic without Firestore.
 
@@ -26,15 +27,17 @@ describe("MembersList active filtering", () => {
 
   it("shows all users when activeOnly=false", () => {
     render(
-      <MembersList
-        members={users}
-        filter=""
-        isAdmin={false}
-        activeSet={activeSet}
-        activeOnly={false}
-        onEdit={() => {}}
-        onDelete={() => {}}
-      />
+      <MemoryRouter>
+        <MembersList
+          members={users}
+          filter=""
+          isAdmin={false}
+          activeSet={activeSet}
+          activeOnly={false}
+          onEdit={() => {}}
+          onDelete={() => {}}
+        />
+      </MemoryRouter>
     );
     // Each appears twice (desktop row + mobile card)
     expect(screen.getAllByText("u1@test.local").length).toBeGreaterThanOrEqual(
@@ -50,15 +53,17 @@ describe("MembersList active filtering", () => {
 
   it("filters to only active when activeOnly=true", () => {
     render(
-      <MembersList
-        members={users}
-        filter=""
-        isAdmin={false}
-        activeSet={activeSet}
-        activeOnly={true}
-        onEdit={() => {}}
-        onDelete={() => {}}
-      />
+      <MemoryRouter>
+        <MembersList
+          members={users}
+          filter=""
+          isAdmin={false}
+          activeSet={activeSet}
+          activeOnly={true}
+          onEdit={() => {}}
+          onDelete={() => {}}
+        />
+      </MemoryRouter>
     );
     // Only active user (u2) should be present
     expect(screen.queryByText("u1@test.local")).toBeNull();

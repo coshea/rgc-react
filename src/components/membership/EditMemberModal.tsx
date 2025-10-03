@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
 import type { User } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
+import { addToast } from "@/providers/toast";
 
 interface EditMemberModalProps {
   open: boolean;
@@ -69,44 +70,87 @@ export function EditMemberModal({
   }, [open, editing, isAdmin, currentYear]);
 
   async function handleSave() {
-    // First run existing onSave for user profile
-    await onSave();
-    if (!isAdmin || !editing || !paymentDirty) {
-      return; // Nothing to do for membership payment
-    }
-
     try {
-      const membershipType = (payment.membershipType || "").trim();
-      if (membershipType !== "full" && membershipType !== "handicap") {
-        // Don't proceed if membership type is invalid or missing.
-        // A toast message could be added here for better UX.
-        return;
+      // First run existing onSave for user profile
+      const newUserId = await onSave();
+
+      // Determine user ID for payment processing
+      const userIdForPayment = editing?.id || newUserId;
+
+      if (!isAdmin || !userIdForPayment || !paymentDirty) {
+        // Show success toast for user profile save
+        addToast({
+          title: "Member saved successfully",
+          description: editing
+            ? "Member information has been updated."
+            : "New member has been created.",
+          color: "success",
+        });
+        return; // Nothing to do for membership payment
       }
 
-      const updates: Partial<
-        Pick<
-          import("@/api/membership").MembershipPayment,
-          "amount" | "method" | "membershipType" | "status"
-        >
-      > = {
-        membershipType,
-        amount: payment.amount ? Number(payment.amount) : undefined,
-        method: payment.method || undefined,
-        status: payment.markPaid ? "confirmed" : "pending",
-      };
+      try {
+        const membershipType = (payment.membershipType || "").trim();
+        if (membershipType !== "full" && membershipType !== "handicap") {
+          addToast({
+            title: "Invalid membership type",
+            description:
+              "Please select a valid membership type (Full or Handicap).",
+            color: "warning",
+          });
+          return;
+        }
 
-      const result = await updateMembershipPayment({
-        userId: editing.id,
-        year: currentYear,
-        updates,
+        const updates: Partial<
+          Pick<
+            import("@/api/membership").MembershipPayment,
+            "amount" | "method" | "membershipType" | "status"
+          >
+        > = {
+          membershipType,
+          amount: payment.amount ? Number(payment.amount) : undefined,
+          method: payment.method || undefined,
+          status: payment.markPaid ? "confirmed" : "pending",
+        };
+
+        const result = await updateMembershipPayment({
+          userId: userIdForPayment,
+          year: currentYear,
+          updates,
+        });
+
+        // Invalidate active members so UI reflects new status immediately
+        if (result?.confirmed || result?.created) {
+          qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
+        }
+
+        // Show success toast for both user and payment save
+        addToast({
+          title: "Member saved successfully",
+          description:
+            "Member information and payment details have been updated.",
+          color: "success",
+        });
+      } catch (paymentError) {
+        console.error(
+          "[EditMemberModal] membership payment save error",
+          paymentError
+        );
+        addToast({
+          title: "Payment save failed",
+          description:
+            "Member information was saved, but there was an error updating payment details.",
+          color: "warning",
+        });
+      }
+    } catch (userSaveError) {
+      console.error("[EditMemberModal] user save error", userSaveError);
+      addToast({
+        title: "Save failed",
+        description:
+          "There was an error saving the member information. Please try again.",
+        color: "danger",
       });
-
-      // Invalidate active members so UI reflects new status immediately
-      if (result?.confirmed || result?.created) {
-        qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
-      }
-    } catch (e) {
-      console.error("[EditMemberModal] membership save error", e);
     }
   }
 

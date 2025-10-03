@@ -96,3 +96,19 @@ Last generated: 2025-09-29
 - For avatars/names in UI, rely on the `UserAvatar` contract: pass `user` when available; only pass `name` when `user` is not provided or you need to override display text. Avoid repeating manual `(profileURL || photoURL)` chains.
 - If a conditional check is required (e.g., membership gating), write a small type guard (e.g., `function isFullMember(u: User | undefined): u is User { return !!u && u.membershipType === 'full'; }`).
 - When adding new code, reject PRs that include `(u as any)` patterns for user data access; refactor to the above approach instead.
+
+## 13. Strict TypeScript Policy: NO "as any"
+
+- **NEVER use `as any` type assertions** - this defeats TypeScript's purpose and introduces runtime risks.
+- **Proper type definitions**: When data comes from external sources (Firestore, APIs), create proper types and utility functions.
+- **Type guards**: Use type guards and utility functions for safe type narrowing (e.g., `toDate()` for Firestore timestamps).
+- **Optional chaining**: Use `?.` and nullish coalescing `??` for safe property access.
+- **Union types**: Use union types (`string | number`) instead of `any` when multiple types are possible.
+- **Unknown over any**: If absolutely necessary, use `unknown` and narrow the type with proper checks.
+- **Utility functions**: Create typed utility functions for common conversions (e.g., `toDate()` for Firebase timestamps).
+- **Examples of proper patterns**:
+  - ✅ `toDate(user.createdAt)?.getFullYear()`
+  - ✅ `user.displayName ?? 'Unknown User'`
+  - ✅ `function isValidUser(u: unknown): u is User { ... }`
+  - ❌ `(user as any).createdAt.toDate()`
+  - ❌ `data as any`
