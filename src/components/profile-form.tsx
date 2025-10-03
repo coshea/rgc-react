@@ -1,10 +1,10 @@
 import React from "react";
-import { Card, Input, Button } from "@heroui/react";
+import { Card, Input, Button, Spinner } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { PiGolf } from "react-icons/pi";
-import { saveUserProfile, getUserProfile } from "@/api/users";
+import { saveUserProfile } from "@/api/users";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface FormData {
@@ -41,83 +41,39 @@ export function ProfileForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const { user } = useAuth();
-  const { userProfile, save, isSaving, saveError } = useUserProfile();
+  const { userProfile, save, isSaving, saveError, isLoading } =
+    useUserProfile();
 
-  // Only initialize form with user data once to avoid overwriting edits
-  const initializedRef = React.useRef(false);
-
+  // Initialize form data from userProfile hook (simplified single source of truth)
   React.useEffect(() => {
-    let mounted = true;
-    async function loadProfile() {
-      if (!user || initializedRef.current || !mounted) return;
-
-      // Try to load Firestore profile first
-      try {
-        if (userProfile) {
-          const profile = userProfile;
-          setFormData((prev) => ({
-            ...prev,
-            firstName: (profile as any)?.firstName || "",
-            lastName: (profile as any)?.lastName || "",
-            displayName: profile?.displayName || user.displayName || "",
-            email: profile?.email || user.email || "",
-            phone: profile?.phone || (user.phoneNumber as string) || "",
-            ghinNumber: profile?.ghinNumber || "",
-            profilePicture: null,
-          }));
-          setImagePreview(profile?.photoURL || user.photoURL || null);
-        } else {
-          const profile = await getUserProfile(user.uid);
-          if (profile) {
-            setFormData((prev) => ({
-              ...prev,
-              firstName: (profile as any).firstName || "",
-              lastName: (profile as any).lastName || "",
-              displayName: profile.displayName || user.displayName || "",
-              email: profile.email || user.email || "",
-              phone: profile.phone || (user.phoneNumber as string) || "",
-              ghinNumber: profile.ghinNumber || "",
-              profilePicture: null,
-            }));
-            setImagePreview(profile.photoURL || user.photoURL || null);
-          } else {
-            // Fallback to auth user data
-            setFormData((prev) => ({
-              ...prev,
-              firstName: (user.displayName || "").split(" ")[0] || "",
-              lastName:
-                (user.displayName || "").split(" ").slice(1).join(" ") || "",
-              displayName: user.displayName || "",
-              email: user.email || "",
-              phone: (user.phoneNumber as string) || "",
-              ghinNumber: "",
-              profilePicture: null,
-            }));
-            setImagePreview(user.photoURL || null);
-          }
-        }
-      } catch {
-        // On error, fallback to auth data
-        setFormData((prev) => ({
-          ...prev,
-          name: user.displayName || "",
-          email: user.email || "",
-          phone: (user.phoneNumber as string) || "",
-          ghinNumber: "",
-          profilePicture: null,
-        }));
-        setImagePreview(user.photoURL || null);
-      } finally {
-        initializedRef.current = true;
-      }
+    if (user && userProfile !== undefined) {
+      // userProfile can be null (no Firestore doc) or populated
+      const profile = userProfile || {};
+      setFormData({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        displayName: profile.displayName || user.displayName || "",
+        email: profile.email || user.email || "",
+        phone: profile.phone || user.phoneNumber || "",
+        ghinNumber: profile.ghinNumber || "",
+        profilePicture: null,
+      });
+      setImagePreview(profile.photoURL || user.photoURL || null);
+    } else if (user && !isLoading) {
+      // Fallback to auth user data if no profile exists and not loading
+      const nameParts = (user.displayName || "").split(" ");
+      setFormData({
+        firstName: nameParts[0] || "",
+        lastName: nameParts.slice(1).join(" ") || "",
+        displayName: user.displayName || "",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        ghinNumber: "",
+        profilePicture: null,
+      });
+      setImagePreview(user.photoURL || null);
     }
-
-    loadProfile();
-
-    return () => {
-      mounted = false;
-    };
-  }, [user]);
+  }, [user, userProfile, isLoading]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -253,6 +209,17 @@ export function ProfileForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading spinner while fetching profile data
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <Spinner size="lg" label="Loading profile data..." />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6">

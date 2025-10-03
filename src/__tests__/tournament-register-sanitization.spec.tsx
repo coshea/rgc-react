@@ -47,7 +47,30 @@ vi.mock("@/api/tournaments", async (importOriginal) => {
   };
 });
 
-vi.mock("@/config/firebase", () => ({ db: {} }));
+// Mock Firebase Firestore functions
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  query: vi.fn(() => ({})),
+  where: vi.fn(() => ({})),
+  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
+  getDoc: vi.fn(async () => ({ exists: () => false })),
+  addDoc: vi.fn(async () => ({ id: "mock-id" })),
+  setDoc: vi.fn(async () => {}),
+  deleteDoc: vi.fn(async () => {}),
+  orderBy: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => new Date()),
+  onSnapshot: vi.fn(() => () => {}),
+}));
+
+vi.mock("@/config/firebase", () => ({
+  db: {
+    _delegate: {
+      app: { options: {} },
+      settings: {},
+    },
+  },
+}));
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "u1", membershipType: "full" } }),
 }));

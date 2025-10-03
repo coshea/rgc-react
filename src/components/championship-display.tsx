@@ -10,6 +10,7 @@ import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
 import { useUsersMap } from "@/hooks/useUsers";
+import { useAuth } from "@/providers/AuthProvider";
 import type { UnifiedChampionship } from "@/types/championship";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 
@@ -24,7 +25,11 @@ export function ChampionshipCard({
   showEditButton = false,
   onEdit,
 }: ChampionshipCardProps) {
-  const { usersMap } = useUsersMap();
+  const { user, userLoggedIn } = useAuth();
+  const { usersMap } = useUsersMap({ publicNamesOnly: true }); // Always fetch for public names
+
+  // Only allow profile viewing for authenticated and verified users
+  const canViewProfiles = userLoggedIn && user?.emailVerified;
 
   const championshipTitle =
     CHAMPIONSHIP_TYPES[
@@ -105,7 +110,7 @@ export function ChampionshipCard({
                       {winnersLabel}
                     </span>
                   </div>
-                  {winnerId && (
+                  {winnerId && canViewProfiles && (
                     <div className="ml-auto">
                       <Button
                         as={Link}
@@ -180,7 +185,7 @@ export function ChampionshipCard({
                         {runnerLabel}
                       </span>
                     </div>
-                    {runnerUpId && (
+                    {runnerUpId && canViewProfiles && (
                       <div className="ml-auto">
                         <Button
                           as={Link}

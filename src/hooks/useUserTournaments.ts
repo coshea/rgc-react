@@ -45,7 +45,7 @@ export function useUserChampionships(userId: string | undefined) {
     queryFn: async (): Promise<UserChampionship[]> => {
       if (!userId) return [];
 
-      // Use the optimized function that queries by array-contains
+      // Use the updated fetchUserChampionships function that works correctly
       const championships = await fetchUserChampionships(userId);
       const userChampionships: UserChampionship[] = [];
 

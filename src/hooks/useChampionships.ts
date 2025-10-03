@@ -14,16 +14,16 @@ import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 interface UseAllChampionshipsOptions {
   year?: number;
-  enabled?: boolean;
+  enabled?: boolean; // Keep interface for backwards compatibility but ignore the value
 }
 
 export function useAllChampionships({
   year,
-  enabled = true,
+  enabled: _enabled = true, // Underscore prefix to indicate intentionally unused
 }: UseAllChampionshipsOptions = {}) {
   const query = useQuery<UnifiedChampionship[]>({
     queryKey: ["allChampionships", year],
-    enabled,
+    enabled: true, // Always enabled since championships are publicly readable
     staleTime: 1000 * 60 * 5, // 5 minutes - prevent unnecessary refetches
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
@@ -54,17 +54,17 @@ export function useAllChampionships({
 interface UseInfiniteChampionshipsOptions {
   year?: number;
   pageSize?: number;
-  enabled?: boolean;
+  enabled?: boolean; // Keep interface for backwards compatibility but ignore the value
 }
 
 export function useInfiniteChampionships({
   year,
   pageSize = 20,
-  enabled = true,
+  enabled: _enabled = true, // Underscore prefix to indicate intentionally unused
 }: UseInfiniteChampionshipsOptions = {}) {
   const query = useInfiniteQuery({
     queryKey: ["infiniteChampionships", year ?? "all", pageSize],
-    enabled,
+    enabled: true, // Always enabled since championships are publicly readable
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
@@ -108,11 +108,11 @@ export function useInfiniteChampionships({
 // Hook specifically for historical championships (admin use)
 export function useHistoricalChampionships({
   year,
-  enabled = true,
+  enabled: _enabled = true, // Underscore prefix to indicate intentionally unused
 }: UseAllChampionshipsOptions = {}) {
   return useQuery<HistoricalChampionship[]>({
     queryKey: ["historicalChampionships", year],
-    enabled,
+    enabled: true, // Always enabled since championships are publicly readable
     queryFn: () => fetchHistoricalChampionships(year),
     staleTime: 1000 * 60 * 5,
   });

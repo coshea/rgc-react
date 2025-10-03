@@ -109,8 +109,17 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   // Derive displayName from first + last if provided (trim + collapse spaces)
   const computedDisplay = computeDisplayName(data);
   if (computedDisplay) data.displayName = computedDisplay;
+
+  // Create payload and explicitly exclude board fields for security
+  // Only admins should be able to set these fields
+  const {
+    boardMember: _boardMember,
+    role: _role,
+    admin: _admin,
+    ...safeData
+  } = data;
   const payload = {
-    ...data,
+    ...safeData,
     updatedAt: serverTimestamp(),
   } as Record<string, any>;
 

@@ -3,6 +3,32 @@ import { render, screen, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TournamentRegister from "@/pages/tournament-register";
 
+// Mock Firebase Firestore functions
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  query: vi.fn(() => ({})),
+  where: vi.fn(() => ({})),
+  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
+  getDoc: vi.fn(async () => ({ exists: () => false })),
+  addDoc: vi.fn(async () => ({ id: "mock-id" })),
+  setDoc: vi.fn(async () => {}),
+  deleteDoc: vi.fn(async () => {}),
+  orderBy: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => new Date()),
+  onSnapshot: vi.fn(() => () => {}),
+}));
+
+vi.mock("@/config/firebase", () => ({
+  db: {
+    _delegate: {
+      app: { options: {} },
+      settings: {},
+    },
+  },
+  auth: { currentUser: { uid: "u1" } },
+}));
+
 // Polyfill CSS.escape for HeroUI Select (react-aria)
 if (!(globalThis as any).CSS) (globalThis as any).CSS = {};
 if (!(globalThis as any).CSS.escape)

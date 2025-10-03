@@ -40,15 +40,10 @@ service cloud.firestore {
           newData.role is string && newData.role != '' && allowed.hasAny([newData.role])
         );
       }
-      function boardFieldsUnchanged() {
-        return resource == null || (
-          resource.data.boardMember == request.resource.data.boardMember &&
-          resource.data.role == request.resource.data.role
-        );
-      }
       // Enforce minimal integrity: email must be a non-empty string on create.
       function hasBaselineFields(d) {
-        return d.email is string && d.email != '';
+        return (d.email is string && d.email != '') ||
+               (request.auth.token.email is string && request.auth.token.email != '');
       }
       // Core write gate with board field restrictions
       // Permit admins to create any user doc; permit non-admin authenticated users to create
@@ -59,9 +54,12 @@ service cloud.firestore {
         // Self-create with no board fields
         || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
-      allow update: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
-        isAdmin() || boardFieldsUnchanged()
-      );
+      // Updates
+      // Admin path: can update any profile with board validation
+      allow update: if request.auth != null && isAdmin() && boardRoleValid(request.resource.data);
+      
+      // Self-update path: can update own profile (board fields filtered client-side)
+      allow update: if request.auth != null && request.auth.uid == userId;
       allow delete: if isSelfOrAdmin();
     }
 

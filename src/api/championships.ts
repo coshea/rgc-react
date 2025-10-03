@@ -42,6 +42,7 @@ export async function fetchChampionshipsWithPagination(
   } = {}
 ): Promise<ChampionshipPage> {
   const { year, pageSize = 20, cursor } = options;
+
   const champCol = collection(db, "championships");
   const conditions = [];
 
@@ -61,6 +62,7 @@ export async function fetchChampionshipsWithPagination(
   }
 
   const snap = await getDocs(q);
+
   const docs = snap.docs;
 
   // Check if we have more data by looking at the extra document
@@ -286,81 +288,45 @@ export function onHistoricalChampionships(
 }
 
 // Optimized function to fetch championships where user is a winner
-export async function fetchUserChampionshipsAsWinner(
-  userId: string
-): Promise<UnifiedChampionship[]> {
-  const col = collection(db, "championships");
-  const q = query(
-    col,
-    where("winnerIds", "array-contains", userId),
-    orderBy("year", "desc")
-  );
-
-  const snap = await getDocs(q);
-  return snap.docs.map((docSnap) => {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      year: data.year,
-      championshipType: data.championshipType,
-      winnerNames: data.winnerNames,
-      winnerIds: data.winnerIds,
-      runnerUpNames: data.runnerUpNames,
-      runnerUpIds: data.runnerUpIds,
-      isHistorical: data.isHistorical,
-    } as UnifiedChampionship;
-  });
-}
-
-// Optimized function to fetch championships where user is a runner-up
-export async function fetchUserChampionshipsAsRunnerUp(
-  userId: string
-): Promise<UnifiedChampionship[]> {
-  const col = collection(db, "championships");
-  const q = query(
-    col,
-    where("runnerUpIds", "array-contains", userId),
-    orderBy("year", "desc")
-  );
-
-  const snap = await getDocs(q);
-  return snap.docs.map((docSnap) => {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      year: data.year,
-      championshipType: data.championshipType,
-      winnerNames: data.winnerNames,
-      winnerIds: data.winnerIds,
-      runnerUpNames: data.runnerUpNames,
-      runnerUpIds: data.runnerUpIds,
-      isHistorical: data.isHistorical,
-    } as UnifiedChampionship;
-  });
-}
+// Note: The individual fetchUserChampionshipsAsWinner and fetchUserChampionshipsAsRunnerUp
+// functions had issues with array-contains queries, so we use fetchUserChampionships instead
+// which fetches all championships and filters manually
 
 // Optimized function to fetch all championships for a specific user
 export async function fetchUserChampionships(
   userId: string
 ): Promise<UnifiedChampionship[]> {
-  // Execute both queries in parallel
-  const [winnerChampionships, runnerUpChampionships] = await Promise.all([
-    fetchUserChampionshipsAsWinner(userId),
-    fetchUserChampionshipsAsRunnerUp(userId),
-  ]);
+  // Note: Using manual filtering instead of array-contains query due to Firestore query issues
+  const col = collection(db, "championships");
+  const snap = await getDocs(col);
 
-  // Merge results and remove duplicates (user could be both winner and runner-up in different years/types)
-  const allChampionships = [...winnerChampionships, ...runnerUpChampionships];
-  const uniqueChampionships = allChampionships.filter(
-    (championship, index, arr) =>
-      arr.findIndex((c) => c.id === championship.id) === index
-  );
+  const matchingChampionships: UnifiedChampionship[] = [];
+
+  snap.docs.forEach((docSnap) => {
+    const data = docSnap.data();
+    const winnerIds = data.winnerIds || [];
+    const runnerUpIds = data.runnerUpIds || [];
+
+    // Check if user is in either winners or runners-up
+    if (winnerIds.includes(userId) || runnerUpIds.includes(userId)) {
+      matchingChampionships.push({
+        id: docSnap.id,
+        year: data.year,
+        championshipType: data.championshipType,
+        winnerNames: data.winnerNames,
+        winnerIds: data.winnerIds,
+        runnerUpNames: data.runnerUpNames,
+        runnerUpIds: data.runnerUpIds,
+        isHistorical: data.isHistorical,
+      } as UnifiedChampionship);
+    }
+  });
 
   // Sort by year (desc), then by championship type
-  uniqueChampionships.sort((a, b) => {
+  matchingChampionships.sort((a, b) => {
     if (a.year !== b.year) return b.year - a.year;
     return a.championshipType.localeCompare(b.championshipType);
   });
 
-  return uniqueChampionships;
+  return matchingChampionships;
 }

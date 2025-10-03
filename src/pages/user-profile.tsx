@@ -1,5 +1,4 @@
 import { useParams, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import {
   Card,
   CardBody,
@@ -18,7 +17,7 @@ import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { ProfileForm } from "@/components/profile-form";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUsersMap } from "@/hooks/useUsers";
+import { useUserById } from "@/hooks/useUserById";
 import {
   useUserChampionships,
   useUserTournamentWins,
@@ -26,23 +25,19 @@ import {
 } from "@/hooks/useUserTournaments";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
-import type { User } from "@/api/users";
 import { toDate } from "@/api/users";
 
-interface UserProfilePageProps {}
-
-const UserProfilePage: React.FC<UserProfilePageProps> = () => {
+const UserProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const { usersMap, isLoading: usersLoading } = useUsersMap();
-  const [user, setUser] = useState<User | null>(null);
+  const { user: profileUser, isLoading: userLoading } = useUserById(userId);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   // Check if the current user is viewing their own profile
   const isOwnProfile = currentUser?.uid === userId;
 
-  // Fetch championships and tournament wins separately
+  // Fetch championships and tournament wins separately (lazy loaded)
   const { data: championships = [], isLoading: championshipsLoading } =
     useUserChampionships(userId);
   const { data: tournamentWins = [], isLoading: winsLoading } =
@@ -50,14 +45,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
   const { data: winnings, isLoading: winningsLoading } =
     useUserWinnings(userId);
 
-  useEffect(() => {
-    if (!usersLoading && userId && usersMap.size > 0) {
-      const foundUser = usersMap.get(userId);
-      setUser(foundUser || null);
-    }
-  }, [userId, usersMap, usersLoading]);
-
-  if (usersLoading || championshipsLoading || winsLoading || winningsLoading) {
+  // Only wait for basic user profile data, let tournament data load lazily
+  if (userLoading) {
     return (
       <div className="max-w-6xl mx-auto p-6 space-y-4">
         {/* Back Button Skeleton */}
@@ -212,7 +201,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
     return <Navigate to="/membership/member-directory" replace />;
   }
 
-  if (!user) {
+  if (!profileUser) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <Card className="text-center py-12">
@@ -275,27 +264,27 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
         <CardBody className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <UserAvatar
-              user={user}
+              user={profileUser}
               className="w-32 h-32 ring-4 ring-primary/20 shadow-xl"
               size="lg"
             />
             <div className="flex-1 text-center md:text-left space-y-3">
               <div>
                 <h1 className="text-3xl font-bold text-foreground mb-2">
-                  {user.displayName ||
-                    `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                  {profileUser.displayName ||
+                    `${profileUser.firstName || ""} ${profileUser.lastName || ""}`.trim() ||
                     "Unknown Member"}
                 </h1>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                  {user.boardMember && (
+                  {profileUser.boardMember && (
                     <Chip
                       color={
-                        user.role &&
+                        profileUser.role &&
                         BOARD_ROLE_META[
-                          user.role as keyof typeof BOARD_ROLE_META
+                          profileUser.role as keyof typeof BOARD_ROLE_META
                         ]
                           ? BOARD_ROLE_META[
-                              user.role as keyof typeof BOARD_ROLE_META
+                              profileUser.role as keyof typeof BOARD_ROLE_META
                             ].color
                           : "secondary"
                       }
@@ -304,12 +293,12 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
                       startContent={
                         <Icon
                           icon={
-                            user.role &&
+                            profileUser.role &&
                             BOARD_ROLE_META[
-                              user.role as keyof typeof BOARD_ROLE_META
+                              profileUser.role as keyof typeof BOARD_ROLE_META
                             ]
                               ? BOARD_ROLE_META[
-                                  user.role as keyof typeof BOARD_ROLE_META
+                                  profileUser.role as keyof typeof BOARD_ROLE_META
                                 ].icon
                               : "lucide:shield"
                           }
@@ -317,10 +306,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
                         />
                       }
                     >
-                      {formatBoardRoleLabel(user.role)}
+                      {formatBoardRoleLabel(profileUser.role)}
                     </Chip>
                   )}
-                  {majorChampionships.length > 0 && (
+                  {!championshipsLoading && majorChampionships.length > 0 && (
                     <Chip
                       color="warning"
                       variant="flat"
@@ -336,31 +325,36 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
                 </div>
 
                 {/* Member since display */}
-                {user.createdAt && (
+                {profileUser.createdAt && (
                   <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-default-600">
                     <Icon icon="lucide:calendar" className="w-4 h-4" />
                     <span>
                       Member since{" "}
-                      {toDate(user.createdAt)?.getFullYear() || "Unknown"}
+                      {toDate(profileUser.createdAt)?.getFullYear() ||
+                        "Unknown"}
                     </span>
                   </div>
                 )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {user.email && (
+                {profileUser.email && (
                   <div className="flex items-center gap-2">
                     <Icon icon="lucide:mail" className="w-4 h-4 text-primary" />
-                    <span className="text-default-700">{user.email}</span>
+                    <span className="text-default-700">
+                      {profileUser.email}
+                    </span>
                   </div>
                 )}
-                {user.phone && (
+                {profileUser.phone && (
                   <div className="flex items-center gap-2">
                     <Icon
                       icon="lucide:phone"
                       className="w-4 h-4 text-primary"
                     />
-                    <span className="text-default-700">{user.phone}</span>
+                    <span className="text-default-700">
+                      {profileUser.phone}
+                    </span>
                   </div>
                 )}
               </div>
@@ -379,40 +373,67 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
             </div>
           </CardHeader>
           <CardBody className="space-y-4">
-            <div className="text-center space-y-2">
-              <div className="text-2xl font-bold text-success">
-                ${winnings?.lifetime.toLocaleString() || 0}
-              </div>
-              <p className="text-sm text-default-600">Lifetime Winnings</p>
-            </div>
-
-            <Divider />
-
-            <div className="text-center space-y-2">
-              <div className="text-xl font-semibold text-primary">
-                ${currentYearWinnings.toLocaleString()}
-              </div>
-              <p className="text-sm text-default-600">{currentYear} Winnings</p>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-default-700">
-                Recent Years
-              </h4>
-              {winnings?.yearly.slice(0, 4).map((yearData) => (
-                <div
-                  key={yearData.year}
-                  className="flex justify-between items-center"
-                >
-                  <span className="text-sm text-default-600">
-                    {yearData.year}
-                  </span>
-                  <span className="text-sm font-medium">
-                    ${yearData.amount.toLocaleString()}
-                  </span>
+            {winningsLoading ? (
+              <>
+                <div className="text-center space-y-2">
+                  <Skeleton className="h-8 w-24 mx-auto rounded" />
+                  <Skeleton className="h-4 w-20 mx-auto rounded" />
                 </div>
-              ))}
-            </div>
+                <Divider />
+                <div className="text-center space-y-2">
+                  <Skeleton className="h-6 w-20 mx-auto rounded" />
+                  <Skeleton className="h-4 w-16 mx-auto rounded" />
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-20 rounded" />
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-12 rounded" />
+                      <Skeleton className="h-4 w-16 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center space-y-2">
+                  <div className="text-2xl font-bold text-success">
+                    ${winnings?.lifetime.toLocaleString() || 0}
+                  </div>
+                  <p className="text-sm text-default-600">Lifetime Winnings</p>
+                </div>
+
+                <Divider />
+
+                <div className="text-center space-y-2">
+                  <div className="text-xl font-semibold text-primary">
+                    ${currentYearWinnings.toLocaleString()}
+                  </div>
+                  <p className="text-sm text-default-600">
+                    {currentYear} Winnings
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-default-700">
+                    Recent Years
+                  </h4>
+                  {winnings?.yearly.slice(0, 4).map((yearData) => (
+                    <div
+                      key={yearData.year}
+                      className="flex justify-between items-center"
+                    >
+                      <span className="text-sm text-default-600">
+                        {yearData.year}
+                      </span>
+                      <span className="text-sm font-medium">
+                        ${yearData.amount.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </CardBody>
         </Card>
 
@@ -422,13 +443,29 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
             <div className="flex items-center gap-2">
               <Icon icon="lucide:crown" className="w-5 h-5 text-warning" />
               <h3 className="text-lg font-semibold">Championships</h3>
-              <Chip size="sm" color="warning" variant="flat">
-                {majorChampionships.length}
-              </Chip>
+              {!championshipsLoading && (
+                <Chip size="sm" color="warning" variant="flat">
+                  {majorChampionships.length}
+                </Chip>
+              )}
             </div>
           </CardHeader>
           <CardBody>
-            {majorChampionships.length > 0 ? (
+            {championshipsLoading ? (
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
+                  >
+                    <Skeleton className="w-8 h-8 rounded mb-2" />
+                    <Skeleton className="h-4 w-20 mb-1 rounded" />
+                    <Skeleton className="h-6 w-12 mb-1 rounded" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : majorChampionships.length > 0 ? (
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {majorChampionships.map((championship) => (
                   <div
@@ -487,14 +524,44 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
             <div className="flex items-center gap-2">
               <Icon icon="lucide:award" className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Tournament Wins</h3>
-              <Chip size="sm" color="primary" variant="flat">
-                {tournamentWins.length}
-              </Chip>
+              {!winsLoading && (
+                <Chip size="sm" color="primary" variant="flat">
+                  {tournamentWins.length}
+                </Chip>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardBody>
-          {tournamentWins.length > 0 ? (
+          {winsLoading ? (
+            <div className="space-y-6">
+              {[2024, 2023].map((year) => (
+                <div key={year} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-6 w-12 rounded" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-content1 border-default-200"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Skeleton className="w-4 h-4 rounded" />
+                          <Skeleton className="h-4 flex-1 rounded" />
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Skeleton className="h-5 w-8 rounded-full" />
+                          <Skeleton className="h-4 w-12 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : tournamentWins.length > 0 ? (
             <div className="space-y-6">
               {Object.entries(
                 tournamentWins.reduce(

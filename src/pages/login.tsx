@@ -1,17 +1,10 @@
 import React, { useEffect } from "react";
-import {
-  Button,
-  Input,
-  Checkbox,
-  Link,
-  Form,
-  Divider,
-  addToast,
-} from "@heroui/react";
+import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
+import { addToast } from "@/providers/toast";
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
