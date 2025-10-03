@@ -1,21 +1,14 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  Button,
-  Divider,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Card, CardBody, Button, Divider } from "@heroui/react";
 import { addToast } from "@/providers/toast";
-import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import type { User } from "@/api/users";
+import RegistrationEditor from "@/components/registration-editor";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -170,16 +163,7 @@ const TournamentRegister: React.FC = () => {
     );
   }
 
-  const addTeammate = () => {
-    if (teammates.length < maxTeamSize) setTeammates([...teammates, ""]);
-  };
-
-  // teammates state now stores user IDs directly; updateTeammate is not used
-
-  const removeTeammate = (index: number) => {
-    const copy = teammates.filter((_, i) => i !== index);
-    setTeammates(copy);
-  };
+  // teammates state now stores user IDs directly; RegistrationEditor provides add/remove
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,60 +318,13 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {teammates.map((userId, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="flex-1">
-                  <Select
-                    label={i === 0 ? "Team Leader / You" : `Teammate ${i + 1}`}
-                    placeholder="Select user"
-                    selectionMode="single"
-                    selectedKeys={userId ? new Set([userId]) : new Set()}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys as Set<string>)[0] as
-                        | string
-                        | undefined;
-                      const copy = [...teammates];
-                      copy[i] = selected || "";
-                      setTeammates(copy);
-                    }}
-                    className="w-full"
-                  >
-                    {fullMembers.map((u) => (
-                      <SelectItem key={u.id}>
-                        {u.displayName || u.email || u.id}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-
-                {i > 0 && (
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    onPress={() => removeTeammate(i)}
-                  >
-                    <Icon icon="lucide:trash-2" />
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                color="primary"
-                variant="flat"
-                onPress={addTeammate}
-                isDisabled={teammates.length >= maxTeamSize}
-              >
-                Add Teammate
-              </Button>
-              <div className="text-sm text-foreground-500">
-                {teammates.length}/{maxTeamSize}
-              </div>
-            </div>
+            <RegistrationEditor
+              value={teammates}
+              onChange={setTeammates}
+              users={fullMembers}
+              maxSize={maxTeamSize}
+              labels={{ leader: "Team Leader / You" }}
+            />
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
 

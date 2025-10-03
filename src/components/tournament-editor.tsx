@@ -90,6 +90,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 
+  // NOTE: Admin Add Registration workflow should not auto-select the current user.
+  // Admins need the ability to add arbitrary registrations on behalf of others.
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -643,6 +646,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 onChange={setNewMembers}
                 users={allUsers}
                 maxSize={players}
+                disableAutoSelect={true}
               />
               <div className="h-4" />
               <div className="flex justify-end gap-2">

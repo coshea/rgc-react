@@ -2,6 +2,7 @@ import React from "react";
 import { Select, SelectItem, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface RegistrationEditorProps {
   value: string[]; // array of user ids
@@ -9,6 +10,8 @@ interface RegistrationEditorProps {
   users: User[];
   maxSize: number;
   labels?: { leader?: string; teammate?: (index: number) => string };
+  /** When true, do not auto-select the current authenticated user into the first slot. Useful for admin flows. */
+  disableAutoSelect?: boolean;
 }
 
 export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
@@ -17,8 +20,20 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   users,
   maxSize,
   labels,
+  disableAutoSelect,
 }) => {
   const ids = value || [];
+
+  // useAuth throws when not used within provider; guard for test environments
+  let authUser: { uid?: string } | null | undefined;
+  try {
+    // eslint-disable-next-line prefer-const
+    const auth = useAuth();
+    authUser = auth?.user;
+  } catch (e) {
+    // No AuthProvider available (e.g., unit tests). Continue without auto-fill.
+    authUser = undefined;
+  }
 
   // Build a fast lookup set for valid user ids
   const validUserIds = React.useMemo(
@@ -35,6 +50,30 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
+
+  // Auto-select the current authenticated user as the first player when registering
+  // This can be disabled by passing disableAutoSelect=true (useful for admin-only flows).
+  React.useEffect(() => {
+    if (disableAutoSelect) return;
+    const uid = authUser?.uid;
+    if (!uid) return;
+
+    // Only set when there are no ids yet, or the first slot is empty
+    if (ids.length === 0) {
+      if (validUserIds.has(uid)) {
+        onChange([uid]);
+      }
+      return;
+    }
+
+    if (!ids[0] && validUserIds.has(uid)) {
+      const next = [...ids];
+      next[0] = uid;
+      onChange(next);
+    }
+    // We intentionally depend on authUser.uid and users (validUserIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.uid, users, disableAutoSelect]);
 
   const updateIdx = (index: number, newId: string | undefined) => {
     const next = [...ids];
