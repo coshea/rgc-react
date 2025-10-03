@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Link, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ChampionshipsList } from "@/components/championship-display";
+import { DirectorySearchBar } from "@/components/membership/DirectorySearchBar";
 import { ChampionshipsListSkeleton } from "@/components/championship-skeleton";
 import { ChampionshipEditorModal } from "@/components/championship-editor-modal";
 import { useInfiniteChampionships } from "@/hooks/useChampionships";
@@ -72,6 +73,20 @@ export default function PastChampions({
     handleEditorClose();
   };
 
+  // Search/filter state for past champions (matches membership directory styling)
+  const [filter, setFilter] = useState("");
+
+  // Apply simple client-side filter: match against winner or runner-up names
+  const normalizedFilter = filter.trim().toLowerCase();
+  const filteredChampionships = normalizedFilter
+    ? championships.filter((c) => {
+        const haystack = [...(c.winnerNames || []), ...(c.runnerUpNames || [])]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(normalizedFilter);
+      })
+    : championships;
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
@@ -132,8 +147,15 @@ export default function PastChampions({
         )}
       </div>
 
+      <DirectorySearchBar
+        filter={filter}
+        onFilterChange={setFilter}
+        count={filteredChampionships.length}
+        total={championships.length}
+      />
+
       <ChampionshipsList
-        championships={championships}
+        championships={filteredChampionships}
         showEditButtons={isAdmin}
         onEdit={handleEdit}
         emptyMessage={

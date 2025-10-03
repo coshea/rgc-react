@@ -41,6 +41,17 @@ export default function MembershipDirectoryPage() {
   const [activeOnly, setActiveOnly] = useState(true);
   const activeSet = membersHook.activeSet;
 
+  // compute visible count for the header summary (matches MembersList predicate)
+  const visibleCount = members.filter((m) => {
+    if (activeOnly && !activeSet.has(m.id)) return false;
+    if (!filter.trim()) return true;
+    const q = filter.toLowerCase();
+    return (
+      (m.displayName || "").toLowerCase().includes(q) ||
+      (m.email || "").toLowerCase().includes(q)
+    );
+  }).length;
+
   // Phone helpers moved to utils/phone.ts
 
   useEffect(() => {
@@ -211,8 +222,8 @@ export default function MembershipDirectoryPage() {
       <DirectorySearchBar
         filter={filter}
         onFilterChange={setFilter}
+        count={visibleCount}
         total={members.length}
-        isFiltered={!!filter}
       />
       {isAdmin && (
         <div className="flex items-center justify-end mb-2">
