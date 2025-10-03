@@ -8,7 +8,6 @@ import {
   Input,
   Select,
   SelectItem,
-  Switch,
 } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
@@ -23,6 +22,7 @@ import {
   updateHistoricalChampionship,
 } from "@/api/championships";
 import { useUsers } from "@/hooks/useUsers";
+import { PlayerEntrySection } from "./player-entry-section";
 
 interface ChampionshipEditorModalProps {
   isOpen: boolean;
@@ -34,12 +34,16 @@ interface ChampionshipEditorModalProps {
 interface ChampionshipFormData {
   year: number;
   championshipType: ChampionshipType;
-  winnerNames: string[];
-  winnerIds: string[];
-  runnerUpNames: string[];
-  runnerUpIds: string[];
-  winnersHistorical: boolean[];
-  runnersUpHistorical: boolean[];
+  winners: Array<{
+    name: string;
+    id: string;
+    isHistorical: boolean;
+  }>;
+  runnersUp: Array<{
+    name: string;
+    id: string;
+    isHistorical: boolean;
+  }>;
 }
 
 export function ChampionshipEditorModal({
@@ -53,12 +57,8 @@ export function ChampionshipEditorModal({
   const [formData, setFormData] = useState<ChampionshipFormData>({
     year: new Date().getFullYear(),
     championshipType: "club-champion",
-    winnerNames: [""],
-    winnerIds: [""],
-    runnerUpNames: [],
-    runnerUpIds: [],
-    winnersHistorical: [false],
-    runnersUpHistorical: [],
+    winners: [{ name: "", id: "", isHistorical: false }],
+    runnersUp: [],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,31 +68,36 @@ export function ChampionshipEditorModal({
 
   useEffect(() => {
     if (championship) {
+      const winners = (championship.winnerNames || [""]).map((name, index) => ({
+        name,
+        id: championship.winnerIds?.[index] || "",
+        isHistorical: championship.isHistorical,
+      }));
+
+      const runnersUp = (championship.runnerUpNames || []).map(
+        (name, index) => ({
+          name,
+          id: championship.runnerUpIds?.[index] || "",
+          isHistorical: championship.isHistorical,
+        })
+      );
+
       setFormData({
         year: championship.year,
         championshipType: championship.championshipType as ChampionshipType,
-        winnerNames: championship.winnerNames || [""],
-        winnerIds: championship.winnerIds || [""],
-        runnerUpNames: championship.runnerUpNames || [],
-        runnerUpIds: championship.runnerUpIds || [],
-        winnersHistorical: (championship.winnerNames || [""]).map(
-          () => championship.isHistorical
-        ),
-        runnersUpHistorical: (championship.runnerUpNames || []).map(
-          () => championship.isHistorical
-        ),
+        winners:
+          winners.length > 0
+            ? winners
+            : [{ name: "", id: "", isHistorical: false }],
+        runnersUp,
       });
     } else {
       // Reset form for new championship
       setFormData({
         year: new Date().getFullYear(),
         championshipType: "club-champion",
-        winnerNames: [""],
-        winnerIds: [""],
-        runnerUpNames: [],
-        runnerUpIds: [],
-        winnersHistorical: [false],
-        runnersUpHistorical: [],
+        winners: [{ name: "", id: "", isHistorical: false }],
+        runnersUp: [],
       });
     }
     setErrors({});
@@ -102,8 +107,10 @@ export function ChampionshipEditorModal({
     const newErrors: Record<string, string> = {};
 
     // Validate winners
-    const hasWinnerNames = formData.winnerNames.some((name) => name.trim());
-    const hasWinnerIds = formData.winnerIds.some((id) => id.trim());
+    const hasWinnerNames = formData.winners.some((winner) =>
+      winner.name.trim()
+    );
+    const hasWinnerIds = formData.winners.some((winner) => winner.id.trim());
 
     if (!hasWinnerNames && !hasWinnerIds) {
       newErrors.winnerNames =
@@ -126,13 +133,19 @@ export function ChampionshipEditorModal({
       const championshipData = {
         year: formData.year,
         championshipType: formData.championshipType,
-        winnerNames: formData.winnerNames.filter((name) => name.trim()),
-        winnerIds: formData.winnerIds.filter((id) => id.trim()),
-        runnerUpNames: formData.runnerUpNames.filter((name) => name.trim()),
-        runnerUpIds: formData.runnerUpIds.filter((id) => id.trim()),
+        winnerNames: formData.winners
+          .filter((w) => w.name.trim())
+          .map((w) => w.name),
+        winnerIds: formData.winners.filter((w) => w.id.trim()).map((w) => w.id),
+        runnerUpNames: formData.runnersUp
+          .filter((r) => r.name.trim())
+          .map((r) => r.name),
+        runnerUpIds: formData.runnersUp
+          .filter((r) => r.id.trim())
+          .map((r) => r.id),
         isHistorical:
-          formData.winnersHistorical.some(Boolean) ||
-          formData.runnersUpHistorical.some(Boolean),
+          formData.winners.some((w) => w.isHistorical) ||
+          formData.runnersUp.some((r) => r.isHistorical),
       };
 
       if (isEditing && championship) {
@@ -171,41 +184,37 @@ export function ChampionshipEditorModal({
       setFormData({
         year: new Date().getFullYear(),
         championshipType: "club-champion",
-        winnerNames: [""],
-        winnerIds: [""],
-        runnerUpNames: [],
-        runnerUpIds: [],
-        winnersHistorical: [false],
-        runnersUpHistorical: [],
+        winners: [{ name: "", id: "", isHistorical: false }],
+        runnersUp: [],
       });
       setErrors({});
       onClose();
     }
   };
 
+  // Winner handlers
   const addWinner = () => {
     setFormData((prev) => ({
       ...prev,
-      winnerNames: [...prev.winnerNames, ""],
-      winnerIds: [...prev.winnerIds, ""],
-      winnersHistorical: [...prev.winnersHistorical, false],
+      winners: [...prev.winners, { name: "", id: "", isHistorical: false }],
     }));
   };
 
   const removeWinner = (index: number) => {
-    if (formData.winnerNames.length > 1) {
+    if (formData.winners.length > 1) {
       setFormData((prev) => ({
         ...prev,
-        winnerNames: prev.winnerNames.filter((_, i) => i !== index),
-        winnerIds: prev.winnerIds.filter((_, i) => i !== index),
-        winnersHistorical: prev.winnersHistorical.filter((_, i) => i !== index),
+        winners: prev.winners.filter((_, i) => i !== index),
       }));
     }
   };
 
   const updateWinner = (index: number, field: "name" | "id", value: string) => {
     setFormData((prev) => {
-      if (field === "id" && !prev.winnersHistorical[index]) {
+      const newWinners = [...prev.winners];
+      const winner = newWinners[index];
+
+      if (field === "id" && !winner.isHistorical) {
         // For non-historical records, automatically set the name from the selected user
         const selectedUser = users?.find((user) => user.id === value);
         const userName =
@@ -214,63 +223,56 @@ export function ChampionshipEditorModal({
           selectedUser?.email ||
           "";
 
-        return {
-          ...prev,
-          winnerNames: prev.winnerNames.map((name, i) =>
-            i === index ? userName : name
-          ),
-          winnerIds: prev.winnerIds.map((id, i) => (i === index ? value : id)),
+        newWinners[index] = {
+          ...winner,
+          name: userName,
+          id: value,
         };
       } else {
-        // For historical records or name updates, update normally
-        return {
-          ...prev,
-          winnerNames:
-            field === "name"
-              ? prev.winnerNames.map((name, i) => (i === index ? value : name))
-              : prev.winnerNames,
-          winnerIds:
-            field === "id"
-              ? prev.winnerIds.map((id, i) => (i === index ? value : id))
-              : prev.winnerIds,
+        // For historical records or name updates, update the specific field
+        newWinners[index] = {
+          ...winner,
+          [field]: value,
         };
       }
+
+      return {
+        ...prev,
+        winners: newWinners,
+      };
     });
   };
 
   const updateWinnerHistorical = (index: number, isHistorical: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      winnersHistorical: prev.winnersHistorical.map((hist, i) =>
-        i === index ? isHistorical : hist
-      ),
-      // Clear the unused field when switching modes
-      winnerNames: prev.winnerNames.map((name, i) =>
-        i === index && !isHistorical ? "" : name
-      ),
-      winnerIds: prev.winnerIds.map((id, i) =>
-        i === index && isHistorical ? "" : id
-      ),
-    }));
+    setFormData((prev) => {
+      const newWinners = [...prev.winners];
+      newWinners[index] = {
+        ...newWinners[index],
+        isHistorical,
+        // Clear the unused field when switching modes
+        name: isHistorical ? newWinners[index].name : "",
+        id: isHistorical ? "" : newWinners[index].id,
+      };
+
+      return {
+        ...prev,
+        winners: newWinners,
+      };
+    });
   };
 
+  // Runner-up handlers
   const addRunnerUp = () => {
     setFormData((prev) => ({
       ...prev,
-      runnerUpNames: [...prev.runnerUpNames, ""],
-      runnerUpIds: [...prev.runnerUpIds, ""],
-      runnersUpHistorical: [...prev.runnersUpHistorical, false],
+      runnersUp: [...prev.runnersUp, { name: "", id: "", isHistorical: false }],
     }));
   };
 
   const removeRunnerUp = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      runnerUpNames: prev.runnerUpNames.filter((_, i) => i !== index),
-      runnerUpIds: prev.runnerUpIds.filter((_, i) => i !== index),
-      runnersUpHistorical: prev.runnersUpHistorical.filter(
-        (_, i) => i !== index
-      ),
+      runnersUp: prev.runnersUp.filter((_, i) => i !== index),
     }));
   };
 
@@ -280,7 +282,10 @@ export function ChampionshipEditorModal({
     value: string
   ) => {
     setFormData((prev) => {
-      if (field === "id" && !prev.runnersUpHistorical[index]) {
+      const newRunnersUp = [...prev.runnersUp];
+      const runnerUp = newRunnersUp[index];
+
+      if (field === "id" && !runnerUp.isHistorical) {
         // For non-historical records, automatically set the name from the selected user
         const selectedUser = users?.find((user) => user.id === value);
         const userName =
@@ -289,48 +294,42 @@ export function ChampionshipEditorModal({
           selectedUser?.email ||
           "";
 
-        return {
-          ...prev,
-          runnerUpNames: prev.runnerUpNames.map((name, i) =>
-            i === index ? userName : name
-          ),
-          runnerUpIds: prev.runnerUpIds.map((id, i) =>
-            i === index ? value : id
-          ),
+        newRunnersUp[index] = {
+          ...runnerUp,
+          name: userName,
+          id: value,
         };
       } else {
-        // For historical records or name updates, update normally
-        return {
-          ...prev,
-          runnerUpNames:
-            field === "name"
-              ? prev.runnerUpNames.map((name, i) =>
-                  i === index ? value : name
-                )
-              : prev.runnerUpNames,
-          runnerUpIds:
-            field === "id"
-              ? prev.runnerUpIds.map((id, i) => (i === index ? value : id))
-              : prev.runnerUpIds,
+        // For historical records or name updates, update the specific field
+        newRunnersUp[index] = {
+          ...runnerUp,
+          [field]: value,
         };
       }
+
+      return {
+        ...prev,
+        runnersUp: newRunnersUp,
+      };
     });
   };
 
   const updateRunnerUpHistorical = (index: number, isHistorical: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      runnersUpHistorical: prev.runnersUpHistorical.map((hist, i) =>
-        i === index ? isHistorical : hist
-      ),
-      // Clear the unused field when switching modes
-      runnerUpNames: prev.runnerUpNames.map((name, i) =>
-        i === index && !isHistorical ? "" : name
-      ),
-      runnerUpIds: prev.runnerUpIds.map((id, i) =>
-        i === index && isHistorical ? "" : id
-      ),
-    }));
+    setFormData((prev) => {
+      const newRunnersUp = [...prev.runnersUp];
+      newRunnersUp[index] = {
+        ...newRunnersUp[index],
+        isHistorical,
+        // Clear the unused field when switching modes
+        name: isHistorical ? newRunnersUp[index].name : "",
+        id: isHistorical ? "" : newRunnersUp[index].id,
+      };
+
+      return {
+        ...prev,
+        runnersUp: newRunnersUp,
+      };
+    });
   };
 
   return (
@@ -398,200 +397,40 @@ export function ChampionshipEditorModal({
           </div>
 
           {/* Winners Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Winners</h3>
-              <Button
-                size="sm"
-                variant="flat"
-                onPress={addWinner}
-                startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-              >
-                Add Winner
-              </Button>
-            </div>
-
-            {formData.winnerNames.map((name, index) => (
-              <div
-                key={index}
-                className="space-y-3 p-4 border border-default-200 rounded-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="text-medium font-medium">
-                    Winner {index + 1}
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-small text-default-500">
-                      Historical
-                    </span>
-                    <Switch
-                      size="sm"
-                      isSelected={formData.winnersHistorical[index]}
-                      onValueChange={(value) =>
-                        updateWinnerHistorical(index, value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-start">
-                  {formData.winnersHistorical[index] && (
-                    <Input
-                      label="Name"
-                      value={name}
-                      onValueChange={(value) =>
-                        updateWinner(index, "name", value)
-                      }
-                      isInvalid={!!errors.winnerNames}
-                      className="flex-1"
-                    />
-                  )}
-
-                  {!formData.winnersHistorical[index] && (
-                    <Select
-                      label="Select Winner"
-                      placeholder="Select a winner"
-                      selectedKeys={
-                        formData.winnerIds[index]
-                          ? [formData.winnerIds[index]]
-                          : []
-                      }
-                      onSelectionChange={(keys) => {
-                        const userId = Array.from(keys)[0] as string;
-                        updateWinner(index, "id", userId || "");
-                      }}
-                      isLoading={usersLoading}
-                      className="flex-1"
-                      aria-label={`Select winner ${index + 1}`}
-                      disallowEmptySelection={false}
-                    >
-                      {users?.map((user) => (
-                        <SelectItem key={user.id}>
-                          {user.displayName || user.firstName || user.email}
-                        </SelectItem>
-                      )) || []}
-                    </Select>
-                  )}
-
-                  {formData.winnerNames.length > 1 && (
-                    <Button
-                      isIconOnly
-                      variant="flat"
-                      color="danger"
-                      size="lg"
-                      onPress={() => removeWinner(index)}
-                    >
-                      <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {errors.winnerNames && (
-              <p className="text-danger text-sm">{errors.winnerNames}</p>
-            )}
-            {errors.winnerIds && (
-              <p className="text-danger text-sm">{errors.winnerIds}</p>
-            )}
-          </div>
+          <PlayerEntrySection
+            title="Winners"
+            buttonText="Add Winner"
+            entries={formData.winners}
+            users={users}
+            usersLoading={usersLoading}
+            errors={{
+              names: errors.winnerNames,
+              ids: errors.winnerIds,
+            }}
+            required={true}
+            onAdd={addWinner}
+            onRemove={removeWinner}
+            onUpdate={updateWinner}
+            onUpdateHistorical={updateWinnerHistorical}
+          />
 
           {/* Runners-up Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Runners-up (Optional)</h3>
-              <Button
-                size="sm"
-                variant="flat"
-                onPress={addRunnerUp}
-                startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-              >
-                Add Runner-up
-              </Button>
-            </div>
-
-            {formData.runnerUpNames.map((name, index) => (
-              <div
-                key={index}
-                className="space-y-3 p-4 border border-default-200 rounded-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="text-medium font-medium">
-                    Runner-up {index + 1}
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-small text-default-500">
-                      Historical
-                    </span>
-                    <Switch
-                      size="sm"
-                      isSelected={formData.runnersUpHistorical[index]}
-                      onValueChange={(value) =>
-                        updateRunnerUpHistorical(index, value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-start">
-                  {formData.runnersUpHistorical[index] && (
-                    <Input
-                      label="Name"
-                      value={name}
-                      onValueChange={(value) =>
-                        updateRunnerUp(index, "name", value)
-                      }
-                      className="flex-1"
-                    />
-                  )}
-
-                  {!formData.runnersUpHistorical[index] && (
-                    <Select
-                      label="Select Runner-up"
-                      placeholder="Select a runner-up"
-                      selectedKeys={
-                        formData.runnerUpIds[index]
-                          ? [formData.runnerUpIds[index]]
-                          : []
-                      }
-                      onSelectionChange={(keys) => {
-                        const userId = Array.from(keys)[0] as string;
-                        updateRunnerUp(index, "id", userId || "");
-                      }}
-                      isLoading={usersLoading}
-                      className="flex-1"
-                      aria-label={`Select runner-up ${index + 1}`}
-                      disallowEmptySelection={false}
-                    >
-                      {users?.map((user) => (
-                        <SelectItem key={user.id}>
-                          {user.displayName || user.firstName || user.email}
-                        </SelectItem>
-                      )) || []}
-                    </Select>
-                  )}
-
-                  <Button
-                    isIconOnly
-                    variant="flat"
-                    color="danger"
-                    size="lg"
-                    onPress={() => removeRunnerUp(index)}
-                  >
-                    <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Error display for runner-ups */}
-          {errors.runnerUpNames && (
-            <p className="text-danger text-sm">{errors.runnerUpNames}</p>
-          )}
-          {errors.runnerUpIds && (
-            <p className="text-danger text-sm">{errors.runnerUpIds}</p>
-          )}
+          <PlayerEntrySection
+            title="Runners-up"
+            buttonText="Add Runner-up"
+            entries={formData.runnersUp}
+            users={users}
+            usersLoading={usersLoading}
+            errors={{
+              names: errors.runnerUpNames,
+              ids: errors.runnerUpIds,
+            }}
+            required={false}
+            onAdd={addRunnerUp}
+            onRemove={removeRunnerUp}
+            onUpdate={updateRunnerUp}
+            onUpdateHistorical={updateRunnerUpHistorical}
+          />
         </ModalBody>
 
         <ModalFooter>
