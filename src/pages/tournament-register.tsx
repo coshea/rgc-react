@@ -38,6 +38,9 @@ const TournamentRegister: React.FC = () => {
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  // Whether to show the registration restricted modal when the current user
+  // is not a full member. Kept alongside other hooks to preserve hook order.
+  const [showRestricted, setShowRestricted] = React.useState(false);
   const currentUserIsFull = React.useMemo(
     () =>
       users.some(
@@ -144,23 +147,17 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
+  // If the current user isn't a full member, show a modal overlay explaining
+  // the restriction instead of navigating to a separate page. This keeps the
+  // user on the tournament page and provides actions (contact admin or go back).
+  React.useEffect(() => {
+    setShowRestricted(Boolean(tournament && !currentUserIsFull));
+  }, [tournament, currentUserIsFull]);
+
   if (loading) return <div>Loading...</div>;
 
   if (!tournament) {
     return <div>Unable to find tournament.</div>;
-  }
-
-  if (tournament && !currentUserIsFull) {
-    return (
-      <div className="max-w-xl mx-auto p-6 space-y-4">
-        <h2 className="text-xl font-semibold">Registration Restricted</h2>
-        <p className="text-sm text-foreground-600">
-          Only full members are eligible to register for tournaments. Your
-          account isn't marked as a full member. If you believe this is an
-          error, please contact an administrator.
-        </p>
-      </div>
-    );
   }
 
   // teammates state now stores user IDs directly; RegistrationEditor provides add/remove
@@ -413,6 +410,43 @@ const TournamentRegister: React.FC = () => {
               </div>
             )}
           </form>
+          {/* Registration restricted modal overlay */}
+          {showRestricted && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black opacity-40"
+                onClick={() => setShowRestricted(false)}
+              />
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-md">
+                <h3 className="text-lg font-medium mb-2">
+                  Registration Restricted
+                </h3>
+                <p className="text-sm text-foreground-500 mb-4">
+                  Only full members are eligible to register for tournaments.
+                  Your account isn't marked as a full member. If you believe
+                  this is an error, please contact an administrator.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="light"
+                    color="default"
+                    onPress={() => setShowRestricted(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={() => {
+                      // Link to contact page or open mailto — prefer navigation to contact page
+                      navigate("/contact");
+                    }}
+                  >
+                    Contact admin
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>
