@@ -284,3 +284,83 @@ export function onHistoricalChampionships(
     error
   );
 }
+
+// Optimized function to fetch championships where user is a winner
+export async function fetchUserChampionshipsAsWinner(
+  userId: string
+): Promise<UnifiedChampionship[]> {
+  const col = collection(db, "championships");
+  const q = query(
+    col,
+    where("winnerIds", "array-contains", userId),
+    orderBy("year", "desc")
+  );
+
+  const snap = await getDocs(q);
+  return snap.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      year: data.year,
+      championshipType: data.championshipType,
+      winnerNames: data.winnerNames,
+      winnerIds: data.winnerIds,
+      runnerUpNames: data.runnerUpNames,
+      runnerUpIds: data.runnerUpIds,
+      isHistorical: data.isHistorical,
+    } as UnifiedChampionship;
+  });
+}
+
+// Optimized function to fetch championships where user is a runner-up
+export async function fetchUserChampionshipsAsRunnerUp(
+  userId: string
+): Promise<UnifiedChampionship[]> {
+  const col = collection(db, "championships");
+  const q = query(
+    col,
+    where("runnerUpIds", "array-contains", userId),
+    orderBy("year", "desc")
+  );
+
+  const snap = await getDocs(q);
+  return snap.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      year: data.year,
+      championshipType: data.championshipType,
+      winnerNames: data.winnerNames,
+      winnerIds: data.winnerIds,
+      runnerUpNames: data.runnerUpNames,
+      runnerUpIds: data.runnerUpIds,
+      isHistorical: data.isHistorical,
+    } as UnifiedChampionship;
+  });
+}
+
+// Optimized function to fetch all championships for a specific user
+export async function fetchUserChampionships(
+  userId: string
+): Promise<UnifiedChampionship[]> {
+  // Execute both queries in parallel
+  const [winnerChampionships, runnerUpChampionships] = await Promise.all([
+    fetchUserChampionshipsAsWinner(userId),
+    fetchUserChampionshipsAsRunnerUp(userId),
+  ]);
+
+  // Merge results and remove duplicates (user could be both winner and runner-up in different years/types)
+  const allChampionships = [...winnerChampionships, ...runnerUpChampionships];
+  const uniqueChampionships = allChampionships.filter(
+    (championship, index, arr) =>
+      arr.findIndex((c) => c.id === championship.id) === index
+  );
+
+  // Sort by year (desc), then by championship type
+  uniqueChampionships.sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return a.championshipType.localeCompare(b.championshipType);
+  });
+
+  return uniqueChampionships;
+}

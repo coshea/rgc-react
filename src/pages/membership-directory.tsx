@@ -82,7 +82,7 @@ export default function MembershipDirectoryPage() {
     setConfirmDelete(u);
   }
 
-  async function save() {
+  async function save(): Promise<string | undefined> {
     if (!isAdmin) return;
     try {
       const phoneToSave = formatPhone(form.phone);
@@ -119,6 +119,9 @@ export default function MembershipDirectoryPage() {
           color: "success",
         });
         console.log("[Directory] User updated", { id: editing.id, ...form });
+
+        // Return undefined explicitly for updates
+        return undefined;
       } else {
         const docRef = await createUser({
           firstName: (form.firstName || "").trim() || undefined,

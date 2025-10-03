@@ -3,6 +3,7 @@ import {
   fetchAllChampionships,
   fetchHistoricalChampionships,
   fetchChampionshipsWithPagination,
+  fetchUserChampionships,
   type ChampionshipPage,
 } from "@/api/championships";
 import type {
@@ -127,6 +128,7 @@ interface UserChampionshipsResult {
   championships: UnifiedChampionship[];
   isLoading: boolean;
   isError: boolean;
+  error: unknown;
   totalChampionships: number;
   totalRunnerUps: number;
 }
@@ -135,23 +137,26 @@ export function useUserChampionships({
   userId,
   enabled = true,
 }: UseUserChampionshipsOptions): UserChampionshipsResult {
-  const { championships, isLoading, isError } = useAllChampionships({
-    enabled,
+  const query = useQuery<UnifiedChampionship[]>({
+    queryKey: ["userChampionships", userId],
+    enabled: enabled && !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes - championships don't change often
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false,
+    queryFn: () => fetchUserChampionships(userId),
   });
 
-  const userChampionships = championships.filter(
-    (c) => c.winnerIds?.includes(userId) || c.runnerUpIds?.includes(userId)
-  );
+  const championships = query.data || [];
 
   return {
-    championships: userChampionships,
-    isLoading,
-    isError,
-    totalChampionships: userChampionships.filter((c) =>
+    championships,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    totalChampionships: championships.filter((c) =>
       c.winnerIds?.includes(userId)
     ).length,
-    totalRunnerUps: userChampionships.filter((c) =>
-      c.runnerUpIds?.includes(userId)
-    ).length,
+    totalRunnerUps: championships.filter((c) => c.runnerUpIds?.includes(userId))
+      .length,
   };
 }

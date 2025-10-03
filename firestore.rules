@@ -188,16 +188,28 @@ service cloud.firestore {
       allow read: if true;
       
       // Only admins can create/update/delete championship records
-      allow create: if isAdmin() && request.auth != null &&
-        request.resource.data.year is int &&
-        request.resource.data.championshipType is string &&
-        request.resource.data.winnerNames is list &&
-        request.resource.data.isHistorical is bool &&
-        request.resource.data.createdAt is timestamp &&
-        request.resource.data.updatedAt is timestamp;
+      allow create: if isAdmin() &&  
+        request.resource.data.year is int &&  
+        request.resource.data.championshipType is string &&  
+        request.resource.data.winnerNames is list && request.resource.data.winnerNames.size() > 0 &&  
+        (!('winnerIds' in request.resource.data) || request.resource.data.winnerIds is list) &&  
+        (!('runnerUpNames' in request.resource.data) || request.resource.data.runnerUpNames is list) &&  
+        (!('runnerUpIds' in request.resource.data) || request.resource.data.runnerUpIds is list) &&  
+        request.resource.data.isHistorical is bool &&  
+        request.resource.data.createdAt is timestamp &&  
+        request.resource.data.updatedAt is timestamp; 
         
-      allow update: if isAdmin() && request.auth != null &&
-        request.resource.data.updatedAt is timestamp;
+      allow update: if isAdmin() &&  
+        request.resource.data.updatedAt is timestamp &&  
+        (!('year' in request.resource.data) || request.resource.data.year is int) &&  
+        (!('championshipType' in request.resource.data) || request.resource.data.championshipType is string) &&  
+        (!('winnerNames' in request.resource.data) || (request.resource.data.winnerNames is list && request.resource.data.winnerNames.size() > 0)) &&  
+        (!('isHistorical' in request.resource.data) || request.resource.data.isHistorical is bool);  
+
+
+
+
+
         
       allow delete: if isAdmin();
     }

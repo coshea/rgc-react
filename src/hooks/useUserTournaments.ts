@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { collection, query, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import type { UnifiedChampionship } from "@/types/championship";
+import { fetchUserChampionships } from "@/api/championships";
 import type { Tournament } from "@/types/tournament";
 import type { Winner } from "@/types/winner";
 
@@ -41,26 +41,19 @@ export interface UserWinnings {
  */
 export function useUserChampionships(userId: string | undefined) {
   return useQuery({
-    queryKey: ["userChampionships", userId],
+    queryKey: ["userChampionshipsForTournaments", userId],
     queryFn: async (): Promise<UserChampionship[]> => {
       if (!userId) return [];
 
-      const championshipsRef = collection(db, "championships");
-      const q = query(championshipsRef, orderBy("year", "desc"));
-      const snapshot = await getDocs(q);
-
+      // Use the optimized function that queries by array-contains
+      const championships = await fetchUserChampionships(userId);
       const userChampionships: UserChampionship[] = [];
 
-      snapshot.docs.forEach((doc) => {
-        const championship = {
-          id: doc.id,
-          ...doc.data(),
-        } as UnifiedChampionship;
-
+      championships.forEach((championship) => {
         // Check if user is a champion
         if (championship.winnerIds && championship.winnerIds.includes(userId)) {
           userChampionships.push({
-            id: `${doc.id}-champion`,
+            id: `${championship.id}-champion`,
             tournamentName: championship.championshipType,
             year: championship.year,
             championshipType: championship.championshipType,
@@ -75,7 +68,7 @@ export function useUserChampionships(userId: string | undefined) {
           championship.runnerUpIds.includes(userId)
         ) {
           userChampionships.push({
-            id: `${doc.id}-runnerup`,
+            id: `${championship.id}-runnerup`,
             tournamentName: championship.championshipType,
             year: championship.year,
             championshipType: championship.championshipType,
