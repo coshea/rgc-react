@@ -24,6 +24,13 @@ interface TournamentListProps {
   isAdmin?: boolean;
 }
 
+type FilterStatus =
+  | "all"
+  | "completed"
+  | "registration"
+  | "scheduled"
+  | "canceled";
+
 export const TournamentList: React.FC<TournamentListProps> = ({
   tournaments,
   onEdit,
@@ -31,6 +38,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   isAdmin = false,
 }) => {
   const navigate = useNavigate();
+  const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
 
   const formatDate = (date: Date): string => {
     // Force UTC timezone so the displayed date matches the stored date
@@ -51,6 +59,59 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Filter tournaments based on selected status
+  const filteredTournaments = React.useMemo(() => {
+    if (filterStatus === "all") return tournaments;
+
+    return tournaments.filter((tournament) => {
+      switch (filterStatus) {
+        case "completed":
+          return tournament.completed && !tournament.canceled;
+        case "registration":
+          return (
+            tournament.registrationOpen &&
+            !tournament.canceled &&
+            !tournament.completed
+          );
+        case "scheduled":
+          return (
+            !tournament.registrationOpen &&
+            !tournament.canceled &&
+            !tournament.completed
+          );
+        case "canceled":
+          return tournament.canceled;
+        default:
+          return true;
+      }
+    });
+  }, [tournaments, filterStatus]);
+
+  // Count tournaments for each filter
+  const filterCounts = React.useMemo(() => {
+    const counts = {
+      all: tournaments.length,
+      completed: 0,
+      registration: 0,
+      scheduled: 0,
+      canceled: 0,
+    };
+
+    tournaments.forEach((tournament) => {
+      if (tournament.canceled) {
+        counts.canceled++;
+      } else if (tournament.completed) {
+        counts.completed++;
+      } else if (tournament.registrationOpen) {
+        counts.registration++;
+      } else {
+        counts.scheduled++;
+      }
+    });
+
+    return counts;
+  }, [tournaments]);
 
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -256,9 +317,62 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   return (
     <>
+      {/* Filter buttons */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={filterStatus === "all" ? "solid" : "flat"}
+            color={filterStatus === "all" ? "primary" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("all")}
+          >
+            All ({filterCounts.all})
+          </Button>
+          <Button
+            variant={filterStatus === "registration" ? "solid" : "flat"}
+            color={filterStatus === "registration" ? "warning" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("registration")}
+            startContent={<Icon icon="lucide:user-plus" className="w-4 h-4" />}
+          >
+            Registration Open ({filterCounts.registration})
+          </Button>
+          <Button
+            variant={filterStatus === "scheduled" ? "solid" : "flat"}
+            color={filterStatus === "scheduled" ? "primary" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("scheduled")}
+            startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
+          >
+            Scheduled ({filterCounts.scheduled})
+          </Button>
+          <Button
+            variant={filterStatus === "completed" ? "solid" : "flat"}
+            color={filterStatus === "completed" ? "success" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("completed")}
+            startContent={
+              <Icon icon="lucide:check-circle" className="w-4 h-4" />
+            }
+          >
+            Completed ({filterCounts.completed})
+          </Button>
+          {filterCounts.canceled > 0 && (
+            <Button
+              variant={filterStatus === "canceled" ? "solid" : "flat"}
+              color={filterStatus === "canceled" ? "danger" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("canceled")}
+              startContent={<Icon icon="lucide:x-circle" className="w-4 h-4" />}
+            >
+              Canceled ({filterCounts.canceled})
+            </Button>
+          )}
+        </div>
+      </div>
       {/* Mobile view (card-based layout) */}
       <div className="md:hidden space-y-2">
-        {tournaments.map((tournament) => renderMobileCard(tournament))}
+        {filteredTournaments.map((tournament) => renderMobileCard(tournament))}
       </div>
 
       {/* Desktop view (table layout) */}
@@ -277,7 +391,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             <TableColumn>STATUS</TableColumn>
           </TableHeader>
           <TableBody>
-            {tournaments.map((tournament, idx) => (
+            {filteredTournaments.map((tournament, idx) => (
               <TableRow
                 key={tournament.firestoreId}
                 className={
