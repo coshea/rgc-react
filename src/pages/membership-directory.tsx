@@ -124,11 +124,6 @@ export default function MembershipDirectoryPage() {
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
         });
-        addToast({
-          title: "User Updated",
-          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} updated successfully`,
-          color: "success",
-        });
         console.log("[Directory] User updated", { id: editing.id, ...form });
 
         // Return undefined explicitly for updates
@@ -143,11 +138,6 @@ export default function MembershipDirectoryPage() {
           role: form.boardMember ? (form.role || "").trim() : null,
         });
         const newUserId = docRef.id;
-        addToast({
-          title: "User Added",
-          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} added successfully`,
-          color: "success",
-        });
         console.log("[Directory] User added", { id: newUserId, ...form });
 
         // Invalidate users query to refresh the list

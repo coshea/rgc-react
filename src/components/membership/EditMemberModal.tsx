@@ -78,15 +78,15 @@ export function EditMemberModal({
       const userIdForPayment = editing?.id || newUserId;
 
       if (!isAdmin || !userIdForPayment || !paymentDirty) {
-        // Show success toast for user profile save
         addToast({
-          title: "Member saved successfully",
+          title: "Member saved",
           description: editing
             ? "Member information has been updated."
             : "New member has been created.",
           color: "success",
         });
-        return; // Nothing to do for membership payment
+        onClose();
+        return; // Nothing else to do for membership payment path
       }
 
       try {
@@ -124,13 +124,13 @@ export function EditMemberModal({
           qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
         }
 
-        // Show success toast for both user and payment save
         addToast({
-          title: "Member saved successfully",
+          title: "Member saved",
           description:
             "Member information and payment details have been updated.",
           color: "success",
         });
+        onClose();
       } catch (paymentError) {
         console.error(
           "[EditMemberModal] membership payment save error",
