@@ -151,3 +151,10 @@ export async function deleteRegistration(
   );
   await deleteDoc(ref);
 }
+
+// Fetch all registrations for a tournament (non real-time) used for conflict detection
+export async function fetchAllRegistrations(tournamentId: string) {
+  const colRef = collection(db, "tournaments", tournamentId, "registrations");
+  const snaps = await getDocs(colRef);
+  return snaps.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+}

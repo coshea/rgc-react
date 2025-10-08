@@ -204,7 +204,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto px-4 pb-24 space-y-6">
       <Modal isOpen={createModeOpen} onClose={() => setCreateModeOpen(false)}>
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">

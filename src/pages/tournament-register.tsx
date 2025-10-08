@@ -9,6 +9,8 @@ import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import type { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
+// Static import for registrations list to ensure test mocks attach
+import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -38,6 +40,57 @@ const TournamentRegister: React.FC = () => {
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  // Duplicate conflict confirmation modal state
+  const [conflictModalOpen, setConflictModalOpen] = React.useState(false);
+  const [conflicts, setConflicts] = React.useState<
+    {
+      playerId: string;
+      playerName: string;
+      teamRegistrationId: string;
+      teamMembers: string[];
+    }[]
+  >([]);
+  // Track if user has acknowledged conflicts to allow proceeding without re-check modal during this submission attempt
+  const [conflictsAcknowledged, setConflictsAcknowledged] =
+    React.useState(false);
+  // Store prepared members for submission when conflicts need user confirmation
+  const pendingMembersRef = React.useRef<{
+    members: { id: string; displayName: string }[];
+    ownerId: string;
+  } | null>(null);
+
+  const finalizeRegistration = React.useCallback(
+    async (members: { id: string; displayName: string }[], ownerId: string) => {
+      if (!tournament?.firestoreId) return;
+      setSubmitting(true);
+      try {
+        await upsertRegistration(tournament.firestoreId, registrationId, {
+          team: members,
+          ownerId,
+        });
+        addToast({
+          title: "Registered",
+          description: "Your team has been registered.",
+          color: "success",
+        });
+        pendingMembersRef.current = null;
+        setConflictsAcknowledged(false);
+        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
+      } catch (err) {
+        console.error("Failed to register:", err);
+        addToast({
+          title: "Error",
+          description: "Failed to register team.",
+          color: "danger",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [navigate, registrationId, tournament?.firestoreId]
+  );
+  // store registrations for conflict detection
+  const [registrations, setRegistrations] = React.useState<any[]>([]);
   // Whether to show the registration restricted modal when the current user
   // is not a full member. Kept alongside other hooks to preserve hook order.
   const [showRestricted, setShowRestricted] = React.useState(false);
@@ -87,6 +140,23 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
+  }, [firestoreId]);
+
+  // Load all registrations for duplicate detection (static import so mocks work in tests)
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!firestoreId) return;
+    (async () => {
+      try {
+        const all = await fetchAllRegistrations(firestoreId);
+        if (!cancelled) setRegistrations(all);
+      } catch (e) {
+        console.warn("Failed to load registrations for conflict detection", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [firestoreId]);
 
   // Redirect unauthenticated users to login when they land on the register page
@@ -162,7 +232,7 @@ const TournamentRegister: React.FC = () => {
 
   // teammates state now stores user IDs directly; RegistrationEditor provides add/remove
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | Event) => {
     e.preventDefault();
 
     if (!tournament || !tournament.firestoreId) {
@@ -215,7 +285,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    // map ids to display names
+    // map ids to display names (never surface raw id in UI; raw id only persisted behind the scenes)
     const members = selectedIds.map((id) => {
       const u = fullMembers.find((x) => x.id === id);
       return {
@@ -235,35 +305,44 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const api = await import("@/api/tournaments");
-      await api.upsertRegistration(tournament.firestoreId, registrationId, {
-        team: members,
-        ownerId: user.uid,
-      });
-
-      addToast({
-        title: "Registered",
-        description: "Your team has been registered.",
-        color: "success",
-      });
-      // After successful registration or update, return user to the tournament detail page
-      if (tournament.firestoreId) {
-        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
-      } else {
-        navigate("/tournaments", { replace: true });
+    // Conflict detection: check if any selectedIds already appear in another team (exclude current registration if updating)
+    const lowerSelected = new Set(selectedIds);
+    const foundConflicts: {
+      playerId: string;
+      playerName: string;
+      teamRegistrationId: string;
+      teamMembers: string[];
+    }[] = [];
+    registrations.forEach((reg) => {
+      if (registrationId && reg.id === registrationId) return; // ignore own existing reg while updating
+      if (Array.isArray(reg.team)) {
+        const regMemberIds = reg.team.map((m: any) => m.id);
+        regMemberIds.forEach((pid: string) => {
+          if (lowerSelected.has(pid)) {
+            const pUser = fullMembers.find((u) => u.id === pid);
+            foundConflicts.push({
+              playerId: pid,
+              playerName: pUser?.displayName || pUser?.email || pid,
+              teamRegistrationId: reg.id,
+              teamMembers: regMemberIds,
+            });
+          }
+        });
       }
-    } catch (err) {
-      console.error("Failed to register:", err);
-      addToast({
-        title: "Error",
-        description: "Failed to register team.",
-        color: "danger",
-      });
-    } finally {
-      setSubmitting(false);
+    });
+
+    if (foundConflicts.length > 0 && !conflictsAcknowledged) {
+      pendingMembersRef.current = { members, ownerId: user.uid };
+      setConflicts(foundConflicts);
+      setConflictModalOpen(true);
+      return; // wait for user confirmation
     }
+
+    // Use stored members if we are completing after a conflict acknowledgement
+    const finalMembers = pendingMembersRef.current?.members || members;
+    const ownerId = pendingMembersRef.current?.ownerId || user.uid;
+
+    await finalizeRegistration(finalMembers, ownerId);
   };
 
   const handleConfirmCancel = async () => {
@@ -410,6 +489,131 @@ const TournamentRegister: React.FC = () => {
               </div>
             )}
           </form>
+          {/* Duplicate conflict confirmation modal */}
+          {conflictModalOpen && conflicts.length > 0 && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              data-testid="conflict-modal"
+            >
+              <div
+                className="absolute inset-0 bg-black opacity-40"
+                onClick={() => setConflictModalOpen(false)}
+              />
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-lg space-y-5">
+                <h3 className="text-lg font-medium">
+                  Player Already Registered
+                </h3>
+                <p className="text-sm text-foreground-500">
+                  One or more selected teammates already appear on another
+                  registered team.
+                </p>
+                <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                  {conflicts.map((c, idx) => {
+                    // Resolve player & team member display names WITHOUT exposing raw IDs
+                    const resolveName = (id: string) => {
+                      const u = fullMembers.find((fm) => fm.id === id);
+                      return (
+                        u?.displayName ||
+                        u?.email ||
+                        (id === c.playerId ? c.playerName : "Unknown Player")
+                      );
+                    };
+                    const teamMemberIds = Array.from(new Set(c.teamMembers));
+                    const conflictPlayerResolved = resolveName(c.playerId);
+                    return (
+                      <Card
+                        key={c.playerId + idx}
+                        className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
+                        data-testid="conflict-team-card"
+                      >
+                        <CardBody className="p-0">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar group mimic from registrations list */}
+                            <div className="flex -space-x-2">
+                              {teamMemberIds.map((mid) => {
+                                const memberUser = fullMembers.find(
+                                  (u) => u.id === mid
+                                );
+                                const label = resolveName(mid);
+                                // Intentionally not falling back to raw ID; label already sanitized
+                                return (
+                                  <div
+                                    key={mid}
+                                    className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
+                                    aria-label={label}
+                                  >
+                                    {memberUser?.displayName
+                                      ? memberUser.displayName
+                                          .split(/\s+/)
+                                          .map((p) => p[0])
+                                          .join("")
+                                          .slice(0, 2)
+                                      : label
+                                          .split(/\s+/)
+                                          .map((p) => p[0])
+                                          .join("")
+                                          .slice(0, 2)}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-sm">
+                                <span className="font-medium">
+                                  {conflictPlayerResolved}
+                                </span>{" "}
+                                is already on this team:
+                              </p>
+                              <div
+                                className="text-xs text-foreground-600 space-y-0.5"
+                                data-testid="conflict-team-names"
+                              >
+                                {teamMemberIds.map((id) => (
+                                  <div key={id}>{resolveName(id)}</div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </div>
+                <p className="text-sm text-warning-600 dark:text-warning-500">
+                  Continuing will register a team containing a player already on
+                  another team.
+                </p>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="light"
+                    color="default"
+                    onPress={() => {
+                      setConflictModalOpen(false);
+                      setConflicts([]);
+                    }}
+                  >
+                    Go Back
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={() => {
+                      setConflictModalOpen(false);
+                      setConflicts([]);
+                      setConflictsAcknowledged(true);
+                      const pending = pendingMembersRef.current;
+                      if (pending) {
+                        queueMicrotask(() =>
+                          finalizeRegistration(pending.members, pending.ownerId)
+                        );
+                      }
+                    }}
+                  >
+                    Continue Anyway
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Registration restricted modal overlay */}
           {showRestricted && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
