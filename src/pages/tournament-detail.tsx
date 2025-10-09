@@ -29,6 +29,7 @@ const TournamentEditor = React.lazy(() =>
 );
 import { Winner } from "@/types/winner";
 import { TournamentWinners } from "@/components/tournament-winners";
+import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
@@ -129,6 +130,8 @@ const TournamentDetailPage: React.FC = () => {
     if (!tournament?.winners) return [];
     return [...(tournament.winners || [])].sort((a, b) => a.place - b.place);
   }, [tournament]);
+
+  const hasGrouped = Boolean((tournament as any)?.winnerGroups?.length);
 
   const formatDateLong = (date: Date) =>
     new Intl.DateTimeFormat("en-US", {
@@ -536,7 +539,11 @@ const TournamentDetailPage: React.FC = () => {
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                <TournamentWinners winners={allWinners} />
+                {hasGrouped ? (
+                  <GroupedWinners groups={(tournament as any).winnerGroups} />
+                ) : (
+                  <TournamentWinners winners={allWinners} />
+                )}
               </CardBody>
             </Card>
             <div />

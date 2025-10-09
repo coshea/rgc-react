@@ -80,6 +80,7 @@ export function mapTournamentDoc(d: any) {
     href: data.href,
     prizePool: data.prizePool || 0,
     winners: data.winners || [],
+    winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
   };
 }

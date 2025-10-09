@@ -20,14 +20,14 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
-import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
-import { WinnerForm } from "@/components/winner-form";
+import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { computeTotalPayout } from "@/utils/winners";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -58,8 +58,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [completed, setCompleted] = React.useState(!!seed.completed);
   const [canceled, setCanceled] = React.useState(!!seed.canceled);
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
-  const [winners, setWinners] = React.useState<Winner[]>(
-    isEditing ? tournament?.winners || [] : []
+  const [winnerGroups, setWinnerGroups] = React.useState<
+    import("@/types/winner").WinnerGroup[]
+  >(
+    isEditing && (tournament as any)?.winnerGroups
+      ? (tournament as any).winnerGroups
+      : []
   );
   const [registrationOpen, setRegistrationOpen] = React.useState(
     !!seed.registrationOpen
@@ -103,21 +107,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (players < 1) newErrors.players = "Must have at least 1 player";
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
 
-    if (completed && winners.length > 0) {
-      const totalPrizeAmount = winners.reduce(
-        (total, winner) => total + winner.prizeAmount * winner.userIds.length,
-        0
-      );
-
+    // Grouped winners validation replaces legacy winners
+    if (completed && winnerGroups.length > 0) {
+      const totalPrizeAmount = computeTotalPayout(winnerGroups);
       if (totalPrizeAmount > prizePool) {
         newErrors.winners = "Total prize amount exceeds prize pool";
       }
-
-      const hasEmptyWinners = winners.some(
-        (winner) => winner.userIds.length === 0
+      const hasEmptyPlaces = winnerGroups.some((g) =>
+        (g.winners || []).some(
+          (w) => !w.competitors || w.competitors.length === 0
+        )
       );
-      if (hasEmptyWinners) {
-        newErrors.winners = "All winners must have users selected";
+      if (hasEmptyPlaces) {
+        newErrors.winners = "All winners must have competitors selected";
       }
     }
 
@@ -151,7 +153,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         completed,
         canceled,
         prizePool,
-        winners,
+        // winners removed (legacy); only persist grouped model going forward
+        winnerGroups, // grouped model
         registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
         tee,
@@ -172,7 +175,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         completed: tournamentData.completed as boolean,
         canceled: tournamentData.canceled as boolean,
         prizePool: tournamentData.prizePool as number,
-        winners: (tournamentData.winners as any) || [],
+        winnerGroups: (tournamentData as any).winnerGroups || [],
         registrationOpen: tournamentData.registrationOpen as boolean,
         date: tournamentData.date as Date,
         tee: tournamentData.tee as any,
@@ -523,16 +526,21 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           {(isEditing || completed) && (
             <div className="pt-4">
               <Divider className="my-4" />
-              <WinnerForm
-                winners={winners}
-                onWinnersChange={setWinners}
-                teamSize={players}
-                prizePool={prizePool}
-                isCompleted={completed}
-              />
-              {errors.winners && (
-                <p className="text-danger text-sm mt-2">{errors.winners}</p>
-              )}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Winners</h4>
+                  <GroupedWinnersEditor
+                    groups={winnerGroups}
+                    onChange={setWinnerGroups}
+                    teamSize={players}
+                    prizePool={prizePool}
+                    isCompleted={completed}
+                  />
+                  {errors.winners && (
+                    <p className="text-danger text-sm mt-2">{errors.winners}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           {isEditing && (

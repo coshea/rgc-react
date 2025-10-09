@@ -114,6 +114,41 @@ export function useUserTournamentWins(userId: string | undefined) {
           date: dateObj,
         } as unknown as Tournament & { firestoreId: string };
 
+        const groups = (data as any).winnerGroups as
+          | Array<{
+              winners?: Array<{
+                place: number;
+                prizeAmount?: number;
+                competitors?: Array<{ userId: string; displayName?: string }>;
+              }>;
+            }>
+          | undefined;
+
+        if (groups && Array.isArray(groups) && groups.length > 0) {
+          groups.forEach((g, gIdx) => {
+            (g.winners || []).forEach((w, wIdx) => {
+              (w.competitors || []).forEach((c, cIdx) => {
+                if (c.userId === userId) {
+                  const prize = w.prizeAmount || 0;
+                  const position = w.place || 1;
+                  userWins.push({
+                    id: `${doc.id}-g${gIdx}-w${wIdx}-c${cIdx}`,
+                    tournamentName: tournament.title || "Unknown Tournament",
+                    year,
+                    isMajor: false,
+                    prize,
+                    date: tournament.date.toISOString(),
+                    placement: position === 1 ? "winner" : "winner",
+                    position,
+                    source: "tournament",
+                  });
+                }
+              });
+            });
+          });
+          return; // prefer groups, skip legacy
+        }
+
         if (!tournament.winners || !Array.isArray(tournament.winners)) return;
 
         tournament.winners.forEach((winner: Winner, winnerIdx) => {

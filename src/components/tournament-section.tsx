@@ -42,6 +42,7 @@ export function TournamentSection() {
             href: data.href,
             prizePool: data.prizePool || 0,
             winners: data.winners || [],
+            winnerGroups: data.winnerGroups || [],
           } as Tournament;
         });
         setTournaments(items);

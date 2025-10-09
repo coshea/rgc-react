@@ -136,18 +136,69 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   // New function to render winners
   const renderWinners = (tournament: Tournament) => {
-    if (!tournament.completed || (tournament.winners || []).length === 0) {
-      return null;
+    if (!tournament.completed) return null;
+
+    // Prefer grouped winners: choose overall groups first; fallback to any group
+    const groups = (tournament as any).winnerGroups as
+      | Array<{
+          type: string;
+          winners?: Array<{
+            place: number;
+            competitors?: Array<{ displayName: string }>;
+            prizeAmount?: number;
+          }>;
+        }>
+      | undefined;
+    if (groups && groups.length > 0) {
+      const overall = groups.filter((g) => g.type === "overall");
+      const target = overall.length > 0 ? overall : groups;
+      for (const g of target) {
+        const first = (g.winners || []).find((w) => w.place === 1);
+        if (first && first.competitors && first.competitors.length > 0) {
+          const names = first.competitors.map((c) => c.displayName).join(", ");
+          const placeLabel = "1st";
+          return (
+            <div className="mt-2">
+              <p className="text-xs text-foreground-500 mb-1">Winner:</p>
+              <div className="flex flex-wrap gap-1">
+                <Tooltip
+                  content={
+                    <div className="px-1 py-2">
+                      <p className="font-medium">{placeLabel} Place</p>
+                      <p>{names}</p>
+                      {typeof first.prizeAmount === "number" && (
+                        <p className="text-xs mt-1">
+                          ${first.prizeAmount} per person
+                        </p>
+                      )}
+                    </div>
+                  }
+                >
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    className="cursor-help"
+                    startContent={
+                      <Icon icon="lucide:trophy" className="w-3 h-3" />
+                    }
+                  >
+                    {names}
+                  </Chip>
+                </Tooltip>
+              </div>
+            </div>
+          );
+        }
+      }
     }
 
-    // Filter only first-place winner entries (there should typically be one)
-    const firstPlace = (tournament.winners || []).filter((w) => w.place === 1);
+    const legacy = tournament.winners || [];
+    if (legacy.length === 0) return null;
+    const firstPlace = legacy.filter((w) => w.place === 1);
     if (!firstPlace.length) return null;
-
     const champion = firstPlace[0];
-    const placeLabel = "1st"; // always 1st here
     const names = champion.displayNames.join(", ");
-
     return (
       <div className="mt-2">
         <p className="text-xs text-foreground-500 mb-1">Winner:</p>
@@ -155,7 +206,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <Tooltip
             content={
               <div className="px-1 py-2">
-                <p className="font-medium">{placeLabel} Place</p>
+                <p className="font-medium">1st Place</p>
                 <p>{names}</p>
                 {typeof champion.prizeAmount === "number" && (
                   <p className="text-xs mt-1">

@@ -23,6 +23,45 @@ export function aggregateWinnings(
 ): UserYearlyWinnings[] {
   const map = new Map<string, UserYearlyWinnings>();
   for (const t of tournaments) {
+    const dateVal = t.date instanceof Date ? t.date : new Date(t.date);
+    if (
+      t.winnerGroups &&
+      Array.isArray(t.winnerGroups) &&
+      t.winnerGroups.length > 0
+    ) {
+      // Prefer new grouped model
+      for (const g of t.winnerGroups) {
+        for (const w of g.winners || []) {
+          const amountPerCompetitor = w.prizeAmount || 0;
+          for (let i = 0; i < (w.competitors?.length || 0); i++) {
+            const comp = w.competitors![i];
+            const uid = comp.userId;
+            const displayName = comp.displayName || uid;
+            const existing = map.get(uid);
+            const item: WinningsBreakdownItem = {
+              tournamentId: t.firestoreId || "unknown",
+              title: t.title,
+              date: dateVal,
+              amount: amountPerCompetitor,
+              place: w.place,
+            };
+            if (existing) {
+              existing.total += amountPerCompetitor;
+              existing.breakdown.push(item);
+            } else {
+              map.set(uid, {
+                userId: uid,
+                displayName,
+                total: amountPerCompetitor,
+                breakdown: [item],
+              });
+            }
+          }
+        }
+      }
+      continue;
+    }
+    // Fallback to legacy winners array
     if (!t.winners || !Array.isArray(t.winners)) continue;
     (t.winners as Winner[]).forEach((w) => {
       if (!w || !w.userIds) return;
@@ -36,7 +75,7 @@ export function aggregateWinnings(
         const item: WinningsBreakdownItem = {
           tournamentId: t.firestoreId || "unknown",
           title: t.title,
-          date: t.date instanceof Date ? t.date : new Date(t.date),
+          date: dateVal,
           amount,
           place: w.place,
         };
@@ -129,6 +168,7 @@ export function useYearlyWinnings({
           prizePool: data.prizePool || 0,
           registrationOpen: !!data.registrationOpen,
           winners: data.winners || [],
+          winnerGroups: data.winnerGroups || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,
         } as Tournament & { firestoreId: string });

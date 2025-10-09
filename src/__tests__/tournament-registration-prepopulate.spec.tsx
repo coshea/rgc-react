@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 
 // Start with a clean module registry so we can control mocks for this test file
@@ -111,12 +112,15 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
       firestoreId: "t1",
     } as any;
 
+    const qc = new QueryClient();
     render(
-      <TournamentEditor
-        tournament={existing}
-        onSave={vi.fn()}
-        onCancel={vi.fn()}
-      />
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={existing}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>
     );
 
     // Wait for the Add Registration button to appear (it requires isAdmin)

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import TournamentEditor from "@/components/tournament-editor";
 import { Tournament } from "@/types/tournament";
@@ -104,14 +105,24 @@ beforeEach(() => {
 
 describe("TournamentEditor - create mode", () => {
   it("prevents submit when required fields missing", async () => {
-    render(<TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
+      </QueryClientProvider>
+    );
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
     await waitFor(() => expect(addDocMock).not.toHaveBeenCalled());
   });
 
   it("submits when required fields provided", async () => {
     const onSave = vi.fn();
-    render(<TournamentEditor onSave={onSave} onCancel={vi.fn()} />);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={onSave} onCancel={vi.fn()} />
+      </QueryClientProvider>
+    );
     fillRequiredFields();
     // set a date
     const dateInput = screen.getByLabelText(/Tournament Date/i);
@@ -149,12 +160,15 @@ describe("TournamentEditor - edit mode", () => {
       firestoreId: "abc123",
     } as any;
     const onSave = vi.fn();
+    const qc = new QueryClient();
     render(
-      <TournamentEditor
-        tournament={existing}
-        onSave={onSave}
-        onCancel={vi.fn()}
-      />
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={existing}
+          onSave={onSave}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>
     );
     expect(screen.getByText(/Edit Tournament/i)).toBeTruthy();
 
@@ -182,14 +196,31 @@ describe("TournamentEditor - winners validation", () => {
       completed: true,
       canceled: false,
       prizePool: 10,
-      winners: [{ place: 1, prizeAmount: 20, userIds: ["u1"] } as any],
+      winnerGroups: [
+        {
+          id: "g1",
+          label: "Overall",
+          type: "overall",
+          order: 0,
+          winners: [
+            {
+              place: 1,
+              prizeAmount: 20,
+              competitors: [{ userId: "u1", displayName: "User 1" }],
+            } as any,
+          ],
+        } as any,
+      ],
       registrationOpen: false,
       date: new Date(),
       tee: "Red",
       firestoreId: "zzz",
     } as any;
+    const qc = new QueryClient();
     render(
-      <TournamentEditor tournament={t} onSave={vi.fn()} onCancel={vi.fn()} />
+      <QueryClientProvider client={qc}>
+        <TournamentEditor tournament={t} onSave={vi.fn()} onCancel={vi.fn()} />
+      </QueryClientProvider>
     );
     // Click update should trigger validation
     fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
@@ -202,7 +233,12 @@ describe("TournamentEditor - winners validation", () => {
 
 describe("TournamentEditor - edge cases", () => {
   it("prevents submission when prize pool negative", async () => {
-    render(<TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
+      </QueryClientProvider>
+    );
     // fill core fields
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Test Neg Prize" },
@@ -223,7 +259,12 @@ describe("TournamentEditor - edge cases", () => {
   });
 
   it("prevents submission when players < 1", async () => {
-    render(<TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
+      </QueryClientProvider>
+    );
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Test Players" },
     });
@@ -246,7 +287,12 @@ describe("TournamentEditor - edge cases", () => {
 
   it("allows submission when canceled and completed toggled (no winners)", async () => {
     const onSave = vi.fn();
-    render(<TournamentEditor onSave={onSave} onCancel={vi.fn()} />);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={onSave} onCancel={vi.fn()} />
+      </QueryClientProvider>
+    );
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Dual State" },
     });

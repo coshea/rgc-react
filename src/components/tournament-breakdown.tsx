@@ -53,26 +53,61 @@ export function TournamentBreakdown({ year }: Props) {
   const { usersMap, isLoading: usersLoading } = useUsersMap();
   const tournamentBundles: TournamentBundle[] = useMemo(() => {
     return tournaments
-      .filter((t) => (t.winners || []).length > 0)
+      .filter((t) => {
+        const hasGroups = (t as any).winnerGroups?.length > 0;
+        return hasGroups || (t.winners || []).length > 0;
+      })
       .map((t) => {
         const rows: ResultRow[] = [];
         const winnerIds = new Set<string>();
-        (t.winners || []).forEach((w: Winner) => {
-          const ids = w.userIds || [];
-          const names = w.displayNames || [];
-          ids.forEach((uid, idx) => {
-            winnerIds.add(uid);
-            rows.push({
-              id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
-              position: w.place,
-              userId: uid,
-              name: names[idx] || names[0] || uid,
-              prize: w.prizeAmount || 0,
-              score: w.score,
-              teamSize: ids.length,
+        const groups = (t as any).winnerGroups as
+          | Array<{
+              type: string;
+              winners?: Array<{
+                place: number;
+                competitors?: Array<{ userId: string; displayName: string }>;
+                prizeAmount?: number;
+                score?: string;
+              }>;
+            }>
+          | undefined;
+        if (groups && groups.length > 0) {
+          // Prefer overall groups for podium; still include all groups for rows
+          groups.forEach((g) => {
+            (g.winners || []).forEach((w) => {
+              (w.competitors || []).forEach((c, idx) => {
+                winnerIds.add(c.userId);
+                rows.push({
+                  id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
+                  position: w.place,
+                  userId: c.userId,
+                  name: c.displayName || c.userId,
+                  prize: w.prizeAmount || 0,
+                  score: w.score,
+                  teamSize: (w.competitors || []).length,
+                });
+              });
             });
           });
-        });
+        } else {
+          // Legacy winners
+          (t.winners || []).forEach((w: Winner) => {
+            const ids = w.userIds || [];
+            const names = w.displayNames || [];
+            ids.forEach((uid, idx) => {
+              winnerIds.add(uid);
+              rows.push({
+                id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
+                position: w.place,
+                userId: uid,
+                name: names[idx] || names[0] || uid,
+                prize: w.prizeAmount || 0,
+                score: w.score,
+                teamSize: ids.length,
+              });
+            });
+          });
+        }
         rows.sort((a, b) => a.position - b.position);
         const positions = new Map<number, ResultRow[]>();
         rows.forEach((r) => {
