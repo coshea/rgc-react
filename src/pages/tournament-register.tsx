@@ -7,7 +7,11 @@ import { Tournament } from "@/types/tournament";
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
-import type { User } from "@/api/users";
+// user types imported indirectly via hooks; no direct type import required here
+import {
+  isActiveFullMember,
+  isFullMember as isFullMemberUtil,
+} from "@/utils/membership";
 import RegistrationEditor from "@/components/registration-editor";
 // Static import for registrations list to ensure test mocks attach
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
@@ -20,11 +24,7 @@ const TournamentRegister: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const { users } = useUsers();
   // Refine types and avoid any-casts with a small type guard
-  const isFullMember = React.useCallback(
-    (u: User): u is User & { membershipType: "full" } =>
-      u.membershipType === "full",
-    []
-  );
+  const isFullMember = React.useCallback(isFullMemberUtil, []);
   // Filter to full members only for selection (business rule: only full members can register / be teammates)
   const fullMembers = React.useMemo(
     () => users.filter(isFullMember),
@@ -94,17 +94,10 @@ const TournamentRegister: React.FC = () => {
   // Whether to show the registration restricted modal when the current user
   // is not a full member. Kept alongside other hooks to preserve hook order.
   const [showRestricted, setShowRestricted] = React.useState(false);
-  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
-  const currentUserIsEligible = React.useMemo(
-    () =>
-      users.some(
-        (u: User) =>
-          u.id === user?.uid &&
-          u.membershipType === "full" &&
-          (u.lastPaidYear ?? 0) >= currentYear
-      ),
-    [users, user?.uid, currentYear]
-  );
+  const currentUserIsEligible = React.useMemo(() => {
+    const me = users.find((u) => u.id === user?.uid);
+    return isActiveFullMember(me);
+  }, [users, user?.uid]);
 
   React.useEffect(() => {
     const fetchTournament = async () => {

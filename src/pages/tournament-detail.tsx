@@ -35,6 +35,7 @@ import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { User } from "@/api/users";
+import { isActiveFullMember } from "@/utils/membership";
 
 interface RegistrationDoc {
   id: string;
@@ -62,16 +63,11 @@ const TournamentDetailPage: React.FC = () => {
     () => Array.from(usersMap.values()) as User[],
     [usersMap]
   );
-  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
   const currentUserIsEligible = React.useMemo(() => {
     if (!user?.uid) return false;
     const me = usersArray.find((u) => u.id === user.uid);
-    return !!(
-      me &&
-      me.membershipType === "full" &&
-      (me.lastPaidYear ?? 0) >= currentYear
-    );
-  }, [usersArray, user?.uid, currentYear]);
+    return isActiveFullMember(me);
+  }, [usersArray, user?.uid]);
   const [showRestricted, setShowRestricted] = React.useState(false);
   React.useEffect(() => {
     // If redirected from register page due to restriction, open modal once

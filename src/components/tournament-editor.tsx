@@ -6,7 +6,8 @@ import {
   Textarea,
   Button,
   DatePicker,
-  Checkbox,
+  RadioGroup,
+  Radio,
   NumberInput,
   Divider,
   Select,
@@ -14,7 +15,8 @@ import {
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, type TournamentStatus } from "@/types/tournament";
+import { flagsToStatus, statusToFlags } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
@@ -56,7 +58,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
   const [completed, setCompleted] = React.useState(!!seed.completed);
-  const [canceled, setCanceled] = React.useState(!!seed.canceled);
+  // legacy booleans maintained through status; not read directly elsewhere
+  const [, setCanceled] = React.useState(!!seed.canceled);
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winnerGroups, setWinnerGroups] = React.useState<
     import("@/types/winner").WinnerGroup[]
@@ -65,8 +68,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       ? (tournament as any).winnerGroups
       : []
   );
-  const [registrationOpen, setRegistrationOpen] = React.useState(
-    !!seed.registrationOpen
+  const [, setRegistrationOpen] = React.useState(!!seed.registrationOpen);
+  const [status, setStatus] = React.useState<TournamentStatus>(
+    (seed as any).status ||
+      flagsToStatus({
+        completed: !!seed.completed,
+        canceled: !!seed.canceled,
+        registrationOpen: !!seed.registrationOpen,
+      })
   );
   type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
   const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
@@ -145,17 +154,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const { collection, addDoc, updateDoc, doc } = await import(
         "firebase/firestore"
       );
+      const computedFlags = statusToFlags(status);
       const tournamentData: Partial<Tournament> = {
         title,
         description,
         detailsMarkdown,
         players,
-        completed,
-        canceled,
+        status,
+        completed: computedFlags.completed,
+        canceled: computedFlags.canceled,
         prizePool,
         // winners removed (legacy); only persist grouped model going forward
         winnerGroups, // grouped model
-        registrationOpen,
+        registrationOpen: computedFlags.registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
         tee,
       };
@@ -172,6 +183,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         description: tournamentData.description as string,
         detailsMarkdown: tournamentData.detailsMarkdown,
         players: tournamentData.players as number,
+        status: tournamentData.status as TournamentStatus,
         completed: tournamentData.completed as boolean,
         canceled: tournamentData.canceled as boolean,
         prizePool: tournamentData.prizePool as number,
@@ -504,22 +516,26 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 ))}
               </Select>
               <div className="flex flex-col gap-4 pt-2">
-                <Checkbox isSelected={completed} onValueChange={setCompleted}>
-                  Tournament Completed
-                </Checkbox>
-                <Checkbox
-                  isSelected={canceled}
-                  onValueChange={setCanceled}
-                  color="danger"
+                <RadioGroup
+                  label="Status"
+                  orientation="vertical"
+                  value={status}
+                  onValueChange={(val) => {
+                    const v = (val as TournamentStatus) || "upcoming";
+                    setStatus(v);
+                    const flags = statusToFlags(v);
+                    setCompleted(flags.completed);
+                    setCanceled(flags.canceled);
+                    setRegistrationOpen(flags.registrationOpen);
+                  }}
                 >
-                  Tournament Canceled
-                </Checkbox>
-                <Checkbox
-                  isSelected={registrationOpen}
-                  onValueChange={setRegistrationOpen}
-                >
-                  Registration Open
-                </Checkbox>
+                  <Radio value="upcoming">Upcoming (Registration Closed)</Radio>
+                  <Radio value="completed">Tournament Completed</Radio>
+                  <Radio value="canceled" color="danger">
+                    Tournament Canceled
+                  </Radio>
+                  <Radio value="open">Registration Open</Radio>
+                </RadioGroup>
               </div>
             </div>
           </div>
