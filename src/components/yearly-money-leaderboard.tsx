@@ -47,11 +47,18 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
             w.competitors?.forEach((c) => participantSet.add(c.userId));
           }
         }
-        // Count wins using 'overall' groups first; if none, fall back to first group's place=1
-        const groupsForWin = t.winnerGroups.filter((g) => g.type === "overall");
-        const targetGroups =
-          groupsForWin.length > 0 ? groupsForWin : t.winnerGroups;
-        targetGroups.forEach((g) => {
+        // Wins: only count from 'overall' group if present; otherwise, pick a single primary group
+        const overall = t.winnerGroups.filter((g) => g.type === "overall");
+        const primaryGroups =
+          overall.length > 0
+            ? overall
+            : [
+                // choose the first group by order asc if available; otherwise first in array
+                [...t.winnerGroups].sort(
+                  (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                )[0],
+              ].filter(Boolean as unknown as <T>(x: T) => x is T);
+        primaryGroups.forEach((g) => {
           g.winners?.forEach((w) => {
             if (w.place === 1) {
               w.competitors?.forEach((c) => {

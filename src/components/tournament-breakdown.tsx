@@ -72,7 +72,7 @@ export function TournamentBreakdown({ year }: Props) {
             }>
           | undefined;
         if (groups && groups.length > 0) {
-          // Prefer overall groups for podium; still include all groups for rows
+          // Prefer 'overall' groups for podium construction; include all for detailed rows
           groups.forEach((g) => {
             (g.winners || []).forEach((w) => {
               (w.competitors || []).forEach((c, idx) => {
@@ -270,15 +270,67 @@ export function TournamentBreakdown({ year }: Props) {
           const isOpen = expanded.has(id);
           // Build podium summary (positions map may contain multiple per position for teams)
           const podiumGroups: { position: number; players: ResultRow[] }[] = [];
-          const seenPositions = new Set<number>();
-          rows.forEach((r) => {
-            if (seenPositions.size >= 3) return;
-            if (!seenPositions.has(r.position)) {
-              const group = rows.filter((x) => x.position === r.position);
-              podiumGroups.push({ position: r.position, players: group });
-              seenPositions.add(r.position);
-            }
-          });
+          const groups = (tournament as any).winnerGroups as
+            | Array<{
+                type: string;
+                winners?: Array<{
+                  place: number;
+                  competitors?: Array<{ userId: string; displayName: string }>;
+                  prizeAmount?: number;
+                  score?: string;
+                }>;
+                order?: number;
+              }>
+            | undefined;
+          if (groups && groups.length > 0) {
+            const overall = groups.filter((g) => g.type === "overall");
+            const primary =
+              overall.length > 0
+                ? overall
+                : [
+                    [...groups].sort(
+                      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                    )[0],
+                  ].filter(Boolean as unknown as <T>(x: T) => x is T);
+            const podiumRows: ResultRow[] = [];
+            primary.forEach((g) => {
+              (g.winners || []).forEach((w) => {
+                (w.competitors || []).forEach((c, idx) => {
+                  podiumRows.push({
+                    id: `${id}-podium-${g.type}-${w.place}-${c.userId}-${idx}`,
+                    position: w.place,
+                    userId: c.userId,
+                    name: c.displayName || c.userId,
+                    prize: w.prizeAmount || 0,
+                    score: w.score,
+                    teamSize: (w.competitors || []).length,
+                  });
+                });
+              });
+            });
+            podiumRows.sort((a, b) => a.position - b.position);
+            const seenPositions = new Set<number>();
+            podiumRows.forEach((r) => {
+              if (seenPositions.size >= 3) return;
+              if (!seenPositions.has(r.position)) {
+                const group = podiumRows.filter(
+                  (x) => x.position === r.position
+                );
+                podiumGroups.push({ position: r.position, players: group });
+                seenPositions.add(r.position);
+              }
+            });
+          } else {
+            const seenPositions = new Set<number>();
+            rows.forEach((r) => {
+              if (seenPositions.size >= 3) return;
+              if (!seenPositions.has(r.position)) {
+                const group = rows.filter((x) => x.position === r.position);
+                podiumGroups.push({ position: r.position, players: group });
+                seenPositions.add(r.position);
+              }
+            });
+          }
           return (
             <article
               key={id}

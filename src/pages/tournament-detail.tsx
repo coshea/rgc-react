@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   onTournament,
   onTournamentRegistrations,
@@ -34,6 +34,7 @@ import GroupedWinners from "@/components/grouped-winners";
 import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
+import type { User } from "@/api/users";
 
 interface RegistrationDoc {
   id: string;
@@ -46,6 +47,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const location = useLocation();
   const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
@@ -56,6 +58,29 @@ const TournamentDetailPage: React.FC = () => {
   );
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const { usersMap } = useUsersMap();
+  const usersArray = React.useMemo(
+    () => Array.from(usersMap.values()) as User[],
+    [usersMap]
+  );
+  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
+  const currentUserIsEligible = React.useMemo(() => {
+    if (!user?.uid) return false;
+    const me = usersArray.find((u) => u.id === user.uid);
+    return !!(
+      me &&
+      me.membershipType === "full" &&
+      (me.lastPaidYear ?? 0) >= currentYear
+    );
+  }, [usersArray, user?.uid, currentYear]);
+  const [showRestricted, setShowRestricted] = React.useState(false);
+  React.useEffect(() => {
+    // If redirected from register page due to restriction, open modal once
+    if ((location.state as any)?.registrationRestricted) {
+      setShowRestricted(true);
+      // Clear the flag to prevent reopening on back/forward
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -499,21 +524,22 @@ const TournamentDetailPage: React.FC = () => {
                             color="primary"
                             fullWidth
                             onPress={handleRegister}
+                            isDisabled={!currentUserIsEligible}
                           >
                             Register
                           </Button>
+                          {!currentUserIsEligible && (
+                            <p className="text-xs text-warning-600">
+                              Registration is restricted to active full members.
+                            </p>
+                          )}
                         </>
                       ) : (
                         <>
                           <p className="text-sm text-foreground-600">
                             Sign in to register your team.
                           </p>
-                          <Button
-                            color="primary"
-                            fullWidth
-                            isDisabled
-                            aria-label="Sign in required to register"
-                          >
+                          <Button color="primary" fullWidth isDisabled>
                             Register
                           </Button>
                           <p className="text-xs text-foreground-500">
@@ -739,6 +765,32 @@ const TournamentDetailPage: React.FC = () => {
             </Card>
           </div>
         </>
+      )}
+      {showRestricted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowRestricted(false)}
+          />
+          <div className="bg-background rounded-lg p-6 z-10 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-2">
+              Registration Restricted
+            </h3>
+            <p className="text-sm text-foreground-500 mb-4">
+              Only active full members can register for tournaments. Please
+              renew your membership or contact an administrator if you believe
+              this is an error.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onPress={() => setShowRestricted(false)}>
+                Close
+              </Button>
+              <Button color="primary" onPress={() => navigate("/contact")}>
+                Contact admin
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {isAdmin && editOpen && (
         <div

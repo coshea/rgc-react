@@ -94,12 +94,16 @@ const TournamentRegister: React.FC = () => {
   // Whether to show the registration restricted modal when the current user
   // is not a full member. Kept alongside other hooks to preserve hook order.
   const [showRestricted, setShowRestricted] = React.useState(false);
-  const currentUserIsFull = React.useMemo(
+  const currentYear = React.useMemo(() => new Date().getFullYear(), []);
+  const currentUserIsEligible = React.useMemo(
     () =>
       users.some(
-        (u: User) => u.id === user?.uid && u.membershipType === "full"
+        (u: User) =>
+          u.id === user?.uid &&
+          u.membershipType === "full" &&
+          (u.lastPaidYear ?? 0) >= currentYear
       ),
-    [users, user?.uid]
+    [users, user?.uid, currentYear]
   );
 
   React.useEffect(() => {
@@ -217,12 +221,12 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
-  // If the current user isn't a full member, show a modal overlay explaining
-  // the restriction instead of navigating to a separate page. This keeps the
-  // user on the tournament page and provides actions (contact admin or go back).
+  // If the current user isn't eligible (not full-paid), show restriction modal here.
   React.useEffect(() => {
-    setShowRestricted(Boolean(tournament && !currentUserIsFull));
-  }, [tournament, currentUserIsFull]);
+    if (!loading && tournament && user && !currentUserIsEligible) {
+      setShowRestricted(true);
+    }
+  }, [loading, tournament, user, currentUserIsEligible]);
 
   if (loading) return <div>Loading...</div>;
 
@@ -394,6 +398,19 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {showRestricted && (
+              <div
+                className="rounded-md border border-warning-300 bg-warning-50 text-warning-800 dark:bg-warning-100/10 dark:text-warning-300 p-3"
+                role="alert"
+              >
+                <p className="font-medium">Registration Restricted</p>
+                <p className="text-sm">
+                  Only active full members can register for tournaments. Please
+                  renew your membership or contact an administrator if you
+                  believe this is an error.
+                </p>
+              </div>
+            )}
             <RegistrationEditor
               value={teammates}
               onChange={setTeammates}
@@ -609,43 +626,6 @@ const TournamentRegister: React.FC = () => {
                     }}
                   >
                     Continue Anyway
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Registration restricted modal overlay */}
-          {showRestricted && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div
-                className="absolute inset-0 bg-black opacity-40"
-                onClick={() => setShowRestricted(false)}
-              />
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-md">
-                <h3 className="text-lg font-medium mb-2">
-                  Registration Restricted
-                </h3>
-                <p className="text-sm text-foreground-500 mb-4">
-                  Only full members are eligible to register for tournaments.
-                  Your account isn't marked as a full member. If you believe
-                  this is an error, please contact an administrator.
-                </p>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="light"
-                    color="default"
-                    onPress={() => setShowRestricted(false)}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    color="primary"
-                    onPress={() => {
-                      // Link to contact page or open mailto — prefer navigation to contact page
-                      navigate("/contact");
-                    }}
-                  >
-                    Contact admin
                   </Button>
                 </div>
               </div>
