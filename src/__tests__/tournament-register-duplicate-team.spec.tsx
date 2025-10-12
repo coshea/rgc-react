@@ -42,6 +42,8 @@ const fetchAllRegistrationsMock = vi.fn(async (_?: any) => [
     ownerId: "someone",
   },
 ]);
+import { TournamentStatus } from "@/types/tournament";
+
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: vi.fn(async () => ({
     firestoreId: "t1",
@@ -49,9 +51,7 @@ vi.mock("@/api/tournaments", () => ({
     date: new Date(),
     description: "d",
     players: 4,
-    completed: false,
-    canceled: false,
-    registrationOpen: true,
+    status: TournamentStatus.Open,
     prizePool: 0,
     winners: [],
     tee: "Mixed",

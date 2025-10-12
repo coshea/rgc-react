@@ -18,7 +18,7 @@ import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { getStatus } from "@/utils/tournamentStatus";
+import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
@@ -365,7 +365,7 @@ export function TournamentBreakdown({ year }: Props) {
                             })}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-default-300" />
-                          <TeeBadge tee={tournament.tee as any} size="xs" />
+                          <TeeBadge tee={tournament.tee} size="xs" />
                           <span className="h-1 w-1 rounded-full bg-default-300" />
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:award" className="w-3 h-3" />
@@ -383,16 +383,59 @@ export function TournamentBreakdown({ year }: Props) {
                         >
                           {formatPrize(tournament.prizePool)} pool
                         </Chip>
-                        {getStatus(tournament) === TournamentStatus.Open && (
-                          <Chip
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            className="text-[10px]"
-                          >
-                            Registration Open
-                          </Chip>
-                        )}
+                        {(() => {
+                          const s = getStatus(tournament);
+                          const label = statusText(s);
+                          if (s === TournamentStatus.Canceled) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="danger"
+                                variant="solid"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.Completed) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="default"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.Open) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.InProgress) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="primary"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                   </div>

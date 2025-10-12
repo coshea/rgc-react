@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import TournamentEditor from "@/components/tournament-editor";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
 
 // Mock Auth provider hook so component thinks a user (and optionally admin) exists
 vi.mock("@/providers/AuthProvider", () => ({
@@ -150,11 +150,9 @@ describe("TournamentEditor - edit mode", () => {
       title: "Spring Open",
       description: "Fun event",
       players: 4,
-      completed: false,
-      canceled: false,
+      status: TournamentStatus.Open,
       prizePool: 100,
       winners: [],
-      registrationOpen: true,
       date: new Date(),
       tee: "Blue",
       firestoreId: "abc123",
@@ -193,8 +191,7 @@ describe("TournamentEditor - winners validation", () => {
       title: "Event",
       description: "Desc",
       players: 1,
-      completed: true,
-      canceled: false,
+      status: TournamentStatus.Completed,
       prizePool: 10,
       winnerGroups: [
         {
@@ -211,7 +208,6 @@ describe("TournamentEditor - winners validation", () => {
           ],
         } as any,
       ],
-      registrationOpen: false,
       date: new Date(),
       tee: "Red",
       firestoreId: "zzz",

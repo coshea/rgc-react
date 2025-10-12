@@ -190,9 +190,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           detailsMarkdown: tpl.detailsMarkdown,
           players: tpl.players,
           prizePool: tpl.prizePool,
-          registrationOpen: false,
-          completed: false,
-          canceled: false,
           tee: tpl.tee,
         };
       }

@@ -14,7 +14,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
 
@@ -126,7 +126,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   // New function to render winners
   const renderWinners = (tournament: Tournament) => {
-    if (!tournament.completed) return null;
+    if (getStatus(tournament) !== TournamentStatus.Completed) return null;
 
     // Prefer grouped winners: choose overall groups first; fallback to any group
     const groups = (tournament as any).winnerGroups as
@@ -221,14 +221,14 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     );
   };
 
-  // New function to render mobile tournament card
+  // New function to render status chips
   const renderStatusChips = (tournament: Tournament) => {
-    // Show exactly one status with priority: Canceled > Completed > Registration Open > Scheduled
+    // Show exactly one status with priority: Canceled > Completed > In Progress > Registration Open > Scheduled
     const status = getStatus(tournament);
     if (status === TournamentStatus.Canceled) {
       return (
         <Chip color="danger" size="sm" variant="flat">
-          Canceled
+          {statusText(status)}
         </Chip>
       );
     }
@@ -236,7 +236,15 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     if (status === TournamentStatus.Completed) {
       return (
         <Chip color="success" size="sm" variant="flat">
-          Completed
+          {statusText(status)}
+        </Chip>
+      );
+    }
+
+    if (status === TournamentStatus.InProgress) {
+      return (
+        <Chip color="primary" size="sm" variant="flat">
+          {statusText(status)}
         </Chip>
       );
     }
@@ -244,14 +252,14 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     if (status === TournamentStatus.Open) {
       return (
         <Chip color="warning" size="sm" variant="flat">
-          Registration Open
+          {statusText(status)}
         </Chip>
       );
     }
 
     return (
       <Chip color="primary" size="sm" variant="flat">
-        Scheduled
+        {statusText(status)}
       </Chip>
     );
   };
@@ -446,9 +454,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                       ? "border-l-4 border-l-danger"
                       : s === TournamentStatus.Completed
                         ? "border-l-4 border-l-success"
-                        : s === TournamentStatus.Open
-                          ? "border-l-4 border-l-warning"
-                          : "border-l-4 border-l-default-200";
+                        : s === TournamentStatus.InProgress
+                          ? "border-l-4 border-l-primary"
+                          : s === TournamentStatus.Open
+                            ? "border-l-4 border-l-warning"
+                            : "border-l-4 border-l-default-200";
                   })()}`
                 }
                 role="link"

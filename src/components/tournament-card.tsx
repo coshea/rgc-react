@@ -7,7 +7,8 @@ import {
   CardFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate, Link } from "react-router-dom";
 
 interface TournamentCardProps {
@@ -24,7 +25,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
       <Card
         as={detailHref ? Link : undefined}
         to={detailHref || "#"}
-        className={`max-w-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${tournament.completed ? "bg-content2" : "bg-content1"}`}
+        className={`max-w-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${getStatus(tournament) === TournamentStatus.Completed ? "bg-content2" : "bg-content1"}`}
         shadow="md"
         isHoverable
         onPress={() => {
@@ -51,29 +52,43 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
               })}
             </div>
             {/* Right: Status Chip */}
-            <Chip
-              color={
-                tournament.canceled
-                  ? "danger"
-                  : tournament.completed
-                    ? "default"
-                    : "primary"
+            {(() => {
+              const s = getStatus(tournament);
+              const label = statusText(s);
+              if (s === TournamentStatus.Canceled) {
+                return (
+                  <Chip color="danger" variant="solid" size="sm">
+                    {label}
+                  </Chip>
+                );
               }
-              variant={
-                tournament.canceled
-                  ? "solid"
-                  : tournament.completed
-                    ? "flat"
-                    : "solid"
+              if (s === TournamentStatus.Completed) {
+                return (
+                  <Chip color="default" variant="flat" size="sm">
+                    {label}
+                  </Chip>
+                );
               }
-              size="sm"
-            >
-              {tournament.canceled
-                ? "Canceled"
-                : tournament.completed
-                  ? "Completed"
-                  : "Upcoming"}
-            </Chip>
+              if (s === TournamentStatus.Open) {
+                return (
+                  <Chip color="warning" variant="flat" size="sm">
+                    {label}
+                  </Chip>
+                );
+              }
+              if (s === TournamentStatus.InProgress) {
+                return (
+                  <Chip color="primary" variant="flat" size="sm">
+                    {label}
+                  </Chip>
+                );
+              }
+              return (
+                <Chip color="primary" variant="solid" size="sm">
+                  {label}
+                </Chip>
+              );
+            })()}
           </div>
         </CardHeader>
         <Divider />

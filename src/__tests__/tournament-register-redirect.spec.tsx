@@ -20,6 +20,8 @@ vi.mock("@/hooks/useUsers", () => ({
 }));
 
 const upsertSpy = vi.fn(async (..._args: any[]) => {});
+import { TournamentStatus } from "@/types/tournament";
+
 vi.mock("@/api/tournaments", async (importOriginal) => {
   const original = await importOriginal();
   return {
@@ -30,9 +32,7 @@ vi.mock("@/api/tournaments", async (importOriginal) => {
       date: new Date(),
       description: "Desc",
       players: 2,
-      completed: false,
-      canceled: false,
-      registrationOpen: true,
+      status: TournamentStatus.Open,
       prizePool: 0,
       winners: [],
       tee: "Mixed",

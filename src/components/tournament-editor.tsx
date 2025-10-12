@@ -14,7 +14,7 @@ import {
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import { flagsToStatus, statusToFlags } from "@/utils/tournamentStatus";
+import { getStatus } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
@@ -55,9 +55,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     seed.detailsMarkdown || ""
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
-  const [completed, setCompleted] = React.useState(!!seed.completed);
-  // legacy booleans maintained through status; not read directly elsewhere
-  const [, setCanceled] = React.useState(!!seed.canceled);
+  const [completed, setCompleted] = React.useState(
+    getStatus(seed as any) === TournamentStatus.Completed
+  );
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winnerGroups, setWinnerGroups] = React.useState<
     import("@/types/winner").WinnerGroup[]
@@ -66,14 +66,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       ? (tournament as any).winnerGroups
       : []
   );
-  const [, setRegistrationOpen] = React.useState(!!seed.registrationOpen);
   const [status, setStatus] = React.useState<TournamentStatus>(
-    (seed as any).status ||
-      flagsToStatus({
-        completed: !!seed.completed,
-        canceled: !!seed.canceled,
-        registrationOpen: !!seed.registrationOpen,
-      })
+    getStatus(seed as any)
   );
   type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
   const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
@@ -152,19 +146,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const { collection, addDoc, updateDoc, doc } = await import(
         "firebase/firestore"
       );
-      const computedFlags = statusToFlags(status);
       const tournamentData: Partial<Tournament> = {
         title,
         description,
         detailsMarkdown,
         players,
         status,
-        completed: computedFlags.completed,
-        canceled: computedFlags.canceled,
         prizePool,
         // winners removed (legacy); only persist grouped model going forward
         winnerGroups, // grouped model
-        registrationOpen: computedFlags.registrationOpen,
         date: date ? new Date(date.toString()) : new Date(),
         tee,
       };
@@ -182,11 +172,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         detailsMarkdown: tournamentData.detailsMarkdown,
         players: tournamentData.players as number,
         status: tournamentData.status as TournamentStatus,
-        completed: tournamentData.completed as boolean,
-        canceled: tournamentData.canceled as boolean,
         prizePool: tournamentData.prizePool as number,
         winnerGroups: (tournamentData as any).winnerGroups || [],
-        registrationOpen: tournamentData.registrationOpen as boolean,
         date: tournamentData.date as Date,
         tee: tournamentData.tee as any,
       };
@@ -524,10 +511,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       | undefined;
                     const v = key ?? TournamentStatus.Upcoming;
                     setStatus(v);
-                    const flags = statusToFlags(v);
-                    setCompleted(flags.completed);
-                    setCanceled(flags.canceled);
-                    setRegistrationOpen(flags.registrationOpen);
+                    setCompleted(v === TournamentStatus.Completed);
                   }}
                 >
                   <SelectItem
@@ -564,7 +548,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               </div>
             </div>
           </div>
-          {(isEditing || completed) && (
+          {(isEditing || status === TournamentStatus.Completed) && (
             <div className="pt-4">
               <Divider className="my-4" />
               <div className="grid grid-cols-1 gap-6">

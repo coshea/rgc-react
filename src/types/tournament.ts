@@ -12,10 +12,7 @@ export interface Tournament {
    * For backward compatibility, the boolean flags are still present and kept in sync client-side.
    */
   status?: TournamentStatus;
-  completed: boolean;
-  canceled: boolean;
-  // Whether registration is open for this tournament
-  registrationOpen?: boolean;
+  // legacy boolean flags removed; `status` is the single source of truth
   icon?: string;
   href?: string;
   prizePool: number;
@@ -27,9 +24,9 @@ export interface Tournament {
 }
 
 export enum TournamentStatus {
-  Upcoming = "upcoming",
-  Open = "open",
-  InProgress = "in-progress",
-  Completed = "completed",
-  Canceled = "canceled",
+  Upcoming = "Upcoming",
+  Open = "Registration Open",
+  InProgress = "In Progress",
+  Completed = "Completed",
+  Canceled = "Canceled",
 }
