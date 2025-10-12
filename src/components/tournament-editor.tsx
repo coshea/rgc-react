@@ -6,8 +6,6 @@ import {
   Textarea,
   Button,
   DatePicker,
-  RadioGroup,
-  Radio,
   NumberInput,
   Divider,
   Select,
@@ -15,7 +13,7 @@ import {
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
-import { Tournament, type TournamentStatus } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
 import { flagsToStatus, statusToFlags } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
@@ -516,12 +514,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 ))}
               </Select>
               <div className="flex flex-col gap-4 pt-2">
-                <RadioGroup
+                <Select
                   label="Status"
-                  orientation="vertical"
-                  value={status}
-                  onValueChange={(val) => {
-                    const v = (val as TournamentStatus) || "upcoming";
+                  selectedKeys={[status]}
+                  disallowEmptySelection
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0] as
+                      | TournamentStatus
+                      | undefined;
+                    const v = key ?? TournamentStatus.Upcoming;
                     setStatus(v);
                     const flags = statusToFlags(v);
                     setCompleted(flags.completed);
@@ -529,13 +530,37 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     setRegistrationOpen(flags.registrationOpen);
                   }}
                 >
-                  <Radio value="upcoming">Upcoming (Registration Closed)</Radio>
-                  <Radio value="completed">Tournament Completed</Radio>
-                  <Radio value="canceled" color="danger">
+                  <SelectItem
+                    key={TournamentStatus.Upcoming}
+                    textValue="Upcoming"
+                  >
+                    Upcoming (Registration Closed)
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Open}
+                    textValue="Registration Open"
+                  >
+                    Registration Open
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.InProgress}
+                    textValue="In Progress"
+                  >
+                    In Progress
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Completed}
+                    textValue="Completed"
+                  >
+                    Tournament Completed
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Canceled}
+                    textValue="Canceled"
+                  >
                     Tournament Canceled
-                  </Radio>
-                  <Radio value="open">Registration Open</Radio>
-                </RadioGroup>
+                  </SelectItem>
+                </Select>
               </div>
             </div>
           </div>

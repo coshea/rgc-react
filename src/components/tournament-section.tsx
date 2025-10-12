@@ -1,4 +1,5 @@
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { flagsToStatus } from "@/utils/tournamentStatus";
 import { TournamentCard } from "./tournament-card";
 import { db } from "@/config/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -28,6 +29,13 @@ export function TournamentSection() {
                 ? new Date(data.date)
                 : new Date();
 
+          const status: TournamentStatus =
+            (data.status as TournamentStatus) ||
+            flagsToStatus({
+              completed: !!data.completed,
+              canceled: !!data.canceled,
+              registrationOpen: !!data.registrationOpen,
+            });
           return {
             firestoreId: d.id,
             title: data.title,
@@ -35,9 +43,10 @@ export function TournamentSection() {
             description: data.description,
             detailsMarkdown: data.detailsMarkdown || data.details || "",
             players: data.players,
-            completed: data.completed || false,
-            canceled: data.canceled || false,
-            registrationOpen: data.registrationOpen || false,
+            status,
+            completed: status === TournamentStatus.Completed,
+            canceled: status === TournamentStatus.Canceled,
+            registrationOpen: status === TournamentStatus.Open,
             icon: data.icon,
             href: data.href,
             prizePool: data.prizePool || 0,

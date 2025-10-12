@@ -40,10 +40,9 @@ service cloud.firestore {
           newData.role is string && newData.role != '' && allowed.hasAny([newData.role])
         );
       }
-      // Enforce minimal integrity: email must be a non-empty string on create.
+      // Enforce minimal integrity: email must be present in the doc and a non-empty string on create.
       function hasBaselineFields(d) {
-        return (d.email is string && d.email != '') ||
-               (request.auth.token.email is string && request.auth.token.email != '');
+        return d.email is string && d.email != '';
       }
       // Core write gate with board field restrictions
       // Permit admins to create any user doc; permit non-admin authenticated users to create

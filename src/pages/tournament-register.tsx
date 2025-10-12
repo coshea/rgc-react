@@ -2,7 +2,8 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardBody, Button, Divider } from "@heroui/react";
 import { addToast } from "@/providers/toast";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
@@ -241,7 +242,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    if (!tournament.registrationOpen) {
+    if (getStatus(tournament) !== TournamentStatus.Open) {
       addToast({
         title: "Closed",
         description: "Registration for this tournament is closed.",

@@ -302,9 +302,13 @@ describe("TournamentEditor - edge cases", () => {
     fireEvent.change(screen.getByLabelText(/Tournament Date/i), {
       target: { value: "2025-02-04" },
     });
-    // toggle completed + canceled checkboxes
-    fireEvent.click(screen.getByText(/Tournament Completed/i));
-    fireEvent.click(screen.getByText(/Tournament Canceled/i));
+    // set status via Select dropdown (enum model replaces legacy checkboxes)
+    // open the Status select by interacting with the combobox labeled "Status"
+    const statusTrigger = screen.getByRole("button", { name: /Status/i });
+    fireEvent.click(statusTrigger);
+    // choose Canceled from the menu
+    const cancelOption = await screen.findByText(/Tournament Canceled/i);
+    fireEvent.click(cancelOption);
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
     await waitFor(() => {
       expect(addDocMock).toHaveBeenCalled();

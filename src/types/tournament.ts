@@ -26,4 +26,10 @@ export interface Tournament {
   tee?: "Blue" | "White" | "Gold" | "Red" | "Mixed";
 }
 
-export type TournamentStatus = "upcoming" | "open" | "completed" | "canceled";
+export enum TournamentStatus {
+  Upcoming = "upcoming",
+  Open = "open",
+  InProgress = "in-progress",
+  Completed = "completed",
+  Canceled = "canceled",
+}

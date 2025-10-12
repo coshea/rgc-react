@@ -18,6 +18,8 @@ import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { getStatus } from "@/utils/tournamentStatus";
+import { TournamentStatus } from "@/types/tournament";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
 import type { Winner } from "@/types/winner";
@@ -381,7 +383,7 @@ export function TournamentBreakdown({ year }: Props) {
                         >
                           {formatPrize(tournament.prizePool)} pool
                         </Chip>
-                        {tournament.registrationOpen && (
+                        {getStatus(tournament) === TournamentStatus.Open && (
                           <Chip
                             size="sm"
                             color="danger"

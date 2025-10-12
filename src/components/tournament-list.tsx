@@ -13,7 +13,8 @@ import {
   CardBody,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
 
@@ -65,23 +66,16 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     if (filterStatus === "all") return tournaments;
 
     return tournaments.filter((tournament) => {
+      const status = getStatus(tournament);
       switch (filterStatus) {
         case "completed":
-          return tournament.completed && !tournament.canceled;
+          return status === TournamentStatus.Completed;
         case "registration":
-          return (
-            tournament.registrationOpen &&
-            !tournament.canceled &&
-            !tournament.completed
-          );
+          return status === TournamentStatus.Open;
         case "scheduled":
-          return (
-            !tournament.registrationOpen &&
-            !tournament.canceled &&
-            !tournament.completed
-          );
+          return status === TournamentStatus.Upcoming;
         case "canceled":
-          return tournament.canceled;
+          return status === TournamentStatus.Canceled;
         default:
           return true;
       }
@@ -99,15 +93,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     };
 
     tournaments.forEach((tournament) => {
-      if (tournament.canceled) {
-        counts.canceled++;
-      } else if (tournament.completed) {
-        counts.completed++;
-      } else if (tournament.registrationOpen) {
-        counts.registration++;
-      } else {
-        counts.scheduled++;
-      }
+      const status = getStatus(tournament);
+      if (status === TournamentStatus.Canceled) counts.canceled++;
+      else if (status === TournamentStatus.Completed) counts.completed++;
+      else if (status === TournamentStatus.Open) counts.registration++;
+      else counts.scheduled++;
     });
 
     return counts;
@@ -234,7 +224,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   // New function to render mobile tournament card
   const renderStatusChips = (tournament: Tournament) => {
     // Show exactly one status with priority: Canceled > Completed > Registration Open > Scheduled
-    if (tournament.canceled) {
+    const status = getStatus(tournament);
+    if (status === TournamentStatus.Canceled) {
       return (
         <Chip color="danger" size="sm" variant="flat">
           Canceled
@@ -242,7 +233,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       );
     }
 
-    if (tournament.completed) {
+    if (status === TournamentStatus.Completed) {
       return (
         <Chip color="success" size="sm" variant="flat">
           Completed
@@ -250,7 +241,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       );
     }
 
-    if (tournament.registrationOpen ?? false) {
+    if (status === TournamentStatus.Open) {
       return (
         <Chip color="warning" size="sm" variant="flat">
           Registration Open
@@ -449,7 +440,16 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   `group transition-colors cursor-pointer ` +
                   `${idx % 2 === 0 ? "bg-content1/60" : "bg-content2/40"} ` +
                   `hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ` +
-                  `${tournament.canceled ? "border-l-4 border-l-danger" : tournament.completed ? "border-l-4 border-l-success" : tournament.registrationOpen ? "border-l-4 border-l-warning" : "border-l-4 border-l-default-200"}`
+                  `${(() => {
+                    const s = getStatus(tournament);
+                    return s === TournamentStatus.Canceled
+                      ? "border-l-4 border-l-danger"
+                      : s === TournamentStatus.Completed
+                        ? "border-l-4 border-l-success"
+                        : s === TournamentStatus.Open
+                          ? "border-l-4 border-l-warning"
+                          : "border-l-4 border-l-default-200";
+                  })()}`
                 }
                 role="link"
                 tabIndex={0}

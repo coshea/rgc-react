@@ -18,7 +18,8 @@ import {
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeeBadge } from "@/components/tee-badge";
@@ -366,17 +367,22 @@ const TournamentDetailPage: React.FC = () => {
                 size="xs"
                 ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
               />
-              {tournament.registrationOpen && (
+              {getStatus(tournament) === TournamentStatus.Open && (
                 <Chip color="warning" size="sm" variant="flat">
                   Registration Open
                 </Chip>
               )}
-              {tournament.completed && !tournament.canceled && (
+              {getStatus(tournament) === TournamentStatus.Completed && (
                 <Chip color="default" size="sm" variant="flat">
                   Completed
                 </Chip>
               )}
-              {tournament.canceled && (
+              {getStatus(tournament) === TournamentStatus.InProgress && (
+                <Chip color="primary" size="sm" variant="flat">
+                  In Progress
+                </Chip>
+              )}
+              {getStatus(tournament) === TournamentStatus.Canceled && (
                 <Chip color="danger" size="sm" variant="flat">
                   Canceled
                 </Chip>
@@ -457,13 +463,18 @@ const TournamentDetailPage: React.FC = () => {
                       <div>
                         <p className="font-medium">Status</p>
                         <p>
-                          {tournament.canceled
-                            ? "Canceled"
-                            : tournament.completed
-                              ? "Completed"
-                              : tournament.registrationOpen
-                                ? "Registration Open"
-                                : "Scheduled"}
+                          {(() => {
+                            const s = getStatus(tournament);
+                            return s === TournamentStatus.Canceled
+                              ? "Canceled"
+                              : s === TournamentStatus.Completed
+                                ? "Completed"
+                                : s === TournamentStatus.InProgress
+                                  ? "In Progress"
+                                  : s === TournamentStatus.Open
+                                    ? "Registration Open"
+                                    : "Scheduled";
+                          })()}
                         </p>
                       </div>
                     </div>
@@ -477,7 +488,7 @@ const TournamentDetailPage: React.FC = () => {
                 </CardHeader>
                 <Divider />
                 <CardBody className="pt-4 space-y-4">
-                  {tournament.registrationOpen ? (
+                  {getStatus(tournament) === TournamentStatus.Open ? (
                     <>
                       {isUserRegistered ? (
                         <>
