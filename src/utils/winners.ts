@@ -36,6 +36,38 @@ export function sortPlaces(winners: WinnerPlace[]): WinnerPlace[] {
 }
 
 /**
+ * Given a list of WinnerPlace already sorted by place, compute display ranks
+ * with tie handling. If two entries share the same place (tie), they get the
+ * same display rank and the next distinct spot skips accordingly.
+ * Example: [1,2,2,3] -> display ranks [1,2,2,4].
+ */
+export function computeDisplayPlaces(
+  winners: WinnerPlace[]
+): Array<{ place: number; displayPlace: number }> {
+  const out: Array<{ place: number; displayPlace: number }> = [];
+  const sorted = sortPlaces(winners);
+  let nextRank = 1;
+  for (let i = 0; i < sorted.length; ) {
+    const currentPlace = sorted[i].place;
+    // group all ties for current place
+    const group: number[] = [];
+    let j = i;
+    while (j < sorted.length && sorted[j].place === currentPlace) {
+      group.push(sorted[j].place);
+      j++;
+    }
+    // assign same display rank to all in the tie group
+    for (let k = i; k < j; k++) {
+      out.push({ place: sorted[k].place, displayPlace: nextRank });
+    }
+    // advance rank by size of tie group
+    nextRank += group.length;
+    i = j;
+  }
+  return out;
+}
+
+/**
  * Compute total payout assuming prizeAmount is per competitor.
  * If you shift semantics to total-per-place, update this accordingly.
  */

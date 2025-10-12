@@ -136,13 +136,11 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
     });
     fireEvent.click(addTeammate);
 
-    const trigger = await screen.findByRole("button", { name: /Team Leader/i });
-    // Open the select popover
-    fireEvent.click(trigger);
-    // The option should now be present in the options list
-    const options = await screen.findAllByRole("option", {
-      name: /Admin User/i,
-    });
-    expect(options.length).toBeGreaterThan(0);
+    const combo = await screen.findByRole("combobox", { name: /Team Leader/i });
+    // Type to filter to Admin User and ensure an option appears
+    fireEvent.change(combo, { target: { value: "Admin" } });
+    fireEvent.keyDown(combo, { key: "ArrowDown" });
+    const option = await screen.findByRole("option", { name: /Admin User/i });
+    expect(option).toBeInTheDocument();
   }, 20000);
 });

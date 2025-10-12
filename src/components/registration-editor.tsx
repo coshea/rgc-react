@@ -1,8 +1,9 @@
 import React from "react";
-import { Select, SelectItem, Button } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
+import { UserSelect } from "@/components/UserSelect";
 
 interface RegistrationEditorProps {
   value: string[]; // array of user ids
@@ -97,47 +98,19 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
       {ids.map((uid, idx) => (
         <div key={idx} className="flex items-center gap-2">
           <div className="flex-1">
-            <Select
+            <UserSelect
+              users={users}
               label={
                 idx === 0
                   ? labels?.leader || "Team Leader"
                   : labels?.teammate?.(idx) || `Teammate ${idx + 1}`
               }
-              placeholder="Select user"
-              selectionMode="single"
-              // Only pass currently valid uid to avoid HeroUI warning about missing keys
-              selectedKeys={
-                uid && validUserIds.has(uid) ? new Set([uid]) : new Set()
-              }
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys as Set<string>)[0];
-                updateIdx(idx, selected);
-              }}
+              value={uid || ""}
+              onChange={(v) => updateIdx(idx, (v as string) || undefined)}
+              multiple={false}
+              showRemovedHint
               className="w-full"
-            >
-              {(() => {
-                const items: React.ReactElement[] = [];
-                if (uid && !validUserIds.has(uid)) {
-                  items.push(
-                    <SelectItem
-                      key={uid}
-                      className="text-danger"
-                      textValue="Removed User"
-                    >
-                      Removed User
-                    </SelectItem>
-                  );
-                }
-                for (const u of users) {
-                  items.push(
-                    <SelectItem key={u.id}>
-                      {u.displayName || u.email || u.id}
-                    </SelectItem>
-                  );
-                }
-                return items;
-              })()}
-            </Select>
+            />
           </div>
           {ids.length > 1 && (
             <Button

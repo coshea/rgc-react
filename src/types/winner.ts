@@ -13,6 +13,8 @@ export interface Competitor {
 
 /** Place entry within a group */
 export interface WinnerPlace {
+  /** Unique identifier for the place entry. Optional for backward compatibility with existing data */
+  id?: string;
   place: number; // 1 for 1st place, 2 for 2nd place, etc.
   competitors: Competitor[]; // one per person; teams have >= 2
   prizeAmount?: number; // prize per competitor (preferred) or total if you choose that semantics later

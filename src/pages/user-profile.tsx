@@ -10,6 +10,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   useDisclosure,
   Skeleton,
 } from "@heroui/react";
@@ -660,9 +661,21 @@ const UserProfilePage: React.FC = () => {
                   Update your profile information and settings
                 </p>
               </ModalHeader>
-              <ModalBody className="pb-6">
-                <ProfileForm />
+              <ModalBody className="pb-8">
+                <ProfileForm
+                  hideActions
+                  formId="profile-edit-form"
+                  onSaved={() => onOpenChange()}
+                />
               </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={() => onOpenChange()}>
+                  Cancel
+                </Button>
+                <Button color="primary" type="submit" form="profile-edit-form">
+                  Save
+                </Button>
+              </ModalFooter>
             </>
           )}
         </ModalContent>

@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
-import { sortGroups, sortPlaces } from "@/utils/winners";
+import { sortGroups, sortPlaces, computeDisplayPlaces } from "@/utils/winners";
 
 function ordinal(n: number) {
   const s = ["th", "st", "nd", "rd"];
@@ -8,7 +8,13 @@ function ordinal(n: number) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function PlaceRow({ place }: { place: WinnerPlace }) {
+function PlaceRow({
+  place,
+  displayPlace,
+}: {
+  place: WinnerPlace;
+  displayPlace: number;
+}) {
   const names = (place.competitors || []).map((c) => c.displayName);
   const prize =
     typeof place.prizeAmount === "number" && place.prizeAmount > 0
@@ -23,9 +29,9 @@ function PlaceRow({ place }: { place: WinnerPlace }) {
         <Icon icon={icon} className={`w-4 h-4 ${color}`} />
         <span
           className="font-medium truncate"
-          title={`${ordinal(place.place)}: ${names.join(", ")}`}
+          title={`${ordinal(displayPlace)}: ${names.join(", ")}`}
         >
-          {ordinal(place.place)}: {names.join(", ")}
+          {ordinal(displayPlace)}: {names.join(", ")}
         </span>
       </div>
       <div className="flex items-center gap-3 text-xs text-foreground-500 flex-shrink-0">
@@ -52,9 +58,17 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
           </h4>
           {g.winners?.length ? (
             <div className="space-y-2">
-              {sortPlaces(g.winners).map((p) => (
-                <PlaceRow key={p.place} place={p} />
-              ))}
+              {(() => {
+                const sorted = sortPlaces(g.winners);
+                const display = computeDisplayPlaces(sorted);
+                return sorted.map((p, idx) => (
+                  <PlaceRow
+                    key={p.id || `${p.place}-${idx}`}
+                    place={p}
+                    displayPlace={display[idx].displayPlace}
+                  />
+                ));
+              })()}
             </div>
           ) : (
             <div className="text-sm text-foreground-500">No places yet.</div>

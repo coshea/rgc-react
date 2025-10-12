@@ -17,7 +17,13 @@ import type {
   Competitor,
   WinnerGroupType,
 } from "@/types/winner";
-import { computeTotalPayout, sortGroups, sortPlaces } from "@/utils/winners";
+import {
+  computeTotalPayout,
+  sortGroups,
+  sortPlaces,
+  computeDisplayPlaces,
+} from "@/utils/winners";
+import { UserSelect } from "@/components/UserSelect";
 
 interface GroupedWinnersEditorProps {
   groups: WinnerGroup[];
@@ -42,6 +48,24 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   isCompleted,
 }) => {
   const { users, isLoading: usersLoading } = useUsers();
+
+  // Normalize: ensure every WinnerPlace has a unique id to support ties (duplicate place numbers)
+  React.useEffect(() => {
+    if (!groups?.length) return;
+    let changed = false;
+    const normalized = groups.map((g) => {
+      const winners = (g.winners || []).map((w) => {
+        if (!w.id) {
+          changed = true;
+          return { ...w, id: crypto.randomUUID() };
+        }
+        return w;
+      });
+      return winners !== g.winners ? { ...g, winners } : g;
+    });
+    if (changed) onChange(normalized);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups]);
 
   // Ensure existing selections never exceed the team size when it changes
   React.useEffect(() => {
@@ -95,9 +119,16 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const addPlace = (groupId: string) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
-    const nextPlace =
-      g.winners.length > 0 ? Math.max(...g.winners.map((w) => w.place)) + 1 : 1;
+    // Compute next place using tie-aware display rank: last displayPlace + 1
+    let nextPlace = 1;
+    if (g.winners.length > 0) {
+      const sorted = sortPlaces(g.winners);
+      const display = computeDisplayPlaces(sorted);
+      const lastDisplay = display[display.length - 1]?.displayPlace || 0;
+      nextPlace = lastDisplay + 1;
+    }
     const newPlace: WinnerPlace = {
+      id: crypto.randomUUID(),
       place: nextPlace,
       competitors: [],
       prizeAmount: 0,
@@ -105,30 +136,50 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     updateGroup(groupId, { winners: [...g.winners, newPlace] });
   };
 
-  const removePlace = (groupId: string, place: number) => {
+  const removePlace = (groupId: string, placeOrId: number | string) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
-    const filtered = g.winners.filter((w) => w.place !== place);
-    const renumbered = filtered.map((w, i) => ({ ...w, place: i + 1 }));
-    updateGroup(groupId, { winners: renumbered });
+    const filtered = g.winners.filter((w) =>
+      typeof placeOrId === "string" ? w.id !== placeOrId : w.place !== placeOrId
+    );
+    // Do not renumber automatically; keep explicit place values to preserve ties and gaps
+    updateGroup(groupId, { winners: filtered });
+  };
+
+  const tiePlace = (groupId: string, place: number) => {
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return;
+    const newPlace: WinnerPlace = {
+      id: crypto.randomUUID(),
+      place,
+      competitors: [],
+      prizeAmount: 0,
+    };
+    updateGroup(groupId, { winners: [...g.winners, newPlace] });
   };
 
   const updatePlace = (
     groupId: string,
-    place: number,
+    placeOrId: number | string,
     patch: Partial<WinnerPlace>
   ) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
     const winners = g.winners.map((w) =>
-      w.place === place ? { ...w, ...patch } : w
+      typeof placeOrId === "string"
+        ? w.id === placeOrId
+          ? { ...w, ...patch }
+          : w
+        : w.place === placeOrId
+          ? { ...w, ...patch }
+          : w
     );
     updateGroup(groupId, { winners });
   };
 
   const setPlaceCompetitors = (
     groupId: string,
-    place: number,
+    placeOrId: number | string,
     userIds: string[]
   ) => {
     const selected = users.filter((u) => userIds.includes(u.id));
@@ -136,7 +187,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       userId: u.id,
       displayName: u.displayName || u.email || u.id,
     }));
-    updatePlace(groupId, place, { competitors });
+    updatePlace(groupId, placeOrId, { competitors });
   };
 
   if (!isCompleted) {
@@ -204,7 +255,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       size="sm"
                       label="Type"
                       selectedKeys={new Set([g.type])}
-                      onSelectionChange={(keys) => {
+                      onSelectionChange={(keys: any) => {
                         const v = Array.from(
                           keys as Set<string>
                         )[0] as WinnerGroupType;
@@ -268,106 +319,118 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {sortPlaces(g.winners).map((w) => (
-                      <div key={w.place} className="rounded-md bg-content2 p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Icon
-                              icon={
-                                w.place === 1 ? "lucide:trophy" : "lucide:medal"
-                              }
-                              className={`text-xl ${w.place === 1 ? "text-warning" : "text-default-400"}`}
-                            />
-                            <span className="font-medium">Place {w.place}</span>
+                    {(() => {
+                      const sortedPlaces = sortPlaces(g.winners);
+                      const display = computeDisplayPlaces(sortedPlaces);
+                      return sortedPlaces.map((w, index) => (
+                        <div
+                          key={w.id || `${w.place}-${index}`}
+                          className="rounded-md bg-content2 p-3"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Icon
+                                icon={
+                                  w.place === 1
+                                    ? "lucide:trophy"
+                                    : "lucide:medal"
+                                }
+                                className={`text-xl ${w.place === 1 ? "text-warning" : "text-default-400"}`}
+                              />
+                              <span className="font-medium">
+                                Place {display[index].displayPlace}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              isIconOnly
+                              color="danger"
+                              variant="light"
+                              onPress={() => removePlace(g.id, w.id || w.place)}
+                            >
+                              <Icon icon="lucide:trash-2" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              onPress={() => tiePlace(g.id, w.place)}
+                            >
+                              Tie
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            isIconOnly
-                            color="danger"
-                            variant="light"
-                            onPress={() => removePlace(g.id, w.place)}
-                          >
-                            <Icon icon="lucide:trash-2" />
-                          </Button>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <Select
-                            label={teamSize > 1 ? "Team Members" : "Winner"}
-                            placeholder={
-                              teamSize > 1
-                                ? "Select team members"
-                                : "Select winner"
-                            }
-                            selectionMode={teamSize > 1 ? "multiple" : "single"}
-                            selectedKeys={
-                              new Set(
-                                (w.competitors || []).map((c) => c.userId)
-                              )
-                            }
-                            onSelectionChange={(keys) =>
-                              setPlaceCompetitors(
-                                g.id,
-                                w.place,
-                                (() => {
-                                  const all = Array.from(keys as Set<string>);
-                                  // Clamp selection to teamSize (for multi-team events)
-                                  if (teamSize > 1 && all.length > teamSize) {
-                                    return all.slice(0, teamSize);
-                                  }
-                                  // Single winner mode implicitly limited by selectionMode="single"
-                                  return all;
-                                })()
-                              )
-                            }
-                            isRequired
-                            isDisabled={usersLoading}
-                            isInvalid={
-                              !w.competitors || w.competitors.length === 0
-                            }
-                            errorMessage={
-                              !w.competitors || w.competitors.length === 0
-                                ? "Winner is required"
-                                : ""
-                            }
-                          >
-                            {users.map((u) => (
-                              <SelectItem key={u.id}>
-                                {u.displayName || u.email || u.id}
-                              </SelectItem>
-                            ))}
-                          </Select>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <UserSelect
+                              users={users}
+                              label={teamSize > 1 ? "Team Members" : "Winner"}
+                              placeholder={
+                                teamSize > 1
+                                  ? "Select team members"
+                                  : "Select winner"
+                              }
+                              multiple={teamSize > 1}
+                              maxSelected={teamSize > 1 ? teamSize : undefined}
+                              value={
+                                teamSize > 1
+                                  ? (w.competitors || []).map((c) => c.userId)
+                                  : (w.competitors &&
+                                      w.competitors[0]?.userId) ||
+                                    ""
+                              }
+                              onChange={(val) =>
+                                setPlaceCompetitors(
+                                  g.id,
+                                  w.id || w.place,
+                                  (Array.isArray(val) ? val : [val]).filter(
+                                    Boolean
+                                  ) as string[]
+                                )
+                              }
+                              disabled={usersLoading}
+                              required
+                              invalid={
+                                !w.competitors || w.competitors.length === 0
+                              }
+                              errorMessage={
+                                !w.competitors || w.competitors.length === 0
+                                  ? "Winner is required"
+                                  : ""
+                              }
+                            />
 
-                          <NumberInput
-                            label="Prize Amount (per person)"
-                            min={0}
-                            value={w.prizeAmount}
-                            onValueChange={(v) =>
-                              updatePlace(g.id, w.place, { prizeAmount: v })
-                            }
-                            startContent={
-                              <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">
-                                  $
-                                </span>
-                              </div>
-                            }
-                          />
-                        </div>
+                            <NumberInput
+                              label="Prize Amount (per person)"
+                              min={0}
+                              value={w.prizeAmount}
+                              onValueChange={(v) =>
+                                updatePlace(g.id, w.id || w.place, {
+                                  prizeAmount: v,
+                                })
+                              }
+                              startContent={
+                                <div className="pointer-events-none flex items-center">
+                                  <span className="text-default-400 text-small">
+                                    $
+                                  </span>
+                                </div>
+                              }
+                            />
+                          </div>
 
-                        <div className="mt-2">
-                          <Input
-                            label="Score"
-                            value={w.score || ""}
-                            onChange={(e: any) =>
-                              updatePlace(g.id, w.place, {
-                                score: e.target.value,
-                              })
-                            }
-                          />
+                          <div className="mt-2">
+                            <Input
+                              label="Score"
+                              value={w.score || ""}
+                              onChange={(e: any) =>
+                                updatePlace(g.id, w.id || w.place, {
+                                  score: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 )}
               </CardBody>

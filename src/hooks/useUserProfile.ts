@@ -77,6 +77,8 @@ export function useUserProfile() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["userProfile", uid] });
+      // Also invalidate any single-user queries that may be showing this profile
+      if (uid) qc.invalidateQueries({ queryKey: ["user", uid] });
     },
   });
 

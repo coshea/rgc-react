@@ -5,6 +5,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { PiGolf } from "react-icons/pi";
 import { saveUserProfile } from "@/api/users";
+import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface FormData {
@@ -25,7 +26,20 @@ interface FormErrors {
   ghinNumber?: string;
 }
 
-export function ProfileForm() {
+type ProfileFormProps = {
+  // Hide the internal Cancel/Save action row (useful when embedding in a modal with its own footer)
+  hideActions?: boolean;
+  // Provide a stable form id so external buttons (e.g., modal footer) can submit this form
+  formId?: string;
+  // Optional callback invoked after a successful save (e.g., close modal)
+  onSaved?: () => void;
+};
+
+export function ProfileForm({
+  hideActions = false,
+  formId,
+  onSaved,
+}: ProfileFormProps) {
   const [formData, setFormData] = React.useState<FormData>({
     firstName: "",
     lastName: "",
@@ -199,6 +213,20 @@ export function ProfileForm() {
       });
       setIsSuccess(true);
 
+      // Toast feedback
+      addToast({
+        title: "Profile updated",
+        description: "Your profile information has been saved.",
+        color: "success",
+      });
+
+      // Notify parent (e.g., close modal) on successful save
+      try {
+        onSaved?.();
+      } catch {
+        // no-op: parent may not provide a handler
+      }
+
       // Reset success message after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
@@ -223,7 +251,11 @@ export function ProfileForm() {
 
   return (
     <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        id={formId || "profile-form"}
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         <div className="flex flex-col items-center mb-6">
           <div
             className="relative group cursor-pointer mb-3"
@@ -313,68 +345,75 @@ export function ProfileForm() {
             }
           />
 
-          <Input
-            label="Phone Number"
-            placeholder="Enter your phone number"
-            value={formData.phone}
-            onValueChange={handleInputChange("phone")}
-            type="tel"
-            isInvalid={!!errors.phone}
-            errorMessage={errors.phone}
-            startContent={
-              <Icon icon="lucide:phone" className="text-default-400 text-lg" />
-            }
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Phone Number"
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onValueChange={handleInputChange("phone")}
+              type="tel"
+              isInvalid={!!errors.phone}
+              errorMessage={errors.phone}
+              startContent={
+                <Icon
+                  icon="lucide:phone"
+                  className="text-default-400 text-lg"
+                />
+              }
+            />
 
-          <Input
-            label="GHIN Number"
-            placeholder="Enter your GHIN number"
-            value={formData.ghinNumber}
-            onValueChange={handleInputChange("ghinNumber")}
-            type="text"
-            isInvalid={!!errors.ghinNumber}
-            errorMessage={errors.ghinNumber}
-            startContent={<PiGolf className="text-default-400 text-lg" />}
-          />
-        </div>
-
-        <div className="pt-2">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              className="w-1/3 h-10 text-sm py-1"
-              onClick={() => window.history.back()}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              type="submit"
-              color="primary"
-              className="w-1/3 h-10 text-sm py-1"
-              isLoading={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : "Save Profile"}
-            </Button>
+            <Input
+              label="GHIN Number"
+              placeholder="Enter your GHIN number"
+              value={formData.ghinNumber}
+              onValueChange={handleInputChange("ghinNumber")}
+              type="text"
+              isInvalid={!!errors.ghinNumber}
+              errorMessage={errors.ghinNumber}
+              startContent={<PiGolf className="text-default-400 text-lg" />}
+            />
           </div>
-
-          {isSuccess && (
-            <div className="mt-4 p-3 bg-success-100 text-success-700 rounded-medium flex items-center gap-2">
-              <Icon icon="lucide:check-circle" />
-              <span>Profile updated successfully!</span>
-            </div>
-          )}
-          {saveError && (
-            <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-medium flex items-center gap-2">
-              <Icon icon="lucide:alert-circle" />
-              <span>
-                There was an error uploading your avatar or saving profile.
-                Please try again.
-              </span>
-            </div>
-          )}
         </div>
+
+        {!hideActions && (
+          <div className="pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                className="w-1/3 h-10 text-sm py-1"
+                onClick={() => window.history.back()}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                color="primary"
+                className="w-1/3 h-10 text-sm py-1"
+                isLoading={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : "Save Profile"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isSuccess && (
+          <div className="mt-4 p-3 bg-success-100 text-success-700 rounded-medium flex items-center gap-2">
+            <Icon icon="lucide:check-circle" />
+            <span>Profile updated successfully!</span>
+          </div>
+        )}
+        {saveError && (
+          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-medium flex items-center gap-2">
+            <Icon icon="lucide:alert-circle" />
+            <span>
+              There was an error uploading your avatar or saving profile. Please
+              try again.
+            </span>
+          </div>
+        )}
       </form>
     </Card>
   );

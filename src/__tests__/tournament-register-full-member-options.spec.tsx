@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TournamentRegister from "@/pages/tournament-register";
 
@@ -97,23 +97,38 @@ describe("TournamentRegister teammate options (full members only)", () => {
     // Wait for title
     await screen.findByText(/Register for Full Member Test/i);
 
-    // Open first Select (Team Leader / You)
-    const trigger = screen.getByRole("button", { name: /Team Leader/i });
-    await act(async () => {
-      trigger.click();
-    });
+    // Open the Autocomplete (Team Leader / You) and type to reveal options
+    const combo = screen.getByRole("combobox", { name: /Team Leader/i });
 
-    // Listbox should contain two occurrences for each visible option (hidden native <option> and visual item) - we assert at least one each while excluding non-full
-    const captainAll = await screen.findAllByText("Captain Full");
-    const secondAll = await screen.findAllByText("Second Full");
-    expect(captainAll.length).toBeGreaterThan(0);
-    expect(secondAll.length).toBeGreaterThan(0);
+    // Assert full members appear as options
+    // Type to filter to 'Captain' and check option exists
+    await act(async () => {
+      fireEvent.change(combo, { target: { value: "Captain" } });
+      fireEvent.keyDown(combo, { key: "ArrowDown" });
+    });
+    const captainOption = await screen.findByRole("option", {
+      name: "Captain Full",
+    });
+    expect(captainOption).toBeInTheDocument();
+
+    // Type to filter to 'Second' and check option exists
+    await act(async () => {
+      fireEvent.change(combo, { target: { value: "Second" } });
+      fireEvent.keyDown(combo, { key: "ArrowDown" });
+    });
+    const secondOption = await screen.findByRole("option", {
+      name: "Second Full",
+    });
+    expect(secondOption).toBeInTheDocument();
 
     // Ensure non-full members are NOT present as selectable options
-    // Non full members should not appear as selectable options; they may not exist at all
-    const handicap = screen.queryByText("Handicap Member");
-    const social = screen.queryByText("Social Member");
-    expect(handicap).toBeNull();
-    expect(social).toBeNull();
+    const handicapHidden = screen.queryByRole("option", {
+      name: "Handicap Member",
+    });
+    const socialHidden = screen.queryByRole("option", {
+      name: "Social Member",
+    });
+    expect(handicapHidden).toBeNull();
+    expect(socialHidden).toBeNull();
   });
 });

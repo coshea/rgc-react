@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, within } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TournamentRegister from "@/pages/tournament-register";
@@ -116,14 +116,12 @@ describe("TournamentRegister redirect", () => {
     // We can simplify: since validation requires at least one teammate, we'll mock out the teammates state logic by
     // pre-populating selection through firing the change event.
 
-    const selectTrigger = screen.getByRole("button", { name: /Team Leader/i });
-    // Open list
+    const leaderCombo = screen.getByRole("combobox", { name: /Team Leader/i });
     await act(async () => {
-      selectTrigger.click();
+      fireEvent.change(leaderCombo, { target: { value: "Alpha" } });
+      fireEvent.keyDown(leaderCombo, { key: "ArrowDown" });
     });
-    // Find listbox and click Alpha option (avoid hidden native select duplicate)
-    const listbox = await screen.findByRole("listbox");
-    const alphaOption = within(listbox).getByText("Alpha");
+    const alphaOption = await screen.findByRole("option", { name: "Alpha" });
     await act(async () => {
       alphaOption.click();
     });
