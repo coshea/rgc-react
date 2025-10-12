@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TournamentRegister from "@/pages/tournament-register";
@@ -107,24 +107,7 @@ describe("TournamentRegister redirect", () => {
     // Wait for tournament title to render
     await screen.findByText(/Register for\s+Fall Classic/i);
 
-    // Select first teammate (Team Leader / You select)
-    // The select is a controlled HeroUI Select; simplest is to simulate updating the state by selecting option text.
-    // Because component uses onSelectionChange with selectedKeys, we can dispatch a change via fireEvent if needed.
-    // Simpler: directly invoke form submission after ensuring the teammate list is populated with placeholder.
-
-    // Emulate choosing a teammate by mocking internal state: easiest path -> fill the only select using DOM queries.
-    // We can simplify: since validation requires at least one teammate, we'll mock out the teammates state logic by
-    // pre-populating selection through firing the change event.
-
-    const leaderCombo = screen.getByRole("combobox", { name: /Team Leader/i });
-    await act(async () => {
-      fireEvent.change(leaderCombo, { target: { value: "Alpha" } });
-      fireEvent.keyDown(leaderCombo, { key: "ArrowDown" });
-    });
-    const alphaOption = await screen.findByRole("option", { name: "Alpha" });
-    await act(async () => {
-      alphaOption.click();
-    });
+    // Leader is auto-selected by RegistrationEditor effect; no need to open the menu here.
 
     // Submit the form
     const submitBtn = screen.getByRole("button", { name: /Register$/i });

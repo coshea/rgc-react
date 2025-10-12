@@ -146,14 +146,20 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     updateGroup(groupId, { winners: filtered });
   };
 
-  const tiePlace = (groupId: string, place: number) => {
+  const tiePlace = (groupId: string, placeOrId: number | string) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
+    const base = g.winners.find((w) =>
+      typeof placeOrId === "string" ? w.id === placeOrId : w.place === placeOrId
+    );
+    const place =
+      base?.place ?? (typeof placeOrId === "number" ? placeOrId : 1);
     const newPlace: WinnerPlace = {
       id: crypto.randomUUID(),
       place,
       competitors: [],
-      prizeAmount: 0,
+      prizeAmount: base?.prizeAmount ?? 0,
+      score: base?.score,
     };
     updateGroup(groupId, { winners: [...g.winners, newPlace] });
   };
@@ -353,7 +359,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                             <Button
                               size="sm"
                               variant="flat"
-                              onPress={() => tiePlace(g.id, w.place)}
+                              onPress={() => tiePlace(g.id, w.id || w.place)}
                             >
                               Tie
                             </Button>
