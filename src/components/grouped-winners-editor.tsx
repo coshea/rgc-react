@@ -65,18 +65,28 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   // Normalize: ensure every WinnerPlace has a unique id to support ties (duplicate place numbers)
   React.useEffect(() => {
     if (!groups?.length) return;
-    let changed = false;
-    const normalized = groups.map((g) => {
-      const winners = (g.winners || []).map((w) => {
+    // Fast path: only perform deep normalization if we find at least one place missing an id.
+    let anyMissing = false;
+    for (const g of groups) {
+      if (!g.winners) continue;
+      for (const w of g.winners) {
         if (!w.id) {
-          changed = true;
-          return { ...w, id: crypto.randomUUID() };
+          anyMissing = true;
+          break;
         }
-        return w;
-      });
+      }
+      if (anyMissing) break;
+    }
+    if (!anyMissing) return;
+
+    // Slow path: create normalized copy with generated ids for missing places.
+    const normalized = groups.map((g) => {
+      const winners = (g.winners || []).map((w) =>
+        w.id ? w : { ...w, id: crypto.randomUUID() }
+      );
       return winners !== g.winners ? { ...g, winners } : g;
     });
-    if (changed) onChange(normalized);
+    onChange(normalized);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups]);
 
@@ -129,17 +139,19 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     onChange(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   };
 
+  // Utility function to compute the next place for a winner, tie-aware
+  function computeNextPlace(winners: WinnerPlace[]): number {
+    if (!winners || winners.length === 0) return 1;
+    const sorted = sortPlaces(winners);
+    const display = computeDisplayPlaces(sorted);
+    const lastDisplay = display[display.length - 1]?.displayPlace || 0;
+    return lastDisplay + 1;
+  }
+
   const addPlace = (groupId: string) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
-    // Compute next place using tie-aware display rank: last displayPlace + 1
-    let nextPlace = 1;
-    if (g.winners.length > 0) {
-      const sorted = sortPlaces(g.winners);
-      const display = computeDisplayPlaces(sorted);
-      const lastDisplay = display[display.length - 1]?.displayPlace || 0;
-      nextPlace = lastDisplay + 1;
-    }
+    const nextPlace = computeNextPlace(g.winners);
     const newPlace: WinnerPlace = {
       id: crypto.randomUUID(),
       place: nextPlace,
@@ -180,20 +192,18 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
 
   const updatePlace = (
     groupId: string,
-    placeOrId: number | string,
+    placeOrId: string | number,
     patch: Partial<WinnerPlace>
   ) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
-    const winners = g.winners.map((w) =>
-      typeof placeOrId === "string"
-        ? w.id === placeOrId
-          ? { ...w, ...patch }
-          : w
-        : w.place === placeOrId
-          ? { ...w, ...patch }
-          : w
-    );
+    const winners = g.winners.map((w) => {
+      const match =
+        typeof placeOrId === "string"
+          ? w.id === placeOrId
+          : w.place === placeOrId;
+      return match ? { ...w, ...patch } : w;
+    });
     updateGroup(groupId, { winners });
   };
 

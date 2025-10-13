@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { aggregateWinnings } from "@/hooks/useYearlyWinnings";
 import type { Tournament } from "@/types/tournament";
+import { TournamentStatus } from "@/types/tournament";
 import type { WinnerGroup } from "@/types/winner";
 
 function makeTournament(
@@ -15,8 +16,7 @@ function makeTournament(
     date,
     description: "d",
     players: 4,
-    completed: true,
-    canceled: false,
+    status: TournamentStatus.Completed,
     prizePool: 500,
     registrationOpen: false,
     winners: overrides.winners || [],

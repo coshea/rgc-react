@@ -60,17 +60,19 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   );
 
   const renderRemovedHint = () => {
-    if (!showRemovedHint) return null;
-    if (!value) return null;
-    if (Array.isArray(value)) {
-      const missing = value.some((v) => v && !idSet.has(v));
-      if (!missing) return null;
-    } else if (value && !idSet.has(value)) {
-      // single
-    } else {
+    if (!showRemovedHint || !value) {
       return null;
     }
-    return <div className="mt-1 text-danger text-sm">Removed User</div>;
+
+    const hasMissingId = Array.isArray(value)
+      ? value.some((v) => v && !idSet.has(v))
+      : value && !idSet.has(value);
+
+    if (hasMissingId) {
+      return <div className="mt-1 text-danger text-sm">Removed User</div>;
+    }
+
+    return null;
   };
 
   if (multiple) {
