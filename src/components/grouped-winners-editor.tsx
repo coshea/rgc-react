@@ -392,22 +392,27 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                 Place {display[index].displayPlace}
                               </span>
                             </div>
-                            <Button
-                              size="sm"
-                              isIconOnly
-                              color="danger"
-                              variant="light"
-                              onPress={() => removePlace(g.id, w.id || w.place)}
-                            >
-                              <Icon icon="lucide:trash-2" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              onPress={() => tiePlace(g.id, w.id || w.place)}
-                            >
-                              Tie
-                            </Button>
+                            <div className="ml-auto flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                onPress={() => tiePlace(g.id, w.id || w.place)}
+                              >
+                                Tie
+                              </Button>
+                              <Button
+                                size="sm"
+                                isIconOnly
+                                color="danger"
+                                variant="light"
+                                aria-label="Delete place"
+                                onPress={() =>
+                                  removePlace(g.id, w.id || w.place)
+                                }
+                              >
+                                <Icon icon="lucide:trash-2" />
+                              </Button>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

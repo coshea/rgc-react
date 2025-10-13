@@ -1,6 +1,16 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardBody, Button, Divider } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  Button,
+  Divider,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus } from "@/utils/tournamentStatus";
@@ -357,6 +367,8 @@ const TournamentRegister: React.FC = () => {
       setRegistrationId(null);
       setTeammates([""]);
       setConfirmOpen(false);
+      // Navigate back to the tournament details page after successful cancellation
+      navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
     } catch (err) {
       console.error("Failed to delete registration", err);
       addToast({
@@ -466,165 +478,169 @@ const TournamentRegister: React.FC = () => {
             </div>
 
             {/* Confirmation modal for cancelling registration */}
-            {confirmOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div
-                  className="absolute inset-0 bg-black opacity-40"
-                  onClick={() => setConfirmOpen(false)}
-                />
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-md">
-                  <h3 className="text-lg font-medium mb-2">
-                    Cancel registration
-                  </h3>
-                  <p className="text-sm text-foreground-500 mb-4">
-                    Are you sure you want to cancel your registration? This
-                    cannot be undone.
-                  </p>
-                  <div className="flex justify-end gap-2">
+            <Modal
+              isOpen={confirmOpen}
+              onOpenChange={(open) => setConfirmOpen(open)}
+              size="md"
+            >
+              <ModalContent>
+                {(onClose) => (
+                  <>
+                    <ModalHeader>Cancel registration</ModalHeader>
+                    <ModalBody>
+                      <p className="text-sm text-foreground-500">
+                        Are you sure you want to cancel your registration? This
+                        cannot be undone.
+                      </p>
+                    </ModalBody>
+                    <ModalFooter>
+                      <Button variant="light" color="default" onPress={onClose}>
+                        Close
+                      </Button>
+                      <Button
+                        color="danger"
+                        onPress={handleConfirmCancel}
+                        isDisabled={deleting}
+                      >
+                        {deleting ? "Cancelling..." : "Yes, cancel"}
+                      </Button>
+                    </ModalFooter>
+                  </>
+                )}
+              </ModalContent>
+            </Modal>
+          </form>
+          {/* Duplicate conflict confirmation modal */}
+          <Modal
+            isOpen={conflictModalOpen && conflicts.length > 0}
+            onOpenChange={(open) => {
+              setConflictModalOpen(open);
+              if (!open) setConflicts([]);
+            }}
+            size="lg"
+          >
+            <ModalContent data-testid="conflict-modal">
+              {(onClose) => (
+                <>
+                  <ModalHeader>Player Already Registered</ModalHeader>
+                  <ModalBody>
+                    <p className="text-sm text-foreground-500">
+                      One or more selected teammates already appear on another
+                      registered team.
+                    </p>
+                    <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                      {conflicts.map((c, idx) => {
+                        const resolveName = (id: string) => {
+                          const u = fullMembers.find((fm) => fm.id === id);
+                          return (
+                            u?.displayName ||
+                            u?.email ||
+                            (id === c.playerId
+                              ? c.playerName
+                              : "Unknown Player")
+                          );
+                        };
+                        const teamMemberIds = Array.from(
+                          new Set(c.teamMembers)
+                        );
+                        const conflictPlayerResolved = resolveName(c.playerId);
+                        return (
+                          <Card
+                            key={c.playerId + idx}
+                            className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
+                            data-testid="conflict-team-card"
+                          >
+                            <CardBody className="p-0">
+                              <div className="flex items-start gap-4">
+                                <div className="flex -space-x-2">
+                                  {teamMemberIds.map((mid) => {
+                                    const memberUser = fullMembers.find(
+                                      (u) => u.id === mid
+                                    );
+                                    const label = resolveName(mid);
+                                    return (
+                                      <div
+                                        key={mid}
+                                        className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
+                                        aria-label={label}
+                                      >
+                                        {memberUser?.displayName
+                                          ? memberUser.displayName
+                                              .split(/\s+/)
+                                              .map((p) => p[0])
+                                              .join("")
+                                              .slice(0, 2)
+                                          : label
+                                              .split(/\s+/)
+                                              .map((p) => p[0])
+                                              .join("")
+                                              .slice(0, 2)}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <p className="text-sm">
+                                    <span className="font-medium">
+                                      {conflictPlayerResolved}
+                                    </span>{" "}
+                                    is already on this team:
+                                  </p>
+                                  <div
+                                    className="text-xs text-foreground-600 space-y-0.5"
+                                    data-testid="conflict-team-names"
+                                  >
+                                    {teamMemberIds.map((id) => (
+                                      <div key={id}>{resolveName(id)}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardBody>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    <p className="text-sm text-warning-600 dark:text-warning-500">
+                      Continuing will register a team containing a player
+                      already on another team.
+                    </p>
+                  </ModalBody>
+                  <ModalFooter>
                     <Button
                       variant="light"
                       color="default"
-                      onPress={() => setConfirmOpen(false)}
+                      onPress={() => {
+                        onClose();
+                        setConflicts([]);
+                      }}
                     >
-                      Close
+                      Go Back
                     </Button>
                     <Button
-                      color="danger"
-                      onPress={handleConfirmCancel}
-                      isDisabled={deleting}
+                      color="primary"
+                      onPress={() => {
+                        onClose();
+                        setConflicts([]);
+                        setConflictsAcknowledged(true);
+                        const pending = pendingMembersRef.current;
+                        if (pending) {
+                          queueMicrotask(() =>
+                            finalizeRegistration(
+                              pending.members,
+                              pending.ownerId
+                            )
+                          );
+                        }
+                      }}
                     >
-                      {deleting ? "Cancelling..." : "Yes, cancel"}
+                      Continue Anyway
                     </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </form>
-          {/* Duplicate conflict confirmation modal */}
-          {conflictModalOpen && conflicts.length > 0 && (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center"
-              data-testid="conflict-modal"
-            >
-              <div
-                className="absolute inset-0 bg-black opacity-40"
-                onClick={() => setConflictModalOpen(false)}
-              />
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-lg space-y-5">
-                <h3 className="text-lg font-medium">
-                  Player Already Registered
-                </h3>
-                <p className="text-sm text-foreground-500">
-                  One or more selected teammates already appear on another
-                  registered team.
-                </p>
-                <div className="space-y-4 max-h-72 overflow-auto pr-1">
-                  {conflicts.map((c, idx) => {
-                    // Resolve player & team member display names WITHOUT exposing raw IDs
-                    const resolveName = (id: string) => {
-                      const u = fullMembers.find((fm) => fm.id === id);
-                      return (
-                        u?.displayName ||
-                        u?.email ||
-                        (id === c.playerId ? c.playerName : "Unknown Player")
-                      );
-                    };
-                    const teamMemberIds = Array.from(new Set(c.teamMembers));
-                    const conflictPlayerResolved = resolveName(c.playerId);
-                    return (
-                      <Card
-                        key={c.playerId + idx}
-                        className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
-                        data-testid="conflict-team-card"
-                      >
-                        <CardBody className="p-0">
-                          <div className="flex items-start gap-4">
-                            {/* Avatar group mimic from registrations list */}
-                            <div className="flex -space-x-2">
-                              {teamMemberIds.map((mid) => {
-                                const memberUser = fullMembers.find(
-                                  (u) => u.id === mid
-                                );
-                                const label = resolveName(mid);
-                                // Intentionally not falling back to raw ID; label already sanitized
-                                return (
-                                  <div
-                                    key={mid}
-                                    className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
-                                    aria-label={label}
-                                  >
-                                    {memberUser?.displayName
-                                      ? memberUser.displayName
-                                          .split(/\s+/)
-                                          .map((p) => p[0])
-                                          .join("")
-                                          .slice(0, 2)
-                                      : label
-                                          .split(/\s+/)
-                                          .map((p) => p[0])
-                                          .join("")
-                                          .slice(0, 2)}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <p className="text-sm">
-                                <span className="font-medium">
-                                  {conflictPlayerResolved}
-                                </span>{" "}
-                                is already on this team:
-                              </p>
-                              <div
-                                className="text-xs text-foreground-600 space-y-0.5"
-                                data-testid="conflict-team-names"
-                              >
-                                {teamMemberIds.map((id) => (
-                                  <div key={id}>{resolveName(id)}</div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <p className="text-sm text-warning-600 dark:text-warning-500">
-                  Continuing will register a team containing a player already on
-                  another team.
-                </p>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    variant="light"
-                    color="default"
-                    onPress={() => {
-                      setConflictModalOpen(false);
-                      setConflicts([]);
-                    }}
-                  >
-                    Go Back
-                  </Button>
-                  <Button
-                    color="primary"
-                    onPress={() => {
-                      setConflictModalOpen(false);
-                      setConflicts([]);
-                      setConflictsAcknowledged(true);
-                      const pending = pendingMembersRef.current;
-                      if (pending) {
-                        queueMicrotask(() =>
-                          finalizeRegistration(pending.members, pending.ownerId)
-                        );
-                      }
-                    }}
-                  >
-                    Continue Anyway
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+                  </ModalFooter>
+                </>
+              )}
+            </ModalContent>
+          </Modal>
         </CardBody>
       </Card>
     </div>

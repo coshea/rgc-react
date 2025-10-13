@@ -13,8 +13,11 @@ import {
   ModalFooter,
   useDisclosure,
   Skeleton,
+  Link,
 } from "@heroui/react";
+import { button as buttonStyles } from "@heroui/theme";
 import { Icon } from "@iconify/react";
+import { siteConfig } from "@/config/site";
 import { UserAvatar } from "@/components/avatar";
 import { ProfileForm } from "@/components/profile-form";
 import { useAuth } from "@/providers/AuthProvider";
@@ -199,7 +202,7 @@ const UserProfilePage: React.FC = () => {
   }
 
   if (!userId) {
-    return <Navigate to="/membership/member-directory" replace />;
+    return <Navigate to={siteConfig.pages.directory.link} replace />;
   }
 
   if (!profileUser) {
@@ -215,14 +218,12 @@ const UserProfilePage: React.FC = () => {
             <p className="text-default-600 mb-4">
               The user profile you're looking for doesn't exist.
             </p>
-            <Button
-              as="a"
-              href="/membership/member-directory"
-              color="primary"
-              variant="flat"
+            <Link
+              href={siteConfig.pages.directory.link}
+              className={buttonStyles({ color: "primary", variant: "flat" })}
             >
               Browse Member Directory
-            </Button>
+            </Link>
           </CardBody>
         </Card>
       </div>

@@ -45,6 +45,11 @@ service cloud.firestore {
         return d.email is string && d.email != '';
       }
       // Core write gate with board field restrictions
+      // Helper: ensure request doesn't change privileged board/admin fields
+      function boardFieldsUnchanged(newData, oldData) {
+        return (newData.boardMember == oldData.boardMember)
+          && (newData.role == oldData.role);
+      }
       // Permit admins to create any user doc; permit non-admin authenticated users to create
       // their own user doc (without board fields). Bulk upload relies on admin path.
       allow create: if request.auth != null && hasBaselineFields(request.resource.data) && (
@@ -56,9 +61,11 @@ service cloud.firestore {
       // Updates
       // Admin path: can update any profile with board validation
       allow update: if request.auth != null && isAdmin() && boardRoleValid(request.resource.data);
-      
-      // Self-update path: can update own profile (board fields filtered client-side)
-      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Self-update path: can update own profile, but cannot change board/admin fields.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && boardFieldsUnchanged(request.resource.data, resource.data);
       allow delete: if isSelfOrAdmin();
     }
 

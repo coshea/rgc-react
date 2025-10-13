@@ -1,3 +1,4 @@
+import type { TeeName } from "@/utils/teeStyles";
 export interface Tournament {
   // Optional Firestore document id for this tournament (useful for updates)
   firestoreId?: string;
@@ -20,7 +21,7 @@ export interface Tournament {
   /** Phase 1: New grouped winners model (to be used in Phase 2 UI) */
   winnerGroups?: import("./winner").WinnerGroup[];
   // Tee selection for the tournament round
-  tee?: "Blue" | "White" | "Gold" | "Red" | "Mixed";
+  tee?: TeeName;
 }
 
 export enum TournamentStatus {
