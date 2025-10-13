@@ -271,7 +271,16 @@ const TournamentRegister: React.FC = () => {
     }
 
     // validate teammates - ensure no empty selections
-    const selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    // Fallback: if nothing selected yet but the current user is a valid full member,
+    // auto-include them as team leader to avoid a race with the auto-select effect.
+    if (
+      selectedIds.length === 0 &&
+      user?.uid &&
+      fullMembers.some((m) => m.id === user.uid)
+    ) {
+      selectedIds = [user.uid];
+    }
     // Ensure all selected teammates are full members
     const allFull = selectedIds.every((id) =>
       fullMembers.some((m) => m.id === id)

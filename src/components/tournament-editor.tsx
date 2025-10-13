@@ -14,6 +14,7 @@ import {
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getStatus } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
@@ -146,6 +147,25 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const { collection, addDoc, updateDoc, doc } = await import(
         "firebase/firestore"
       );
+      // Sanitize winnerGroups to avoid writing `undefined` fields to Firestore
+      const sanitizedGroups: WinnerGroup[] = (winnerGroups || []).map((g) => ({
+        ...g,
+        winners: (g.winners || []).map((w): WinnerPlace => {
+          const out: WinnerPlace = {
+            id: w.id,
+            place: w.place,
+            competitors: w.competitors || [],
+          };
+          if (w.prizeAmount !== undefined && w.prizeAmount !== null) {
+            out.prizeAmount = w.prizeAmount;
+          }
+          if (w.score !== undefined && w.score !== null) {
+            out.score = w.score;
+          }
+          return out;
+        }),
+      }));
+
       const tournamentData: Partial<Tournament> = {
         title,
         description,
@@ -154,7 +174,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         status,
         prizePool,
         // winners removed (legacy); only persist grouped model going forward
-        winnerGroups, // grouped model
+        winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
       };
@@ -553,7 +573,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               <Divider className="my-4" />
               <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Winners</h4>
                   <GroupedWinnersEditor
                     groups={winnerGroups}
                     onChange={setWinnerGroups}

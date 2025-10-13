@@ -234,7 +234,10 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       }
                     >
                       {users.map((user) => (
-                        <SelectItem key={user.id}>
+                        <SelectItem
+                          key={user.id}
+                          textValue={user.displayName || user.email || user.id}
+                        >
                           {user.displayName}
                         </SelectItem>
                       ))}

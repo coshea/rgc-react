@@ -391,7 +391,9 @@ export function ChampionshipEditorModal({
               }}
             >
               {Object.entries(CHAMPIONSHIP_TYPES).map(([key, label]) => (
-                <SelectItem key={key}>{label}</SelectItem>
+                <SelectItem key={key} textValue={label}>
+                  {label}
+                </SelectItem>
               ))}
             </Select>
           </div>

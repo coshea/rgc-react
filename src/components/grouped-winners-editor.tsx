@@ -172,7 +172,8 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       place,
       competitors: [],
       prizeAmount: base?.prizeAmount ?? 0,
-      score: base?.score,
+      // Only include score if it's defined to avoid writing undefined to Firestore
+      ...(base?.score !== undefined ? { score: base.score } : {}),
     };
     updateGroup(groupId, { winners: [...g.winners, newPlace] });
   };
@@ -229,7 +230,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-medium">Winners (Grouped)</h3>
+        <h3 className="text-lg font-medium">Winners</h3>
         <div className="flex flex-wrap items-center gap-2 justify-end">
           <Chip
             color={remaining < 0 ? "danger" : "success"}
@@ -262,10 +263,16 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
           }}
           className="w-[260px]"
         >
-          <SelectItem key="teams" isDisabled={registrations.length === 0}>
+          <SelectItem
+            key="teams"
+            isDisabled={registrations.length === 0}
+            textValue="Registered Teams"
+          >
             Registered Teams {registrations.length === 0 ? "(none)" : ""}
           </SelectItem>
-          <SelectItem key="users">All Users</SelectItem>
+          <SelectItem key="users" textValue="All Users">
+            All Users
+          </SelectItem>
         </Select>
       </div>
 
@@ -302,7 +309,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       className="w-[160px] md:w-[180px]"
                     >
                       {GROUP_TYPE_OPTIONS.map((t) => (
-                        <SelectItem key={t}>{t}</SelectItem>
+                        <SelectItem key={t} textValue={t}>
+                          {t}
+                        </SelectItem>
                       ))}
                     </Select>
                     {g.type === "day" && (

@@ -259,7 +259,9 @@ export function EditMemberModal({
                         className="max-w-full"
                       >
                         {options.map((r) => (
-                          <SelectItem key={r}>{r}</SelectItem>
+                          <SelectItem key={r} textValue={r}>
+                            {r}
+                          </SelectItem>
                         ))}
                       </Select>
                       {!form.role?.trim() && (
@@ -329,8 +331,12 @@ export function EditMemberModal({
                     }}
                     className="min-w-[130px]"
                   >
-                    <SelectItem key="full">Full</SelectItem>
-                    <SelectItem key="handicap">Handicap</SelectItem>
+                    <SelectItem key="full" textValue="Full">
+                      Full
+                    </SelectItem>
+                    <SelectItem key="handicap" textValue="Handicap">
+                      Handicap
+                    </SelectItem>
                   </Select>
                   <Input
                     size="sm"

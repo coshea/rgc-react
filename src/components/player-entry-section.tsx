@@ -99,7 +99,15 @@ export function PlayerEntrySection({
                 disallowEmptySelection={false}
               >
                 {users?.map((user) => (
-                  <SelectItem key={user.id}>
+                  <SelectItem
+                    key={user.id}
+                    textValue={
+                      user.displayName ||
+                      user.firstName ||
+                      user.email ||
+                      user.id
+                    }
+                  >
                     {user.displayName || user.firstName || user.email}
                   </SelectItem>
                 )) || []}
