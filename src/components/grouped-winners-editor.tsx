@@ -31,6 +31,12 @@ interface GroupedWinnersEditorProps {
   teamSize: number;
   prizePool: number;
   isCompleted: boolean;
+  /** Optional list of registrations to allow picking winners by team (default behavior when provided). */
+  registrations?: Array<{
+    id: string;
+    team: Array<{ id: string; displayName: string }>;
+    ownerId?: string;
+  }>;
 }
 
 const GROUP_TYPE_OPTIONS: WinnerGroupType[] = [
@@ -46,8 +52,15 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   teamSize,
   prizePool,
   isCompleted,
+  registrations = [],
 }) => {
   const { users, isLoading: usersLoading } = useUsers();
+
+  // Winner source mode: registered teams (default when available) vs all users
+  type SourceMode = "teams" | "users";
+  const [sourceMode, setSourceMode] = React.useState<SourceMode>(
+    registrations && registrations.length > 0 ? "teams" : "users"
+  );
 
   // Normalize: ensure every WinnerPlace has a unique id to support ties (duplicate place numbers)
   React.useEffect(() => {
@@ -237,6 +250,25 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
         </div>
       </div>
 
+      {/* Source mode selector */}
+      <div className="flex items-center gap-3">
+        <Select
+          size="sm"
+          label="Winner selection source"
+          selectedKeys={new Set([sourceMode])}
+          onSelectionChange={(keys: any) => {
+            const v = Array.from(keys as Set<string>)[0] as SourceMode;
+            setSourceMode(v || "users");
+          }}
+          className="w-[260px]"
+        >
+          <SelectItem key="teams" isDisabled={registrations.length === 0}>
+            Registered Teams {registrations.length === 0 ? "(none)" : ""}
+          </SelectItem>
+          <SelectItem key="users">All Users</SelectItem>
+        </Select>
+      </div>
+
       {sorted.length === 0 ? (
         <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
           <p>No winner groups yet. Add one to get started.</p>
@@ -328,6 +360,19 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                     {(() => {
                       const sortedPlaces = sortPlaces(g.winners);
                       const display = computeDisplayPlaces(sortedPlaces);
+                      const teamLabel = (r: {
+                        team: Array<{ id: string; displayName: string }>;
+                      }) => r.team.map((m) => m.displayName).join(", ");
+                      const isSameTeam = (
+                        w: WinnerPlace,
+                        r: { team: Array<{ id: string; displayName: string }> }
+                      ) => {
+                        const a = (w.competitors || []).map((c) => c.userId);
+                        const b = r.team.map((m) => m.id);
+                        if (a.length !== b.length) return false;
+                        const setA = new Set(a);
+                        return b.every((id) => setA.has(id));
+                      };
                       return sortedPlaces.map((w, index) => (
                         <div
                           key={w.id || `${w.place}-${index}`}
@@ -366,43 +411,98 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <UserSelect
-                              users={users}
-                              label={teamSize > 1 ? "Team Members" : "Winner"}
-                              placeholder={
-                                teamSize > 1
-                                  ? "Select team members"
-                                  : "Select winner"
-                              }
-                              multiple={teamSize > 1}
-                              maxSelected={teamSize > 1 ? teamSize : undefined}
-                              value={
-                                teamSize > 1
-                                  ? (w.competitors || []).map((c) => c.userId)
-                                  : (w.competitors &&
-                                      w.competitors[0]?.userId) ||
-                                    ""
-                              }
-                              onChange={(val) =>
-                                setPlaceCompetitors(
-                                  g.id,
-                                  w.id || w.place,
-                                  (Array.isArray(val) ? val : [val]).filter(
-                                    Boolean
-                                  ) as string[]
-                                )
-                              }
-                              disabled={usersLoading}
-                              required
-                              invalid={
-                                !w.competitors || w.competitors.length === 0
-                              }
-                              errorMessage={
-                                !w.competitors || w.competitors.length === 0
-                                  ? "Winner is required"
-                                  : ""
-                              }
-                            />
+                            {sourceMode === "teams" ? (
+                              <Select
+                                label={
+                                  teamSize > 1
+                                    ? "Registered Team"
+                                    : "Registered Player"
+                                }
+                                placeholder={
+                                  registrations.length > 0
+                                    ? "Choose a registration"
+                                    : "No registrations"
+                                }
+                                selectedKeys={
+                                  new Set(
+                                    registrations
+                                      .filter((r) => isSameTeam(w, r))
+                                      .map((r) => r.id)
+                                  )
+                                }
+                                onSelectionChange={(keys: any) => {
+                                  const key = Array.from(
+                                    keys as Set<string>
+                                  )[0];
+                                  const reg = registrations.find(
+                                    (r) => r.id === key
+                                  );
+                                  if (reg) {
+                                    const ids = reg.team
+                                      .map((m) => m.id)
+                                      .slice(0, Math.max(1, teamSize));
+                                    setPlaceCompetitors(
+                                      g.id,
+                                      w.id || w.place,
+                                      ids
+                                    );
+                                  }
+                                }}
+                                className="w-full"
+                                isDisabled={registrations.length === 0}
+                                disallowEmptySelection
+                                aria-label="Registered Team Selector"
+                              >
+                                {registrations.map((r) => (
+                                  <SelectItem
+                                    key={r.id}
+                                    textValue={teamLabel(r)}
+                                  >
+                                    {teamLabel(r)}
+                                  </SelectItem>
+                                ))}
+                              </Select>
+                            ) : (
+                              <UserSelect
+                                users={users}
+                                label={teamSize > 1 ? "Team Members" : "Winner"}
+                                placeholder={
+                                  teamSize > 1
+                                    ? "Select team members"
+                                    : "Select winner"
+                                }
+                                multiple={teamSize > 1}
+                                maxSelected={
+                                  teamSize > 1 ? teamSize : undefined
+                                }
+                                value={
+                                  teamSize > 1
+                                    ? (w.competitors || []).map((c) => c.userId)
+                                    : (w.competitors &&
+                                        w.competitors[0]?.userId) ||
+                                      ""
+                                }
+                                onChange={(val) =>
+                                  setPlaceCompetitors(
+                                    g.id,
+                                    w.id || w.place,
+                                    (Array.isArray(val) ? val : [val]).filter(
+                                      Boolean
+                                    ) as string[]
+                                  )
+                                }
+                                disabled={usersLoading}
+                                required
+                                invalid={
+                                  !w.competitors || w.competitors.length === 0
+                                }
+                                errorMessage={
+                                  !w.competitors || w.competitors.length === 0
+                                    ? "Winner is required"
+                                    : ""
+                                }
+                              />
+                            )}
 
                             <NumberInput
                               label="Prize Amount (per person)"

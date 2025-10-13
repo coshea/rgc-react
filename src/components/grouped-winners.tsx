@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { sortGroups, sortPlaces, computeDisplayPlaces } from "@/utils/winners";
+import { getPlaceMeta } from "@/utils/placeMeta";
 
 function ordinal(n: number) {
   const s = ["th", "st", "nd", "rd"];
@@ -21,12 +22,11 @@ function PlaceRow({
       ? `$${place.prizeAmount.toLocaleString()} each`
       : undefined;
   const score = place.score ? `Score: ${place.score}` : undefined;
-  const icon = place.place === 1 ? "lucide:trophy" : "lucide:medal";
-  const color = place.place === 1 ? "text-warning" : "text-default-400";
+  const meta = getPlaceMeta(place.place);
   return (
     <div className="flex items-center justify-between rounded-md px-3 py-2 bg-content2">
       <div className="flex items-center gap-2 min-w-0">
-        <Icon icon={icon} className={`w-4 h-4 ${color}`} />
+        <Icon icon={meta.icon} className={`w-4 h-4 ${meta.colorClass}`} />
         <span
           className="font-medium truncate"
           title={`${ordinal(displayPlace)}: ${names.join(", ")}`}

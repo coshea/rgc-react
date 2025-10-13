@@ -560,6 +560,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     teamSize={players}
                     prizePool={prizePool}
                     isCompleted={completed}
+                    registrations={registrations}
                   />
                   {errors.winners && (
                     <p className="text-danger text-sm mt-2">{errors.winners}</p>
