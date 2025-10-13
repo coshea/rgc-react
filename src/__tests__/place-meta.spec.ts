@@ -6,31 +6,31 @@ import { getPlaceMeta, formatPlaceLabel } from "@/utils/placeMeta";
  * to icon or color logic surface intentional changes.
  */
 describe("getPlaceMeta", () => {
-  it("returns crown + warning styles for first place", () => {
+  it("returns trophy + warning styles for first place", () => {
     const meta = getPlaceMeta(1);
-    expect(meta.icon).toBe("lucide:crown");
+    expect(meta.icon).toBe("lucide:trophy");
     expect(meta.colorClass).toContain("text-warning");
     expect(meta.badgeBg).toMatch(/amber|warning/i);
   });
 
-  it("returns medal + foreground style for second place", () => {
+  it("returns medal + neutral style for second place", () => {
     const meta = getPlaceMeta(2);
     expect(meta.icon).toBe("lucide:medal");
-    expect(meta.colorClass).toContain("text-foreground-400");
+    expect(meta.colorClass).toContain("text-default-400");
     expect(meta.badgeBg).toMatch(/slate/i);
   });
 
-  it("returns award + success style for third place", () => {
+  it("returns award bronze style for third place", () => {
     const meta = getPlaceMeta(3);
     expect(meta.icon).toBe("lucide:award");
-    expect(meta.colorClass).toContain("text-success");
-    expect(meta.badgeBg).toMatch(/purple/i);
+    expect(meta.colorClass).toContain("text-amber-700");
+    expect(meta.badgeBg).toMatch(/amber/i);
   });
 
-  it("returns dot + neutral style for other placements", () => {
+  it("returns neutral award for other placements", () => {
     const meta = getPlaceMeta(7);
-    expect(meta.icon).toBe("lucide:dot");
-    expect(meta.colorClass).toContain("opacity-70");
+    expect(meta.icon).toBe("lucide:award");
+    expect(meta.colorClass).toContain("text-default-400");
     expect(meta.badgeBg).toMatch(/default/i);
   });
 });

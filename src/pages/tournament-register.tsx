@@ -5,17 +5,27 @@ import {
   CardBody,
   Button,
   Divider,
-  Select,
-  SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
-import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
-import type { User } from "@/api/users";
+// user types imported indirectly via hooks; no direct type import required here
+import {
+  isActiveFullMember,
+  isFullMember as isFullMemberUtil,
+} from "@/utils/membership";
+import RegistrationEditor from "@/components/registration-editor";
+// Static import for registrations list to ensure test mocks attach
+import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -25,11 +35,7 @@ const TournamentRegister: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const { users } = useUsers();
   // Refine types and avoid any-casts with a small type guard
-  const isFullMember = React.useCallback(
-    (u: User): u is User & { membershipType: "full" } =>
-      u.membershipType === "full",
-    []
-  );
+  const isFullMember = React.useCallback(isFullMemberUtil, []);
   // Filter to full members only for selection (business rule: only full members can register / be teammates)
   const fullMembers = React.useMemo(
     () => users.filter(isFullMember),
@@ -45,13 +51,72 @@ const TournamentRegister: React.FC = () => {
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const currentUserIsFull = React.useMemo(
-    () =>
-      users.some(
-        (u: User) => u.id === user?.uid && u.membershipType === "full"
-      ),
-    [users, user?.uid]
+  // Duplicate conflict confirmation modal state
+  const [conflictModalOpen, setConflictModalOpen] = React.useState(false);
+  const [conflicts, setConflicts] = React.useState<
+    {
+      playerId: string;
+      playerName: string;
+      teamRegistrationId: string;
+      teamMembers: string[];
+    }[]
+  >([]);
+  // Track if user has acknowledged conflicts to allow proceeding without re-check modal during this submission attempt
+  const [conflictsAcknowledged, setConflictsAcknowledged] =
+    React.useState(false);
+  // Store prepared members for submission when conflicts need user confirmation
+  const pendingMembersRef = React.useRef<{
+    members: { id: string; displayName: string }[];
+    ownerId: string;
+  } | null>(null);
+
+  const finalizeRegistration = React.useCallback(
+    async (members: { id: string; displayName: string }[], ownerId: string) => {
+      if (!tournament?.firestoreId) return;
+      setSubmitting(true);
+      try {
+        await upsertRegistration(tournament.firestoreId, registrationId, {
+          team: members,
+          ownerId,
+        });
+        addToast({
+          title: "Registered",
+          description: "Your team has been registered.",
+          color: "success",
+        });
+        pendingMembersRef.current = null;
+        setConflictsAcknowledged(false);
+        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
+      } catch (err) {
+        console.error("Failed to register:", err);
+        addToast({
+          title: "Error",
+          description: "Failed to register team.",
+          color: "danger",
+        });
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [navigate, registrationId, tournament?.firestoreId]
   );
+  // store registrations for conflict detection
+  const [registrations, setRegistrations] = React.useState<any[]>([]);
+  // Whether to show the registration restricted modal when the current user
+  // is not a full member. Kept alongside other hooks to preserve hook order.
+  const [showRestricted, setShowRestricted] = React.useState(false);
+  const currentUserIsEligible = React.useMemo(() => {
+    const me = users.find((u) => u.id === user?.uid);
+    // Primary rule: active full member (paid for current year)
+    if (isActiveFullMember(me)) return true;
+    // Legacy fallback: if membershipType is full but lastPaidYear is missing/unknown,
+    // allow registration to avoid blocking older profiles that haven't recorded payment year.
+    // Once lastPaidYear exists, the primary rule above applies.
+    if (me && me.membershipType === "full" && me.lastPaidYear == null) {
+      return true;
+    }
+    return false;
+  }, [users, user?.uid]);
 
   React.useEffect(() => {
     const fetchTournament = async () => {
@@ -91,6 +156,23 @@ const TournamentRegister: React.FC = () => {
     };
 
     fetchTournament();
+  }, [firestoreId]);
+
+  // Load all registrations for duplicate detection (static import so mocks work in tests)
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!firestoreId) return;
+    (async () => {
+      try {
+        const all = await fetchAllRegistrations(firestoreId);
+        if (!cancelled) setRegistrations(all);
+      } catch (e) {
+        console.warn("Failed to load registrations for conflict detection", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [firestoreId]);
 
   // Redirect unauthenticated users to login when they land on the register page
@@ -151,38 +233,34 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
+  // If the current user isn't eligible (not full-paid), show restriction modal here.
+  React.useEffect(() => {
+    if (!loading && tournament && user && !currentUserIsEligible) {
+      setShowRestricted(true);
+    }
+  }, [loading, tournament, user, currentUserIsEligible]);
+
   if (loading) return <div>Loading...</div>;
 
   if (!tournament) {
     return <div>Unable to find tournament.</div>;
   }
 
-  if (tournament && !currentUserIsFull) {
-    return (
-      <div className="max-w-xl mx-auto p-6 space-y-4">
-        <h2 className="text-xl font-semibold">Registration Restricted</h2>
-        <p className="text-sm text-foreground-600">
-          Only full members are eligible to register for tournaments. Your
-          account isn't marked as a full member. If you believe this is an
-          error, please contact an administrator.
-        </p>
-      </div>
-    );
-  }
+  // teammates state now stores user IDs directly; RegistrationEditor provides add/remove
 
-  const addTeammate = () => {
-    if (teammates.length < maxTeamSize) setTeammates([...teammates, ""]);
-  };
-
-  // teammates state now stores user IDs directly; updateTeammate is not used
-
-  const removeTeammate = (index: number) => {
-    const copy = teammates.filter((_, i) => i !== index);
-    setTeammates(copy);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | Event) => {
     e.preventDefault();
+
+    // Guard: ineligible users cannot submit
+    if (!currentUserIsEligible) {
+      addToast({
+        title: "Registration Restricted",
+        description: "Only active full members can register for tournaments.",
+        color: "danger",
+      });
+      setShowRestricted(true);
+      return;
+    }
 
     if (!tournament || !tournament.firestoreId) {
       addToast({
@@ -193,7 +271,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    if (!tournament.registrationOpen) {
+    if (getStatus(tournament) !== TournamentStatus.Open) {
       addToast({
         title: "Closed",
         description: "Registration for this tournament is closed.",
@@ -212,7 +290,16 @@ const TournamentRegister: React.FC = () => {
     }
 
     // validate teammates - ensure no empty selections
-    const selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    // Fallback: if nothing selected yet but the current user is a valid full member,
+    // auto-include them as team leader to avoid a race with the auto-select effect.
+    if (
+      selectedIds.length === 0 &&
+      user?.uid &&
+      fullMembers.some((m) => m.id === user.uid)
+    ) {
+      selectedIds = [user.uid];
+    }
     // Ensure all selected teammates are full members
     const allFull = selectedIds.every((id) =>
       fullMembers.some((m) => m.id === id)
@@ -234,7 +321,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    // map ids to display names
+    // map ids to display names (never surface raw id in UI; raw id only persisted behind the scenes)
     const members = selectedIds.map((id) => {
       const u = fullMembers.find((x) => x.id === id);
       return {
@@ -254,35 +341,44 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const api = await import("@/api/tournaments");
-      await api.upsertRegistration(tournament.firestoreId, registrationId, {
-        team: members,
-        ownerId: user.uid,
-      });
-
-      addToast({
-        title: "Registered",
-        description: "Your team has been registered.",
-        color: "success",
-      });
-      // After successful registration or update, return user to the tournament detail page
-      if (tournament.firestoreId) {
-        navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
-      } else {
-        navigate("/tournaments", { replace: true });
+    // Conflict detection: check if any selectedIds already appear in another team (exclude current registration if updating)
+    const lowerSelected = new Set(selectedIds);
+    const foundConflicts: {
+      playerId: string;
+      playerName: string;
+      teamRegistrationId: string;
+      teamMembers: string[];
+    }[] = [];
+    registrations.forEach((reg) => {
+      if (registrationId && reg.id === registrationId) return; // ignore own existing reg while updating
+      if (Array.isArray(reg.team)) {
+        const regMemberIds = reg.team.map((m: any) => m.id);
+        regMemberIds.forEach((pid: string) => {
+          if (lowerSelected.has(pid)) {
+            const pUser = fullMembers.find((u) => u.id === pid);
+            foundConflicts.push({
+              playerId: pid,
+              playerName: pUser?.displayName || pUser?.email || pid,
+              teamRegistrationId: reg.id,
+              teamMembers: regMemberIds,
+            });
+          }
+        });
       }
-    } catch (err) {
-      console.error("Failed to register:", err);
-      addToast({
-        title: "Error",
-        description: "Failed to register team.",
-        color: "danger",
-      });
-    } finally {
-      setSubmitting(false);
+    });
+
+    if (foundConflicts.length > 0 && !conflictsAcknowledged) {
+      pendingMembersRef.current = { members, ownerId: user.uid };
+      setConflicts(foundConflicts);
+      setConflictModalOpen(true);
+      return; // wait for user confirmation
     }
+
+    // Use stored members if we are completing after a conflict acknowledgement
+    const finalMembers = pendingMembersRef.current?.members || members;
+    const ownerId = pendingMembersRef.current?.ownerId || user.uid;
+
+    await finalizeRegistration(finalMembers, ownerId);
   };
 
   const handleConfirmCancel = async () => {
@@ -299,6 +395,8 @@ const TournamentRegister: React.FC = () => {
       setRegistrationId(null);
       setTeammates([""]);
       setConfirmOpen(false);
+      // Navigate back to the tournament details page after successful cancellation
+      navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
     } catch (err) {
       console.error("Failed to delete registration", err);
       addToast({
@@ -334,60 +432,14 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {teammates.map((userId, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="flex-1">
-                  <Select
-                    label={i === 0 ? "Team Leader / You" : `Teammate ${i + 1}`}
-                    placeholder="Select user"
-                    selectionMode="single"
-                    selectedKeys={userId ? new Set([userId]) : new Set()}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys as Set<string>)[0] as
-                        | string
-                        | undefined;
-                      const copy = [...teammates];
-                      copy[i] = selected || "";
-                      setTeammates(copy);
-                    }}
-                    className="w-full"
-                  >
-                    {fullMembers.map((u) => (
-                      <SelectItem key={u.id}>
-                        {u.displayName || u.email || u.id}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-
-                {i > 0 && (
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    onPress={() => removeTeammate(i)}
-                  >
-                    <Icon icon="lucide:trash-2" />
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                color="primary"
-                variant="flat"
-                onPress={addTeammate}
-                isDisabled={teammates.length >= maxTeamSize}
-              >
-                Add Teammate
-              </Button>
-              <div className="text-sm text-foreground-500">
-                {teammates.length}/{maxTeamSize}
-              </div>
-            </div>
+            <RegistrationEditor
+              value={teammates}
+              onChange={setTeammates}
+              users={fullMembers}
+              maxSize={maxTeamSize}
+              labels={{ leader: "Team Leader / You" }}
+              disabled={!currentUserIsEligible}
+            />
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
 
@@ -427,7 +479,7 @@ const TournamentRegister: React.FC = () => {
                     className="w-full"
                     type="submit"
                     color="primary"
-                    isDisabled={submitting}
+                    isDisabled={submitting || !currentUserIsEligible}
                   >
                     {submitting
                       ? registrationId
@@ -442,40 +494,202 @@ const TournamentRegister: React.FC = () => {
             </div>
 
             {/* Confirmation modal for cancelling registration */}
-            {confirmOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div
-                  className="absolute inset-0 bg-black opacity-40"
-                  onClick={() => setConfirmOpen(false)}
-                />
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 z-10 w-full max-w-md">
-                  <h3 className="text-lg font-medium mb-2">
-                    Cancel registration
-                  </h3>
-                  <p className="text-sm text-foreground-500 mb-4">
-                    Are you sure you want to cancel your registration? This
-                    cannot be undone.
-                  </p>
-                  <div className="flex justify-end gap-2">
+            <Modal
+              isOpen={confirmOpen}
+              onOpenChange={(open) => setConfirmOpen(open)}
+              size="md"
+            >
+              <ModalContent>
+                {(onClose) => (
+                  <>
+                    <ModalHeader>Cancel registration</ModalHeader>
+                    <ModalBody>
+                      <p className="text-sm text-foreground-500">
+                        Are you sure you want to cancel your registration? This
+                        cannot be undone.
+                      </p>
+                    </ModalBody>
+                    <ModalFooter>
+                      <Button variant="light" color="default" onPress={onClose}>
+                        Close
+                      </Button>
+                      <Button
+                        color="danger"
+                        onPress={handleConfirmCancel}
+                        isDisabled={deleting}
+                      >
+                        {deleting ? "Cancelling..." : "Yes, cancel"}
+                      </Button>
+                    </ModalFooter>
+                  </>
+                )}
+              </ModalContent>
+            </Modal>
+          </form>
+          {/* Ineligible user blocking modal */}
+          <Modal
+            isOpen={showRestricted && !!user && !!tournament}
+            onOpenChange={(open) => setShowRestricted(open)}
+            size="md"
+            hideCloseButton
+          >
+            <ModalContent>
+              {() => (
+                <>
+                  <ModalHeader>Registration Restricted</ModalHeader>
+                  <ModalBody>
+                    <p className="text-sm text-foreground-500">
+                      Only active full members can register for tournaments.
+                      Please renew your membership or contact an administrator
+                      if you believe this is an error.
+                    </p>
+                  </ModalBody>
+                  <ModalFooter>
+                    <Button
+                      color="default"
+                      variant="flat"
+                      onPress={() =>
+                        navigate(`/tournaments/${tournament!.firestoreId}`)
+                      }
+                    >
+                      Go to Tournament Details
+                    </Button>
+                  </ModalFooter>
+                </>
+              )}
+            </ModalContent>
+          </Modal>
+          {/* Duplicate conflict confirmation modal */}
+          <Modal
+            isOpen={conflictModalOpen && conflicts.length > 0}
+            onOpenChange={(open) => {
+              setConflictModalOpen(open);
+              if (!open) setConflicts([]);
+            }}
+            size="lg"
+          >
+            <ModalContent data-testid="conflict-modal">
+              {(onClose) => (
+                <>
+                  <ModalHeader>Player Already Registered</ModalHeader>
+                  <ModalBody>
+                    <p className="text-sm text-foreground-500">
+                      One or more selected teammates already appear on another
+                      registered team.
+                    </p>
+                    <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                      {conflicts.map((c, idx) => {
+                        const resolveName = (id: string) => {
+                          const u = fullMembers.find((fm) => fm.id === id);
+                          return (
+                            u?.displayName ||
+                            u?.email ||
+                            (id === c.playerId
+                              ? c.playerName
+                              : "Unknown Player")
+                          );
+                        };
+                        const teamMemberIds = Array.from(
+                          new Set(c.teamMembers)
+                        );
+                        const conflictPlayerResolved = resolveName(c.playerId);
+                        return (
+                          <Card
+                            key={c.playerId + idx}
+                            className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
+                            data-testid="conflict-team-card"
+                          >
+                            <CardBody className="p-0">
+                              <div className="flex items-start gap-4">
+                                <div className="flex -space-x-2">
+                                  {teamMemberIds.map((mid) => {
+                                    const memberUser = fullMembers.find(
+                                      (u) => u.id === mid
+                                    );
+                                    const label = resolveName(mid);
+                                    return (
+                                      <div
+                                        key={mid}
+                                        className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
+                                        aria-label={label}
+                                      >
+                                        {memberUser?.displayName
+                                          ? memberUser.displayName
+                                              .split(/\s+/)
+                                              .map((p) => p[0])
+                                              .join("")
+                                              .slice(0, 2)
+                                          : label
+                                              .split(/\s+/)
+                                              .map((p) => p[0])
+                                              .join("")
+                                              .slice(0, 2)}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-1">
+                                  <p className="text-sm">
+                                    <span className="font-medium">
+                                      {conflictPlayerResolved}
+                                    </span>{" "}
+                                    is already on this team:
+                                  </p>
+                                  <div
+                                    className="text-xs text-foreground-600 space-y-0.5"
+                                    data-testid="conflict-team-names"
+                                  >
+                                    {teamMemberIds.map((id) => (
+                                      <div key={id}>{resolveName(id)}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardBody>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    <p className="text-sm text-warning-600 dark:text-warning-500">
+                      Continuing will register a team containing a player
+                      already on another team.
+                    </p>
+                  </ModalBody>
+                  <ModalFooter>
                     <Button
                       variant="light"
                       color="default"
-                      onPress={() => setConfirmOpen(false)}
+                      onPress={() => {
+                        onClose();
+                        setConflicts([]);
+                      }}
                     >
-                      Close
+                      Go Back
                     </Button>
                     <Button
-                      color="danger"
-                      onPress={handleConfirmCancel}
-                      isDisabled={deleting}
+                      color="primary"
+                      onPress={() => {
+                        onClose();
+                        setConflicts([]);
+                        setConflictsAcknowledged(true);
+                        const pending = pendingMembersRef.current;
+                        if (pending) {
+                          queueMicrotask(() =>
+                            finalizeRegistration(
+                              pending.members,
+                              pending.ownerId
+                            )
+                          );
+                        }
+                      }}
                     >
-                      {deleting ? "Cancelling..." : "Yes, cancel"}
+                      Continue Anyway
                     </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </form>
+                  </ModalFooter>
+                </>
+              )}
+            </ModalContent>
+          </Modal>
         </CardBody>
       </Card>
     </div>

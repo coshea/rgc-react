@@ -15,4 +15,11 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-echo "[pre-commit] Passed lint + type check. (Full build will run in CI / pre-push)"
+echo "[pre-commit] Running unit tests..." 
+npm run test
+if [ $? -ne 0 ]; then
+	echo "[pre-commit] Unit tests failed. Fix test failures before committing." >&2
+	exit 1
+fi
+
+echo "[pre-commit] Passed lint, type check, and tests. (Full build will run in CI / pre-push)"

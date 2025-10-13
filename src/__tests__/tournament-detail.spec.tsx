@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
+import { TournamentStatus } from "@/types/tournament";
 
 // Mock hooks & Auth
 vi.mock("@/providers/AuthProvider", () => ({
@@ -96,9 +97,7 @@ const baseTournament = {
   date: new Date(),
   description: "Desc",
   players: 4,
-  completed: false,
-  canceled: false,
-  registrationOpen: true,
+  status: TournamentStatus.Open,
   prizePool: 500,
   winners: [
     { place: 1, displayNames: ["Alice"], userIds: ["u1"], prizeAmount: 100 },
@@ -138,7 +137,7 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("open1");
     emitDoc("tournaments/open1", {
       ...baseTournament,
-      registrationOpen: true,
+      status: TournamentStatus.Open,
       winners: [],
     });
     await screen.findByText("Club Championship");
@@ -150,7 +149,10 @@ describe("TournamentDetailPage", () => {
 
   it("shows registered state when user is part of a team", async () => {
     renderWithRoute("reg1");
-    emitDoc("tournaments/reg1", { ...baseTournament, registrationOpen: true });
+    emitDoc("tournaments/reg1", {
+      ...baseTournament,
+      status: TournamentStatus.Open,
+    });
     emitCollection("tournaments/reg1/registrations", []);
     emitCollection("tournaments/reg1/registrations", [
       {
@@ -170,7 +172,7 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("closed1");
     emitDoc("tournaments/closed1", {
       ...baseTournament,
-      registrationOpen: false,
+      status: TournamentStatus.Upcoming,
     });
     await screen.findByText("Club Championship");
     expect(

@@ -6,7 +6,6 @@ import {
   Textarea,
   Button,
   DatePicker,
-  Checkbox,
   NumberInput,
   Divider,
   Select,
@@ -14,18 +13,22 @@ import {
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
+import { getStatus } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
-import { Winner } from "@/types/winner";
 import { parseDate, DateValue } from "@internationalized/date";
-import { WinnerForm } from "@/components/winner-form";
+import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { PlusIcon } from "@heroicons/react/24/solid";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { computeTotalPayout } from "@/utils/winners";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -53,14 +56,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     seed.detailsMarkdown || ""
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
-  const [completed, setCompleted] = React.useState(!!seed.completed);
-  const [canceled, setCanceled] = React.useState(!!seed.canceled);
-  const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
-  const [winners, setWinners] = React.useState<Winner[]>(
-    isEditing ? tournament?.winners || [] : []
+  const [completed, setCompleted] = React.useState(
+    getStatus(seed as any) === TournamentStatus.Completed
   );
-  const [registrationOpen, setRegistrationOpen] = React.useState(
-    !!seed.registrationOpen
+  const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
+  const [winnerGroups, setWinnerGroups] = React.useState<
+    import("@/types/winner").WinnerGroup[]
+  >(
+    isEditing && (tournament as any)?.winnerGroups
+      ? (tournament as any).winnerGroups
+      : []
+  );
+  const [status, setStatus] = React.useState<TournamentStatus>(
+    getStatus(seed as any)
   );
   type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
   const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
@@ -83,9 +91,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [addOpen, setAddOpen] = React.useState(false);
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
   const [adding, setAdding] = React.useState(false);
+  const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
 
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
+
+  // NOTE: Admin Add Registration workflow should not auto-select the current user.
+  // Admins need the ability to add arbitrary registrations on behalf of others.
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -97,21 +109,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (players < 1) newErrors.players = "Must have at least 1 player";
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
 
-    if (completed && winners.length > 0) {
-      const totalPrizeAmount = winners.reduce(
-        (total, winner) => total + winner.prizeAmount * winner.userIds.length,
-        0
-      );
-
+    // Grouped winners validation replaces legacy winners
+    if (completed && winnerGroups.length > 0) {
+      const totalPrizeAmount = computeTotalPayout(winnerGroups);
       if (totalPrizeAmount > prizePool) {
         newErrors.winners = "Total prize amount exceeds prize pool";
       }
-
-      const hasEmptyWinners = winners.some(
-        (winner) => winner.userIds.length === 0
+      const hasEmptyPlaces = winnerGroups.some((g) =>
+        (g.winners || []).some(
+          (w) => !w.competitors || w.competitors.length === 0
+        )
       );
-      if (hasEmptyWinners) {
-        newErrors.winners = "All winners must have users selected";
+      if (hasEmptyPlaces) {
+        newErrors.winners = "All winners must have competitors selected";
       }
     }
 
@@ -137,16 +147,34 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const { collection, addDoc, updateDoc, doc } = await import(
         "firebase/firestore"
       );
+      // Sanitize winnerGroups to avoid writing `undefined` fields to Firestore
+      const sanitizedGroups: WinnerGroup[] = (winnerGroups || []).map((g) => ({
+        ...g,
+        winners: (g.winners || []).map((w): WinnerPlace => {
+          const out: WinnerPlace = {
+            id: w.id,
+            place: w.place,
+            competitors: w.competitors || [],
+          };
+          if (w.prizeAmount !== undefined && w.prizeAmount !== null) {
+            out.prizeAmount = w.prizeAmount;
+          }
+          if (w.score !== undefined && w.score !== null) {
+            out.score = w.score;
+          }
+          return out;
+        }),
+      }));
+
       const tournamentData: Partial<Tournament> = {
         title,
         description,
         detailsMarkdown,
         players,
-        completed,
-        canceled,
+        status,
         prizePool,
-        winners,
-        registrationOpen,
+        // winners removed (legacy); only persist grouped model going forward
+        winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
       };
@@ -163,11 +191,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         description: tournamentData.description as string,
         detailsMarkdown: tournamentData.detailsMarkdown,
         players: tournamentData.players as number,
-        completed: tournamentData.completed as boolean,
-        canceled: tournamentData.canceled as boolean,
+        status: tournamentData.status as TournamentStatus,
         prizePool: tournamentData.prizePool as number,
-        winners: (tournamentData.winners as any) || [],
-        registrationOpen: tournamentData.registrationOpen as boolean,
+        winnerGroups: (tournamentData as any).winnerGroups || [],
         date: tournamentData.date as Date,
         tee: tournamentData.tee as any,
       };
@@ -378,11 +404,17 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
               />
-              <MarkdownEditor
-                value={detailsMarkdown}
-                onChange={setDetailsMarkdown}
-                placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
-              />
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <MarkdownEditor
+                    value={detailsMarkdown}
+                    onChange={setDetailsMarkdown}
+                    placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
+                    minRows={10}
+                    onPopout={() => setDetailsPopoutOpen(true)}
+                  />
+                </div>
+              </div>
               <DatePicker
                 label="Tournament Date"
                 value={date}
@@ -489,38 +521,71 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 ))}
               </Select>
               <div className="flex flex-col gap-4 pt-2">
-                <Checkbox isSelected={completed} onValueChange={setCompleted}>
-                  Tournament Completed
-                </Checkbox>
-                <Checkbox
-                  isSelected={canceled}
-                  onValueChange={setCanceled}
-                  color="danger"
+                <Select
+                  label="Status"
+                  selectedKeys={[status]}
+                  disallowEmptySelection
+                  onSelectionChange={(keys) => {
+                    const key = Array.from(keys)[0] as
+                      | TournamentStatus
+                      | undefined;
+                    const v = key ?? TournamentStatus.Upcoming;
+                    setStatus(v);
+                    setCompleted(v === TournamentStatus.Completed);
+                  }}
                 >
-                  Tournament Canceled
-                </Checkbox>
-                <Checkbox
-                  isSelected={registrationOpen}
-                  onValueChange={setRegistrationOpen}
-                >
-                  Registration Open
-                </Checkbox>
+                  <SelectItem
+                    key={TournamentStatus.Upcoming}
+                    textValue="Upcoming"
+                  >
+                    Upcoming (Registration Closed)
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Open}
+                    textValue="Registration Open"
+                  >
+                    Registration Open
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.InProgress}
+                    textValue="In Progress"
+                  >
+                    In Progress
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Completed}
+                    textValue="Completed"
+                  >
+                    Tournament Completed
+                  </SelectItem>
+                  <SelectItem
+                    key={TournamentStatus.Canceled}
+                    textValue="Canceled"
+                  >
+                    Tournament Canceled
+                  </SelectItem>
+                </Select>
               </div>
             </div>
           </div>
-          {(isEditing || completed) && (
+          {(isEditing || status === TournamentStatus.Completed) && (
             <div className="pt-4">
               <Divider className="my-4" />
-              <WinnerForm
-                winners={winners}
-                onWinnersChange={setWinners}
-                teamSize={players}
-                prizePool={prizePool}
-                isCompleted={completed}
-              />
-              {errors.winners && (
-                <p className="text-danger text-sm mt-2">{errors.winners}</p>
-              )}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <GroupedWinnersEditor
+                    groups={winnerGroups}
+                    onChange={setWinnerGroups}
+                    teamSize={players}
+                    prizePool={prizePool}
+                    isCompleted={completed}
+                    registrations={registrations}
+                  />
+                  {errors.winners && (
+                    <p className="text-danger text-sm mt-2">{errors.winners}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           {isEditing && (
@@ -634,6 +699,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 onChange={setNewMembers}
                 users={allUsers}
                 maxSize={players}
+                disableAutoSelect={true}
               />
               <div className="h-4" />
               <div className="flex justify-end gap-2">
@@ -656,6 +722,50 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 >
                   Add
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {detailsPopoutOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setDetailsPopoutOpen(false)}
+            />
+            <div className="bg-background dark:bg-default-100 rounded-lg p-4 w-full max-w-5xl z-10 max-h-[80vh]">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium">Details (Popout Editor)</h3>
+                <Button
+                  variant="flat"
+                  onPress={() => setDetailsPopoutOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[70vh]">
+                <div className="col-span-1 h-full">
+                  <div className="h-full">
+                    <MarkdownEditor
+                      value={detailsMarkdown}
+                      onChange={setDetailsMarkdown}
+                      minRows={20}
+                      forceEdit
+                      hidePreviewToggle
+                      fillHeight
+                      label="Editor"
+                      placeholder="Edit tournament details (markdown)"
+                    />
+                  </div>
+                </div>
+                <div className="col-span-1 border rounded-md p-3 bg-content2 h-full overflow-auto prose dark:prose-invert">
+                  {detailsMarkdown.trim() ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {detailsMarkdown}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="text-foreground-500 italic">No content</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

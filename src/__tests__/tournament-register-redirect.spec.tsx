@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, within } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TournamentRegister from "@/pages/tournament-register";
@@ -20,6 +20,8 @@ vi.mock("@/hooks/useUsers", () => ({
 }));
 
 const upsertSpy = vi.fn(async (..._args: any[]) => {});
+import { TournamentStatus } from "@/types/tournament";
+
 vi.mock("@/api/tournaments", async (importOriginal) => {
   const original = await importOriginal();
   return {
@@ -30,9 +32,7 @@ vi.mock("@/api/tournaments", async (importOriginal) => {
       date: new Date(),
       description: "Desc",
       players: 2,
-      completed: false,
-      canceled: false,
-      registrationOpen: true,
+      status: TournamentStatus.Open,
       prizePool: 0,
       winners: [],
       tee: "Mixed",
@@ -42,7 +42,31 @@ vi.mock("@/api/tournaments", async (importOriginal) => {
   };
 });
 
-vi.mock("@/config/firebase", () => ({ db: {} }));
+// Mock Firebase Firestore functions
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  query: vi.fn(() => ({})),
+  where: vi.fn(() => ({})),
+  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
+  getDoc: vi.fn(async () => ({ exists: () => false })),
+  addDoc: vi.fn(async () => ({ id: "mock-id" })),
+  setDoc: vi.fn(async () => {}),
+  deleteDoc: vi.fn(async () => {}),
+  orderBy: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => new Date()),
+  onSnapshot: vi.fn(() => () => {}),
+}));
+
+vi.mock("@/config/firebase", () => ({
+  db: {
+    // Mock firestore instance that collection() will accept
+    _delegate: {
+      app: { options: {} },
+      settings: {},
+    },
+  },
+}));
 
 // Toasts noop via centralized provider
 vi.mock("@/providers/toast", () => ({ addToast: () => {} }));
@@ -83,26 +107,7 @@ describe("TournamentRegister redirect", () => {
     // Wait for tournament title to render
     await screen.findByText(/Register for\s+Fall Classic/i);
 
-    // Select first teammate (Team Leader / You select)
-    // The select is a controlled HeroUI Select; simplest is to simulate updating the state by selecting option text.
-    // Because component uses onSelectionChange with selectedKeys, we can dispatch a change via fireEvent if needed.
-    // Simpler: directly invoke form submission after ensuring the teammate list is populated with placeholder.
-
-    // Emulate choosing a teammate by mocking internal state: easiest path -> fill the only select using DOM queries.
-    // We can simplify: since validation requires at least one teammate, we'll mock out the teammates state logic by
-    // pre-populating selection through firing the change event.
-
-    const selectTrigger = screen.getByRole("button", { name: /Team Leader/i });
-    // Open list
-    await act(async () => {
-      selectTrigger.click();
-    });
-    // Find listbox and click Alpha option (avoid hidden native select duplicate)
-    const listbox = await screen.findByRole("listbox");
-    const alphaOption = within(listbox).getByText("Alpha");
-    await act(async () => {
-      alphaOption.click();
-    });
+    // Leader is auto-selected by RegistrationEditor effect; no need to open the menu here.
 
     // Submit the form
     const submitBtn = screen.getByRole("button", { name: /Register$/i });

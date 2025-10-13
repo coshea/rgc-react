@@ -3,6 +3,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { siteConfig } from "@/config/site";
+import { Spinner } from "@heroui/react";
 
 const ProfilePage = () => {
   const { user, loading } = useAuth();
@@ -14,7 +15,13 @@ const ProfilePage = () => {
     }
   }, [user?.emailVerified, loading]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner size="lg" label="Loading profile..." />
+      </div>
+    );
+  }
   if (user && !user.emailVerified) return null;
   return (
     <div className="p-6 max-w-3xl mx-auto text-center">

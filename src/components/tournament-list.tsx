@@ -13,7 +13,8 @@ import {
   CardBody,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
 
@@ -24,6 +25,13 @@ interface TournamentListProps {
   isAdmin?: boolean;
 }
 
+type FilterStatus =
+  | "all"
+  | "completed"
+  | "registration"
+  | "scheduled"
+  | "canceled";
+
 export const TournamentList: React.FC<TournamentListProps> = ({
   tournaments,
   onEdit,
@@ -31,6 +39,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   isAdmin = false,
 }) => {
   const navigate = useNavigate();
+  const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
 
   const formatDate = (date: Date): string => {
     // Force UTC timezone so the displayed date matches the stored date
@@ -51,6 +60,48 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  // Filter tournaments based on selected status
+  const filteredTournaments = React.useMemo(() => {
+    if (filterStatus === "all") return tournaments;
+
+    return tournaments.filter((tournament) => {
+      const status = getStatus(tournament);
+      switch (filterStatus) {
+        case "completed":
+          return status === TournamentStatus.Completed;
+        case "registration":
+          return status === TournamentStatus.Open;
+        case "scheduled":
+          return status === TournamentStatus.Upcoming;
+        case "canceled":
+          return status === TournamentStatus.Canceled;
+        default:
+          return true;
+      }
+    });
+  }, [tournaments, filterStatus]);
+
+  // Count tournaments for each filter
+  const filterCounts = React.useMemo(() => {
+    const counts = {
+      all: tournaments.length,
+      completed: 0,
+      registration: 0,
+      scheduled: 0,
+      canceled: 0,
+    };
+
+    tournaments.forEach((tournament) => {
+      const status = getStatus(tournament);
+      if (status === TournamentStatus.Canceled) counts.canceled++;
+      else if (status === TournamentStatus.Completed) counts.completed++;
+      else if (status === TournamentStatus.Open) counts.registration++;
+      else counts.scheduled++;
+    });
+
+    return counts;
+  }, [tournaments]);
 
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -75,18 +126,69 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   // New function to render winners
   const renderWinners = (tournament: Tournament) => {
-    if (!tournament.completed || (tournament.winners || []).length === 0) {
-      return null;
+    if (getStatus(tournament) !== TournamentStatus.Completed) return null;
+
+    // Prefer grouped winners: choose overall groups first; fallback to any group
+    const groups = (tournament as any).winnerGroups as
+      | Array<{
+          type: string;
+          winners?: Array<{
+            place: number;
+            competitors?: Array<{ displayName: string }>;
+            prizeAmount?: number;
+          }>;
+        }>
+      | undefined;
+    if (groups && groups.length > 0) {
+      const overall = groups.filter((g) => g.type === "overall");
+      const target = overall.length > 0 ? overall : groups;
+      for (const g of target) {
+        const first = (g.winners || []).find((w) => w.place === 1);
+        if (first && first.competitors && first.competitors.length > 0) {
+          const names = first.competitors.map((c) => c.displayName).join(", ");
+          const placeLabel = "1st";
+          return (
+            <div className="mt-2">
+              <p className="text-xs text-foreground-500 mb-1">Winner:</p>
+              <div className="flex flex-wrap gap-1">
+                <Tooltip
+                  content={
+                    <div className="px-1 py-2">
+                      <p className="font-medium">{placeLabel} Place</p>
+                      <p>{names}</p>
+                      {typeof first.prizeAmount === "number" && (
+                        <p className="text-xs mt-1">
+                          ${first.prizeAmount} per person
+                        </p>
+                      )}
+                    </div>
+                  }
+                >
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    className="cursor-help"
+                    startContent={
+                      <Icon icon="lucide:trophy" className="w-3 h-3" />
+                    }
+                  >
+                    {names}
+                  </Chip>
+                </Tooltip>
+              </div>
+            </div>
+          );
+        }
+      }
     }
 
-    // Filter only first-place winner entries (there should typically be one)
-    const firstPlace = (tournament.winners || []).filter((w) => w.place === 1);
+    const legacy = tournament.winners || [];
+    if (legacy.length === 0) return null;
+    const firstPlace = legacy.filter((w) => w.place === 1);
     if (!firstPlace.length) return null;
-
     const champion = firstPlace[0];
-    const placeLabel = "1st"; // always 1st here
     const names = champion.displayNames.join(", ");
-
     return (
       <div className="mt-2">
         <p className="text-xs text-foreground-500 mb-1">Winner:</p>
@@ -94,7 +196,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <Tooltip
             content={
               <div className="px-1 py-2">
-                <p className="font-medium">{placeLabel} Place</p>
+                <p className="font-medium">1st Place</p>
                 <p>{names}</p>
                 {typeof champion.prizeAmount === "number" && (
                   <p className="text-xs mt-1">
@@ -119,36 +221,45 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     );
   };
 
-  // New function to render mobile tournament card
+  // New function to render status chips
   const renderStatusChips = (tournament: Tournament) => {
-    // Show exactly one status with priority: Canceled > Completed > Registration Open > Scheduled
-    if (tournament.canceled) {
+    // Show exactly one status with priority: Canceled > Completed > In Progress > Registration Open > Scheduled
+    const status = getStatus(tournament);
+    if (status === TournamentStatus.Canceled) {
       return (
         <Chip color="danger" size="sm" variant="flat">
-          Canceled
+          {statusText(status)}
         </Chip>
       );
     }
 
-    if (tournament.completed) {
+    if (status === TournamentStatus.Completed) {
       return (
         <Chip color="success" size="sm" variant="flat">
-          Completed
+          {statusText(status)}
         </Chip>
       );
     }
 
-    if (tournament.registrationOpen ?? false) {
+    if (status === TournamentStatus.InProgress) {
+      return (
+        <Chip color="primary" size="sm" variant="flat">
+          {statusText(status)}
+        </Chip>
+      );
+    }
+
+    if (status === TournamentStatus.Open) {
       return (
         <Chip color="warning" size="sm" variant="flat">
-          Registration Open
+          {statusText(status)}
         </Chip>
       );
     }
 
     return (
       <Chip color="primary" size="sm" variant="flat">
-        Scheduled
+        {statusText(status)}
       </Chip>
     );
   };
@@ -256,9 +367,62 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   return (
     <>
+      {/* Filter buttons */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={filterStatus === "all" ? "solid" : "flat"}
+            color={filterStatus === "all" ? "primary" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("all")}
+          >
+            All ({filterCounts.all})
+          </Button>
+          <Button
+            variant={filterStatus === "registration" ? "solid" : "flat"}
+            color={filterStatus === "registration" ? "warning" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("registration")}
+            startContent={<Icon icon="lucide:user-plus" className="w-4 h-4" />}
+          >
+            Registration Open ({filterCounts.registration})
+          </Button>
+          <Button
+            variant={filterStatus === "scheduled" ? "solid" : "flat"}
+            color={filterStatus === "scheduled" ? "primary" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("scheduled")}
+            startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
+          >
+            Scheduled ({filterCounts.scheduled})
+          </Button>
+          <Button
+            variant={filterStatus === "completed" ? "solid" : "flat"}
+            color={filterStatus === "completed" ? "success" : "default"}
+            size="sm"
+            onPress={() => setFilterStatus("completed")}
+            startContent={
+              <Icon icon="lucide:check-circle" className="w-4 h-4" />
+            }
+          >
+            Completed ({filterCounts.completed})
+          </Button>
+          {filterCounts.canceled > 0 && (
+            <Button
+              variant={filterStatus === "canceled" ? "solid" : "flat"}
+              color={filterStatus === "canceled" ? "danger" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("canceled")}
+              startContent={<Icon icon="lucide:x-circle" className="w-4 h-4" />}
+            >
+              Canceled ({filterCounts.canceled})
+            </Button>
+          )}
+        </div>
+      </div>
       {/* Mobile view (card-based layout) */}
       <div className="md:hidden space-y-2">
-        {tournaments.map((tournament) => renderMobileCard(tournament))}
+        {filteredTournaments.map((tournament) => renderMobileCard(tournament))}
       </div>
 
       {/* Desktop view (table layout) */}
@@ -277,14 +441,25 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             <TableColumn>STATUS</TableColumn>
           </TableHeader>
           <TableBody>
-            {tournaments.map((tournament, idx) => (
+            {filteredTournaments.map((tournament, idx) => (
               <TableRow
                 key={tournament.firestoreId}
                 className={
                   `group transition-colors cursor-pointer ` +
                   `${idx % 2 === 0 ? "bg-content1/60" : "bg-content2/40"} ` +
                   `hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ` +
-                  `${tournament.canceled ? "border-l-4 border-l-danger" : tournament.completed ? "border-l-4 border-l-success" : tournament.registrationOpen ? "border-l-4 border-l-warning" : "border-l-4 border-l-default-200"}`
+                  `${(() => {
+                    const s = getStatus(tournament);
+                    return s === TournamentStatus.Canceled
+                      ? "border-l-4 border-l-danger"
+                      : s === TournamentStatus.Completed
+                        ? "border-l-4 border-l-success"
+                        : s === TournamentStatus.InProgress
+                          ? "border-l-4 border-l-primary"
+                          : s === TournamentStatus.Open
+                            ? "border-l-4 border-l-warning"
+                            : "border-l-4 border-l-default-200";
+                  })()}`
                 }
                 role="link"
                 tabIndex={0}

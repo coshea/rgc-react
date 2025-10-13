@@ -16,12 +16,14 @@ jobs:
           node-version: "18"
       - name: Install dependencies
         run: npm install
+      - name: Run tests
+        run: npm run test
       - name: Build
         run: npm run build
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RGC_REACT }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}"
           channelId: live
           projectId: rgc-react

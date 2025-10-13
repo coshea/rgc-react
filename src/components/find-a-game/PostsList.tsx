@@ -169,25 +169,17 @@ export function PostsList({
             {/* Owner info with enhanced styling */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <UserAvatar
-                    size="md"
-                    user={owners[p.ownerId] || undefined}
-                    userId={p.ownerId}
-                    className="ring-2 ring-default-100"
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-background"></div>
-                </div>
+                <UserAvatar
+                  size="md"
+                  user={owners[p.ownerId] || undefined}
+                  userId={p.ownerId}
+                  className="ring-2 ring-default-100"
+                />
                 <div>
                   <div className="font-semibold text-sm text-foreground">
                     {owners[p.ownerId]?.displayName ||
                       owners[p.ownerId]?.email?.split("@")[0] ||
                       `Member (${p.ownerId.slice(0, 8)}...)`}
-                  </div>
-                  <div className="text-xs text-default-500">
-                    {owners[p.ownerId] === null
-                      ? "Profile not found"
-                      : "Club Member"}
                   </div>
                 </div>
               </div>

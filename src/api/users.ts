@@ -11,8 +11,54 @@ import {
   orderBy,
   updateDoc,
   deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
 
+// Utility type for Firestore timestamp fields that can be either Timestamp or Date
+export type FirestoreTimestamp = Timestamp | Date;
+
+/**
+ * Utility function to safely convert Firestore timestamp to Date
+ */
+export function toDate(timestamp: FirestoreTimestamp | undefined): Date | null {
+  if (!timestamp) return null;
+
+  // If it's a Firestore Timestamp, use toDate() method
+  if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+    return timestamp.toDate();
+  }
+
+  // If it's already a Date, return it
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+
+  return null;
+}
+
+/**
+ * Canonical shape of user profile data persisted in `users/{uid}` (or created via admin bulk tools).
+ * All fields are optional for partial updates; Firestore merges treat `undefined` as "do not change".
+ *
+ * Field semantics:
+ * - firstName / lastName: Raw name components as entered. Leading/trailing whitespace trimmed on writes.
+ * - displayName: Derived friendly name. Computed from first+last when either supplied; may fall back to existing value.
+ *   Avoid setting manually unless importing legacy data.
+ * - email: Primary contact + identity fallback when no name; required for login‑based flows.
+ * - phone: Normalized phone string (see format helpers) used for directory and contact; optional.
+ * - ghinNumber: External GHIN / handicap system identifier.
+ * - photoURL: Avatar image URL (Firebase Storage or external); null indicates explicit removal.
+ * - admin: (Deprecated UI usage) Legacy custom claim / flag. Do NOT surface in forms. Current admin detection uses `admin/{uid}` doc.
+ * - active: Boolean denormalized convenience flag indicating the member is considered an "active" participant for the current season.
+ *   Typically set during yearly membership payment confirmation or batch activation. Not a security primitive—purely for filtering.
+ *   Some hooks (e.g. membership directory filters) derive an activeSet from payment records; this flag can short‑circuit recomputation
+ *   for performance or be used for imported historical data. If absent, active status is inferred elsewhere.
+ * - registered: Indicates the user has completed any required registration/onboarding flow beyond just account creation.
+ * - boardMember: True if serving on the Board of Governors (governs visibility of role and directory highlighting).
+ * - role: Normalized board role string (validated against ALLOWED_BOARD_ROLES elsewhere). Null/empty when not a board member.
+ * - membershipType: Current membership classification. 'full' grants full tournament privileges; 'handicap' limited scope.
+ * - lastPaidYear: Highest year (e.g. 2025) for which a confirmed (paid) membership payment record exists; used for active season gating.
+ */
 export type UserProfilePayload = {
   firstName?: string;
   lastName?: string;
@@ -21,29 +67,33 @@ export type UserProfilePayload = {
   phone?: string;
   ghinNumber?: string;
   photoURL?: string | null;
-  // admin only flags managed in Firestore only; client should not expose this in forms
   admin?: boolean;
   active?: boolean;
   registered?: boolean;
-  // board governance fields
-  boardMember?: boolean; // true if on Board of Governors
-  role?: string; // e.g. 'president', 'secretary', 'treasurer'
-  // membership tracking (denormalized convenience fields)
+  boardMember?: boolean;
+  role?: string;
   membershipType?: "full" | "handicap";
-  lastPaidYear?: number; // highest year for which member has confirmed payment
+  lastPaidYear?: number;
 };
 
 export type User = UserProfilePayload & {
   id: string;
+  createdAt?: FirestoreTimestamp;
+  updatedAt?: FirestoreTimestamp;
 };
 
 /** Create a new user document (admin action). */
 export async function createUser(data: UserProfilePayload) {
   const first = (data.firstName || "").trim();
   const last = (data.lastName || "").trim();
+
+  // Compute displayName from first + last names
+  const displayName = computeDisplayName(data);
+
   const payload: Record<string, any> = {
     firstName: first || undefined,
     lastName: last || undefined,
+    displayName: displayName || undefined,
     email: data.email || "",
     phone: data.phone || "",
     ghinNumber: data.ghinNumber || "",
@@ -79,8 +129,17 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   // Derive displayName from first + last if provided (trim + collapse spaces)
   const computedDisplay = computeDisplayName(data);
   if (computedDisplay) data.displayName = computedDisplay;
+
+  // Create payload and explicitly exclude board fields for security
+  // Only admins should be able to set these fields
+  const {
+    boardMember: _boardMember,
+    role: _role,
+    admin: _admin,
+    ...safeData
+  } = data;
   const payload = {
-    ...data,
+    ...safeData,
     updatedAt: serverTimestamp(),
   } as Record<string, any>;
 

@@ -40,17 +40,16 @@ service cloud.firestore {
           newData.role is string && newData.role != '' && allowed.hasAny([newData.role])
         );
       }
-      function boardFieldsUnchanged() {
-        return resource == null || (
-          resource.data.boardMember == request.resource.data.boardMember &&
-          resource.data.role == request.resource.data.role
-        );
-      }
-      // Enforce minimal integrity: email must be a non-empty string on create.
+      // Enforce minimal integrity: email must be present in the doc and a non-empty string on create.
       function hasBaselineFields(d) {
         return d.email is string && d.email != '';
       }
       // Core write gate with board field restrictions
+      // Helper: ensure request doesn't change privileged board/admin fields
+      function boardFieldsUnchanged(newData, oldData) {
+        return (newData.boardMember == oldData.boardMember)
+          && (newData.role == oldData.role);
+      }
       // Permit admins to create any user doc; permit non-admin authenticated users to create
       // their own user doc (without board fields). Bulk upload relies on admin path.
       allow create: if request.auth != null && hasBaselineFields(request.resource.data) && (
@@ -59,9 +58,14 @@ service cloud.firestore {
         // Self-create with no board fields
         || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
-      allow update: if isSelfOrAdmin() && boardRoleValid(request.resource.data) && (
-        isAdmin() || boardFieldsUnchanged()
-      );
+      // Updates
+      // Admin path: can update any profile with board validation
+      allow update: if request.auth != null && isAdmin() && boardRoleValid(request.resource.data);
+
+      // Self-update path: can update own profile, but cannot change board/admin fields.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && boardFieldsUnchanged(request.resource.data, resource.data);
       allow delete: if isSelfOrAdmin();
     }
 
@@ -179,6 +183,38 @@ service cloud.firestore {
       allow update: if isAdmin() &&
         request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
         request.resource.data.membershipType in ['full', 'handicap'];
+      allow delete: if isAdmin();
+    }
+
+    // Championships collection for historical and modern championship records
+    match /championships/{championshipId} {
+      // Public read for displaying past champions
+      allow read: if true;
+      
+      // Only admins can create/update/delete championship records
+      allow create: if isAdmin() &&  
+        request.resource.data.year is int &&  
+        request.resource.data.championshipType is string &&  
+        request.resource.data.winnerNames is list && request.resource.data.winnerNames.size() > 0 &&  
+        (!('winnerIds' in request.resource.data) || request.resource.data.winnerIds is list) &&  
+        (!('runnerUpNames' in request.resource.data) || request.resource.data.runnerUpNames is list) &&  
+        (!('runnerUpIds' in request.resource.data) || request.resource.data.runnerUpIds is list) &&  
+        request.resource.data.isHistorical is bool &&  
+        request.resource.data.createdAt is timestamp &&  
+        request.resource.data.updatedAt is timestamp; 
+        
+      allow update: if isAdmin() &&  
+        request.resource.data.updatedAt is timestamp &&  
+        (!('year' in request.resource.data) || request.resource.data.year is int) &&  
+        (!('championshipType' in request.resource.data) || request.resource.data.championshipType is string) &&  
+        (!('winnerNames' in request.resource.data) || (request.resource.data.winnerNames is list && request.resource.data.winnerNames.size() > 0)) &&  
+        (!('isHistorical' in request.resource.data) || request.resource.data.isHistorical is bool);  
+
+
+
+
+
+        
       allow delete: if isAdmin();
     }
 

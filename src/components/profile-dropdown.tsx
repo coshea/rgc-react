@@ -59,7 +59,9 @@ export const ProfileDropdown = () => {
             <DropdownItem
               key="settings"
               as={Link}
-              href={siteConfig.pages.profile.link}
+              href={
+                user ? `/profile/${user.uid}` : siteConfig.pages.profile.link
+              }
             >
               My Profile
             </DropdownItem>

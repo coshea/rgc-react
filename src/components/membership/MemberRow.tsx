@@ -1,4 +1,5 @@
 import { Button, Tooltip } from "@heroui/react";
+import { Link } from "react-router-dom";
 import type { User } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
 import { formatPhone } from "@/utils/phone";
@@ -18,17 +19,22 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
   return (
     <div className={`${baseClasses} ${grid}`}>
       <div className="flex items-center gap-4">
-        <UserAvatar
-          className="w-8 h-8"
-          size="sm"
-          userId={user.id}
-          name={user.displayName || user.email}
-          src={(user.photoURL as string) || undefined}
-          alt={user.displayName || user.email}
-        />
-        <div className="text-sm text-default-500">
-          {user.displayName || "(no name)"}
-        </div>
+        <Link
+          to={`/profile/${user.id}`}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+        >
+          <UserAvatar
+            className="w-8 h-8"
+            size="sm"
+            userId={user.id}
+            name={user.displayName || user.email}
+            src={(user.photoURL as string) || undefined}
+            alt={user.displayName || user.email}
+          />
+          <div className="text-sm text-default-500 hover:text-primary">
+            {user.displayName || "(no name)"}
+          </div>
+        </Link>
       </div>
       <div className="text-sm text-default-500 whitespace-nowrap overflow-hidden text-ellipsis">
         {user.email}

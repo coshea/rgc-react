@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   onTournament,
   onTournamentRegistrations,
@@ -18,7 +18,8 @@ import {
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeeBadge } from "@/components/tee-badge";
@@ -29,10 +30,13 @@ const TournamentEditor = React.lazy(() =>
 );
 import { Winner } from "@/types/winner";
 import { TournamentWinners } from "@/components/tournament-winners";
+import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
+import type { User } from "@/api/users";
+import { isActiveFullMember } from "@/utils/membership";
 
 interface RegistrationDoc {
   id: string;
@@ -45,6 +49,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const location = useLocation();
   const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
@@ -55,6 +60,24 @@ const TournamentDetailPage: React.FC = () => {
   );
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const { usersMap } = useUsersMap();
+  const usersArray = React.useMemo(
+    () => Array.from(usersMap.values()) as User[],
+    [usersMap]
+  );
+  const currentUserIsEligible = React.useMemo(() => {
+    if (!user?.uid) return false;
+    const me = usersArray.find((u) => u.id === user.uid);
+    return isActiveFullMember(me);
+  }, [usersArray, user?.uid]);
+  const [showRestricted, setShowRestricted] = React.useState(false);
+  React.useEffect(() => {
+    // If redirected from register page due to restriction, open modal once
+    if ((location.state as any)?.registrationRestricted) {
+      setShowRestricted(true);
+      // Clear the flag to prevent reopening on back/forward
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -129,6 +152,8 @@ const TournamentDetailPage: React.FC = () => {
     if (!tournament?.winners) return [];
     return [...(tournament.winners || [])].sort((a, b) => a.place - b.place);
   }, [tournament]);
+
+  const hasGrouped = Boolean((tournament as any)?.winnerGroups?.length);
 
   const formatDateLong = (date: Date) =>
     new Intl.DateTimeFormat("en-US", {
@@ -342,17 +367,22 @@ const TournamentDetailPage: React.FC = () => {
                 size="xs"
                 ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
               />
-              {tournament.registrationOpen && (
+              {getStatus(tournament) === TournamentStatus.Open && (
                 <Chip color="warning" size="sm" variant="flat">
                   Registration Open
                 </Chip>
               )}
-              {tournament.completed && !tournament.canceled && (
+              {getStatus(tournament) === TournamentStatus.Completed && (
                 <Chip color="default" size="sm" variant="flat">
                   Completed
                 </Chip>
               )}
-              {tournament.canceled && (
+              {getStatus(tournament) === TournamentStatus.InProgress && (
+                <Chip color="primary" size="sm" variant="flat">
+                  In Progress
+                </Chip>
+              )}
+              {getStatus(tournament) === TournamentStatus.Canceled && (
                 <Chip color="danger" size="sm" variant="flat">
                   Canceled
                 </Chip>
@@ -433,13 +463,18 @@ const TournamentDetailPage: React.FC = () => {
                       <div>
                         <p className="font-medium">Status</p>
                         <p>
-                          {tournament.canceled
-                            ? "Canceled"
-                            : tournament.completed
-                              ? "Completed"
-                              : tournament.registrationOpen
-                                ? "Registration Open"
-                                : "Scheduled"}
+                          {(() => {
+                            const s = getStatus(tournament);
+                            return s === TournamentStatus.Canceled
+                              ? "Canceled"
+                              : s === TournamentStatus.Completed
+                                ? "Completed"
+                                : s === TournamentStatus.InProgress
+                                  ? "In Progress"
+                                  : s === TournamentStatus.Open
+                                    ? "Registration Open"
+                                    : "Scheduled";
+                          })()}
                         </p>
                       </div>
                     </div>
@@ -453,7 +488,7 @@ const TournamentDetailPage: React.FC = () => {
                 </CardHeader>
                 <Divider />
                 <CardBody className="pt-4 space-y-4">
-                  {tournament.registrationOpen ? (
+                  {getStatus(tournament) === TournamentStatus.Open ? (
                     <>
                       {isUserRegistered ? (
                         <>
@@ -496,21 +531,22 @@ const TournamentDetailPage: React.FC = () => {
                             color="primary"
                             fullWidth
                             onPress={handleRegister}
+                            isDisabled={!currentUserIsEligible}
                           >
                             Register
                           </Button>
+                          {!currentUserIsEligible && (
+                            <p className="text-xs text-warning-600">
+                              Registration is restricted to active full members.
+                            </p>
+                          )}
                         </>
                       ) : (
                         <>
                           <p className="text-sm text-foreground-600">
                             Sign in to register your team.
                           </p>
-                          <Button
-                            color="primary"
-                            fullWidth
-                            isDisabled
-                            aria-label="Sign in required to register"
-                          >
+                          <Button color="primary" fullWidth isDisabled>
                             Register
                           </Button>
                           <p className="text-xs text-foreground-500">
@@ -536,7 +572,11 @@ const TournamentDetailPage: React.FC = () => {
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                <TournamentWinners winners={allWinners} />
+                {hasGrouped ? (
+                  <GroupedWinners groups={(tournament as any).winnerGroups} />
+                ) : (
+                  <TournamentWinners winners={allWinners} />
+                )}
               </CardBody>
             </Card>
             <div />
@@ -732,6 +772,32 @@ const TournamentDetailPage: React.FC = () => {
             </Card>
           </div>
         </>
+      )}
+      {showRestricted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowRestricted(false)}
+          />
+          <div className="bg-background rounded-lg p-6 z-10 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-2">
+              Registration Restricted
+            </h3>
+            <p className="text-sm text-foreground-500 mb-4">
+              Only active full members can register for tournaments. Please
+              renew your membership or contact an administrator if you believe
+              this is an error.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onPress={() => setShowRestricted(false)}>
+                Close
+              </Button>
+              <Button color="primary" onPress={() => navigate("/contact")}>
+                Contact admin
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {isAdmin && editOpen && (
         <div

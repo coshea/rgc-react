@@ -11,7 +11,7 @@ export interface PlaceMeta {
 export function getPlaceMeta(place: number): PlaceMeta {
   if (place === 1) {
     return {
-      icon: "lucide:crown",
+      icon: "lucide:trophy",
       colorClass: "text-warning",
       badgeBg:
         "bg-amber-500/90 text-amber-950 dark:bg-amber-400 dark:text-amber-950",
@@ -20,21 +20,24 @@ export function getPlaceMeta(place: number): PlaceMeta {
   if (place === 2) {
     return {
       icon: "lucide:medal",
-      colorClass: "text-foreground-400",
+      colorClass: "text-default-400",
       badgeBg:
         "bg-slate-300/90 text-slate-800 dark:bg-slate-400 dark:text-slate-900",
     };
   }
   if (place === 3) {
+    // 3rd place: award icon with bronze-like accent
     return {
       icon: "lucide:award",
-      colorClass: "text-success",
-      badgeBg: "bg-purple-500/90 text-purple-50",
+      colorClass: "text-amber-700",
+      badgeBg:
+        "bg-amber-200/90 text-amber-900 dark:bg-amber-300 dark:text-amber-950",
     };
   }
+  // 4th and beyond: award icon with a muted neutral style (distinct from 3rd's bronze)
   return {
-    icon: "lucide:dot",
-    colorClass: "text-foreground-400 opacity-70",
+    icon: "lucide:award",
+    colorClass: "text-default-400",
     badgeBg:
       "bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-default-300",
   };

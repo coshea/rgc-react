@@ -9,9 +9,30 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
 }));
 
+// Mock Firebase Firestore functions
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  query: vi.fn(() => ({})),
+  where: vi.fn(() => ({})),
+  getDocs: vi.fn(async () => ({ empty: true, docs: [] })),
+  getDoc: vi.fn(async () => ({ exists: () => false })),
+  addDoc: vi.fn(async () => ({ id: "mock-id" })),
+  setDoc: vi.fn(async () => {}),
+  deleteDoc: vi.fn(async () => {}),
+  orderBy: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => new Date()),
+  onSnapshot: vi.fn(() => () => {}),
+}));
+
 // Mock firebase config
 vi.mock("@/config/firebase", () => ({
-  db: {},
+  db: {
+    _delegate: {
+      app: { options: {} },
+      settings: {},
+    },
+  },
   auth: { currentUser: { uid: "u2" } },
 }));
 

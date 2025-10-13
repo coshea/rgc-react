@@ -1,7 +1,9 @@
 import React from "react";
-import { Select, SelectItem, Button } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
+import { useAuth } from "@/providers/AuthProvider";
+import { UserSelect } from "@/components/UserSelect";
 
 interface RegistrationEditorProps {
   value: string[]; // array of user ids
@@ -9,6 +11,10 @@ interface RegistrationEditorProps {
   users: User[];
   maxSize: number;
   labels?: { leader?: string; teammate?: (index: number) => string };
+  /** When true, do not auto-select the current authenticated user into the first slot. Useful for admin flows. */
+  disableAutoSelect?: boolean;
+  /** When true, disable all inputs and controls inside the editor (used to block ineligible users). */
+  disabled?: boolean;
 }
 
 export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
@@ -17,8 +23,15 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   users,
   maxSize,
   labels,
+  disableAutoSelect,
+  disabled = false,
 }) => {
   const ids = value || [];
+
+  // useAuth throws when not used within provider; guard for test environments
+  // useAuth may return undefined if AuthProvider is missing (e.g., unit tests)
+  const auth = useAuth();
+  const authUser: { uid?: string } | null | undefined = auth?.user;
 
   // Build a fast lookup set for valid user ids
   const validUserIds = React.useMemo(
@@ -35,6 +48,30 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
+
+  // Auto-select the current authenticated user as the first player when registering
+  // This can be disabled by passing disableAutoSelect=true (useful for admin-only flows).
+  React.useEffect(() => {
+    if (disableAutoSelect) return;
+    const uid = authUser?.uid;
+    if (!uid) return;
+
+    // Only set when there are no ids yet, or the first slot is empty
+    if (ids.length === 0) {
+      if (validUserIds.has(uid)) {
+        onChange([uid]);
+      }
+      return;
+    }
+
+    if (!ids[0] && validUserIds.has(uid)) {
+      const next = [...ids];
+      next[0] = uid;
+      onChange(next);
+    }
+    // We intentionally depend on authUser.uid and users (validUserIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.uid, users, disableAutoSelect]);
 
   const updateIdx = (index: number, newId: string | undefined) => {
     const next = [...ids];
@@ -58,47 +95,20 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
       {ids.map((uid, idx) => (
         <div key={idx} className="flex items-center gap-2">
           <div className="flex-1">
-            <Select
+            <UserSelect
+              users={users}
               label={
                 idx === 0
                   ? labels?.leader || "Team Leader"
                   : labels?.teammate?.(idx) || `Teammate ${idx + 1}`
               }
-              placeholder="Select user"
-              selectionMode="single"
-              // Only pass currently valid uid to avoid HeroUI warning about missing keys
-              selectedKeys={
-                uid && validUserIds.has(uid) ? new Set([uid]) : new Set()
-              }
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys as Set<string>)[0];
-                updateIdx(idx, selected);
-              }}
+              value={uid || ""}
+              onChange={(v) => updateIdx(idx, (v as string) || undefined)}
+              multiple={false}
+              showRemovedHint
               className="w-full"
-            >
-              {(() => {
-                const items: React.ReactElement[] = [];
-                if (uid && !validUserIds.has(uid)) {
-                  items.push(
-                    <SelectItem
-                      key={uid}
-                      className="text-danger"
-                      textValue="Removed User"
-                    >
-                      Removed User
-                    </SelectItem>
-                  );
-                }
-                for (const u of users) {
-                  items.push(
-                    <SelectItem key={u.id}>
-                      {u.displayName || u.email || u.id}
-                    </SelectItem>
-                  );
-                }
-                return items;
-              })()}
-            </Select>
+              disabled={disabled}
+            />
           </div>
           {ids.length > 1 && (
             <Button
@@ -106,6 +116,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               variant="light"
               color="danger"
               onPress={() => removeSlot(idx)}
+              isDisabled={disabled}
             >
               <Icon icon="lucide:trash-2" />
             </Button>
@@ -117,7 +128,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
           size="sm"
           variant="flat"
           onPress={addSlot}
-          isDisabled={ids.length >= maxSize}
+          isDisabled={disabled || ids.length >= maxSize}
         >
           Add Teammate
         </Button>

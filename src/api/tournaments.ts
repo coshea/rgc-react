@@ -1,3 +1,5 @@
+import { TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 // Centralized tournament-related Firestore access.
 // Components and hooks should import ONLY from this module (or hooks built atop it),
 // not directly from '@/config/firebase' or 'firebase/firestore'. This enables
@@ -66,6 +68,9 @@ export function mapTournamentDoc(d: any) {
       : data.date
         ? new Date(data.date)
         : new Date();
+  const status: TournamentStatus = getStatus({
+    status: data.status as TournamentStatus | undefined,
+  });
   return {
     firestoreId: d.id,
     title: data.title,
@@ -73,13 +78,12 @@ export function mapTournamentDoc(d: any) {
     description: data.description,
     detailsMarkdown: data.detailsMarkdown || data.details || "",
     players: data.players,
-    completed: data.completed || false,
-    canceled: data.canceled || false,
-    registrationOpen: data.registrationOpen || false,
+    status,
     icon: data.icon,
     href: data.href,
     prizePool: data.prizePool || 0,
     winners: data.winners || [],
+    winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
   };
 }
@@ -150,4 +154,11 @@ export async function deleteRegistration(
     registrationId
   );
   await deleteDoc(ref);
+}
+
+// Fetch all registrations for a tournament (non real-time) used for conflict detection
+export async function fetchAllRegistrations(tournamentId: string) {
+  const colRef = collection(db, "tournaments", tournamentId, "registrations");
+  const snaps = await getDocs(colRef);
+  return snaps.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
 }

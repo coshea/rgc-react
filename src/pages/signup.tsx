@@ -23,7 +23,12 @@ export default function SignUpPage() {
   const toggleVisibility = () => setIsVisible(!isVisible);
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
-  // No auto-redirect on sign-up; user chooses navigation explicitly
+  // Redirect signed-in users away from signup page
+  React.useEffect(() => {
+    if (userLoggedIn && !authLoading) {
+      navigate(siteConfig.pages.home.link);
+    }
+  }, [userLoggedIn, authLoading, navigate]);
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -104,7 +109,7 @@ export default function SignUpPage() {
   }
 
   if (userLoggedIn && !authLoading) {
-    return null; // Or a loading spinner
+    return null; // prevent UI flash while navigation happens
   }
 
   return (

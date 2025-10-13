@@ -6,6 +6,7 @@ import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
 import { updateUser, deleteUser, createUser } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DirectoryHeader,
   DirectorySearchBar,
@@ -21,6 +22,7 @@ export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useDocAdminFlag(user); // local check for early redirect logic unchanged
+  const queryClient = useQueryClient(); // For invalidating queries after user operations
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
   const members = membersHook.isAdmin
@@ -38,6 +40,17 @@ export default function MembershipDirectoryPage() {
   const [filter, setFilter] = useState("");
   const [activeOnly, setActiveOnly] = useState(true);
   const activeSet = membersHook.activeSet;
+
+  // compute visible count for the header summary (matches MembersList predicate)
+  const visibleCount = members.filter((m) => {
+    if (activeOnly && !activeSet.has(m.id)) return false;
+    if (!filter.trim()) return true;
+    const q = filter.toLowerCase();
+    return (
+      (m.displayName || "").toLowerCase().includes(q) ||
+      (m.email || "").toLowerCase().includes(q)
+    );
+  }).length;
 
   // Phone helpers moved to utils/phone.ts
 
@@ -80,7 +93,7 @@ export default function MembershipDirectoryPage() {
     setConfirmDelete(u);
   }
 
-  async function save() {
+  async function save(): Promise<string | undefined> {
     if (!isAdmin) return;
     try {
       const phoneToSave = formatPhone(form.phone);
@@ -111,14 +124,12 @@ export default function MembershipDirectoryPage() {
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
         });
-        addToast({
-          title: "User Updated",
-          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} updated successfully`,
-          color: "success",
-        });
         console.log("[Directory] User updated", { id: editing.id, ...form });
+
+        // Return undefined explicitly for updates
+        return undefined;
       } else {
-        await createUser({
+        const docRef = await createUser({
           firstName: (form.firstName || "").trim() || undefined,
           lastName: (form.lastName || "").trim() || undefined,
           email: form.email || "",
@@ -126,18 +137,27 @@ export default function MembershipDirectoryPage() {
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
         });
-        addToast({
-          title: "User Added",
-          description: `${[form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "User"} added successfully`,
-          color: "success",
-        });
-        console.log("[Directory] User added", { ...form });
+        const newUserId = docRef.id;
+        console.log("[Directory] User added", { id: newUserId, ...form });
+
+        // Invalidate users query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+
+        setOpen(false);
+
+        // Return the new user ID for payment processing
+        return newUserId;
       }
+
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+
       setOpen(false);
     } catch (e) {
       console.error(e);
       addToast({ title: "Error", description: "Save failed", color: "danger" });
       console.log("[Directory] User save failed", e);
+      throw e; // Re-throw so EditMemberModal can handle the error
     }
   }
 
@@ -163,6 +183,10 @@ export default function MembershipDirectoryPage() {
         color: "success",
       });
       setConfirmDelete(null);
+
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+
       console.log("[Directory] User deleted", { id: confirmDelete.id });
     } catch (e) {
       console.error(e);
@@ -188,8 +212,8 @@ export default function MembershipDirectoryPage() {
       <DirectorySearchBar
         filter={filter}
         onFilterChange={setFilter}
+        count={visibleCount}
         total={members.length}
-        isFiltered={!!filter}
       />
       {isAdmin && (
         <div className="flex items-center justify-end mb-2">
