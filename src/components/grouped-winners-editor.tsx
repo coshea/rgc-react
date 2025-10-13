@@ -82,7 +82,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     // Slow path: create normalized copy with generated ids for missing places.
     const normalized = groups.map((g) => {
       const winners = (g.winners || []).map((w) =>
-        w.id ? w : { ...w, id: generateUUID() }
+        w.id ? w : { ...w, id: crypto.randomUUID() }
       );
       return winners !== g.winners ? { ...g, winners } : g;
     });

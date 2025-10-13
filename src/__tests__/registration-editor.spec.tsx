@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, act } from "@testing-library/react";
 import RegistrationEditor from "@/components/registration-editor";
 
@@ -20,6 +20,11 @@ function Wrapper({ users, value, onChange }: any) {
     />
   );
 }
+
+// Mock Auth provider hook used by RegistrationEditor
+vi.mock("@/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: { uid: "test-user", displayName: "Test User" } }),
+}));
 
 describe("RegistrationEditor selectedKeys sanitization", () => {
   it("drops stale user ids when user list shrinks", () => {
