@@ -13,6 +13,8 @@ interface RegistrationEditorProps {
   labels?: { leader?: string; teammate?: (index: number) => string };
   /** When true, do not auto-select the current authenticated user into the first slot. Useful for admin flows. */
   disableAutoSelect?: boolean;
+  /** When true, disable all inputs and controls inside the editor (used to block ineligible users). */
+  disabled?: boolean;
 }
 
 export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
@@ -22,6 +24,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   maxSize,
   labels,
   disableAutoSelect,
+  disabled = false,
 }) => {
   const ids = value || [];
 
@@ -110,6 +113,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               multiple={false}
               showRemovedHint
               className="w-full"
+              disabled={disabled}
             />
           </div>
           {ids.length > 1 && (
@@ -118,6 +122,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               variant="light"
               color="danger"
               onPress={() => removeSlot(idx)}
+              isDisabled={disabled}
             >
               <Icon icon="lucide:trash-2" />
             </Button>
@@ -129,7 +134,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
           size="sm"
           variant="flat"
           onPress={addSlot}
-          isDisabled={ids.length >= maxSize}
+          isDisabled={disabled || ids.length >= maxSize}
         >
           Add Teammate
         </Button>

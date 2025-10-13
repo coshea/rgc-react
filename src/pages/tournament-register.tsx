@@ -107,7 +107,15 @@ const TournamentRegister: React.FC = () => {
   const [showRestricted, setShowRestricted] = React.useState(false);
   const currentUserIsEligible = React.useMemo(() => {
     const me = users.find((u) => u.id === user?.uid);
-    return isActiveFullMember(me);
+    // Primary rule: active full member (paid for current year)
+    if (isActiveFullMember(me)) return true;
+    // Legacy fallback: if membershipType is full but lastPaidYear is missing/unknown,
+    // allow registration to avoid blocking older profiles that haven't recorded payment year.
+    // Once lastPaidYear exists, the primary rule above applies.
+    if (me && me.membershipType === "full" && me.lastPaidYear == null) {
+      return true;
+    }
+    return false;
   }, [users, user?.uid]);
 
   React.useEffect(() => {
@@ -242,6 +250,17 @@ const TournamentRegister: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent | Event) => {
     e.preventDefault();
+
+    // Guard: ineligible users cannot submit
+    if (!currentUserIsEligible) {
+      addToast({
+        title: "Registration Restricted",
+        description: "Only active full members can register for tournaments.",
+        color: "danger",
+      });
+      setShowRestricted(true);
+      return;
+    }
 
     if (!tournament || !tournament.firestoreId) {
       addToast({
@@ -413,25 +432,13 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {showRestricted && (
-              <div
-                className="rounded-md border border-warning-300 bg-warning-50 text-warning-800 dark:bg-warning-100/10 dark:text-warning-300 p-3"
-                role="alert"
-              >
-                <p className="font-medium">Registration Restricted</p>
-                <p className="text-sm">
-                  Only active full members can register for tournaments. Please
-                  renew your membership or contact an administrator if you
-                  believe this is an error.
-                </p>
-              </div>
-            )}
             <RegistrationEditor
               value={teammates}
               onChange={setTeammates}
               users={fullMembers}
               maxSize={maxTeamSize}
               labels={{ leader: "Team Leader / You" }}
+              disabled={!currentUserIsEligible}
             />
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
@@ -472,7 +479,7 @@ const TournamentRegister: React.FC = () => {
                     className="w-full"
                     type="submit"
                     color="primary"
-                    isDisabled={submitting}
+                    isDisabled={submitting || !currentUserIsEligible}
                   >
                     {submitting
                       ? registrationId
@@ -519,6 +526,39 @@ const TournamentRegister: React.FC = () => {
               </ModalContent>
             </Modal>
           </form>
+          {/* Ineligible user blocking modal */}
+          <Modal
+            isOpen={showRestricted && !!user && !!tournament}
+            onOpenChange={(open) => setShowRestricted(open)}
+            size="md"
+            hideCloseButton
+          >
+            <ModalContent>
+              {() => (
+                <>
+                  <ModalHeader>Registration Restricted</ModalHeader>
+                  <ModalBody>
+                    <p className="text-sm text-foreground-500">
+                      Only active full members can register for tournaments.
+                      Please renew your membership or contact an administrator
+                      if you believe this is an error.
+                    </p>
+                  </ModalBody>
+                  <ModalFooter>
+                    <Button
+                      color="default"
+                      variant="flat"
+                      onPress={() =>
+                        navigate(`/tournaments/${tournament!.firestoreId}`)
+                      }
+                    >
+                      Go to Tournament Details
+                    </Button>
+                  </ModalFooter>
+                </>
+              )}
+            </ModalContent>
+          </Modal>
           {/* Duplicate conflict confirmation modal */}
           <Modal
             isOpen={conflictModalOpen && conflicts.length > 0}

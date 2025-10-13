@@ -85,7 +85,7 @@ export function computeTotalPayout(groups: WinnerGroup[]): number {
 /**
  * Ensure no duplicate place numbers within a group.
  */
-export function hasDuplicatePlaces(group: WinnerGroup): boolean {
+export function hasPlaceDuplicates(group: WinnerGroup): boolean {
   const seen = new Set<number>();
   for (const w of group.winners) {
     if (seen.has(w.place)) return true;

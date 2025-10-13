@@ -26,7 +26,7 @@ export function getPlaceMeta(place: number): PlaceMeta {
     };
   }
   if (place === 3) {
-    // Unique third place icon (award) with bronze-like accent
+    // 3rd place: award icon with bronze-like accent
     return {
       icon: "lucide:award",
       colorClass: "text-amber-700",
