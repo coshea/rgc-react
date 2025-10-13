@@ -25,12 +25,21 @@ export function getPlaceMeta(place: number): PlaceMeta {
         "bg-slate-300/90 text-slate-800 dark:bg-slate-400 dark:text-slate-900",
     };
   }
-  // 3rd and beyond use bronze medal styling to distinguish from 2nd
+  if (place === 3) {
+    // Unique third place icon (award) with bronze-like accent
+    return {
+      icon: "lucide:award",
+      colorClass: "text-amber-700",
+      badgeBg:
+        "bg-amber-200/90 text-amber-900 dark:bg-amber-300 dark:text-amber-950",
+    };
+  }
+  // 4th and beyond: award icon with a muted neutral style (distinct from 3rd's bronze)
   return {
-    icon: "lucide:medal",
-    colorClass: "text-amber-700",
+    icon: "lucide:award",
+    colorClass: "text-default-400",
     badgeBg:
-      "bg-amber-200/90 text-amber-900 dark:bg-amber-300 dark:text-amber-950",
+      "bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-default-300",
   };
 }
 

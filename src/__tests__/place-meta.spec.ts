@@ -20,18 +20,18 @@ describe("getPlaceMeta", () => {
     expect(meta.badgeBg).toMatch(/slate/i);
   });
 
-  it("returns bronze medal style for third place", () => {
+  it("returns award bronze style for third place", () => {
     const meta = getPlaceMeta(3);
-    expect(meta.icon).toBe("lucide:medal");
+    expect(meta.icon).toBe("lucide:award");
     expect(meta.colorClass).toContain("text-amber-700");
     expect(meta.badgeBg).toMatch(/amber/i);
   });
 
-  it("returns bronze medal style for other placements", () => {
+  it("returns neutral award for other placements", () => {
     const meta = getPlaceMeta(7);
-    expect(meta.icon).toBe("lucide:medal");
-    expect(meta.colorClass).toContain("text-amber-700");
-    expect(meta.badgeBg).toMatch(/amber/i);
+    expect(meta.icon).toBe("lucide:award");
+    expect(meta.colorClass).toContain("text-default-400");
+    expect(meta.badgeBg).toMatch(/default/i);
   });
 });
 
