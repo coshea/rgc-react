@@ -29,15 +29,9 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   const ids = value || [];
 
   // useAuth throws when not used within provider; guard for test environments
-  let authUser: { uid?: string } | null | undefined;
-  try {
-    // eslint-disable-next-line prefer-const
-    const auth = useAuth();
-    authUser = auth?.user;
-  } catch (e) {
-    // No AuthProvider available (e.g., unit tests). Continue without auto-fill.
-    authUser = undefined;
-  }
+  // useAuth may return undefined if AuthProvider is missing (e.g., unit tests)
+  const auth = useAuth();
+  const authUser: { uid?: string } | null | undefined = auth?.user;
 
   // Build a fast lookup set for valid user ids
   const validUserIds = React.useMemo(
