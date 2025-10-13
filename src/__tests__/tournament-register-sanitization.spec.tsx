@@ -107,14 +107,11 @@ describe("TournamentRegister teammate selection sanitization", () => {
     const heading = await screen.findByText(/Register for\s+Test Tournament/i);
     expect(heading).toBeTruthy();
 
-    // Open the select (Team Leader / You)
-    const trigger = screen.getByRole("button", { name: /team leader/i });
-    fireEvent.click(trigger);
-    // There can be multiple 'Bravo' nodes (hidden select + visible item); choose the visible listbox option
-    const bravoMatches = await screen.findAllByText("Bravo");
-    const bravo =
-      bravoMatches.find((el) => el.getAttribute("role") !== "option") ||
-      bravoMatches[0];
+    // Interact with Autocomplete (Team Leader / You)
+    const combo = screen.getByRole("combobox", { name: /team leader/i });
+    fireEvent.change(combo, { target: { value: "Bravo" } });
+    fireEvent.keyDown(combo, { key: "ArrowDown" });
+    const bravo = await screen.findByRole("option", { name: "Bravo" });
     fireEvent.click(bravo);
 
     // Remove Bravo from users list, leaving only Alpha

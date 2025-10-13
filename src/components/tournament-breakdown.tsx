@@ -18,6 +18,8 @@ import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { getStatus, statusText } from "@/utils/tournamentStatus";
+import { TournamentStatus } from "@/types/tournament";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
 import type { Winner } from "@/types/winner";
@@ -53,26 +55,61 @@ export function TournamentBreakdown({ year }: Props) {
   const { usersMap, isLoading: usersLoading } = useUsersMap();
   const tournamentBundles: TournamentBundle[] = useMemo(() => {
     return tournaments
-      .filter((t) => (t.winners || []).length > 0)
+      .filter((t) => {
+        const hasGroups = (t as any).winnerGroups?.length > 0;
+        return hasGroups || (t.winners || []).length > 0;
+      })
       .map((t) => {
         const rows: ResultRow[] = [];
         const winnerIds = new Set<string>();
-        (t.winners || []).forEach((w: Winner) => {
-          const ids = w.userIds || [];
-          const names = w.displayNames || [];
-          ids.forEach((uid, idx) => {
-            winnerIds.add(uid);
-            rows.push({
-              id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
-              position: w.place,
-              userId: uid,
-              name: names[idx] || names[0] || uid,
-              prize: w.prizeAmount || 0,
-              score: w.score,
-              teamSize: ids.length,
+        const groups = (t as any).winnerGroups as
+          | Array<{
+              type: string;
+              winners?: Array<{
+                place: number;
+                competitors?: Array<{ userId: string; displayName: string }>;
+                prizeAmount?: number;
+                score?: string;
+              }>;
+            }>
+          | undefined;
+        if (groups && groups.length > 0) {
+          // Prefer 'overall' groups for podium construction; include all for detailed rows
+          groups.forEach((g) => {
+            (g.winners || []).forEach((w) => {
+              (w.competitors || []).forEach((c, idx) => {
+                winnerIds.add(c.userId);
+                rows.push({
+                  id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
+                  position: w.place,
+                  userId: c.userId,
+                  name: c.displayName || c.userId,
+                  prize: w.prizeAmount || 0,
+                  score: w.score,
+                  teamSize: (w.competitors || []).length,
+                });
+              });
             });
           });
-        });
+        } else {
+          // Legacy winners
+          (t.winners || []).forEach((w: Winner) => {
+            const ids = w.userIds || [];
+            const names = w.displayNames || [];
+            ids.forEach((uid, idx) => {
+              winnerIds.add(uid);
+              rows.push({
+                id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
+                position: w.place,
+                userId: uid,
+                name: names[idx] || names[0] || uid,
+                prize: w.prizeAmount || 0,
+                score: w.score,
+                teamSize: ids.length,
+              });
+            });
+          });
+        }
         rows.sort((a, b) => a.position - b.position);
         const positions = new Map<number, ResultRow[]>();
         rows.forEach((r) => {
@@ -235,15 +272,67 @@ export function TournamentBreakdown({ year }: Props) {
           const isOpen = expanded.has(id);
           // Build podium summary (positions map may contain multiple per position for teams)
           const podiumGroups: { position: number; players: ResultRow[] }[] = [];
-          const seenPositions = new Set<number>();
-          rows.forEach((r) => {
-            if (seenPositions.size >= 3) return;
-            if (!seenPositions.has(r.position)) {
-              const group = rows.filter((x) => x.position === r.position);
-              podiumGroups.push({ position: r.position, players: group });
-              seenPositions.add(r.position);
-            }
-          });
+          const groups = (tournament as any).winnerGroups as
+            | Array<{
+                type: string;
+                winners?: Array<{
+                  place: number;
+                  competitors?: Array<{ userId: string; displayName: string }>;
+                  prizeAmount?: number;
+                  score?: string;
+                }>;
+                order?: number;
+              }>
+            | undefined;
+          if (groups && groups.length > 0) {
+            const overall = groups.filter((g) => g.type === "overall");
+            const primary =
+              overall.length > 0
+                ? overall
+                : [
+                    [...groups].sort(
+                      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                    )[0],
+                  ].filter(Boolean as unknown as <T>(x: T) => x is T);
+            const podiumRows: ResultRow[] = [];
+            primary.forEach((g) => {
+              (g.winners || []).forEach((w) => {
+                (w.competitors || []).forEach((c, idx) => {
+                  podiumRows.push({
+                    id: `${id}-podium-${g.type}-${w.place}-${c.userId}-${idx}`,
+                    position: w.place,
+                    userId: c.userId,
+                    name: c.displayName || c.userId,
+                    prize: w.prizeAmount || 0,
+                    score: w.score,
+                    teamSize: (w.competitors || []).length,
+                  });
+                });
+              });
+            });
+            podiumRows.sort((a, b) => a.position - b.position);
+            const seenPositions = new Set<number>();
+            podiumRows.forEach((r) => {
+              if (seenPositions.size >= 3) return;
+              if (!seenPositions.has(r.position)) {
+                const group = podiumRows.filter(
+                  (x) => x.position === r.position
+                );
+                podiumGroups.push({ position: r.position, players: group });
+                seenPositions.add(r.position);
+              }
+            });
+          } else {
+            const seenPositions = new Set<number>();
+            rows.forEach((r) => {
+              if (seenPositions.size >= 3) return;
+              if (!seenPositions.has(r.position)) {
+                const group = rows.filter((x) => x.position === r.position);
+                podiumGroups.push({ position: r.position, players: group });
+                seenPositions.add(r.position);
+              }
+            });
+          }
           return (
             <article
               key={id}
@@ -276,7 +365,7 @@ export function TournamentBreakdown({ year }: Props) {
                             })}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-default-300" />
-                          <TeeBadge tee={tournament.tee as any} size="xs" />
+                          <TeeBadge tee={tournament.tee} size="xs" />
                           <span className="h-1 w-1 rounded-full bg-default-300" />
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:award" className="w-3 h-3" />
@@ -294,16 +383,59 @@ export function TournamentBreakdown({ year }: Props) {
                         >
                           {formatPrize(tournament.prizePool)} pool
                         </Chip>
-                        {tournament.registrationOpen && (
-                          <Chip
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            className="text-[10px]"
-                          >
-                            Registration Open
-                          </Chip>
-                        )}
+                        {(() => {
+                          const s = getStatus(tournament);
+                          const label = statusText(s);
+                          if (s === TournamentStatus.Canceled) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="danger"
+                                variant="solid"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.Completed) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="default"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.Open) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          if (s === TournamentStatus.InProgress) {
+                            return (
+                              <Chip
+                                size="sm"
+                                color="primary"
+                                variant="flat"
+                                className="text-[10px]"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                   </div>

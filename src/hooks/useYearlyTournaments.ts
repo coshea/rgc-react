@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Tournament } from "@/types/tournament";
+import { TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 
 interface UseYearlyTournamentsOptions {
   year: number;
@@ -49,6 +51,9 @@ export function useYearlyTournaments({
         const rawDate = data.date?.toDate ? data.date.toDate() : data.date;
         const dateObj = rawDate instanceof Date ? rawDate : new Date(rawDate);
         if (dateObj.getFullYear() !== year) return; // guard if fallback
+        const status: TournamentStatus = getStatus({
+          status: data.status as TournamentStatus | undefined,
+        });
         tournaments.push({
           firestoreId: docSnap.id,
           // required Tournament fields
@@ -56,11 +61,10 @@ export function useYearlyTournaments({
           date: dateObj,
           description: data.description || "",
           players: data.players || 0,
-          completed: !!data.completed,
-          canceled: !!data.canceled,
+          status,
           prizePool: data.prizePool || 0,
-          registrationOpen: !!data.registrationOpen,
           winners: data.winners || [],
+          winnerGroups: data.winnerGroups || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,
         });

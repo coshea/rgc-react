@@ -39,18 +39,45 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
     const played = new Map<string, number>();
     const wins = new Map<string, number>();
     tournaments.forEach((t) => {
-      if (!t.winners) return;
       const participantSet = new Set<string>();
-      t.winners.forEach((w) => {
-        w.userIds.forEach((uid) => {
-          participantSet.add(uid);
-        });
-        if (w.place === 1) {
-          w.userIds.forEach((uid) => {
-            wins.set(uid, (wins.get(uid) || 0) + 1);
-          });
+      if (t.winnerGroups && t.winnerGroups.length > 0) {
+        // Count any competitor in any group as "played"
+        for (const g of t.winnerGroups) {
+          for (const w of g.winners || []) {
+            w.competitors?.forEach((c) => participantSet.add(c.userId));
+          }
         }
-      });
+        // Wins: only count from 'overall' group if present; otherwise, pick a single primary group
+        const overall = t.winnerGroups.filter((g) => g.type === "overall");
+        const primaryGroups =
+          overall.length > 0
+            ? overall
+            : [
+                // choose the first group by order asc if available; otherwise first in array
+                [...t.winnerGroups].sort(
+                  (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                )[0],
+              ].filter(Boolean as unknown as <T>(x: T) => x is T);
+        primaryGroups.forEach((g) => {
+          g.winners?.forEach((w) => {
+            if (w.place === 1) {
+              w.competitors?.forEach((c) => {
+                wins.set(c.userId, (wins.get(c.userId) || 0) + 1);
+              });
+            }
+          });
+        });
+      } else if (t.winners && t.winners.length > 0) {
+        // Legacy path
+        t.winners.forEach((w) => {
+          w.userIds.forEach((uid) => participantSet.add(uid));
+          if (w.place === 1) {
+            w.userIds.forEach((uid) => {
+              wins.set(uid, (wins.get(uid) || 0) + 1);
+            });
+          }
+        });
+      }
       participantSet.forEach((uid) => {
         played.set(uid, (played.get(uid) || 0) + 1);
       });

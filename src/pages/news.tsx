@@ -1,4 +1,5 @@
-import { Tournament } from "@/types/tournament";
+import { Tournament, TournamentStatus } from "@/types/tournament";
+import { getStatus } from "@/utils/tournamentStatus";
 import { db } from "@/config/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import React from "react";
@@ -24,19 +25,22 @@ export function NewsPage() {
                 ? new Date(data.date)
                 : new Date();
 
+          const status: TournamentStatus = getStatus({
+            status: data.status as TournamentStatus | undefined,
+          });
+
           return {
             firestoreId: d.id,
             title: data.title,
             date: dateField,
             description: data.description,
             players: data.players,
-            completed: data.completed || false,
-            canceled: data.canceled || false,
-            registrationOpen: data.registrationOpen || false,
+            status,
             icon: data.icon,
             href: data.href,
             prizePool: data.prizePool || 0,
             winners: data.winners || [],
+            winnerGroups: data.winnerGroups || [],
           } as Tournament;
         });
         setTournaments(items);
@@ -53,11 +57,16 @@ export function NewsPage() {
   const now = new Date();
 
   const nextTournament = tournaments
-    .filter((t) => !t.completed && !t.canceled && t.date > now)
+    .filter(
+      (t) =>
+        t.status !== TournamentStatus.Completed &&
+        t.status !== TournamentStatus.Canceled &&
+        t.date > now
+    )
     .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
 
   const lastCompletedTournament = tournaments
-    .filter((t) => t.completed && !t.canceled && t.date <= now)
+    .filter((t) => t.status === TournamentStatus.Completed && t.date <= now)
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 
   return (

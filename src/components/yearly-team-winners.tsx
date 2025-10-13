@@ -37,40 +37,82 @@ export function YearlyTeamWinners({ year }: Props) {
   const teams = useMemo<TeamAggregate[]>(() => {
     const map = new Map<string, TeamAggregate>();
     tournaments.forEach((t) => {
-      (t.winners || []).forEach((w: Winner) => {
-        if (!w || !w.userIds || w.userIds.length <= 1) return; // only teams (size > 1)
-        const sorted = [...w.userIds].sort();
-        const key = sorted.join("|");
-        const existing = map.get(key);
-        const entry = {
-          tournamentId: t.firestoreId || "unknown",
-          title: t.title,
-          date: t.date instanceof Date ? t.date : new Date(t.date),
-          place: w.place,
-          prizePerPlayer: w.prizeAmount || 0,
-          score: w.score,
-        };
-        if (existing) {
-          existing.tournaments.push(entry);
-          if (w.place === 1) existing.wins += 1;
-          if (w.place <= 3) existing.podiums += 1;
-          existing.totalPerPlayer += w.prizeAmount || 0;
-        } else {
-          const names =
-            w.displayNames && w.displayNames.length === sorted.length
-              ? [...w.displayNames]
-              : sorted;
-          map.set(key, {
-            key,
-            userIds: sorted,
-            displayNames: names,
-            tournaments: [entry],
-            wins: w.place === 1 ? 1 : 0,
-            podiums: w.place <= 3 ? 1 : 0,
-            totalPerPlayer: w.prizeAmount || 0,
+      if (t.winnerGroups && t.winnerGroups.length > 0) {
+        // Prefer grouped winners model. Treat any place results with team size > 1 as a team entry
+        t.winnerGroups.forEach((g: any) => {
+          (g.winners || []).forEach((w: any) => {
+            const competitors = w.competitors || [];
+            if (competitors.length <= 1) return;
+            const sorted = [...competitors].sort((a, b) =>
+              a.userId.localeCompare(b.userId)
+            );
+            const userIds = sorted.map((c) => c.userId);
+            const key = userIds.join("|");
+            const existing = map.get(key);
+            const entry = {
+              tournamentId: (t as any).firestoreId || "unknown",
+              title: t.title,
+              date: t.date instanceof Date ? t.date : new Date(t.date),
+              place: w.place as number,
+              prizePerPlayer: (w.prizeAmount as number) || 0,
+              score: w.score as string | undefined,
+            };
+            if (existing) {
+              existing.tournaments.push(entry);
+              if (w.place === 1) existing.wins += 1;
+              if ((w.place as number) <= 3) existing.podiums += 1;
+              existing.totalPerPlayer += (w.prizeAmount as number) || 0;
+            } else {
+              const names = sorted.map((c) => c.displayName || c.userId);
+              map.set(key, {
+                key,
+                userIds,
+                displayNames: names,
+                tournaments: [entry],
+                wins: w.place === 1 ? 1 : 0,
+                podiums: (w.place as number) <= 3 ? 1 : 0,
+                totalPerPlayer: (w.prizeAmount as number) || 0,
+              });
+            }
           });
-        }
-      });
+        });
+      } else {
+        // Legacy winners fallback
+        (t.winners || []).forEach((w: Winner) => {
+          if (!w || !w.userIds || w.userIds.length <= 1) return; // only teams (size > 1)
+          const sorted = [...w.userIds].sort();
+          const key = sorted.join("|");
+          const existing = map.get(key);
+          const entry = {
+            tournamentId: (t as any).firestoreId || "unknown",
+            title: t.title,
+            date: t.date instanceof Date ? t.date : new Date(t.date),
+            place: w.place,
+            prizePerPlayer: w.prizeAmount || 0,
+            score: w.score,
+          };
+          if (existing) {
+            existing.tournaments.push(entry);
+            if (w.place === 1) existing.wins += 1;
+            if (w.place <= 3) existing.podiums += 1;
+            existing.totalPerPlayer += w.prizeAmount || 0;
+          } else {
+            const names =
+              w.displayNames && w.displayNames.length === sorted.length
+                ? [...w.displayNames]
+                : sorted;
+            map.set(key, {
+              key,
+              userIds: sorted,
+              displayNames: names,
+              tournaments: [entry],
+              wins: w.place === 1 ? 1 : 0,
+              podiums: w.place <= 3 ? 1 : 0,
+              totalPerPlayer: w.prizeAmount || 0,
+            });
+          }
+        });
+      }
     });
 
     const arr = Array.from(map.values());
@@ -166,7 +208,7 @@ export function YearlyTeamWinners({ year }: Props) {
                     {team.displayNames.join(" • ")}
                   </p>
                   <p className="text-[11px] text-default-400 mt-1">
-                    {team.userIds.length} players • {team.wins} win
+                    {team.wins} win
                     {team.wins !== 1 ? "s" : ""} • {team.podiums} podium
                     {team.podiums !== 1 ? "s" : ""}
                   </p>

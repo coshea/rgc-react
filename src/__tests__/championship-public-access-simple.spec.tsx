@@ -152,12 +152,6 @@ describe("Championship Public Access Integration", () => {
     const wrapper = createWrapper();
 
     render(<ChampionshipCard championship={mockChampionship} />, { wrapper });
-    // DEBUG: dump initial DOM to help diagnose missing content in CI/full-suite
-    // eslint-disable-next-line no-console
-    console.log(
-      "DOM after render (unauthenticated):",
-      document.body.innerHTML.slice(0, 500)
-    );
 
     // Await the visible texts
     await screen.findByText("John Champion", {}, { timeout: 10000 });
@@ -183,12 +177,6 @@ describe("Championship Public Access Integration", () => {
 
     render(<ChampionshipCard championship={mockChampionship} />, { wrapper });
 
-    // DEBUG: dump initial DOM to help diagnose missing content in CI/full-suite
-    // eslint-disable-next-line no-console
-    console.log(
-      "DOM after render (authenticated):",
-      document.body.innerHTML.slice(0, 500)
-    );
     // Await the visible text and then check for profile buttons
     await screen.findByText("John Champion", {}, { timeout: 10000 });
     // Should have profile links for authenticated and verified users

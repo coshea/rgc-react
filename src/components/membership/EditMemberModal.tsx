@@ -1,4 +1,4 @@
-import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { Button, Input, Select, SelectItem, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import {
   getMembershipPayment,
@@ -33,6 +33,7 @@ export function EditMemberModal({
   const qc = useQueryClient();
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [paymentDirty, setPaymentDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [payment, setPayment] = useState<{
     membershipType?: string;
     amount?: string;
@@ -70,6 +71,8 @@ export function EditMemberModal({
   }, [open, editing, isAdmin, currentYear]);
 
   async function handleSave() {
+    if (saving) return; // guard double submit
+    setSaving(true);
     try {
       // First run existing onSave for user profile
       const newUserId = await onSave();
@@ -151,6 +154,9 @@ export function EditMemberModal({
           "There was an error saving the member information. Please try again.",
         color: "danger",
       });
+    } finally {
+      // If save succeeded we likely closed already; safe to flip flag either way.
+      setSaving(false);
     }
   }
 
@@ -179,6 +185,7 @@ export function EditMemberModal({
             <Input
               placeholder="First Name"
               value={form.firstName || ""}
+              isDisabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, firstName: e.target.value })
               }
@@ -186,6 +193,7 @@ export function EditMemberModal({
             <Input
               placeholder="Last Name"
               value={form.lastName || ""}
+              isDisabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, lastName: e.target.value })
               }
@@ -194,11 +202,13 @@ export function EditMemberModal({
           <Input
             placeholder="Email"
             value={form.email || ""}
+            isDisabled={saving}
             onChange={(e: any) => onChange({ ...form, email: e.target.value })}
           />
           <Input
             placeholder="Phone"
             value={form.phone || ""}
+            isDisabled={saving}
             onChange={(e: any) => onChange({ ...form, phone: e.target.value })}
             onBlur={() => onChange({ ...form, phone: formatPhone(form.phone) })}
           />
@@ -208,6 +218,7 @@ export function EditMemberModal({
                 type="checkbox"
                 className="accent-primary h-4 w-4"
                 checked={!!form.boardMember}
+                disabled={saving}
                 onChange={(e) => {
                   const checked = e.target.checked;
                   onChange({
@@ -240,6 +251,7 @@ export function EditMemberModal({
                         selectedKeys={
                           form.role ? new Set([form.role]) : new Set()
                         }
+                        isDisabled={saving}
                         onSelectionChange={(keys) => {
                           const v = Array.from(keys as Set<string>)[0];
                           onChange({ ...form, role: v });
@@ -247,7 +259,9 @@ export function EditMemberModal({
                         className="max-w-full"
                       >
                         {options.map((r) => (
-                          <SelectItem key={r}>{r}</SelectItem>
+                          <SelectItem key={r} textValue={r}>
+                            {r}
+                          </SelectItem>
                         ))}
                       </Select>
                       {!form.role?.trim() && (
@@ -289,6 +303,7 @@ export function EditMemberModal({
                       type="checkbox"
                       className="accent-primary h-4 w-4"
                       checked={!!payment.markPaid}
+                      disabled={saving}
                       onChange={(e) => {
                         setPayment((p) => ({
                           ...p,
@@ -308,6 +323,7 @@ export function EditMemberModal({
                         ? new Set([payment.membershipType])
                         : new Set()
                     }
+                    isDisabled={saving}
                     onSelectionChange={(keys) => {
                       const v = Array.from(keys as Set<string>)[0];
                       setPayment((p) => ({ ...p, membershipType: v }));
@@ -315,14 +331,19 @@ export function EditMemberModal({
                     }}
                     className="min-w-[130px]"
                   >
-                    <SelectItem key="full">Full</SelectItem>
-                    <SelectItem key="handicap">Handicap</SelectItem>
+                    <SelectItem key="full" textValue="Full">
+                      Full
+                    </SelectItem>
+                    <SelectItem key="handicap" textValue="Handicap">
+                      Handicap
+                    </SelectItem>
                   </Select>
                   <Input
                     size="sm"
                     placeholder="Amount"
                     value={payment.amount || ""}
                     className="max-w-[100px]"
+                    isDisabled={saving}
                     onChange={(e: any) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));
                       setPaymentDirty(true);
@@ -334,6 +355,7 @@ export function EditMemberModal({
                     size="sm"
                     placeholder="Method (cash / check / stripe / comp)"
                     value={payment.method || ""}
+                    isDisabled={saving}
                     onChange={(e: any) => {
                       setPayment((p) => ({ ...p, method: e.target.value }));
                       setPaymentDirty(true);
@@ -349,11 +371,22 @@ export function EditMemberModal({
           </div>
         )}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="flat" onPress={onClose}>
+          <Button variant="flat" onPress={onClose} isDisabled={saving}>
             Cancel
           </Button>
-          <Button onPress={handleSave} color="secondary">
-            Save
+          <Button
+            onPress={handleSave}
+            color="secondary"
+            isDisabled={saving}
+            aria-busy={saving}
+          >
+            {saving ? (
+              <span className="flex items-center gap-1">
+                <Spinner size="sm" /> Saving...
+              </span>
+            ) : (
+              "Save"
+            )}
           </Button>
         </div>
       </div>

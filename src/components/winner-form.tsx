@@ -13,6 +13,7 @@ import { Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Winner } from "@/types/winner";
 import { useUsers } from "@/hooks/useUsers";
+import { getPlaceMeta } from "@/utils/placeMeta";
 
 interface WinnerFormProps {
   winners: Winner[];
@@ -176,12 +177,15 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
               <CardBody className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Icon
-                      icon={
-                        winner.place === 1 ? "lucide:trophy" : "lucide:medal"
-                      }
-                      className={`text-xl ${winner.place === 1 ? "text-warning" : "text-default-400"}`}
-                    />
+                    {(() => {
+                      const meta = getPlaceMeta(winner.place);
+                      return (
+                        <Icon
+                          icon={meta.icon}
+                          className={`text-xl ${meta.colorClass}`}
+                        />
+                      );
+                    })()}
                     <h4 className="font-medium">
                       {getPlaceLabel(winner.place)}
                     </h4>
@@ -230,7 +234,10 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       }
                     >
                       {users.map((user) => (
-                        <SelectItem key={user.id}>
+                        <SelectItem
+                          key={user.id}
+                          textValue={user.displayName || user.email || user.id}
+                        >
                           {user.displayName}
                         </SelectItem>
                       ))}

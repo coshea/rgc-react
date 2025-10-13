@@ -42,6 +42,8 @@ const fetchAllRegistrationsMock = vi.fn(async (_?: any) => [
     ownerId: "someone",
   },
 ]);
+import { TournamentStatus } from "@/types/tournament";
+
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: vi.fn(async () => ({
     firestoreId: "t1",
@@ -49,9 +51,7 @@ vi.mock("@/api/tournaments", () => ({
     date: new Date(),
     description: "d",
     players: 4,
-    completed: false,
-    canceled: false,
-    registrationOpen: true,
+    status: TournamentStatus.Open,
     prizePool: 0,
     winners: [],
     tee: "Mixed",
@@ -113,8 +113,10 @@ describe("TournamentRegister duplicate teammate detection", () => {
     });
 
     // Change leader slot selection to Player Two (conflicting user)
-    const leaderTrigger = screen.getByRole("button", { name: /team leader/i });
-    fireEvent.click(leaderTrigger);
+    const leaderInput = screen.getByRole("combobox", { name: /team leader/i });
+    // Type to filter, then open suggestions
+    fireEvent.change(leaderInput, { target: { value: "Player Two" } });
+    fireEvent.keyDown(leaderInput, { key: "ArrowDown" });
     const p2Option = await screen.findByRole("option", { name: "Player Two" });
     fireEvent.click(p2Option);
 
