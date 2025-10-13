@@ -208,7 +208,7 @@ export function YearlyTeamWinners({ year }: Props) {
                     {team.displayNames.join(" • ")}
                   </p>
                   <p className="text-[11px] text-default-400 mt-1">
-                    {team.userIds.length} players • {team.wins} win
+                    {team.wins} win
                     {team.wins !== 1 ? "s" : ""} • {team.podiums} podium
                     {team.podiums !== 1 ? "s" : ""}
                   </p>

@@ -98,7 +98,8 @@ describe("TournamentRegister teammate options (full members only)", () => {
     await screen.findByText(/Register for Full Member Test/i);
 
     // Open the Autocomplete (Team Leader / You) and type to reveal options
-    const combo = screen.getByRole("combobox", { name: /Team Leader/i });
+    // The component label used is 'Team Leader / You' via RegistrationEditor labels prop
+    const combo = screen.getByRole("combobox", { name: /Team Leader \/ You/i });
 
     // Assert full members appear as options
     // Type to filter to 'Captain' and check option exists
