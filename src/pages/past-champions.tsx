@@ -176,11 +176,6 @@ export default function PastChampions({
               </span>
             </div>
           )}
-          {!hasNextPage && !isFetchingNextPage && (
-            <p className="text-default-500 text-center">
-              You've reached the end of the championship records.
-            </p>
-          )}
         </div>
       )}
 
