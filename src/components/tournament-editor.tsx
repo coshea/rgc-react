@@ -57,7 +57,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
   const [completed, setCompleted] = React.useState(
-    getStatus(seed as any) === TournamentStatus.Completed
+    getStatus(seed as any) === TournamentStatus.Completed ||
+      getStatus(seed as any) === TournamentStatus.InProgress
   );
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winnerGroups, setWinnerGroups] = React.useState<
@@ -531,7 +532,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       | undefined;
                     const v = key ?? TournamentStatus.Upcoming;
                     setStatus(v);
-                    setCompleted(v === TournamentStatus.Completed);
+                    // Allow winners to be managed when a tournament is In Progress
+                    // or Completed so editors can add results while the event is running.
+                    setCompleted(
+                      v === TournamentStatus.Completed ||
+                        v === TournamentStatus.InProgress
+                    );
                   }}
                 >
                   <SelectItem
@@ -568,7 +574,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               </div>
             </div>
           </div>
-          {(isEditing || status === TournamentStatus.Completed) && (
+          {(isEditing ||
+            status === TournamentStatus.Completed ||
+            status === TournamentStatus.InProgress) && (
             <div className="pt-4">
               <Divider className="my-4" />
               <div className="grid grid-cols-1 gap-6">
