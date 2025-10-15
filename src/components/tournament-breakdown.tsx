@@ -270,7 +270,7 @@ export function TournamentBreakdown({ year }: Props) {
           const { tournament, winnersCount, rows } = bundle;
           const id = tournament.firestoreId || tournament.title;
           const isOpen = expanded.has(id);
-          // Build podium summary (positions map may contain multiple per position for teams)
+          // Build podium summary: keep teams separate and include all tied groups for first 3 distinct positions
           const podiumGroups: { position: number; players: ResultRow[] }[] = [];
           const groups = (tournament as any).winnerGroups as
             | Array<{
@@ -294,34 +294,54 @@ export function TournamentBreakdown({ year }: Props) {
                       (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
                     )[0],
                   ].filter(Boolean as unknown as <T>(x: T) => x is T);
-            const podiumRows: ResultRow[] = [];
+
+            // Build team-level entries directly from winner places
+            type TeamEntry = {
+              position: number;
+              players: ResultRow[];
+              key: string;
+            };
+            const teamEntries: TeamEntry[] = [];
             primary.forEach((g) => {
-              (g.winners || []).forEach((w) => {
-                (w.competitors || []).forEach((c, idx) => {
-                  podiumRows.push({
-                    id: `${id}-podium-${g.type}-${w.place}-${c.userId}-${idx}`,
+              (g.winners || []).forEach((w, wi) => {
+                const members = (w.competitors || []).map((c, ci) => ({
+                  id: `${id}-podium-${g.type}-w${wi}-p${w.place}-${c.userId}-${ci}`,
+                  position: w.place,
+                  userId: c.userId,
+                  name: c.displayName || c.userId,
+                  prize: w.prizeAmount || 0,
+                  score: w.score,
+                  teamSize: (w.competitors || []).length,
+                }));
+                if (members.length) {
+                  const key = `${g.type}-${w.place}-${members.map((m) => m.userId).join("_")}`;
+                  teamEntries.push({
                     position: w.place,
-                    userId: c.userId,
-                    name: c.displayName || c.userId,
-                    prize: w.prizeAmount || 0,
-                    score: w.score,
-                    teamSize: (w.competitors || []).length,
+                    players: members,
+                    key,
                   });
-                });
+                }
               });
             });
-            podiumRows.sort((a, b) => a.position - b.position);
-            const seenPositions = new Set<number>();
-            podiumRows.forEach((r) => {
-              if (seenPositions.size >= 3) return;
-              if (!seenPositions.has(r.position)) {
-                const group = podiumRows.filter(
-                  (x) => x.position === r.position
-                );
-                podiumGroups.push({ position: r.position, players: group });
-                seenPositions.add(r.position);
+            teamEntries.sort((a, b) => a.position - b.position);
+
+            // Take first 3 distinct positions, include all teams (ties) for those positions
+            const distinctPositions: number[] = [];
+            for (const te of teamEntries) {
+              if (!distinctPositions.includes(te.position)) {
+                distinctPositions.push(te.position);
+                if (distinctPositions.length === 3) break;
               }
-            });
+            }
+            const allowedPositions = new Set(distinctPositions);
+            teamEntries
+              .filter((te) => allowedPositions.has(te.position))
+              .forEach((te) =>
+                podiumGroups.push({
+                  position: te.position,
+                  players: te.players,
+                })
+              );
           } else {
             const seenPositions = new Set<number>();
             rows.forEach((r) => {
@@ -557,10 +577,10 @@ export function TournamentBreakdown({ year }: Props) {
                     id={`results-${id}`}
                     aria-hidden={!isOpen}
                     className={[
-                      "mt-2 overflow-hidden transition-all duration-300 ease-in-out",
+                      "mt-2 transition-all duration-300 ease-in-out",
                       isOpen
-                        ? "max-h-[640px] opacity-100"
-                        : "max-h-0 opacity-0",
+                        ? "max-h-[80vh] opacity-100 overflow-y-auto"
+                        : "max-h-0 opacity-0 overflow-hidden",
                     ].join(" ")}
                   >
                     {isOpen && (
@@ -573,10 +593,22 @@ export function TournamentBreakdown({ year }: Props) {
                         }}
                       >
                         <TableHeader>
-                          <TableColumn key="pos">POS</TableColumn>
+                          <TableColumn key="pos" className="w-12">
+                            POS
+                          </TableColumn>
                           <TableColumn key="player">PLAYER</TableColumn>
-                          <TableColumn key="score">SCORE</TableColumn>
-                          <TableColumn key="winnings">WINNINGS</TableColumn>
+                          <TableColumn
+                            key="score"
+                            className="hidden sm:table-cell"
+                          >
+                            SCORE
+                          </TableColumn>
+                          <TableColumn
+                            key="winnings"
+                            className="hidden sm:table-cell"
+                          >
+                            WINNINGS
+                          </TableColumn>
                         </TableHeader>
                         <TableBody items={rows} emptyContent="No results">
                           {(item: ResultRow) => {
@@ -600,12 +632,20 @@ export function TournamentBreakdown({ year }: Props) {
                                         user={user}
                                       />
                                     )}
-                                    <p className="font-medium text-sm leading-tight">
-                                      {resolvedName}
-                                    </p>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-sm leading-tight break-words">
+                                        {resolvedName}
+                                      </p>
+                                      {/* On small screens, show meta under the name to avoid extra columns */}
+                                      <p className="sm:hidden text-[11px] text-default-500">
+                                        {(item.score || "—") +
+                                          " • " +
+                                          formatPrize(item.prize)}
+                                      </p>
+                                    </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <span
                                     className={
                                       item.score && item.score.startsWith("-")
@@ -616,7 +656,7 @@ export function TournamentBreakdown({ year }: Props) {
                                     {item.score || "—"}
                                   </span>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <span className="font-semibold text-sm">
                                     {formatPrize(item.prize)}
                                   </span>

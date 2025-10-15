@@ -7,7 +7,6 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Tooltip,
   Button,
   Card,
   CardBody,
@@ -17,6 +16,8 @@ import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
+import { sortPlaces } from "@/utils/winners";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -124,99 +125,130 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     setDeletingId(null);
   };
 
-  // New function to render winners
+  // Card winners summary: show top 3 places from the lowest-order winner group, with tie handling
   const renderWinners = (tournament: Tournament) => {
-    if (getStatus(tournament) !== TournamentStatus.Completed) return null;
+    // Only show a summary when there are grouped winners and the event has results
+    const status = getStatus(tournament);
+    if (status !== TournamentStatus.Completed) return null;
 
-    // Prefer grouped winners: choose overall groups first; fallback to any group
     const groups = (tournament as any).winnerGroups as
-      | Array<{
-          type: string;
-          winners?: Array<{
-            place: number;
-            competitors?: Array<{ displayName: string }>;
-            prizeAmount?: number;
-          }>;
-        }>
+      | WinnerGroup[]
       | undefined;
-    if (groups && groups.length > 0) {
-      const overall = groups.filter((g) => g.type === "overall");
-      const target = overall.length > 0 ? overall : groups;
-      for (const g of target) {
-        const first = (g.winners || []).find((w) => w.place === 1);
-        if (first && first.competitors && first.competitors.length > 0) {
-          const names = first.competitors.map((c) => c.displayName).join(", ");
-          const placeLabel = "1st";
-          return (
-            <div className="mt-2">
-              <p className="text-xs text-foreground-500 mb-1">Winner:</p>
-              <div className="flex flex-wrap gap-1">
-                <Tooltip
-                  content={
-                    <div className="px-1 py-2">
-                      <p className="font-medium">{placeLabel} Place</p>
-                      <p>{names}</p>
-                      {typeof first.prizeAmount === "number" && (
-                        <p className="text-xs mt-1">
-                          ${first.prizeAmount} per person
-                        </p>
-                      )}
-                    </div>
-                  }
-                >
-                  <Chip
-                    size="sm"
-                    variant="flat"
-                    color="warning"
-                    className="cursor-help"
-                    startContent={
-                      <Icon icon="lucide:trophy" className="w-3 h-3" />
-                    }
-                  >
-                    {names}
-                  </Chip>
-                </Tooltip>
-              </div>
-            </div>
-          );
-        }
-      }
+
+    if (!groups || groups.length === 0) return null; // skip legacy in summary
+
+    // Pick the winner group with the lowest order that has at least one place
+    const targetGroup = [...groups]
+      .filter((g) => (g.winners || []).length > 0)
+      .sort((a, b) => a.order - b.order)[0];
+    if (!targetGroup) return null;
+
+    const sortedPlaces: WinnerPlace[] = sortPlaces(targetGroup.winners || []);
+    if (sortedPlaces.length === 0) return null;
+
+    // Build tie-aware place groups
+    type PlaceGroup = {
+      place: number;
+      entries: WinnerPlace[];
+    };
+    const placeGroups: PlaceGroup[] = [];
+    for (let i = 0; i < sortedPlaces.length; ) {
+      const p = sortedPlaces[i].place;
+      let j = i;
+      while (j < sortedPlaces.length && sortedPlaces[j].place === p) j++;
+      placeGroups.push({ place: p, entries: sortedPlaces.slice(i, j) });
+      i = j;
     }
 
-    const legacy = tournament.winners || [];
-    if (legacy.length === 0) return null;
-    const firstPlace = legacy.filter((w) => w.place === 1);
-    if (!firstPlace.length) return null;
-    const champion = firstPlace[0];
-    const names = champion.displayNames.join(", ");
-    return (
-      <div className="mt-2">
-        <p className="text-xs text-foreground-500 mb-1">Winner:</p>
-        <div className="flex flex-wrap gap-1">
-          <Tooltip
-            content={
-              <div className="px-1 py-2">
-                <p className="font-medium">1st Place</p>
-                <p>{names}</p>
-                {typeof champion.prizeAmount === "number" && (
-                  <p className="text-xs mt-1">
-                    ${champion.prizeAmount} per person
-                  </p>
-                )}
+    const topGroups = placeGroups.slice(0, 3);
+
+    // Utility to compute initials from a display name
+    const initials = (name: string) => {
+      const parts = name.trim().split(/\s+/);
+      const first = parts[0]?.[0] || "";
+      const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+      return (first + last).toUpperCase();
+    };
+
+    // Render one row for a place with ties. Keep teams together when truncating names.
+    const renderPlaceRow = (g: PlaceGroup, idx: number) => {
+      // Teams (arrays of names) for this place (tie group)
+      const teams: string[][] = g.entries.map((e) =>
+        (e.competitors || []).map((c) => c.displayName || "")
+      );
+
+      // Show up to N names but never cut through a team
+      const MAX_NAMES = 10; // roughly fits 2 full 4-person teams, tweakable
+      const shownNames: string[] = [];
+      let extraCount = 0;
+      for (let t = 0; t < teams.length; t++) {
+        const team = teams[t];
+        if (shownNames.length + team.length <= MAX_NAMES) {
+          shownNames.push(...team);
+        } else {
+          // count remaining competitors (full teams only)
+          extraCount = teams.slice(t).reduce((sum, tm) => sum + tm.length, 0);
+          break;
+        }
+      }
+
+      // First team's initials for quick visual (fallback empty)
+      const firstTeam = teams[0] || [];
+
+      // Representative score/prize from first entry (common in ties)
+      const firstEntry = g.entries[0];
+      const metaTextParts: string[] = [];
+      if (firstEntry?.score) metaTextParts.push(firstEntry.score);
+      if (typeof firstEntry?.prizeAmount === "number")
+        metaTextParts.push(`$${firstEntry.prizeAmount}`);
+      const metaText = metaTextParts.join(" • ");
+
+      return (
+        <div
+          key={`place-${g.place}-${idx}`}
+          className={`rounded-md p-3 ${g.place === 1 ? "bg-warning/10 border border-warning/30" : "bg-content2"}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`w-7 h-7 rounded-md grid place-items-center text-xs font-semibold ${g.place === 1 ? "bg-warning text-default-900" : g.place === 2 ? "bg-default-300 text-default-800" : "bg-violet-500/80 text-white"}`}
+                aria-label={`Place ${g.place}`}
+                title={`Place ${g.place}`}
+              >
+                {g.place}
               </div>
-            }
-          >
-            <Chip
-              size="sm"
-              variant="flat"
-              color="warning"
-              className="cursor-help"
-              startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
-            >
-              {names}
-            </Chip>
-          </Tooltip>
+              <div className="hidden md:flex items-center gap-1">
+                {firstTeam.slice(0, 4).map((n, i) => (
+                  <Chip
+                    key={i}
+                    size="sm"
+                    variant="flat"
+                    className="rounded-full"
+                  >
+                    {initials(n)}
+                  </Chip>
+                ))}
+              </div>
+              <div className="font-medium truncate">
+                {shownNames.join(" • ")}
+              </div>
+            </div>
+            {extraCount > 0 && (
+              <div className="text-foreground-500 text-sm">+{extraCount}</div>
+            )}
+          </div>
+          {metaText && (
+            <div className="pl-10 md:pl-[76px] text-xs text-foreground-500 mt-1">
+              {metaText}
+            </div>
+          )}
         </div>
+      );
+    };
+
+    return (
+      <div className="mt-3 space-y-3">
+        {topGroups.map((g, idx) => renderPlaceRow(g, idx))}
       </div>
     );
   };
