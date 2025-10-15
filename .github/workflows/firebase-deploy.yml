@@ -1,9 +1,9 @@
-name: Deploy to Firebase Hosting
+name: Deploy to Firebase Hosting (legacy/manual)
 
+# Disabled automatic push trigger to avoid duplicate deployments.
+# Use the consolidated `firebase-hosting-merge.yml` for automatic deploys on push to `main`.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch: {}
 
 jobs:
   build_and_deploy:
@@ -20,7 +20,7 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
-      - name: Deploy to Firebase
+      - name: Deploy to Firebase (manual)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
