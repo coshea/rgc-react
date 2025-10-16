@@ -161,8 +161,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
     const metaBits: string[] = [];
     if (firstPlaceEntry.score) metaBits.push("Score: " + firstPlaceEntry.score);
-    if (typeof firstPlaceEntry.prizeAmount === "number")
-      metaBits.push(`$${firstPlaceEntry.prizeAmount}`);
     const meta = metaBits.join(" • ");
 
     return (

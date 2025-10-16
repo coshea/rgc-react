@@ -41,10 +41,19 @@ interface ResultRow {
 
 interface TournamentBundle {
   tournament: any;
-  rows: ResultRow[];
+  rows: ResultRow[]; // legacy per-player rows (kept for internal use)
   winnersCount: number;
   podium: ResultRow[]; // first 3 distinct position entries
   positions: Map<number, ResultRow[]>; // position -> rows (teams/players)
+  teamRows: Array<{
+    id: string;
+    teamKey: string;
+    names: string[];
+    userIds: string[];
+    totalPrize: number;
+    bestPosition?: number;
+    score?: string; // representative score (first available)
+  }>;
 }
 
 export function TournamentBreakdown({ year }: Props) {
@@ -53,7 +62,7 @@ export function TournamentBreakdown({ year }: Props) {
     year,
     enabled: userLoggedIn,
   });
-  const { usersMap, isLoading: usersLoading } = useUsersMap();
+  const { usersMap } = useUsersMap();
   const tournamentBundles: TournamentBundle[] = useMemo(() => {
     return tournaments
       .filter((t) => {
@@ -63,6 +72,24 @@ export function TournamentBreakdown({ year }: Props) {
       .map((t) => {
         const rows: ResultRow[] = [];
         const winnerIds = new Set<string>();
+        // Team aggregation across all groups for full results
+        const teamMap = new Map<
+          string,
+          {
+            names: string[];
+            userIds: string[];
+            totalPrize: number;
+            bestPosition?: number;
+            score?: string;
+          }
+        >();
+        const makeTeamKey = (
+          comps: Array<{ userId: string; displayName: string }>
+        ) => {
+          // Prefer stable by userId; fallback to display names
+          const parts = comps.map((c) => c.userId || c.displayName).sort();
+          return parts.join("_");
+        };
         const groups = (t as any).winnerGroups as
           | Array<{
               type: string;
@@ -78,7 +105,11 @@ export function TournamentBreakdown({ year }: Props) {
           // Prefer 'overall' groups for podium construction; include all for detailed rows
           groups.forEach((g) => {
             (g.winners || []).forEach((w) => {
-              (w.competitors || []).forEach((c, idx) => {
+              const comps = (w.competitors || []).map((c) => ({
+                userId: c.userId,
+                displayName: c.displayName || c.userId,
+              }));
+              comps.forEach((c, idx) => {
                 winnerIds.add(c.userId);
                 rows.push({
                   id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
@@ -87,9 +118,26 @@ export function TournamentBreakdown({ year }: Props) {
                   name: c.displayName || c.userId,
                   prize: w.prizeAmount || 0,
                   score: w.score,
-                  teamSize: (w.competitors || []).length,
+                  teamSize: comps.length,
                 });
               });
+              // Aggregate team totals
+              if (comps.length) {
+                const teamKey = makeTeamKey(comps);
+                const existing = teamMap.get(teamKey);
+                const teamPrize = (w.prizeAmount || 0) * comps.length; // prizeAmount assumed per player share
+                const bestPosition = Math.min(
+                  w.place,
+                  existing?.bestPosition ?? Number.POSITIVE_INFINITY
+                );
+                teamMap.set(teamKey, {
+                  names: existing?.names || comps.map((c) => c.displayName),
+                  userIds: existing?.userIds || comps.map((c) => c.userId),
+                  totalPrize: (existing?.totalPrize || 0) + teamPrize,
+                  bestPosition,
+                  score: existing?.score || w.score,
+                });
+              }
             });
           });
         } else {
@@ -109,6 +157,26 @@ export function TournamentBreakdown({ year }: Props) {
                 teamSize: ids.length,
               });
             });
+            if (ids.length) {
+              const comps = ids.map((uid, i) => ({
+                userId: uid,
+                displayName: names[i] || names[0] || uid,
+              }));
+              const teamKey = makeTeamKey(comps);
+              const existing = teamMap.get(teamKey);
+              const teamPrize = (w.prizeAmount || 0) * comps.length; // assume per-player share
+              const bestPosition = Math.min(
+                w.place,
+                existing?.bestPosition ?? Number.POSITIVE_INFINITY
+              );
+              teamMap.set(teamKey, {
+                names: existing?.names || comps.map((c) => c.displayName),
+                userIds: existing?.userIds || comps.map((c) => c.userId),
+                totalPrize: (existing?.totalPrize || 0) + teamPrize,
+                bestPosition,
+                score: existing?.score || w.score,
+              });
+            }
           });
         }
         rows.sort((a, b) => a.position - b.position);
@@ -126,12 +194,31 @@ export function TournamentBreakdown({ year }: Props) {
           const group = positions.get(pos)!;
           podium.push(group[0]);
         });
+        // Build team rows sorted by total winnings desc (rank), tie-break by best official position then name
+        const teamRows = Array.from(teamMap.entries()).map(([teamKey, v]) => ({
+          id: `${t.firestoreId || t.title}-team-${teamKey}`,
+          teamKey,
+          names: v.names,
+          userIds: v.userIds,
+          totalPrize: v.totalPrize,
+          bestPosition: v.bestPosition,
+          score: v.score,
+        }));
+        teamRows.sort((a, b) => {
+          if (b.totalPrize !== a.totalPrize) return b.totalPrize - a.totalPrize;
+          const ap = a.bestPosition ?? Number.POSITIVE_INFINITY;
+          const bp = b.bestPosition ?? Number.POSITIVE_INFINITY;
+          if (ap !== bp) return ap - bp;
+          return (a.names[0] || "").localeCompare(b.names[0] || "");
+        });
+
         return {
           tournament: t,
           rows,
           winnersCount: winnerIds.size,
           podium,
           positions,
+          teamRows,
         };
       });
   }, [tournaments]);
@@ -593,7 +680,7 @@ export function TournamentBreakdown({ year }: Props) {
                           <TableColumn key="pos" className="w-12">
                             POS
                           </TableColumn>
-                          <TableColumn key="player">PLAYER</TableColumn>
+                          <TableColumn key="player">PLAYER(S)</TableColumn>
                           <TableColumn
                             key="score"
                             className="hidden sm:table-cell"
@@ -607,37 +694,56 @@ export function TournamentBreakdown({ year }: Props) {
                             WINNINGS
                           </TableColumn>
                         </TableHeader>
-                        <TableBody items={rows} emptyContent="No results">
-                          {(item: ResultRow) => {
-                            const user = usersMap.get(item.userId);
-                            const resolvedName =
-                              user?.displayName || user?.email || item.name;
+                        <TableBody
+                          items={bundle.teamRows}
+                          emptyContent="No results"
+                        >
+                          {(team) => {
+                            const rank =
+                              bundle.teamRows.findIndex(
+                                (t) => t.teamKey === (team as any).teamKey
+                              ) + 1;
+                            const names: string[] = (team as any).names;
+                            const userIds: string[] = (team as any).userIds;
+                            const score: string | undefined = (team as any)
+                              .score;
+                            const totalPrize: number = (team as any).totalPrize;
                             return (
-                              <TableRow key={item.id}>
+                              <TableRow key={(team as any).id}>
                                 <TableCell>
-                                  <PlaceIndicator pos={item.position} compact />
+                                  <PlaceIndicator pos={rank} compact />
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
-                                    {usersLoading ? (
-                                      <Skeleton className="hidden h-7 w-7 rounded-full sm:flex" />
-                                    ) : (
-                                      <UserAvatar
-                                        size="sm"
-                                        className="hidden sm:flex"
-                                        name={resolvedName}
-                                        user={user}
-                                      />
-                                    )}
+                                    <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
+                                      {userIds.slice(0, 4).map((uid, i) => {
+                                        const user = usersMap.get(uid);
+                                        const fallback = names[i] || uid;
+                                        return (
+                                          <UserAvatar
+                                            key={uid + i}
+                                            size="sm"
+                                            className="ring-1 ring-background"
+                                            user={user}
+                                            name={user ? undefined : fallback}
+                                          />
+                                        );
+                                      })}
+                                      {userIds.length > 4 && (
+                                        <span className="w-7 h-7 rounded-full bg-default-100 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
+                                          +{userIds.length - 4}
+                                        </span>
+                                      )}
+                                    </div>
                                     <div className="min-w-0">
                                       <p className="font-medium text-sm leading-tight break-words">
-                                        {resolvedName}
+                                        {names.join(" • ")}
                                       </p>
                                       {/* On small screens, show meta under the name to avoid extra columns */}
                                       <p className="sm:hidden text-[11px] text-default-500">
-                                        {(item.score || "—") +
+                                        {(score || "—") +
                                           " • " +
-                                          formatPrize(item.prize)}
+                                          formatPrize(totalPrize)}
                                       </p>
                                     </div>
                                   </div>
@@ -645,17 +751,17 @@ export function TournamentBreakdown({ year }: Props) {
                                 <TableCell className="hidden sm:table-cell">
                                   <span
                                     className={
-                                      item.score && item.score.startsWith("-")
+                                      score && score.startsWith("-")
                                         ? "text-success font-medium"
                                         : ""
                                     }
                                   >
-                                    {item.score || "—"}
+                                    {score || "—"}
                                   </span>
                                 </TableCell>
                                 <TableCell className="hidden sm:table-cell">
                                   <span className="font-semibold text-sm">
-                                    {formatPrize(item.prize)}
+                                    {formatPrize(totalPrize)}
                                   </span>
                                 </TableCell>
                               </TableRow>
