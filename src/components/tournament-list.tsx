@@ -10,6 +10,8 @@ import {
   Button,
   Card,
   CardBody,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
@@ -40,6 +42,34 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 }) => {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
+  const [yearFilter, setYearFilter] = React.useState<number>(() =>
+    new Date().getUTCFullYear()
+  );
+
+  const availableYears = React.useMemo(() => {
+    const years = new Set<number>();
+    for (const t of tournaments) {
+      if (t?.date instanceof Date) {
+        years.add(t.date.getUTCFullYear());
+      } else if (t?.date) {
+        // Fallback in case date is serialized
+        try {
+          const d = new Date(t.date as unknown as string);
+          if (!isNaN(d.getTime())) years.add(d.getUTCFullYear());
+        } catch {}
+      }
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [tournaments]);
+
+  // Ensure selected year defaults to latest available and stays valid when list changes
+  React.useEffect(() => {
+    if (availableYears.length === 0) return;
+    const latest = availableYears[0];
+    if (!availableYears.includes(yearFilter)) {
+      setYearFilter(latest);
+    }
+  }, [availableYears, yearFilter]);
 
   const formatDate = (date: Date): string => {
     // Force UTC timezone so the displayed date matches the stored date
@@ -61,11 +91,23 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }).format(amount);
   };
 
-  // Filter tournaments based on selected status
-  const filteredTournaments = React.useMemo(() => {
-    if (filterStatus === "all") return tournaments;
+  // First filter by year if selected
+  const yearFilteredTournaments = React.useMemo(() => {
+    return tournaments.filter((t) => {
+      const d = t?.date instanceof Date ? t.date : new Date(t?.date as any);
+      return (
+        d instanceof Date &&
+        !isNaN(d.getTime()) &&
+        d.getUTCFullYear() === yearFilter
+      );
+    });
+  }, [tournaments, yearFilter]);
 
-    return tournaments.filter((tournament) => {
+  // Then filter tournaments based on selected status
+  const filteredTournaments = React.useMemo(() => {
+    if (filterStatus === "all") return yearFilteredTournaments;
+
+    return yearFilteredTournaments.filter((tournament) => {
       const status = getStatus(tournament);
       switch (filterStatus) {
         case "completed":
@@ -80,19 +122,19 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           return true;
       }
     });
-  }, [tournaments, filterStatus]);
+  }, [yearFilteredTournaments, filterStatus]);
 
   // Count tournaments for each filter
   const filterCounts = React.useMemo(() => {
     const counts = {
-      all: tournaments.length,
+      all: yearFilteredTournaments.length,
       completed: 0,
       registration: 0,
       scheduled: 0,
       canceled: 0,
     };
 
-    tournaments.forEach((tournament) => {
+    yearFilteredTournaments.forEach((tournament) => {
       const status = getStatus(tournament);
       if (status === TournamentStatus.Canceled) counts.canceled++;
       else if (status === TournamentStatus.Completed) counts.completed++;
@@ -101,7 +143,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     });
 
     return counts;
-  }, [tournaments]);
+  }, [yearFilteredTournaments]);
 
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -318,57 +360,83 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   return (
     <>
-      {/* Filter buttons */}
+      {/* Filters row */}
       <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={filterStatus === "all" ? "solid" : "flat"}
-            color={filterStatus === "all" ? "primary" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("all")}
-          >
-            All ({filterCounts.all})
-          </Button>
-          <Button
-            variant={filterStatus === "registration" ? "solid" : "flat"}
-            color={filterStatus === "registration" ? "warning" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("registration")}
-            startContent={<Icon icon="lucide:user-plus" className="w-4 h-4" />}
-          >
-            Registration Open ({filterCounts.registration})
-          </Button>
-          <Button
-            variant={filterStatus === "scheduled" ? "solid" : "flat"}
-            color={filterStatus === "scheduled" ? "primary" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("scheduled")}
-            startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
-          >
-            Scheduled ({filterCounts.scheduled})
-          </Button>
-          <Button
-            variant={filterStatus === "completed" ? "solid" : "flat"}
-            color={filterStatus === "completed" ? "success" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("completed")}
-            startContent={
-              <Icon icon="lucide:check-circle" className="w-4 h-4" />
-            }
-          >
-            Completed ({filterCounts.completed})
-          </Button>
-          {filterCounts.canceled > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant={filterStatus === "canceled" ? "solid" : "flat"}
-              color={filterStatus === "canceled" ? "danger" : "default"}
+              variant={filterStatus === "all" ? "solid" : "flat"}
+              color={filterStatus === "all" ? "primary" : "default"}
               size="sm"
-              onPress={() => setFilterStatus("canceled")}
-              startContent={<Icon icon="lucide:x-circle" className="w-4 h-4" />}
+              onPress={() => setFilterStatus("all")}
             >
-              Canceled ({filterCounts.canceled})
+              All ({filterCounts.all})
             </Button>
-          )}
+            <Button
+              variant={filterStatus === "registration" ? "solid" : "flat"}
+              color={filterStatus === "registration" ? "warning" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("registration")}
+              startContent={
+                <Icon icon="lucide:user-plus" className="w-4 h-4" />
+              }
+            >
+              Registration Open ({filterCounts.registration})
+            </Button>
+            <Button
+              variant={filterStatus === "scheduled" ? "solid" : "flat"}
+              color={filterStatus === "scheduled" ? "primary" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("scheduled")}
+              startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
+            >
+              Scheduled ({filterCounts.scheduled})
+            </Button>
+            <Button
+              variant={filterStatus === "completed" ? "solid" : "flat"}
+              color={filterStatus === "completed" ? "success" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("completed")}
+              startContent={
+                <Icon icon="lucide:check-circle" className="w-4 h-4" />
+              }
+            >
+              Completed ({filterCounts.completed})
+            </Button>
+            {filterCounts.canceled > 0 && (
+              <Button
+                variant={filterStatus === "canceled" ? "solid" : "flat"}
+                color={filterStatus === "canceled" ? "danger" : "default"}
+                size="sm"
+                onPress={() => setFilterStatus("canceled")}
+                startContent={
+                  <Icon icon="lucide:x-circle" className="w-4 h-4" />
+                }
+              >
+                Canceled ({filterCounts.canceled})
+              </Button>
+            )}
+          </div>
+          <div className="min-w-[8rem]">
+            <Select
+              aria-label="Filter by year"
+              label="Year"
+              size="sm"
+              selectedKeys={availableYears.length ? [String(yearFilter)] : []}
+              onSelectionChange={(keys) => {
+                const val = Array.from(keys)[0];
+                if (val !== undefined) setYearFilter(Number(val));
+              }}
+              className="w-36"
+              isDisabled={availableYears.length === 0}
+            >
+              {availableYears.map((y) => (
+                <SelectItem key={String(y)} textValue={String(y)}>
+                  {y}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
         </div>
       </div>
       {/* Mobile view (card-based layout) */}
