@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Card, CardBody, Button } from "@heroui/react";
+import { Card, CardBody, Button, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
@@ -40,6 +40,24 @@ export function YearlyWinningsStandings({ year }: Props) {
   }, [winnings]);
 
   const topThree = useMemo(() => rows.slice(0, 3), [rows]);
+
+  // Global stats chips derived from per-user breakdowns
+  const stats = useMemo(() => {
+    const tournamentIds = new Set<string>();
+    let entries = 0;
+    let totalPrize = 0;
+    (winnings || []).forEach((w: any) => {
+      (w.breakdown || []).forEach((b: any) => {
+        if (b?.tournamentId) tournamentIds.add(b.tournamentId);
+        entries += 1;
+        totalPrize += Number(b?.amount || 0);
+      });
+    });
+    const withResults = tournamentIds.size;
+    const unique = rows.length; // unique winning players in the year
+    const avgWinners = withResults ? entries / withResults : 0;
+    return { withResults, unique, totalPrize, avgWinners } as const;
+  }, [winnings, rows]);
 
   const [filter, setFilter] = useState("");
   const filtered = useMemo(() => {
@@ -176,7 +194,7 @@ export function YearlyWinningsStandings({ year }: Props) {
         </div>
       )}
 
-      {/* Search */}
+      {/* Search + Stats Chips */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
         <SearchInput
           value={filter}
@@ -186,8 +204,48 @@ export function YearlyWinningsStandings({ year }: Props) {
           className="w-full sm:w-64"
           onClear={() => setFilter("")}
         />
-        <div className="text-[11px] text-default-500">
-          {filtered.length} player{filtered.length === 1 ? "" : "s"}
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {!isLoading && rows.length > 0 && (
+            <>
+              <Chip
+                size="sm"
+                variant="flat"
+                color="primary"
+                startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
+              >
+                {stats.withResults} events
+              </Chip>
+              <Chip
+                size="sm"
+                variant="flat"
+                color="success"
+                startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
+              >
+                {stats.unique} unique winners
+              </Chip>
+              <Chip
+                size="sm"
+                variant="flat"
+                color="warning"
+                startContent={
+                  <Icon icon="lucide:banknote" className="w-3 h-3" />
+                }
+              >
+                {`$${stats.totalPrize.toLocaleString("en-US")}`}
+              </Chip>
+              <Chip
+                size="sm"
+                variant="flat"
+                color="secondary"
+                startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
+              >
+                {stats.avgWinners.toFixed(1)} winners / event
+              </Chip>
+            </>
+          )}
+          <div className="text-[11px] text-default-500 ml-1">
+            {filtered.length} player{filtered.length === 1 ? "" : "s"}
+          </div>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ import {
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
+import { getPlaceMeta } from "@/utils/placeMeta";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
@@ -156,33 +157,29 @@ export function TournamentBreakdown({ year }: Props) {
   }, [tournamentBundles]);
 
   const ordinal = (n: number) => {
-    const s = ["th", "st", "nd", "rd"];
+    const s = ["th", "st", "nd", "rd"]; // basic ordinal suffixes
     const v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  const renderPosition = (pos: number) => {
-    // Custom high-contrast badge (avoid avatar overlap) – using flex box, fixed width
-    const base =
-      "flex items-center justify-center rounded-md text-[11px] font-semibold w-7 h-7 shrink-0 ring-1 ring-black/5 dark:ring-white/10";
-    let style =
-      "bg-default-200 text-default-700 dark:bg-default-100/20 dark:text-default-300";
-    if (pos === 1)
-      style =
-        "bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-amber-950 dark:text-amber-50 shadow-sm";
-    else if (pos === 2)
-      style =
-        "bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-800 dark:from-slate-500 dark:via-slate-400 dark:to-slate-300 dark:text-slate-950";
-    else if (pos === 3)
-      style =
-        "bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 text-purple-50 shadow-sm";
+  const PlaceIndicator: React.FC<{ pos: number; compact?: boolean }> = ({
+    pos,
+    compact = false,
+  }) => {
+    const meta = getPlaceMeta(pos);
     return (
       <span
+        className={
+          "inline-flex items-center gap-1 text-[11px] font-semibold min-w-[40px]" +
+          (compact ? "" : "")
+        }
         aria-label={`${ordinal(pos)} place`}
-        className={`${base} ${style}`}
-        data-rank={pos}
       >
-        {pos}
+        <Icon
+          icon={meta.icon}
+          className={["w-4 h-4", meta.colorClass].join(" ")}
+        />
+        <span className={meta.colorClass}>{ordinal(pos)}</span>
       </span>
     );
   };
@@ -499,7 +496,7 @@ export function TournamentBreakdown({ year }: Props) {
                               : "")
                           }
                         >
-                          {renderPosition(g.position)}
+                          <PlaceIndicator pos={g.position} />
                           <div className="flex -space-x-2 rtl:space-x-reverse">
                             {g.players.slice(0, 4).map((p) => {
                               const user = usersMap.get(p.userId);
@@ -618,7 +615,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <TableRow key={item.id}>
                                 <TableCell>
-                                  {renderPosition(item.position)}
+                                  <PlaceIndicator pos={item.position} compact />
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-3">

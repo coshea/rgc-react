@@ -37,9 +37,8 @@ export function getPlaceMeta(place: number): PlaceMeta {
   // 4th and beyond: award icon with a muted neutral style (distinct from 3rd's bronze)
   return {
     icon: "lucide:award",
-    colorClass: "text-default-400",
-    badgeBg:
-      "bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-default-300",
+    colorClass: "text-blue-400",
+    badgeBg: "bg-blue-100 dark:bg-blue-50/20 text-blue-600 dark:text-blue-300",
   };
 }
 

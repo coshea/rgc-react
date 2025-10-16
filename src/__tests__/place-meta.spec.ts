@@ -30,8 +30,8 @@ describe("getPlaceMeta", () => {
   it("returns neutral award for other placements", () => {
     const meta = getPlaceMeta(7);
     expect(meta.icon).toBe("lucide:award");
-    expect(meta.colorClass).toContain("text-default-400");
-    expect(meta.badgeBg).toMatch(/default/i);
+    expect(meta.colorClass).toContain("text-blue-400");
+    expect(meta.badgeBg).toMatch(/blue/i);
   });
 });
 
