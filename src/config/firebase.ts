@@ -3,6 +3,7 @@ import { getAuth, Auth } from "firebase/auth";
 import {
   getAnalytics,
   isSupported as analyticsIsSupported,
+  type Analytics,
 } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
@@ -30,16 +31,25 @@ import { getFirestore, Firestore } from "firebase/firestore";
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 
-// Initialize Firebase Analytics only when supported (prevents errors in Node/test env)
-let analytics: any = undefined;
-analyticsIsSupported()
-  .then((supported) => {
-    if (supported) {
+// Firebase Analytics is gated behind explicit user consent.
+// We expose a lazy initializer so the app can enable analytics only after opt-in.
+let analytics: Analytics | undefined = undefined;
+
+export async function enableAnalytics(): Promise<Analytics | undefined> {
+  try {
+    const supported = await analyticsIsSupported();
+    if (supported && !analytics) {
       analytics = getAnalytics(app);
     }
-  })
-  .catch(() => {
+  } catch {
     // ignore analytics initialization failures in non-browser environments
-  });
+  }
+  return analytics;
+}
+
+// Getter for current analytics instance (may be undefined if not enabled)
+export function getAnalyticsInstance(): Analytics | undefined {
+  return analytics;
+}
 
 export { auth, db, analytics, storage };

@@ -10,6 +10,7 @@ import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
 import PolicyPage from "@/pages/policies";
+import CookiePolicyPage from "@/pages/cookies";
 import PastChampions from "@/pages/past-champions";
 import ProfilePage from "@/pages/profile";
 import UserProfilePage from "@/pages/user-profile";
@@ -40,6 +41,10 @@ function App() {
           <Route
             element={<PolicyPage />}
             path={siteConfig.pages.policies.link}
+          />
+          <Route
+            element={<CookiePolicyPage />}
+            path={siteConfig.pages.cookies.link}
           />
           <Route
             element={<PastChampions showAllYears={true} />}

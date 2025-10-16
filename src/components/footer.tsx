@@ -71,6 +71,13 @@ export default function SiteFooter() {
             >
               Contact
             </Link>
+            <Link
+              href={siteConfig.pages.cookies.link}
+              color="foreground"
+              className="hover:text-foreground"
+            >
+              Cookies
+            </Link>
           </nav>
 
           {/* Social links removed per request */}
