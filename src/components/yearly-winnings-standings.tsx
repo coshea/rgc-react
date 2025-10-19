@@ -263,7 +263,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                     Player
                   </th>
                   <th className="hidden sm:table-cell text-left px-4 py-2 w-24">
-                    Played
+                    Placed
                   </th>
                   <th className="hidden sm:table-cell text-left px-4 py-2 w-28">
                     Wins
@@ -332,7 +332,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                             toggle(row.userId);
                           }}
                         >
-                          <td className="px-2 sm:px-4 py-2 font-mono w-10 sm:w-16 align-top">
+                          <td className="px-2 sm:px-4 py-2 font-mono w-10 sm:w-16 align-middle">
                             <div className="flex items-center gap-1">
                               <span>{row.rank}</span>
                               <Button
@@ -360,7 +360,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                               </Button>
                             </div>
                           </td>
-                          <td className="px-2 sm:px-4 py-2 font-medium align-top">
+                          <td className="px-2 sm:px-4 py-2 font-medium align-middle">
                             <div className="flex items-center gap-2">
                               {(() => {
                                 const user = usersMap.get(row.userId);
@@ -386,7 +386,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                           <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-default-600">
                             {wins}
                           </td>
-                          <td className="px-2 sm:px-4 py-2 text-right font-semibold tabular-nums align-top">
+                          <td className="px-2 sm:px-4 py-2 text-right font-semibold tabular-nums align-middle">
                             {amountDisplay}
                           </td>
                         </tr>

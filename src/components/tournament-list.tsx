@@ -206,10 +206,10 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     const meta = metaBits.join(" • ");
 
     return (
-      <div className="mt-2 text-xs text-foreground-500">
-        <span className="font-medium text-foreground">Winners:</span>{" "}
-        {names.join(" • ")}
-        {meta ? ` • ${meta}` : ""}
+      <div className="mt-2 text-xs text-foreground-500 flex items-center gap-1">
+        <Icon icon="lucide:trophy" className="text-warning shrink-0" />
+        <span>{names.join(", ")}</span>
+        {meta ? <span> • {meta}</span> : null}
       </div>
     );
   };
