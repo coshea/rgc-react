@@ -155,12 +155,14 @@ describe("TournamentBreakdown (redesigned)", () => {
   it("shows podium grouping with aggregated names for team winners", () => {
     renderComponent();
     // Podium for Winter Classic: position 1 should aggregate Alice • Bob
-    expect(screen.getByText(/Alice • Bob/)).toBeInTheDocument();
-    // Position 2 Cara, Position 3 Dan appear in summary
-    expect(screen.getByText(/Cara/)).toBeInTheDocument();
-    expect(screen.getByText(/Dan/)).toBeInTheDocument();
+    // Note: We now have both mobile and desktop layouts, so there will be multiple matches
+    const aliceBobElements = screen.getAllByText(/Alice • Bob/);
+    expect(aliceBobElements.length).toBeGreaterThan(0);
+    // Position 2 Cara, Position 3 Dan appear in summary (also duplicated for mobile/desktop)
+    expect(screen.getAllByText(/Cara/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Dan/).length).toBeGreaterThan(0);
     // Frostbite Open podium includes Eve (1st), Alice (2nd), Bob (3rd)
-    expect(screen.getByText(/Eve/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Eve/).length).toBeGreaterThan(0);
   });
 
   it("expands and shows full results table with correct per-player prize labels", () => {

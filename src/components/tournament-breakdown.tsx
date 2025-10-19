@@ -586,7 +586,8 @@ export function TournamentBreakdown({ year }: Props) {
                           }
                         >
                           <PlaceIndicator pos={g.position} />
-                          <div className="flex -space-x-2 rtl:space-x-reverse">
+                          {/* Desktop: avatars inline with names */}
+                          <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
                             {g.players.slice(0, 4).map((p) => {
                               const user = usersMap.get(p.userId);
                               const resolvedName =
@@ -602,7 +603,43 @@ export function TournamentBreakdown({ year }: Props) {
                               );
                             })}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          {/* Mobile: stack avatars above names */}
+                          <div className="flex-1 min-w-0 sm:hidden">
+                            <div className="flex justify-center -space-x-2 rtl:space-x-reverse mb-1.5">
+                              {g.players.slice(0, 4).map((p) => {
+                                const user = usersMap.get(p.userId);
+                                const resolvedName =
+                                  user?.displayName || user?.email || p.name;
+                                return (
+                                  <UserAvatar
+                                    key={p.userId}
+                                    size="sm"
+                                    className="ring-1 ring-background"
+                                    name={resolvedName}
+                                    user={user}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <p
+                              className={
+                                "text-sm leading-tight text-center" +
+                                (champion ? " font-semibold" : " font-medium")
+                              }
+                              title={nameList}
+                            >
+                              {nameContent}
+                            </p>
+                            <p
+                              className="text-[11px] text-default-500 text-center"
+                              aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
+                            >
+                              {g.players[0].score || "—"} •{" "}
+                              {formatPrize(perPlayer)}
+                            </p>
+                          </div>
+                          {/* Desktop: names and info */}
+                          <div className="hidden sm:block flex-1 min-w-0">
                             <p
                               className={
                                 "text-sm leading-tight" +
