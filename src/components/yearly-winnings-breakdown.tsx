@@ -93,13 +93,62 @@ export function YearlyWinningsBreakdown({ year }: Props) {
       </div>
       <Card>
         <CardBody className="p-0">
-          <div className="overflow-x-auto max-h-[560px]">
-            <table className="min-w-full text-sm relative">
+          <div className="overflow-x-hidden max-h-[560px]">
+            {/* Mobile: Card-based layout */}
+            <div className="sm:hidden">
+              {isLoading && (
+                <div className="space-y-2 p-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-default-50/50"
+                    >
+                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-4 flex-1 rounded" />
+                      <Skeleton className="h-4 w-16 rounded" />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!isLoading && rows.length === 0 && (
+                <div className="px-4 py-8 text-center text-default-400 text-sm">
+                  No winnings recorded for {year}.
+                </div>
+              )}
+              {!isLoading &&
+                rows.map((row, i) => (
+                  <div
+                    key={row.userId}
+                    className={
+                      "flex items-center gap-3 px-3 py-2 border-b border-default-200/60 dark:border-default-100/10 " +
+                      (i % 2 === 1
+                        ? "bg-default-50/40 dark:bg-default-50/5"
+                        : "")
+                    }
+                  >
+                    <div className="text-xs font-mono text-default-500 w-6 flex-shrink-0">
+                      {row.rank}
+                    </div>
+                    <div className="flex-1 min-w-0 font-medium text-sm">
+                      {row.displayName}
+                    </div>
+                    <div className="text-sm font-semibold tabular-nums flex-shrink-0">
+                      $
+                      {row.total.toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                      })}
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <table className="hidden sm:table min-w-full w-full text-sm relative">
               <thead className="sticky top-0 z-10 bg-content1/95 backdrop-blur supports-[backdrop-filter]:bg-content1/60 text-default-600 text-xs uppercase shadow-sm">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium">Rank</th>
+                  <th className="text-left px-4 py-2 font-medium w-16">Rank</th>
                   <th className="text-left px-4 py-2 font-medium">Player</th>
-                  <th className="text-right px-4 py-2 font-medium">
+                  <th className="text-right px-4 py-2 font-medium w-28">
                     Total ($)
                   </th>
                   <th className="text-left px-4 py-2 font-medium">Breakdown</th>
@@ -129,15 +178,11 @@ export function YearlyWinningsBreakdown({ year }: Props) {
                         " hover:bg-primary-50/60 dark:hover:bg-primary-50/10"
                       }
                     >
-                      <td className="px-4 py-2 font-mono w-16 tabular-nums text-xs text-default-500 group-hover:text-default-700 dark:group-hover:text-default-300">
+                      <td className="px-4 py-2 font-mono tabular-nums text-xs text-default-500 group-hover:text-default-700 dark:group-hover:text-default-300">
                         {row.rank}
                       </td>
-                      <td className="px-4 py-2 font-medium truncate max-w-[240px]">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate" title={row.displayName}>
-                            {row.displayName}
-                          </span>
-                        </div>
+                      <td className="px-4 py-2 font-medium">
+                        {row.displayName}
                       </td>
                       <td className="px-4 py-2 text-right font-semibold tabular-nums">
                         {row.total
@@ -150,9 +195,9 @@ export function YearlyWinningsBreakdown({ year }: Props) {
                       </td>
                       <td className="px-4 py-2 align-top">
                         <div className="flex flex-wrap gap-1">
-                          {row.breakdown.map((b: any) => (
+                          {row.breakdown.map((b: any, idx: number) => (
                             <span
-                              key={b.tournamentId + b.place + b.amount}
+                              key={`${b.tournamentId}-${b.place}-${b.amount}-${idx}`}
                               className={
                                 "text-[10px] px-2 py-1 rounded-md font-medium tracking-tight shadow-sm border border-default-200/40 dark:border-default-100/10 " +
                                 chipColor(b.amount, b.place)

@@ -24,17 +24,17 @@ function PlaceRow({
   const score = place.score ? `Score: ${place.score}` : undefined;
   const meta = getPlaceMeta(place.place);
   return (
-    <div className="flex items-center justify-between rounded-md px-3 py-2 bg-content2">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between rounded-md px-3 py-2 bg-content2">
       <div className="flex items-center gap-2 min-w-0">
         <Icon icon={meta.icon} className={`w-4 h-4 ${meta.colorClass}`} />
         <span
-          className="font-medium truncate"
+          className="font-medium whitespace-normal break-words sm:truncate"
           title={`${ordinal(displayPlace)}: ${names.join(", ")}`}
         >
           {ordinal(displayPlace)}: {names.join(", ")}
         </span>
       </div>
-      <div className="flex items-center gap-3 text-xs text-foreground-500 flex-shrink-0">
+      <div className="flex items-center gap-3 text-xs text-foreground-500">
         {prize && <span>{prize}</span>}
         {score && <span>{score}</span>}
       </div>

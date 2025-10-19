@@ -251,21 +251,24 @@ export function YearlyWinningsStandings({ year }: Props) {
 
       <Card>
         <CardBody className="p-0">
-          <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
-            <table className="min-w-full text-sm">
+          <div className="px-1 sm:px-0 overflow-x-hidden">
+            {/* Fixed table layout on mobile to guarantee all columns fit */}
+            <table className="min-w-full w-full text-sm">
               <thead className="bg-default-100 text-default-600 text-[10px] sm:text-xs uppercase">
                 <tr>
-                  <th className="text-left px-3 sm:px-4 py-2 w-14 sm:w-16">
+                  <th className="text-left px-2 sm:px-4 py-2 w-10 sm:w-16 whitespace-nowrap">
                     Rank
                   </th>
-                  <th className="text-left px-3 sm:px-4 py-2">Player</th>
+                  <th className="text-left px-2 sm:px-4 py-2 whitespace-nowrap">
+                    Player
+                  </th>
                   <th className="hidden sm:table-cell text-left px-4 py-2 w-24">
                     Played
                   </th>
                   <th className="hidden sm:table-cell text-left px-4 py-2 w-28">
                     Wins
                   </th>
-                  <th className="text-right px-3 sm:px-4 py-2 w-28 sm:w-32">
+                  <th className="text-right px-2 sm:px-4 py-2 w-20 sm:w-28 whitespace-nowrap">
                     Winnings
                   </th>
                 </tr>
@@ -329,7 +332,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                             toggle(row.userId);
                           }}
                         >
-                          <td className="px-3 sm:px-4 py-2 font-mono w-14 sm:w-16 align-top">
+                          <td className="px-2 sm:px-4 py-2 font-mono w-10 sm:w-16 align-top">
                             <div className="flex items-center gap-1">
                               <span>{row.rank}</span>
                               <Button
@@ -357,8 +360,8 @@ export function YearlyWinningsStandings({ year }: Props) {
                               </Button>
                             </div>
                           </td>
-                          <td className="px-3 sm:px-4 py-2 font-medium truncate max-w-[200px] sm:max-w-[240px] align-top">
-                            <div className="flex items-center gap-2 min-w-0">
+                          <td className="px-2 sm:px-4 py-2 font-medium align-top">
+                            <div className="flex items-center gap-2">
                               {(() => {
                                 const user = usersMap.get(row.userId);
                                 return (
@@ -370,13 +373,9 @@ export function YearlyWinningsStandings({ year }: Props) {
                                   />
                                 );
                               })()}
-                              <div className="flex flex-col min-w-0">
-                                <span className="truncate max-w-[140px] sm:max-w-[200px] leading-tight">
+                              <div className="flex-1 overflow-hidden">
+                                <span className="block text-sm">
                                   {row.displayName}
-                                </span>
-                                <span className="sm:hidden text-[10px] text-default-500 mt-0.5">
-                                  {wins} win{wins === 1 ? "" : "s"} • {played}{" "}
-                                  played
                                 </span>
                               </div>
                             </div>
@@ -387,7 +386,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                           <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-default-600">
                             {wins}
                           </td>
-                          <td className="px-3 sm:px-4 py-2 text-right font-semibold tabular-nums align-top">
+                          <td className="px-2 sm:px-4 py-2 text-right font-semibold tabular-nums align-top">
                             {amountDisplay}
                           </td>
                         </tr>
@@ -408,8 +407,26 @@ export function YearlyWinningsStandings({ year }: Props) {
                                       <div className="text-[11px] uppercase tracking-wide text-default-500 font-medium">
                                         Earnings Breakdown
                                       </div>
+                                      {/* Mobile-focused summary chips for counts */}
+                                      <div className="flex flex-wrap gap-2">
+                                        <Chip
+                                          size="sm"
+                                          variant="flat"
+                                          color="primary"
+                                        >
+                                          {played} placement
+                                          {played === 1 ? "" : "s"}
+                                        </Chip>
+                                        <Chip
+                                          size="sm"
+                                          variant="flat"
+                                          color="success"
+                                        >
+                                          {wins} win{wins === 1 ? "" : "s"}
+                                        </Chip>
+                                      </div>
                                       <ul className="space-y-1.5 overflow-x-hidden">
-                                        {row.breakdown.map((b) => {
+                                        {row.breakdown.map((b, i) => {
                                           const dateLabel = new Date(
                                             b.date
                                           ).toLocaleDateString("en-US", {
@@ -419,11 +436,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                           // (badge styling now handled inline with icon-based trophy/medal styles)
                                           return (
                                             <li
-                                              key={
-                                                b.tournamentId +
-                                                b.place +
-                                                b.amount
-                                              }
+                                              key={`${b.tournamentId}-${b.place}-${b.amount}-${i}`}
                                               className="group relative overflow-hidden rounded-md border border-default-200/60 dark:border-default-100/10 bg-content2/70 dark:bg-content2/20 hover:bg-content2/90 dark:hover:bg-content2/30 transition-colors"
                                             >
                                               <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/10 group-hover:from-primary group-hover:via-primary/70 group-hover:to-primary/30 transition-colors" />

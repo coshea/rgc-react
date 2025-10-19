@@ -1,6 +1,7 @@
-import { Button, Input, Select, SelectItem, Switch } from "@heroui/react";
+import { Button, Input, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
+import { UserSelect } from "@/components/UserSelect";
 
 interface PlayerEntry {
   name: string;
@@ -38,6 +39,21 @@ export function PlayerEntrySection({
   onUpdate,
   onUpdateHistorical,
 }: PlayerEntrySectionProps) {
+  function singularizeTitle(raw: string) {
+    const t = raw.trim();
+    const lower = t.toLowerCase();
+    if (lower === "runners-up")
+      return { singular: "Runner-up", singularLower: "runner-up" };
+    if (lower === "winners")
+      return { singular: "Winner", singularLower: "winner" };
+    if (t.endsWith("s")) {
+      const s = t.slice(0, -1);
+      return { singular: s, singularLower: s.toLowerCase() };
+    }
+    return { singular: t, singularLower: t.toLowerCase() };
+  }
+
+  const { singular, singularLower } = singularizeTitle(title);
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -61,7 +77,7 @@ export function PlayerEntrySection({
         >
           <div className="flex items-center justify-between">
             <h4 className="text-medium font-medium">
-              {title.slice(0, -1)} {index + 1}
+              {singular} {index + 1}
             </h4>
             <div className="flex items-center gap-2">
               <span className="text-small text-default-500">Historical</span>
@@ -85,33 +101,19 @@ export function PlayerEntrySection({
             )}
 
             {!entry.isHistorical && (
-              <Select
-                label={`Select ${title.slice(0, -1)}`}
-                placeholder={`Select a ${title.toLowerCase().slice(0, -1)}`}
-                selectedKeys={entry.id ? [entry.id] : []}
-                onSelectionChange={(keys) => {
-                  const userId = Array.from(keys)[0] as string;
-                  onUpdate(index, "id", userId || "");
-                }}
-                isLoading={usersLoading}
+              <UserSelect
+                users={users || []}
+                label={`Select ${singular}`}
+                placeholder={`Search ${singularLower}s`}
+                value={entry.id}
+                onChange={(val) => onUpdate(index, "id", (val as string) || "")}
+                multiple={false}
+                disabled={usersLoading}
+                required={required}
+                invalid={!!errors?.ids}
+                errorMessage={errors?.ids}
                 className="flex-1"
-                aria-label={`Select ${title.toLowerCase().slice(0, -1)} ${index + 1}`}
-                disallowEmptySelection={false}
-              >
-                {users?.map((user) => (
-                  <SelectItem
-                    key={user.id}
-                    textValue={
-                      user.displayName ||
-                      user.firstName ||
-                      user.email ||
-                      user.id
-                    }
-                  >
-                    {user.displayName || user.firstName || user.email}
-                  </SelectItem>
-                )) || []}
-              </Select>
+              />
             )}
 
             {/* Only show remove button if there are multiple entries OR if not required */}

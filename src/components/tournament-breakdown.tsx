@@ -575,7 +575,9 @@ export function TournamentBreakdown({ year }: Props) {
                       const champion = g.position === 1;
                       return (
                         <div
-                          key={g.position}
+                          key={`${g.position}-${(g.players || [])
+                            .map((p) => p.userId || p.name)
+                            .join("_")}`}
                           className={
                             "flex items-center gap-3 p-2 rounded-md bg-default-100/50 dark:bg-default-50/5" +
                             (champion

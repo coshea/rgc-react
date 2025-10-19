@@ -64,7 +64,7 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
           <div
             key={idx}
             className={[
-              "flex items-center justify-between rounded-md",
+              "flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between rounded-md",
               compact ? "px-2 py-1.5 text-[13px]" : "px-3 py-2",
               "bg-content2",
             ].join(" ")}
@@ -74,7 +74,10 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
                 icon={iconMeta.icon}
                 className={`w-4 h-4 ${iconMeta.colorClass}`}
               />
-              <span className="font-medium truncate" title={label}>
+              <span
+                className="font-medium whitespace-normal break-words sm:truncate"
+                title={label}
+              >
                 {label}
               </span>
               {showAvatars && (
@@ -100,7 +103,7 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3 text-xs text-foreground-500 flex-shrink-0">
+            <div className="flex items-center gap-3 text-xs text-foreground-500">
               {prize && <span>{prize}</span>}
               {score && <span>{score}</span>}
             </div>

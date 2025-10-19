@@ -16,6 +16,7 @@ interface TeamAggregate {
   displayNames: string[]; // best-effort composite names
   tournaments: {
     tournamentId: string;
+    entryKey: string; // unique key per team entry per tournament/group/place
     title: string;
     date: Date;
     place: number;
@@ -49,8 +50,16 @@ export function YearlyTeamWinners({ year }: Props) {
             const userIds = sorted.map((c) => c.userId);
             const key = userIds.join("|");
             const existing = map.get(key);
+            const groupKey = g?.id || g?.label || String(g?.order ?? "group");
+            const entryKey = [
+              (t as any).firestoreId || "unknown",
+              groupKey,
+              String(w.place ?? ""),
+              userIds.join(","),
+            ].join("|");
             const entry = {
               tournamentId: (t as any).firestoreId || "unknown",
+              entryKey,
               title: t.title,
               date: t.date instanceof Date ? t.date : new Date(t.date),
               place: w.place as number,
@@ -83,8 +92,15 @@ export function YearlyTeamWinners({ year }: Props) {
           const sorted = [...w.userIds].sort();
           const key = sorted.join("|");
           const existing = map.get(key);
+          const entryKey = [
+            (t as any).firestoreId || "unknown",
+            "legacy",
+            String(w.place ?? ""),
+            sorted.join(","),
+          ].join("|");
           const entry = {
             tournamentId: (t as any).firestoreId || "unknown",
+            entryKey,
             title: t.title,
             date: t.date instanceof Date ? t.date : new Date(t.date),
             place: w.place,
@@ -119,12 +135,12 @@ export function YearlyTeamWinners({ year }: Props) {
     arr.forEach((team) => {
       team.tournaments.sort((a, b) => a.date.getTime() - b.date.getTime());
     });
-    // sort by wins -> podiums -> totalPerPlayer -> team size (desc)
+    // sort by most amount won per person (desc) -> wins -> podiums -> team size (desc)
     arr.sort((a, b) => {
-      if (b.wins !== a.wins) return b.wins - a.wins;
-      if (b.podiums !== a.podiums) return b.podiums - a.podiums;
       if (b.totalPerPlayer !== a.totalPerPlayer)
         return b.totalPerPlayer - a.totalPerPlayer;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.podiums !== a.podiums) return b.podiums - a.podiums;
       return b.userIds.length - a.userIds.length;
     });
     return arr;
@@ -232,7 +248,7 @@ export function YearlyTeamWinners({ year }: Props) {
                           : "default";
                   return (
                     <Tooltip
-                      key={t.tournamentId + t.place}
+                      key={t.entryKey}
                       content={`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
                     >
                       <Chip
