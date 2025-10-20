@@ -604,7 +604,7 @@ export function TournamentBreakdown({ year }: Props) {
                             })}
                           </div>
                           {/* Mobile: stack avatars above names */}
-                          <div className="flex-1 min-w-0 sm:hidden">
+                          <div className="flex-1 sm:hidden">
                             <div className="flex justify-center -space-x-2 rtl:space-x-reverse mb-1.5">
                               {g.players.slice(0, 4).map((p) => {
                                 const user = usersMap.get(p.userId);
@@ -623,7 +623,7 @@ export function TournamentBreakdown({ year }: Props) {
                             </div>
                             <p
                               className={
-                                "text-sm leading-tight text-center" +
+                                "text-sm leading-snug text-center break-words" +
                                 (champion ? " font-semibold" : " font-medium")
                               }
                               title={nameList}
@@ -639,10 +639,10 @@ export function TournamentBreakdown({ year }: Props) {
                             </p>
                           </div>
                           {/* Desktop: names and info */}
-                          <div className="hidden sm:block flex-1 min-w-0">
+                          <div className="hidden sm:block flex-1">
                             <p
                               className={
-                                "text-sm leading-tight" +
+                                "text-sm leading-snug break-words" +
                                 (champion ? " font-semibold" : " font-medium")
                               }
                               title={nameList}
