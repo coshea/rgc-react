@@ -4,7 +4,12 @@
  * The legacy flat Winner below remains exported temporarily for existing UI usage.
  */
 
-export type WinnerGroupType = "overall" | "day" | "flight" | "custom";
+export type WinnerGroupType =
+  | "overall"
+  | "day"
+  | "flight"
+  | "closestToPin"
+  | "custom";
 
 export interface Competitor {
   userId: string;
@@ -23,10 +28,11 @@ export interface WinnerPlace {
 
 export interface WinnerGroup {
   id: string; // stable id for referencing and sorting
-  label: string; // e.g. "Day 1", "Day 2", "Overall", "Skins"
+  label: string; // e.g. "Day 1", "Day 2", "Overall", "Skins", "Closest to Pin - Hole 3"
   type: WinnerGroupType;
   order: number; // display order among groups
   dayIndex?: number; // only when type === 'day'
+  holeNumber?: number; // only when type === 'closestToPin' (3, 5, 12, or 17)
   winners: WinnerPlace[]; // places within this group
 }
 

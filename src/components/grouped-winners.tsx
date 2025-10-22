@@ -12,9 +12,11 @@ function ordinal(n: number) {
 function PlaceRow({
   place,
   displayPlace,
+  groupType,
 }: {
   place: WinnerPlace;
   displayPlace: number;
+  groupType: string;
 }) {
   const names = (place.competitors || []).map((c) => c.displayName);
   const prize =
@@ -22,16 +24,23 @@ function PlaceRow({
       ? `$${place.prizeAmount.toLocaleString()} each`
       : undefined;
   const score = place.score ? `Score: ${place.score}` : undefined;
-  const meta = getPlaceMeta(place.place);
+
+  // For closest to pin, show hole number instead of place
+  const isClosestToPin = groupType === "closestToPin";
+  const label = isClosestToPin ? `Hole ${place.place}` : ordinal(displayPlace);
+  const meta = isClosestToPin
+    ? { icon: "lucide:target", colorClass: "text-primary" }
+    : getPlaceMeta(place.place);
+
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between rounded-md px-3 py-2 bg-content2">
       <div className="flex items-center gap-2 min-w-0">
         <Icon icon={meta.icon} className={`w-4 h-4 ${meta.colorClass}`} />
         <span
           className="font-medium whitespace-normal break-words sm:truncate"
-          title={`${ordinal(displayPlace)}: ${names.join(", ")}`}
+          title={`${label}: ${names.join(", ")}`}
         >
-          {ordinal(displayPlace)}: {names.join(", ")}
+          {label}: {names.join(", ")}
         </span>
       </div>
       <div className="flex items-center gap-3 text-xs text-foreground-500">
@@ -48,33 +57,54 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
     return (
       <p className="text-sm text-foreground-500">No winner data available.</p>
     );
+
+  const getGroupIcon = (group: WinnerGroup) => {
+    switch (group.type) {
+      case "closestToPin":
+        return { icon: "lucide:target", colorClass: "text-primary" };
+      case "day":
+        return { icon: "lucide:calendar", colorClass: "text-warning" };
+      case "overall":
+        return { icon: "lucide:trophy", colorClass: "text-amber-500" };
+      default:
+        return { icon: "lucide:award", colorClass: "text-default-400" };
+    }
+  };
+
   return (
     <div className="space-y-5">
-      {sorted.map((g) => (
-        <div key={g.id} className="space-y-2">
-          <h4 className="text-base font-semibold flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-default-400" />
-            {g.label}
-          </h4>
-          {g.winners?.length ? (
-            <div className="space-y-2">
-              {(() => {
-                const sorted = sortPlaces(g.winners);
-                const display = computeDisplayPlaces(sorted);
-                return sorted.map((p, idx) => (
-                  <PlaceRow
-                    key={p.id || `${p.place}-${idx}`}
-                    place={p}
-                    displayPlace={display[idx].displayPlace}
-                  />
-                ));
-              })()}
-            </div>
-          ) : (
-            <div className="text-sm text-foreground-500">No places yet.</div>
-          )}
-        </div>
-      ))}
+      {sorted.map((g) => {
+        const groupIcon = getGroupIcon(g);
+        return (
+          <div key={g.id} className="space-y-2">
+            <h4 className="text-base font-semibold flex items-center gap-2">
+              <Icon
+                icon={groupIcon.icon}
+                className={`w-4 h-4 ${groupIcon.colorClass}`}
+              />
+              {g.label}
+            </h4>
+            {g.winners?.length ? (
+              <div className="space-y-2">
+                {(() => {
+                  const sorted = sortPlaces(g.winners);
+                  const display = computeDisplayPlaces(sorted);
+                  return sorted.map((p, idx) => (
+                    <PlaceRow
+                      key={p.id || `${p.place}-${idx}`}
+                      place={p}
+                      displayPlace={display[idx].displayPlace}
+                      groupType={g.type}
+                    />
+                  ));
+                })()}
+              </div>
+            ) : (
+              <div className="text-sm text-foreground-500">No places yet.</div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

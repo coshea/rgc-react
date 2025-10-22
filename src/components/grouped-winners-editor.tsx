@@ -43,8 +43,11 @@ const GROUP_TYPE_OPTIONS: WinnerGroupType[] = [
   "overall",
   "day",
   "flight",
+  "closestToPin",
   "custom",
 ];
+
+const CLOSEST_TO_PIN_HOLES = [3, 5, 12, 17];
 
 export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   groups,
@@ -112,18 +115,34 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const addGroup = (type: WinnerGroupType = "overall") => {
     const id = crypto.randomUUID();
     const order = groups.length;
-    const label =
-      type === "overall"
-        ? "Overall"
-        : type === "day"
-          ? `Day ${order + 1}`
-          : "New Group";
+    let label = "";
+    let winners: WinnerPlace[] = [];
+
+    if (type === "overall") {
+      label = "Overall";
+    } else if (type === "day") {
+      label = `Day ${order + 1}`;
+    } else if (type === "closestToPin") {
+      label = "Closest to Pin";
+      // Pre-populate with entries for each hole (3, 5, 12, 17)
+      // Use hole number as the "place" field for identification
+      winners = CLOSEST_TO_PIN_HOLES.map((hole) => ({
+        id: crypto.randomUUID(),
+        place: hole, // Use hole number instead of traditional place (1st, 2nd, etc.)
+        competitors: [],
+        prizeAmount: 0,
+        score: undefined,
+      }));
+    } else {
+      label = "New Group";
+    }
+
     const newGroup: WinnerGroup = {
       id,
       label,
       type,
       order,
-      winners: [],
+      winners,
     };
     onChange([...groups, newGroup]);
   };
@@ -255,6 +274,13 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
           <Button size="sm" variant="flat" onPress={() => addGroup("day")}>
             Add Day
           </Button>
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => addGroup("closestToPin")}
+          >
+            Add Closest to Pin
+          </Button>
           <Button size="sm" variant="flat" onPress={() => addGroup("custom")}>
             Add Custom
           </Button>
@@ -359,15 +385,19 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                 </div>
 
                 <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-                  <h4 className="font-medium">Places</h4>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    variant="flat"
-                    onPress={() => addPlace(g.id)}
-                  >
-                    Add Place
-                  </Button>
+                  <h4 className="font-medium">
+                    {g.type === "closestToPin" ? "Holes" : "Places"}
+                  </h4>
+                  {g.type !== "closestToPin" && (
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      onPress={() => addPlace(g.id)}
+                    >
+                      Add Place
+                    </Button>
+                  )}
                 </div>
 
                 {g.winners.length === 0 ? (
@@ -401,24 +431,38 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                             <div className="flex items-center gap-2">
                               <Icon
                                 icon={
-                                  w.place === 1
-                                    ? "lucide:trophy"
-                                    : "lucide:medal"
+                                  g.type === "closestToPin"
+                                    ? "lucide:target"
+                                    : w.place === 1
+                                      ? "lucide:trophy"
+                                      : "lucide:medal"
                                 }
-                                className={`text-xl ${w.place === 1 ? "text-warning" : "text-default-400"}`}
+                                className={`text-xl ${
+                                  g.type === "closestToPin"
+                                    ? "text-primary"
+                                    : w.place === 1
+                                      ? "text-warning"
+                                      : "text-default-400"
+                                }`}
                               />
                               <span className="font-medium">
-                                Place {display[index].displayPlace}
+                                {g.type === "closestToPin"
+                                  ? `Hole ${w.place}`
+                                  : `Place ${display[index].displayPlace}`}
                               </span>
                             </div>
                             <div className="ml-auto flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                onPress={() => tiePlace(g.id, w.id || w.place)}
-                              >
-                                Tie
-                              </Button>
+                              {g.type !== "closestToPin" && (
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  onPress={() =>
+                                    tiePlace(g.id, w.id || w.place)
+                                  }
+                                >
+                                  Tie
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 isIconOnly
