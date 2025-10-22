@@ -103,23 +103,15 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   const handleSaveTournament = async (tournament: Tournament) => {
     setIsLoading(true);
     try {
+      // Don't manually update state - let the real-time listener handle it
+      // This prevents duplicates when creating or updating tournaments
       if (editingTournament) {
-        setTournaments((prev) =>
-          prev.map((t) =>
-            t.firestoreId &&
-            tournament.firestoreId &&
-            t.firestoreId === tournament.firestoreId
-              ? tournament
-              : t
-          )
-        );
         addToast({
           title: "Tournament Updated",
           description: `${tournament.title} has been successfully updated.`,
           color: "success",
         });
       } else {
-        setTournaments((prev) => [...prev, tournament]);
         addToast({
           title: "Tournament Created",
           description: `${tournament.title} has been successfully created.`,
@@ -151,16 +143,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setIsLoading(true);
     try {
       if (typeof id === "string") {
-        try {
-          const { deleteTournament } = await import("@/api/tournaments");
-          await deleteTournament(id);
-        } catch (err) {
-          console.warn(
-            "Failed to delete Firestore tournament document, continuing to remove locally",
-            err
-          );
-        }
-        setTournaments((prev) => prev.filter((t) => t.firestoreId !== id));
+        const { deleteTournament } = await import("@/api/tournaments");
+        await deleteTournament(id);
+        // Don't manually update state - let the real-time listener handle it
       }
       addToast({
         title: "Tournament Deleted",

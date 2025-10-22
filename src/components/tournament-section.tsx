@@ -1,5 +1,7 @@
 import { TournamentCard } from "./tournament-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { Link } from "@heroui/react";
+import { useState, useEffect } from "react";
 
 /*
  * Tournament section on the home page displaying a 
@@ -10,6 +12,38 @@ export function TournamentSection() {
   const { tournaments, isLoading: loading } = useYearlyTournaments({
     year: currentYear,
   });
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // For mobile: show most recent past tournament + next 2 upcoming
+  const getDisplayTournaments = () => {
+    if (!isMobile) return tournaments;
+
+    const now = new Date();
+    const past = tournaments.filter((t) => t.date < now);
+    const upcoming = tournaments.filter((t) => t.date >= now);
+
+    // Get most recent past tournament
+    const recentPast = past.length > 0 ? [past[past.length - 1]] : [];
+    // Get next 2 upcoming tournaments
+    const nextTwo = upcoming.slice(0, 2);
+
+    return [...recentPast, ...nextTwo];
+  };
+
+  const displayTournaments = getDisplayTournaments();
+  const showViewAllLink =
+    isMobile && tournaments.length > displayTournaments.length;
 
   return (
     <section className="py-20 bg-background" id="tournaments">
@@ -54,7 +88,7 @@ export function TournamentSection() {
               </div>
             </div>
           ) : (
-            tournaments.map((tournament) => (
+            displayTournaments.map((tournament) => (
               <TournamentCard
                 key={tournament.firestoreId || tournament.title}
                 tournament={tournament}
@@ -62,6 +96,13 @@ export function TournamentSection() {
             ))
           )}
         </div>
+        {showViewAllLink && (
+          <div className="text-center mt-8">
+            <Link href="/tournaments" color="success" className="text-lg">
+              View All {currentYear} Tournaments
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
