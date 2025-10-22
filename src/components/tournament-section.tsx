@@ -1,68 +1,23 @@
-import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
 import { TournamentCard } from "./tournament-card";
-import { db } from "@/config/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import React from "react";
+import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 
 /*
  * Tournament section on the home page displaying a 
 list of tournaments in card view
  */
 export function TournamentSection() {
-  const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const fetchTournaments = async () => {
-      setLoading(true);
-      try {
-        const colRef = collection(db, "tournaments");
-        const q = query(colRef, orderBy("date", "asc"));
-        const snap = await getDocs(q);
-        const items: Tournament[] = snap.docs.map((d) => {
-          const data: any = d.data();
-          const dateField =
-            data.date && typeof data.date.toDate === "function"
-              ? data.date.toDate()
-              : data.date
-                ? new Date(data.date)
-                : new Date();
-
-          const status: TournamentStatus = getStatus({
-            status: data.status as TournamentStatus | undefined,
-          });
-          return {
-            firestoreId: d.id,
-            title: data.title,
-            date: dateField,
-            description: data.description,
-            detailsMarkdown: data.detailsMarkdown || data.details || "",
-            players: data.players,
-            status,
-            icon: data.icon,
-            href: data.href,
-            prizePool: data.prizePool || 0,
-            winners: data.winners || [],
-            winnerGroups: data.winnerGroups || [],
-          } as Tournament;
-        });
-        setTournaments(items);
-      } catch (err) {
-        console.error("Failed to load tournaments", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTournaments();
-  }, []);
+  const currentYear = new Date().getFullYear();
+  const { tournaments, isLoading: loading } = useYearlyTournaments({
+    year: currentYear,
+  });
 
   return (
     <section className="py-20 bg-background" id="tournaments">
       <div className="container mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">2025 Featured Tournaments</h2>
+          <h2 className="text-3xl font-bold mb-4">
+            {currentYear} Featured Tournaments
+          </h2>
           <p className="text-default-600 max-w-2xl mx-auto">
             Click on a tournament to view details and register
           </p>

@@ -20,7 +20,6 @@ export default function PastChampions({
 }: PastChampionsProps) {
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
-  const currentYear = new Date().getFullYear();
 
   const {
     championships,
@@ -32,9 +31,20 @@ export default function PastChampions({
     fetchNextPage,
     refetch,
   } = useInfiniteChampionships({
-    year: showAllYears ? undefined : currentYear - 1,
+    year: showAllYears ? undefined : undefined, // Fetch all to find latest year
     pageSize: 20,
   });
+
+  // Find the latest year with championship data
+  const latestYear =
+    championships.length > 0
+      ? Math.max(...championships.map((c) => c.year))
+      : new Date().getFullYear() - 1;
+
+  // Filter to show only the latest year's championships when not showing all years
+  const displayChampionships = showAllYears
+    ? championships
+    : championships.filter((c) => c.year === latestYear);
 
   const { targetRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
@@ -79,13 +89,13 @@ export default function PastChampions({
   // Apply simple client-side filter: match against winner or runner-up names
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredChampionships = normalizedFilter
-    ? championships.filter((c) => {
+    ? displayChampionships.filter((c) => {
         const haystack = [...(c.winnerNames || []), ...(c.runnerUpNames || [])]
           .join(" ")
           .toLowerCase();
         return haystack.includes(normalizedFilter);
       })
-    : championships;
+    : displayChampionships;
 
   if (isLoading) {
     return (
@@ -147,12 +157,14 @@ export default function PastChampions({
         )}
       </div>
 
-      <DirectorySearchBar
-        filter={filter}
-        onFilterChange={setFilter}
-        count={filteredChampionships.length}
-        total={championships.length}
-      />
+      {showAllYears && (
+        <DirectorySearchBar
+          filter={filter}
+          onFilterChange={setFilter}
+          count={filteredChampionships.length}
+          total={displayChampionships.length}
+        />
+      )}
 
       <ChampionshipsList
         championships={filteredChampionships}
@@ -161,12 +173,12 @@ export default function PastChampions({
         emptyMessage={
           showAllYears
             ? "No championship records found"
-            : `No championships found for ${currentYear - 1}`
+            : `No championships found for ${latestYear}`
         }
       />
 
       {/* Infinite scroll trigger and loading indicator */}
-      {championships.length > 0 && (
+      {displayChampionships.length > 0 && (
         <div ref={targetRef} className="flex justify-center py-8">
           {isFetchingNextPage && (
             <div className="flex items-center gap-2">
