@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Card, CardBody, Skeleton, Chip, Tooltip } from "@heroui/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
-import type { Winner } from "@/types/winner";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
 
@@ -84,49 +83,6 @@ export function YearlyTeamWinners({ year }: Props) {
               });
             }
           });
-        });
-      } else {
-        // Legacy winners fallback
-        (t.winners || []).forEach((w: Winner) => {
-          if (!w || !w.userIds || w.userIds.length <= 1) return; // only teams (size > 1)
-          const sorted = [...w.userIds].sort();
-          const key = sorted.join("|");
-          const existing = map.get(key);
-          const entryKey = [
-            (t as any).firestoreId || "unknown",
-            "legacy",
-            String(w.place ?? ""),
-            sorted.join(","),
-          ].join("|");
-          const entry = {
-            tournamentId: (t as any).firestoreId || "unknown",
-            entryKey,
-            title: t.title,
-            date: t.date instanceof Date ? t.date : new Date(t.date),
-            place: w.place,
-            prizePerPlayer: w.prizeAmount || 0,
-            score: w.score,
-          };
-          if (existing) {
-            existing.tournaments.push(entry);
-            if (w.place === 1) existing.wins += 1;
-            if (w.place <= 3) existing.podiums += 1;
-            existing.totalPerPlayer += w.prizeAmount || 0;
-          } else {
-            const names =
-              w.displayNames && w.displayNames.length === sorted.length
-                ? [...w.displayNames]
-                : sorted;
-            map.set(key, {
-              key,
-              userIds: sorted,
-              displayNames: names,
-              tournaments: [entry],
-              wins: w.place === 1 ? 1 : 0,
-              podiums: w.place <= 3 ? 1 : 0,
-              totalPerPlayer: w.prizeAmount || 0,
-            });
-          }
         });
       }
     });

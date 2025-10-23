@@ -3,7 +3,6 @@ import { collection, query, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { fetchUserChampionships } from "@/api/championships";
 import type { Tournament } from "@/types/tournament";
-import type { Winner } from "@/types/winner";
 
 export interface UserTournamentWin {
   id: string;
@@ -148,31 +147,6 @@ export function useUserTournamentWins(userId: string | undefined) {
           });
           return; // prefer groups, skip legacy
         }
-
-        if (!tournament.winners || !Array.isArray(tournament.winners)) return;
-
-        tournament.winners.forEach((winner: Winner, winnerIdx) => {
-          if (!winner || !winner.userIds) return;
-
-          winner.userIds.forEach((uid, idx) => {
-            if (uid === userId) {
-              const prize = winner.prizeAmount || 0;
-              const position = winner.place || 1;
-
-              userWins.push({
-                id: `${doc.id}-${winnerIdx}-${idx}`,
-                tournamentName: tournament.title || "Unknown Tournament",
-                year: year,
-                isMajor: false, // Regular tournaments are not majors
-                prize: prize,
-                date: tournament.date.toISOString(),
-                placement: position === 1 ? "winner" : "winner",
-                position: position,
-                source: "tournament",
-              });
-            }
-          });
-        });
       });
 
       return userWins;

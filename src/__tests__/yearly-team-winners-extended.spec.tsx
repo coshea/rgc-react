@@ -41,13 +41,23 @@ function makeTournament(
     completed: true,
     canceled: false,
     prizePool: 0,
-    winners: winners.map((w) => ({
-      place: w.place,
-      userIds: w.users,
-      displayNames: w.names || w.users,
-      prizeAmount: w.prize,
-      score: w.score,
-    })),
+    winnerGroups: [
+      {
+        id: "overall",
+        label: "Overall",
+        type: "overall",
+        order: 1,
+        winners: winners.map((w) => ({
+          place: w.place,
+          competitors: (w.users || []).map((u, idx) => ({
+            userId: u,
+            displayName: (w.names && w.names[idx]) || u,
+          })),
+          prizeAmount: w.prize,
+          score: w.score,
+        })),
+      },
+    ],
   };
 }
 

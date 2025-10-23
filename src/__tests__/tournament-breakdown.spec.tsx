@@ -45,7 +45,7 @@ vi.mock("@/hooks/useUsers", async () => {
 const janDate = new Date(2024, 0, 10);
 const febDate = new Date(2024, 1, 12);
 
-// Helper to build winners arrays
+// Helper to build winnerGroups arrays
 // Event 1: two-person team wins (positions 1), second place solo, third place solo
 // Event 2: three distinct solo winners positions 1,2,3
 const event1 = {
@@ -59,27 +59,35 @@ const event1 = {
   prizePool: 300,
   registrationOpen: false,
   tee: "Blue",
-  winners: [
+  winnerGroups: [
     {
-      place: 1,
-      displayNames: ["Alice", "Bob"],
-      userIds: ["p1", "p2"],
-      prizeAmount: 100,
-      score: "-5",
-    },
-    {
-      place: 2,
-      displayNames: ["Cara"],
-      userIds: ["p3"],
-      prizeAmount: 60,
-      score: "-2",
-    },
-    {
-      place: 3,
-      displayNames: ["Dan"],
-      userIds: ["p4"],
-      prizeAmount: 40,
-      score: "E",
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [
+            { userId: "p1", displayName: "Alice" },
+            { userId: "p2", displayName: "Bob" },
+          ],
+          prizeAmount: 100,
+          score: "-5",
+        },
+        {
+          place: 2,
+          competitors: [{ userId: "p3", displayName: "Cara" }],
+          prizeAmount: 60,
+          score: "-2",
+        },
+        {
+          place: 3,
+          competitors: [{ userId: "p4", displayName: "Dan" }],
+          prizeAmount: 40,
+          score: "E",
+        },
+      ],
     },
   ],
 };
@@ -94,27 +102,32 @@ const event2 = {
   prizePool: 200,
   registrationOpen: false,
   tee: "White",
-  winners: [
+  winnerGroups: [
     {
-      place: 1,
-      displayNames: ["Eve"],
-      userIds: ["p5"],
-      prizeAmount: 80,
-      score: "-3",
-    },
-    {
-      place: 2,
-      displayNames: ["Alice"],
-      userIds: ["p1"],
-      prizeAmount: 50,
-      score: "-1",
-    },
-    {
-      place: 3,
-      displayNames: ["Bob"],
-      userIds: ["p2"],
-      prizeAmount: 30,
-      score: "+1",
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [{ userId: "p5", displayName: "Eve" }],
+          prizeAmount: 80,
+          score: "-3",
+        },
+        {
+          place: 2,
+          competitors: [{ userId: "p1", displayName: "Alice" }],
+          prizeAmount: 50,
+          score: "-1",
+        },
+        {
+          place: 3,
+          competitors: [{ userId: "p2", displayName: "Bob" }],
+          prizeAmount: 30,
+          score: "+1",
+        },
+      ],
     },
   ],
 };

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { Tournament } from "@/types/tournament";
 import { TournamentStatus } from "@/types/tournament";
 import { getStatus } from "@/utils/tournamentStatus";
-import type { Winner } from "@/types/winner";
 
 export interface WinningsBreakdownItem {
   tournamentId: string;
@@ -63,37 +62,6 @@ export function aggregateWinnings(
       }
       continue;
     }
-    // Fallback to legacy winners array
-    if (!t.winners || !Array.isArray(t.winners)) continue;
-    (t.winners as Winner[]).forEach((w) => {
-      if (!w || !w.userIds) return;
-      w.userIds.forEach((uid, idx) => {
-        const displayName =
-          (w.displayNames && w.displayNames[idx]) ||
-          (w.displayNames && w.displayNames[0]) ||
-          uid;
-        const existing = map.get(uid);
-        const amount = w.prizeAmount || 0;
-        const item: WinningsBreakdownItem = {
-          tournamentId: t.firestoreId || "unknown",
-          title: t.title,
-          date: dateVal,
-          amount,
-          place: w.place,
-        };
-        if (existing) {
-          existing.total += amount;
-          existing.breakdown.push(item);
-        } else {
-          map.set(uid, {
-            userId: uid,
-            displayName,
-            total: amount,
-            breakdown: [item],
-          });
-        }
-      });
-    });
   }
   // Sort breakdowns chronologically within each user for consistency
   map.forEach((val) => {
@@ -170,7 +138,6 @@ export function useYearlyWinnings({
           players: data.players || 0,
           status,
           prizePool: data.prizePool || 0,
-          winners: data.winners || [],
           winnerGroups: data.winnerGroups || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,

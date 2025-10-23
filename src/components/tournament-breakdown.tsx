@@ -23,7 +23,6 @@ import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
-import type { Winner } from "@/types/winner";
 
 interface Props {
   year: number;
@@ -67,7 +66,7 @@ export function TournamentBreakdown({ year }: Props) {
     return tournaments
       .filter((t) => {
         const hasGroups = (t as any).winnerGroups?.length > 0;
-        return hasGroups || (t.winners || []).length > 0;
+        return hasGroups;
       })
       .map((t) => {
         const rows: ResultRow[] = [];
@@ -140,45 +139,8 @@ export function TournamentBreakdown({ year }: Props) {
               }
             });
           });
-        } else {
-          // Legacy winners
-          (t.winners || []).forEach((w: Winner) => {
-            const ids = w.userIds || [];
-            const names = w.displayNames || [];
-            ids.forEach((uid, idx) => {
-              winnerIds.add(uid);
-              rows.push({
-                id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
-                position: w.place,
-                userId: uid,
-                name: names[idx] || names[0] || uid,
-                prize: w.prizeAmount || 0,
-                score: w.score,
-                teamSize: ids.length,
-              });
-            });
-            if (ids.length) {
-              const comps = ids.map((uid, i) => ({
-                userId: uid,
-                displayName: names[i] || names[0] || uid,
-              }));
-              const teamKey = makeTeamKey(comps);
-              const existing = teamMap.get(teamKey);
-              const teamPrize = (w.prizeAmount || 0) * comps.length; // assume per-player share
-              const bestPosition = Math.min(
-                w.place,
-                existing?.bestPosition ?? Number.POSITIVE_INFINITY
-              );
-              teamMap.set(teamKey, {
-                names: existing?.names || comps.map((c) => c.displayName),
-                userIds: existing?.userIds || comps.map((c) => c.userId),
-                totalPrize: (existing?.totalPrize || 0) + teamPrize,
-                bestPosition,
-                score: existing?.score || w.score,
-              });
-            }
-          });
         }
+
         rows.sort((a, b) => a.position - b.position);
         const positions = new Map<number, ResultRow[]>();
         rows.forEach((r) => {

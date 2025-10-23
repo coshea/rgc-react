@@ -28,8 +28,6 @@ const TournamentEditor = React.lazy(() =>
     default: m.TournamentEditor,
   }))
 );
-import { Winner } from "@/types/winner";
-import { TournamentWinners } from "@/components/tournament-winners";
 import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
@@ -53,6 +51,8 @@ const TournamentDetailPage: React.FC = () => {
   const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
+  const [previousTournament, setPreviousTournament] =
+    React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [regsLoading, setRegsLoading] = React.useState(true);
   const [registrations, setRegistrations] = React.useState<RegistrationDoc[]>(
@@ -145,15 +145,59 @@ const TournamentDetailPage: React.FC = () => {
     return () => unsub();
   }, [firestoreId]);
 
+  // Load previous tournament if previousTournamentId is set
+  React.useEffect(() => {
+    if (!tournament?.previousTournamentId) {
+      setPreviousTournament(null);
+      return;
+    }
+    const unsub = onTournament(
+      tournament.previousTournamentId,
+      (snap: any) => {
+        if (!snap.exists()) {
+          setPreviousTournament(null);
+          return;
+        }
+        try {
+          const prevTournament = mapTournamentDoc(snap);
+          setPreviousTournament(prevTournament);
+        } catch (err) {
+          console.error(err);
+          setPreviousTournament(null);
+        }
+      },
+      (err: any) => {
+        console.error("Failed to load previous tournament", err);
+        setPreviousTournament(null);
+      }
+    );
+    return () => unsub();
+  }, [tournament?.previousTournamentId]);
+
   // Users are now loaded globally via React Query (useUsersMap)
 
-  // All winners sorted by place ascending
-  const allWinners: Winner[] = React.useMemo(() => {
-    if (!tournament?.winners) return [];
-    return [...(tournament.winners || [])].sort((a, b) => a.place - b.place);
-  }, [tournament]);
+  // Get defending champion(s) from previous tournament
+  const defendingChampions = React.useMemo(() => {
+    if (!previousTournament) return null;
 
-  const hasGrouped = Boolean((tournament as any)?.winnerGroups?.length);
+    // Check for grouped winners
+    if ((previousTournament as any)?.winnerGroups?.length) {
+      const overallGroup = (previousTournament as any).winnerGroups.find(
+        (g: any) => g.type === "overall"
+      );
+      if (overallGroup?.winners?.length) {
+        const firstPlace = overallGroup.winners.find((w: any) => w.place === 1);
+        if (firstPlace?.competitors?.length) {
+          return firstPlace.competitors.map((c: any) => ({
+            id: c.userId,
+            name: c.displayName || "Unknown",
+          }));
+        }
+      }
+    }
+
+    return null;
+  }, [previousTournament]);
 
   const formatDateLong = (date: Date) =>
     new Intl.DateTimeFormat("en-US", {
@@ -565,6 +609,65 @@ const TournamentDetailPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Defending Champions Section */}
+          {(defendingChampions && defendingChampions.length > 0) ||
+          (isAdmin && tournament.previousTournamentId) ? (
+            <div className="mb-12">
+              <Card className="md:col-span-2" shadow="sm">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      icon="lucide:trophy"
+                      className="w-5 h-5 text-warning-500"
+                    />
+                    <h2 className="text-lg font-semibold">
+                      Defending Champion
+                    </h2>
+                  </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="pt-4">
+                  {defendingChampions && defendingChampions.length > 0 ? (
+                    <>
+                      <p className="text-sm text-foreground-600 mb-3">
+                        {previousTournament?.date.getFullYear()} Winner
+                        {defendingChampions.length > 1 ? "s" : ""}
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {defendingChampions.map(
+                          (champion: { id: string; name: string }) => {
+                            const championUser = usersArray.find(
+                              (u) => u.id === champion.id
+                            );
+                            return (
+                              <div
+                                key={champion.id}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-50 dark:bg-warning-950/20 border border-warning-200 dark:border-warning-800"
+                              >
+                                <UserAvatar
+                                  user={championUser}
+                                  name={champion.name}
+                                  size="sm"
+                                />
+                                <span className="text-sm font-medium">
+                                  {champion.name}
+                                </span>
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-foreground-500 italic">
+                      Previous tournament linked but no winners recorded yet.
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
+          ) : null}
+
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             <Card className="md:col-span-2" shadow="sm">
               <CardHeader className="pb-0">
@@ -572,11 +675,9 @@ const TournamentDetailPage: React.FC = () => {
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                {hasGrouped ? (
-                  <GroupedWinners groups={(tournament as any).winnerGroups} />
-                ) : (
-                  <TournamentWinners winners={allWinners} />
-                )}
+                <GroupedWinners
+                  groups={(tournament as any).winnerGroups || []}
+                />
               </CardBody>
             </Card>
             <div />

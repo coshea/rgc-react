@@ -67,16 +67,6 @@ export function YearlyMoneyLeaderboard({ year }: Props) {
             }
           });
         });
-      } else if (t.winners && t.winners.length > 0) {
-        // Legacy path
-        t.winners.forEach((w) => {
-          w.userIds.forEach((uid) => participantSet.add(uid));
-          if (w.place === 1) {
-            w.userIds.forEach((uid) => {
-              wins.set(uid, (wins.get(uid) || 0) + 1);
-            });
-          }
-        });
       }
       participantSet.forEach((uid) => {
         played.set(uid, (played.get(uid) || 0) + 1);

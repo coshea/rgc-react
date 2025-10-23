@@ -1,12 +1,12 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
-import type { Winner } from "@/types/winner";
+import type { WinnerPlace } from "@/types/winner";
 import { useUsersMap } from "@/hooks/useUsers";
 import { getPlaceMeta } from "@/utils/placeMeta";
 
 export interface TournamentWinnersProps {
-  winners: Winner[] | undefined | null;
+  winners: WinnerPlace[] | undefined | null;
   /** If true, show per-player avatars for each winner entry (when available) */
   showAvatars?: boolean;
   /** Optional custom className wrapper */
@@ -51,9 +51,12 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
     <div className={["space-y-3", className].filter(Boolean).join(" ")}>
       {sorted.map((w, idx) => {
         const iconMeta = getPlaceMeta(w.place);
+        const names = (w.competitors || []).map(
+          (c) => c.displayName || c.userId
+        );
         const label = labelFormatter
-          ? labelFormatter(w.place, w.displayNames)
-          : `${ordinal(w.place)}: ${w.displayNames.join(", ")}`;
+          ? labelFormatter(w.place, names)
+          : `${ordinal(w.place)}: ${names.join(", ")}`;
         const prize =
           typeof w.prizeAmount === "number" && w.prizeAmount > 0
             ? `$${w.prizeAmount.toLocaleString()}` +
@@ -82,22 +85,25 @@ export const TournamentWinners: React.FC<TournamentWinnersProps> = ({
               </span>
               {showAvatars && (
                 <div className="flex -space-x-2 ml-1">
-                  {w.userIds?.slice(0, 4).map((uid) => {
-                    const user = usersMap.get(uid);
-                    const name = user?.displayName || user?.email || uid;
-                    return (
-                      <UserAvatar
-                        key={uid}
-                        size="sm"
-                        user={user}
-                        name={user ? undefined : name}
-                        className="ring-1 ring-background"
-                      />
-                    );
-                  })}
-                  {w.userIds && w.userIds.length > 4 && (
+                  {w.competitors
+                    ?.map((c) => c.userId)
+                    .slice(0, 4)
+                    .map((uid) => {
+                      const user = usersMap.get(uid);
+                      const name = user?.displayName || user?.email || uid;
+                      return (
+                        <UserAvatar
+                          key={uid}
+                          size="sm"
+                          user={user}
+                          name={user ? undefined : name}
+                          className="ring-1 ring-background"
+                        />
+                      );
+                    })}
+                  {w.competitors && w.competitors.length > 4 && (
                     <span className="w-7 h-7 rounded-full bg-default-100 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
-                      +{w.userIds.length - 4}
+                      +{w.competitors.length - 4}
                     </span>
                   )}
                 </div>

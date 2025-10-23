@@ -82,6 +82,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [date, setDate] = React.useState<DateValue | null>(
     seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null
   );
+  const [previousTournamentId, setPreviousTournamentId] = React.useState<
+    string | undefined
+  >(seed.previousTournamentId);
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -89,6 +92,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [regsLoading, setRegsLoading] = React.useState(false);
   const [editingRegId, setEditingRegId] = React.useState<string | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const [allTournaments, setAllTournaments] = React.useState<Tournament[]>([]);
   const [addOpen, setAddOpen] = React.useState(false);
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
   const [adding, setAdding] = React.useState(false);
@@ -96,6 +100,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
+
+  // Sync previousTournamentId state with tournament prop updates
+  React.useEffect(() => {
+    if (tournament?.previousTournamentId !== previousTournamentId) {
+      setPreviousTournamentId(tournament?.previousTournamentId);
+    }
+  }, [tournament?.previousTournamentId]);
 
   // NOTE: Admin Add Registration workflow should not auto-select the current user.
   // Admins need the ability to add arbitrary registrations on behalf of others.
@@ -145,7 +156,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         return;
       }
       const { db } = await import("@/config/firebase");
-      const { collection, addDoc, updateDoc, doc } = await import(
+      const { collection, addDoc, updateDoc, doc, deleteField } = await import(
         "firebase/firestore"
       );
       // Sanitize winnerGroups to avoid writing `undefined` fields to Firestore
@@ -179,6 +190,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         date: date ? new Date(date.toString()) : new Date(),
         tee,
       };
+
+      // Add previousTournamentId if it has a value, or use deleteField() to clear it on updates
+      if (previousTournamentId) {
+        (tournamentData as any).previousTournamentId = previousTournamentId;
+      } else if (tournament && tournament.firestoreId) {
+        // For updates: explicitly delete the field if it was cleared
+        (tournamentData as any).previousTournamentId = deleteField();
+      }
+
       const colRef = collection(db, "tournaments");
       let createdDocRef: any = null;
       if (tournament && tournament.firestoreId) {
@@ -197,6 +217,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winnerGroups: (tournamentData as any).winnerGroups || [],
         date: tournamentData.date as Date,
         tee: tournamentData.tee as any,
+        previousTournamentId: tournamentData.previousTournamentId,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -280,6 +301,49 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       if (unsubUsers) unsubUsers();
     };
   }, [tournament?.firestoreId]);
+
+  // Load all tournaments for the previous tournament selector
+  React.useEffect(() => {
+    let unsubTournaments: (() => void) | null = null;
+    const loadTournaments = async () => {
+      try {
+        const { collection, onSnapshot, orderBy, query } = await import(
+          "firebase/firestore"
+        );
+        const { db } = await import("@/config/firebase");
+        const tournamentsCol = collection(db, "tournaments");
+        const q = query(tournamentsCol, orderBy("date", "desc"));
+        unsubTournaments = onSnapshot(q, (snap) => {
+          const list: Tournament[] = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              firestoreId: d.id,
+              title: data.title || "",
+              date:
+                data.date && typeof data.date.toDate === "function"
+                  ? data.date.toDate()
+                  : new Date(data.date || Date.now()),
+              description: data.description || "",
+              detailsMarkdown: data.detailsMarkdown,
+              players: data.players || 0,
+              status: data.status,
+              prizePool: data.prizePool || 0,
+              winnerGroups: data.winnerGroups || [],
+              tee: data.tee,
+              previousTournamentId: data.previousTournamentId,
+            } as Tournament;
+          });
+          setAllTournaments(list);
+        });
+      } catch (e) {
+        console.error("Failed to load tournaments", e);
+      }
+    };
+    loadTournaments();
+    return () => {
+      if (unsubTournaments) unsubTournaments();
+    };
+  }, []);
 
   const startEdit = (reg: any) => setEditingRegId(reg.id);
   const cancelEdit = () => setEditingRegId(null);
@@ -520,6 +584,41 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     </div>
                   </SelectItem>
                 ))}
+              </Select>
+              <Select
+                label="Previous Year's Tournament (Optional)"
+                placeholder="Link to previous tournament"
+                description="Show the defending champion from last year"
+                selectedKeys={
+                  previousTournamentId ? [previousTournamentId] : []
+                }
+                classNames={{
+                  trigger: "bg-content2",
+                }}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as string | undefined;
+                  setPreviousTournamentId(val || undefined);
+                }}
+              >
+                {allTournaments
+                  .filter(
+                    (t) =>
+                      t.firestoreId && t.firestoreId !== tournament?.firestoreId
+                  )
+                  .map((t) => {
+                    const year = t.date.getFullYear();
+                    const label = `${t.title} (${year})`;
+                    return (
+                      <SelectItem key={t.firestoreId!} textValue={label}>
+                        <div className="flex flex-col">
+                          <span>{t.title}</span>
+                          <span className="text-xs text-default-400">
+                            {year}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
               </Select>
               <div className="flex flex-col gap-4 pt-2">
                 <Select

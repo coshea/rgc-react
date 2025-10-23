@@ -99,8 +99,20 @@ const baseTournament = {
   players: 4,
   status: TournamentStatus.Open,
   prizePool: 500,
-  winners: [
-    { place: 1, displayNames: ["Alice"], userIds: ["u1"], prizeAmount: 100 },
+  winnerGroups: [
+    {
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [{ userId: "u1", displayName: "Alice" }],
+          prizeAmount: 100,
+        },
+      ],
+    },
   ],
   tee: "Blue",
 };
@@ -184,13 +196,24 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("win1");
     emitDoc("tournaments/win1", {
       ...baseTournament,
-      winners: [
-        { place: 1, displayNames: ["Champ"], userIds: ["c1"], prizeAmount: 50 },
+      winnerGroups: [
         {
-          place: 2,
-          displayNames: ["Runner"],
-          userIds: ["r1"],
-          prizeAmount: 25,
+          id: "overall",
+          label: "Overall",
+          type: "overall",
+          order: 1,
+          winners: [
+            {
+              place: 1,
+              competitors: [{ userId: "c1", displayName: "Champ" }],
+              prizeAmount: 50,
+            },
+            {
+              place: 2,
+              competitors: [{ userId: "r1", displayName: "Runner" }],
+              prizeAmount: 25,
+            },
+          ],
         },
       ],
     });

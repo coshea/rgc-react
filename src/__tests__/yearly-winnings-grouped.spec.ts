@@ -19,7 +19,6 @@ function makeTournament(
     status: TournamentStatus.Completed,
     prizePool: 500,
     registrationOpen: false,
-    winners: overrides.winners || [],
     winnerGroups,
     tee: "Blue",
     ...overrides,
@@ -60,36 +59,22 @@ describe("aggregateWinnings (grouped)", () => {
     expect(u3?.total).toBe(50);
   });
 
-  it("prefers winnerGroups over legacy winners when both exist", () => {
-    const t = makeTournament(
-      "g2",
-      new Date(2025, 0, 2),
-      [
-        {
-          id: "overall",
-          label: "Overall",
-          type: "overall",
-          order: 1,
-          winners: [
-            {
-              place: 1,
-              competitors: [{ userId: "u1", displayName: "Alice" }],
-              prizeAmount: 200,
-            },
-          ],
-        },
-      ],
+  it("aggregates winnings from winnerGroups correctly", () => {
+    const t = makeTournament("g2", new Date(2025, 0, 2), [
       {
+        id: "overall",
+        label: "Overall",
+        type: "overall",
+        order: 1,
         winners: [
           {
             place: 1,
-            userIds: ["u1"],
-            displayNames: ["Alice"],
-            prizeAmount: 10,
+            competitors: [{ userId: "u1", displayName: "Alice" }],
+            prizeAmount: 200,
           },
         ],
-      }
-    );
+      },
+    ]);
     const res = aggregateWinnings([t]);
     const u1 = res.find((r) => r.userId === "u1");
     expect(u1?.total).toBe(200);
