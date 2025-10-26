@@ -218,8 +218,9 @@ describe("TournamentDetailPage", () => {
       ],
     });
     await screen.findByText("Club Championship");
-    expect(screen.getByText(/1st: Champ/)).toBeInTheDocument();
-    expect(screen.getByText(/2nd: Runner/)).toBeInTheDocument();
+    // Position badges now show trophy icons with ordinal text, names are in responsive layout
+    expect(screen.getAllByText("Champ").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Runner").length).toBeGreaterThan(0);
   });
 
   it("shows admin action buttons when user is admin", async () => {

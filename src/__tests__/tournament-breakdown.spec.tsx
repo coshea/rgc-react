@@ -207,4 +207,14 @@ describe("TournamentBreakdown (redesigned)", () => {
     // Label changes
     expect(btn.textContent?.toLowerCase()).toMatch(/hide full results/);
   });
+
+  it("displays score with 'Score:' label in winner display", () => {
+    renderComponent();
+    // Check that scores are displayed with "Score:" prefix in podium
+    // The text may appear multiple times (mobile + desktop layouts)
+    expect(screen.getAllByText(/Score:/).length).toBeGreaterThan(0);
+    // Verify specific scores are present
+    expect(screen.getAllByText(/Score: -5/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Score: -3/).length).toBeGreaterThan(0);
+  });
 });

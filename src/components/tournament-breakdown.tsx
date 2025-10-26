@@ -596,8 +596,10 @@ export function TournamentBreakdown({ year }: Props) {
                               className="text-[11px] text-default-500 text-center"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
-                              {g.players[0].score || "—"} •{" "}
-                              {formatPrize(perPlayer)}
+                              {g.players[0].score
+                                ? `Score: ${g.players[0].score}`
+                                : "—"}{" "}
+                              • {formatPrize(perPlayer)}
                             </p>
                           </div>
                           {/* Desktop: names and info */}
@@ -615,8 +617,10 @@ export function TournamentBreakdown({ year }: Props) {
                               className="text-[11px] text-default-500"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
-                              {g.players[0].score || "—"} •{" "}
-                              {formatPrize(perPlayer)}
+                              {g.players[0].score
+                                ? `Score: ${g.players[0].score}`
+                                : "—"}{" "}
+                              • {formatPrize(perPlayer)}
                             </p>
                           </div>
                           {g.players.length > 4 && (

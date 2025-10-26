@@ -35,6 +35,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
+import { WinnerDisplay } from "@/components/winner-display";
 
 interface RegistrationDoc {
   id: string;
@@ -188,10 +189,13 @@ const TournamentDetailPage: React.FC = () => {
       if (overallGroup?.winners?.length) {
         const firstPlace = overallGroup.winners.find((w: any) => w.place === 1);
         if (firstPlace?.competitors?.length) {
-          return firstPlace.competitors.map((c: any) => ({
-            id: c.userId,
-            name: c.displayName || "Unknown",
-          }));
+          return {
+            competitors: firstPlace.competitors.map((c: any) => ({
+              id: c.userId,
+              name: c.displayName || "Unknown",
+            })),
+            score: firstPlace.score,
+          };
         }
       }
     }
@@ -610,7 +614,7 @@ const TournamentDetailPage: React.FC = () => {
           </div>
 
           {/* Defending Champions Section */}
-          {(defendingChampions && defendingChampions.length > 0) ||
+          {(defendingChampions && defendingChampions.competitors.length > 0) ||
           (isAdmin && tournament.previousTournamentId) ? (
             <div className="mb-12">
               <Card className="md:col-span-2" shadow="sm">
@@ -627,36 +631,24 @@ const TournamentDetailPage: React.FC = () => {
                 </CardHeader>
                 <Divider />
                 <CardBody className="pt-4">
-                  {defendingChampions && defendingChampions.length > 0 ? (
+                  {defendingChampions &&
+                  defendingChampions.competitors.length > 0 ? (
                     <>
                       <p className="text-sm text-foreground-600 mb-3">
                         {previousTournament?.date.getFullYear()} Winner
-                        {defendingChampions.length > 1 ? "s" : ""}
+                        {defendingChampions.competitors.length > 1 ? "s" : ""}
                       </p>
-                      <div className="flex flex-wrap gap-3">
-                        {defendingChampions.map(
-                          (champion: { id: string; name: string }) => {
-                            const championUser = usersArray.find(
-                              (u) => u.id === champion.id
-                            );
-                            return (
-                              <div
-                                key={champion.id}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-50 dark:bg-warning-950/20 border border-warning-200 dark:border-warning-800"
-                              >
-                                <UserAvatar
-                                  user={championUser}
-                                  name={champion.name}
-                                  size="sm"
-                                />
-                                <span className="text-sm font-medium">
-                                  {champion.name}
-                                </span>
-                              </div>
-                            );
-                          }
+                      <WinnerDisplay
+                        place={1}
+                        competitors={defendingChampions.competitors.map(
+                          (c: { id: string; name: string }) => ({
+                            userId: c.id,
+                            displayName: c.name,
+                          })
                         )}
-                      </div>
+                        score={defendingChampions.score}
+                        isChampion={true}
+                      />
                     </>
                   ) : (
                     <p className="text-sm text-foreground-500 italic">
@@ -668,8 +660,8 @@ const TournamentDetailPage: React.FC = () => {
             </div>
           ) : null}
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <Card className="md:col-span-2" shadow="sm">
+          <div className="mb-12">
+            <Card shadow="sm">
               <CardHeader className="pb-0">
                 <h2 className="text-lg font-semibold">Tournament Winners</h2>
               </CardHeader>
@@ -680,7 +672,6 @@ const TournamentDetailPage: React.FC = () => {
                 />
               </CardBody>
             </Card>
-            <div />
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
