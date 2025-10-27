@@ -103,5 +103,11 @@ export const siteConfig = {
       link: "/find-a-game",
       icon: "lucide:handshake",
     },
+    myScores: {
+      title: "My Scores",
+      description: "View your GHIN score history",
+      link: "/my-scores",
+      icon: "lucide:bar-chart-3",
+    },
   },
 };

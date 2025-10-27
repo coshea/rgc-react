@@ -5,7 +5,12 @@ import { ProfileDropdown } from "@/components/profile-dropdown";
 
 // Mock site config minimal
 vi.mock("@/config/site", () => ({
-  siteConfig: { pages: { profile: { link: "/profile" } } },
+  siteConfig: {
+    pages: {
+      profile: { link: "/profile" },
+      myScores: { link: "/my-scores" },
+    },
+  },
 }));
 
 // Mock hook useUserProfile to return displayName

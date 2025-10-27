@@ -23,6 +23,7 @@ import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
 import FindAGamePage from "@/pages/find-a-game";
+import MyScoresPage from "@/pages/my-scores";
 import RequireAuth from "@/components/require-auth";
 
 function App() {
@@ -94,6 +95,14 @@ function App() {
               </RequireAuth>
             }
             path={siteConfig.pages.findGame.link}
+          />
+          <Route
+            element={
+              <RequireAuth>
+                <MyScoresPage />
+              </RequireAuth>
+            }
+            path={siteConfig.pages.myScores.link}
           />
           <Route element={<NotFoundPage />} path="*" />
         </Routes>
