@@ -19,21 +19,16 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Textarea,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import {
-  getGolferScores,
-  getGolferInfo,
-  type GHINScore,
-  type GHINGolfer,
-} from "@/api/ghin";
+import { getGolferScores, type GHINScore } from "@/api/ghin";
 
 export default function MyScoresPage() {
   const { userProfile } = useUserProfile();
 
   const [ghinNumber, setGhinNumber] = useState("");
-  const [golferInfo, setGolferInfo] = useState<GHINGolfer | null>(null);
   const [scores, setScores] = useState<GHINScore[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +40,13 @@ export default function MyScoresPage() {
     const now = new Date();
     return now.toISOString().split("T")[0];
   });
-  const [scoreCount, setScoreCount] = useState(20);
-  const [ghinEmail, setGhinEmail] = useState("");
-  const [ghinPassword, setGhinPassword] = useState("");
-  const [ghinToken, setGhinToken] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loggingIn, setLoggingIn] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [scoreLimit, setScoreLimit] = useState(25);
+  const [ghinCookie, setGhinCookie] = useState<string | null>(() => {
+    // Load from localStorage on mount
+    return localStorage.getItem("ghin_cookie");
+  });
+  const [cookieModalOpen, setCookieModalOpen] = useState(false);
+  const [cookieInput, setCookieInput] = useState("");
 
   // Load GHIN number from user profile if available
   useEffect(() => {
@@ -60,36 +55,26 @@ export default function MyScoresPage() {
     }
   }, [userProfile]);
 
-  const handleGHINLogin = async () => {
-    if (!ghinEmail.trim() || !ghinPassword.trim()) {
-      setError("Please enter your GHIN email and password");
+  const handleOpenGHINLogin = () => {
+    window.open("https://www.ghin.com/login", "_blank", "width=800,height=600");
+    setCookieModalOpen(true);
+  };
+
+  const handleSaveCookie = () => {
+    if (!cookieInput.trim()) {
+      setError("Please enter a cookie value");
       return;
     }
-
-    setLoggingIn(true);
+    setGhinCookie(cookieInput);
+    localStorage.setItem("ghin_cookie", cookieInput);
+    setCookieModalOpen(false);
     setError(null);
+  };
 
-    try {
-      const { loginToGHIN } = await import("@/api/ghin");
-      const result = await loginToGHIN(ghinEmail, ghinPassword);
-
-      if (result.error || !result.token) {
-        setError(
-          result.error || "Login failed. Please check your credentials."
-        );
-        setIsLoggedIn(false);
-      } else {
-        setGhinToken(result.token);
-        setIsLoggedIn(true);
-        setError(null);
-        setLoginModalOpen(false); // Close modal on successful login
-      }
-    } catch (err) {
-      setError("Failed to login to GHIN. Please try again.");
-      console.error(err);
-    } finally {
-      setLoggingIn(false);
-    }
+  const handleClearCookie = () => {
+    setGhinCookie(null);
+    localStorage.removeItem("ghin_cookie");
+    setScores([]);
   };
 
   const handleFetchScores = async () => {
@@ -98,8 +83,8 @@ export default function MyScoresPage() {
       return;
     }
 
-    if (!isLoggedIn || !ghinToken) {
-      setError("Please login to GHIN first");
+    if (!ghinCookie) {
+      setError("Please login to GHIN first to obtain a session cookie");
       return;
     }
 
@@ -107,38 +92,25 @@ export default function MyScoresPage() {
     setError(null);
 
     try {
-      // Fetch golfer info
-      const info = await getGolferInfo(ghinNumber, ghinToken);
-      if (info) {
-        setGolferInfo(info);
-      }
+      // Fetch scores using the new endpoint with cookie
+      const scoresData = await getGolferScores({
+        golferId: ghinNumber,
+        startDate,
+        endDate,
+        limit: scoreLimit,
+        offset: 0,
+        statuses: "Validated",
+        cookie: ghinCookie,
+      });
 
-      // Fetch scores
-      const scoresData = await getGolferScores(
-        ghinNumber,
-        scoreCount,
-        ghinToken
-      );
+      setScores(scoresData);
 
-      // Filter by date if specified
-      let filteredScores = scoresData;
-      if (startDate || endDate) {
-        filteredScores = scoresData.filter((score) => {
-          const scoreDate = new Date(score.playedAt);
-          if (startDate && scoreDate < new Date(startDate)) return false;
-          if (endDate && scoreDate > new Date(endDate)) return false;
-          return true;
-        });
-      }
-
-      setScores(filteredScores);
-
-      if (filteredScores.length === 0) {
+      if (scoresData.length === 0) {
         setError("No scores found for this golfer");
       }
     } catch (err) {
       setError(
-        "Failed to fetch scores. Please check the GHIN number and try again."
+        "Failed to fetch scores. Please check the GHIN number and try again, or update your login cookie."
       );
       console.error(err);
     } finally {
@@ -177,61 +149,58 @@ export default function MyScoresPage() {
         </p>
       </div>
 
-      {/* GHIN Login */}
-      {!isLoggedIn && (
-        <Card className="mb-6">
-          <CardBody className="text-center py-8">
-            <Icon
-              icon="lucide:lock"
-              className="w-16 h-16 mx-auto mb-4 text-warning"
-            />
-            <h3 className="text-xl font-semibold mb-2">GHIN Login Required</h3>
-            <p className="text-default-600 mb-4">
-              To access score data, you need to login with your GHIN
-              credentials.
-            </p>
-            <Button
-              color="primary"
-              size="lg"
-              onPress={() => setLoginModalOpen(true)}
-              startContent={<Icon icon="lucide:log-in" />}
-            >
-              Login to GHIN
-            </Button>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* Search Form */}
+      {/* GHIN Login Status */}
       <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between w-full">
-            <h2 className="text-xl font-semibold">Search Scores</h2>
-            {isLoggedIn && (
-              <div className="flex items-center gap-2">
-                <Chip color="success" variant="flat" size="sm">
-                  <Icon icon="lucide:check-circle" className="mr-1" />
-                  Logged In
-                </Chip>
+        <CardBody>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Icon
+                icon={
+                  ghinCookie ? "lucide:check-circle" : "lucide:alert-circle"
+                }
+                className={`w-6 h-6 ${ghinCookie ? "text-success" : "text-warning"}`}
+              />
+              <div>
+                <p className="font-semibold">
+                  {ghinCookie ? "GHIN Session Active" : "GHIN Login Required"}
+                </p>
+                <p className="text-sm text-default-500">
+                  {ghinCookie
+                    ? "You can now search for scores"
+                    : "Login to GHIN to access score data"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {ghinCookie ? (
                 <Button
                   size="sm"
                   variant="flat"
                   color="danger"
-                  onPress={() => {
-                    setIsLoggedIn(false);
-                    setGhinToken(null);
-                    setGhinEmail("");
-                    setGhinPassword("");
-                    setScores([]);
-                    setGolferInfo(null);
-                  }}
+                  onPress={handleClearCookie}
                   startContent={<Icon icon="lucide:log-out" />}
                 >
-                  Logout
+                  Clear Session
                 </Button>
-              </div>
-            )}
+              ) : (
+                <Button
+                  size="sm"
+                  color="primary"
+                  onPress={handleOpenGHINLogin}
+                  startContent={<Icon icon="lucide:log-in" />}
+                >
+                  Login to GHIN
+                </Button>
+              )}
+            </div>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* Search Form */}
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-xl font-semibold">Search Scores</h2>
         </CardHeader>
         <Divider />
         <CardBody>
@@ -261,8 +230,8 @@ export default function MyScoresPage() {
             <Input
               type="number"
               label="Number of Scores"
-              value={scoreCount.toString()}
-              onChange={(e) => setScoreCount(parseInt(e.target.value) || 20)}
+              value={scoreLimit.toString()}
+              onChange={(e) => setScoreLimit(parseInt(e.target.value) || 25)}
               min={1}
               max={100}
               startContent={<Icon icon="lucide:hash" />}
@@ -289,40 +258,6 @@ export default function MyScoresPage() {
           )}
         </CardBody>
       </Card>
-
-      {/* Golfer Info */}
-      {golferInfo && (
-        <Card className="mb-6">
-          <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-default-500">Name</p>
-                <p className="text-lg font-semibold">
-                  {golferInfo.firstName} {golferInfo.lastName}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-default-500">GHIN Number</p>
-                <p className="text-lg font-semibold">{golferInfo.ghinNumber}</p>
-              </div>
-              {golferInfo.handicapIndex !== undefined && (
-                <div>
-                  <p className="text-sm text-default-500">Handicap Index</p>
-                  <p className="text-lg font-semibold text-primary">
-                    {golferInfo.handicapIndex.toFixed(1)}
-                  </p>
-                </div>
-              )}
-              {golferInfo.clubName && (
-                <div>
-                  <p className="text-sm text-default-500">Club</p>
-                  <p className="text-lg font-semibold">{golferInfo.clubName}</p>
-                </div>
-              )}
-            </div>
-          </CardBody>
-        </Card>
-      )}
 
       {/* Scores Table */}
       {loading ? (
@@ -447,80 +382,77 @@ export default function MyScoresPage() {
         </Card>
       )}
 
-      {/* GHIN Login Modal */}
+      {/* Cookie Input Modal */}
       <Modal
-        isOpen={loginModalOpen}
-        onOpenChange={setLoginModalOpen}
-        placement="center"
+        isOpen={cookieModalOpen}
+        onOpenChange={setCookieModalOpen}
+        size="2xl"
         scrollBehavior="inside"
-        size="lg"
-        className="mx-4"
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <ModalHeader>
                 <div className="flex items-center gap-2">
-                  <Icon icon="lucide:lock" className="w-5 h-5 text-primary" />
-                  <span>GHIN Login</span>
+                  <Icon icon="lucide:cookie" className="w-5 h-5 text-primary" />
+                  <span>Enter GHIN Session Cookie</span>
                 </div>
               </ModalHeader>
-              <ModalBody className="gap-4">
-                <p className="text-sm text-default-600">
-                  Enter your GHIN credentials to access your score history.
-                </p>
-                <Input
-                  label="GHIN Email"
-                  placeholder="Enter your GHIN email"
-                  type="email"
-                  value={ghinEmail}
-                  onChange={(e) => setGhinEmail(e.target.value)}
-                  startContent={<Icon icon="lucide:mail" />}
-                  isRequired
-                  autoFocus
-                />
-                <Input
-                  label="GHIN Password"
-                  placeholder="Enter your GHIN password"
-                  type="password"
-                  value={ghinPassword}
-                  onChange={(e) => setGhinPassword(e.target.value)}
-                  startContent={<Icon icon="lucide:key" />}
-                  isRequired
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !loggingIn) {
-                      handleGHINLogin();
-                    }
-                  }}
-                />
-                {error && (
-                  <div className="p-3 bg-danger-50 dark:bg-danger-900/20 text-danger rounded-lg flex items-start gap-2">
-                    <Icon
-                      icon="lucide:alert-circle"
-                      className="w-5 h-5 mt-0.5 flex-shrink-0"
-                    />
-                    <p className="text-sm">{error}</p>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                    <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Icon icon="lucide:info" className="w-4 h-4" />
+                      Instructions:
+                    </p>
+                    <ol className="text-sm space-y-2 list-decimal list-inside text-default-700">
+                      <li>A new window should have opened to ghin.com</li>
+                      <li>Log in with your GHIN credentials</li>
+                      <li>
+                        Open browser Developer Tools (F12 or Right-click →
+                        Inspect)
+                      </li>
+                      <li>Go to the "Application" or "Storage" tab</li>
+                      <li>Click "Cookies" → "https://www.ghin.com"</li>
+                      <li>Find the cookie named "GHIN2020_api2_production"</li>
+                      <li>
+                        Copy ONLY the VALUE (not the name) - double-click the
+                        value to select it
+                      </li>
+                      <li>Paste it in the field below</li>
+                    </ol>
                   </div>
-                )}
+
+                  <Textarea
+                    label="Cookie Value"
+                    placeholder="Paste only the cookie VALUE here (not GHIN2020_api2_production=...)"
+                    value={cookieInput}
+                    onChange={(e) => setCookieInput(e.target.value)}
+                    minRows={4}
+                    description="Should be a long encoded string like: JkpK%2B%2Fpk0%2F4F... (without 'GHIN2020_api2_production=')"
+                  />
+
+                  {error && (
+                    <div className="p-3 bg-danger-50 dark:bg-danger-900/20 text-danger rounded-lg flex items-start gap-2">
+                      <Icon
+                        icon="lucide:alert-circle"
+                        className="w-5 h-5 mt-0.5 flex-shrink-0"
+                      />
+                      <p className="text-sm">{error}</p>
+                    </div>
+                  )}
+                </div>
               </ModalBody>
               <ModalFooter>
-                <Button
-                  color="default"
-                  variant="flat"
-                  onPress={onClose}
-                  isDisabled={loggingIn}
-                >
+                <Button variant="flat" onPress={onClose}>
                   Cancel
                 </Button>
                 <Button
                   color="primary"
-                  onPress={handleGHINLogin}
-                  isLoading={loggingIn}
-                  startContent={
-                    !loggingIn ? <Icon icon="lucide:log-in" /> : undefined
-                  }
+                  onPress={handleSaveCookie}
+                  startContent={<Icon icon="lucide:save" />}
                 >
-                  {loggingIn ? "Logging in..." : "Login"}
+                  Save Cookie
                 </Button>
               </ModalFooter>
             </>
