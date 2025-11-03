@@ -95,7 +95,7 @@ export default function SiteFooter() {
                 onPress={scrollTop}
                 className="rounded-full"
               >
-                <Icon icon="lucide:chevron-up" />
+                <Icon icon="lucide:chevron-up" width={20} height={20} />
               </Button>
             </div>
           </div>
