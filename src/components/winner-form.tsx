@@ -261,6 +261,11 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       onValueChange={(value) =>
                         updateWinner(winner.place, { prizeAmount: value })
                       }
+                      onFocus={(e) => {
+                        if (e.target instanceof HTMLInputElement) {
+                          e.target.select();
+                        }
+                      }}
                       min={0}
                       startContent={
                         <div className="pointer-events-none flex items-center">

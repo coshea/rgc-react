@@ -581,6 +581,11 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                   prizeAmount: v,
                                 })
                               }
+                              onFocus={(e) => {
+                                if (e.target instanceof HTMLInputElement) {
+                                  e.target.select();
+                                }
+                              }}
                               startContent={
                                 <div className="pointer-events-none flex items-center">
                                   <span className="text-default-400 text-small">
