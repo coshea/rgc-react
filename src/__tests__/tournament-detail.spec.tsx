@@ -137,7 +137,7 @@ describe("TournamentDetailPage", () => {
     emitDoc("tournaments/back1", baseTournament);
     await screen.findByText("Club Championship");
     const backBtn = screen.getByRole("button", {
-      name: /go back to tournaments list/i,
+      name: /back/i,
     });
     await act(async () => {
       backBtn.click();

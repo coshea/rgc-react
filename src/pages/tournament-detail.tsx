@@ -17,6 +17,7 @@ import {
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
+import BackButton from "@/components/back-button";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus } from "@/utils/tournamentStatus";
@@ -333,18 +334,9 @@ const TournamentDetailPage: React.FC = () => {
         <>
           {/* Top navigation row: Back link on the far left */}
           <div className="mb-3 flex items-center justify-between">
-            <Button
-              size="sm"
-              variant="light"
+            <BackButton
               onPress={() => navigate("/tournaments", { replace: false })}
-              startContent={
-                <Icon icon="lucide:arrow-left" className="w-4 h-4" />
-              }
-              aria-label="Go back to tournaments list"
-              className="-ml-1 text-foreground-500"
-            >
-              <span className="hidden sm:inline">Back</span>
-            </Button>
+            />
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
