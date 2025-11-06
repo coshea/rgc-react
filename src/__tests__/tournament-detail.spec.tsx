@@ -136,11 +136,11 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("back1");
     emitDoc("tournaments/back1", baseTournament);
     await screen.findByText("Club Championship");
-    const backBtn = screen.getByRole("button", {
+    const backBtns = screen.getAllByRole("button", {
       name: /back/i,
     });
     await act(async () => {
-      backBtn.click();
+      backBtns[0].click();
     });
     await screen.findByTestId("tournaments-list");
   });
@@ -229,17 +229,18 @@ describe("TournamentDetailPage", () => {
     isAdminMock = true;
     emitDoc("tournaments/admin1", baseTournament);
     await screen.findByText("Club Championship");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Edit tournament/i })
-      ).toBeInTheDocument()
+    await waitFor(
+      () =>
+        expect(
+          screen.getAllByRole("button", { name: /Edit tournament/i })
+        ).toHaveLength(2) // One for mobile, one for desktop
     );
     expect(
-      screen.getByRole("button", { name: /Delete tournament/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Delete tournament/i })
+    ).toHaveLength(2);
     expect(
-      screen.getByRole("button", { name: /Export registrations/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Export registrations/i })
+    ).toHaveLength(2);
   });
 
   it("highlights teams with open spots", async () => {

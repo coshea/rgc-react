@@ -14,6 +14,7 @@ import {
   Button,
   Divider,
   ScrollShadow,
+  Tooltip,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
@@ -333,54 +334,125 @@ const TournamentDetailPage: React.FC = () => {
       ) : (
         <>
           {/* Top navigation row: Back link on the far left */}
-          <div className="mb-3 flex items-center justify-between">
-            <BackButton
-              onPress={() => navigate("/tournaments", { replace: false })}
-            />
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="flat"
-                onPress={shareLink}
-                startContent={<Icon icon="lucide:share" />}
-                aria-label="Share tournament"
-              >
-                <span className="hidden md:inline">Share</span>
-              </Button>
+          <div className="mb-3">
+            {/* Mobile: Two rows, Desktop: Single row */}
+            <div className="md:hidden space-y-2">
+              {/* Mobile First row: Back button and Share button */}
+              <div className="flex items-center justify-between">
+                <BackButton
+                  onPress={() => navigate("/tournaments", { replace: false })}
+                />
+                <Tooltip content="Share tournament">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={shareLink}
+                    startContent={<Icon icon="lucide:share" />}
+                    aria-label="Share tournament"
+                  >
+                    Share
+                  </Button>
+                </Tooltip>
+              </div>
+
+              {/* Mobile Second row: Admin actions */}
               {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={exportRegistrations}
-                  startContent={<Icon icon="lucide:download" />}
-                  aria-label="Export registrations"
-                >
-                  <span className="hidden md:inline">Export</span>
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Tooltip content="Export registrations">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={exportRegistrations}
+                      startContent={<Icon icon="lucide:download" />}
+                      aria-label="Export registrations"
+                    >
+                      Export
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Edit tournament">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={() => setEditOpen(true)}
+                      startContent={<Icon icon="lucide:edit" />}
+                      aria-label="Edit tournament"
+                    >
+                      Edit
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Delete tournament">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={() => setDeleteConfirm(true)}
+                      startContent={<Icon icon="lucide:trash-2" />}
+                      aria-label="Delete tournament"
+                    >
+                      Delete
+                    </Button>
+                  </Tooltip>
+                </div>
               )}
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={() => setEditOpen(true)}
-                  startContent={<Icon icon="lucide:edit" />}
-                  aria-label="Edit tournament"
-                >
-                  <span className="hidden md:inline">Edit</span>
-                </Button>
-              )}
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  onPress={() => setDeleteConfirm(true)}
-                  startContent={<Icon icon="lucide:trash-2" />}
-                  aria-label="Delete tournament"
-                >
-                  <span className="hidden md:inline">Delete</span>
-                </Button>
-              )}
+            </div>
+
+            {/* Desktop: Single row with all buttons */}
+            <div className="hidden md:flex items-center justify-between">
+              <BackButton
+                onPress={() => navigate("/tournaments", { replace: false })}
+              />
+              <div className="flex items-center gap-3">
+                <Tooltip content="Share tournament">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={shareLink}
+                    startContent={<Icon icon="lucide:share" />}
+                    aria-label="Share tournament"
+                  >
+                    Share
+                  </Button>
+                </Tooltip>
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2 pl-2 border-l border-divider">
+                    <Tooltip content="Export registrations">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={exportRegistrations}
+                        startContent={<Icon icon="lucide:download" />}
+                        aria-label="Export registrations"
+                      >
+                        Export
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Edit tournament">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() => setEditOpen(true)}
+                        startContent={<Icon icon="lucide:edit" />}
+                        aria-label="Edit tournament"
+                      >
+                        Edit
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Delete tournament">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="danger"
+                        onPress={() => setDeleteConfirm(true)}
+                        startContent={<Icon icon="lucide:trash-2" />}
+                        aria-label="Delete tournament"
+                      >
+                        Delete
+                      </Button>
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
