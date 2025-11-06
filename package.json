@@ -12,6 +12,7 @@
     "lint": "eslint -c .eslintrc.json ./src/**/**/*.{ts,tsx} --fix",
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
+    "firestore": "firebase deploy --only firestore:rules",
     "firebase-rules": "firebase deploy --only firestore:rules"
   },
   "dependencies": {

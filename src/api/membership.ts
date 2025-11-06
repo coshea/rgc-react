@@ -8,8 +8,12 @@ import {
   collection,
   query,
   where,
+  onSnapshot,
+  Unsubscribe,
 } from "firebase/firestore";
 import { logFsStart, logFsSuccess, logFsError } from "@/utils/firestoreLogger";
+import type { MembershipSettings } from "@/types/membershipSettings";
+import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 
 export type MembershipPayment = {
   userId: string;
@@ -204,6 +208,88 @@ export async function updateMembershipPayment(params: {
     return { confirmed };
   } catch (e) {
     logFsError("updateMembershipPayment", e, { userId, year });
+    throw e;
+  }
+}
+
+// ============================================================================
+// Membership Settings (Admin Controls)
+// ============================================================================
+
+/**
+ * Get current membership settings (pricing, registration open/closed)
+ * Returns default settings if document doesn't exist
+ */
+export async function getMembershipSettings(): Promise<MembershipSettings> {
+  const ref = doc(db, "config", "membershipSettings");
+  logFsStart("getMembershipSettings");
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      logFsSuccess("getMembershipSettings", { source: "default" });
+      return DEFAULT_MEMBERSHIP_SETTINGS;
+    }
+    const data = snap.data() as MembershipSettings;
+    logFsSuccess("getMembershipSettings", {
+      registrationOpen: data.registrationOpen,
+    });
+    return data;
+  } catch (e) {
+    logFsError("getMembershipSettings", e);
+    throw e;
+  }
+}
+
+/**
+ * Subscribe to membership settings changes in real-time
+ */
+export function subscribeMembershipSettings(
+  callback: (settings: MembershipSettings) => void
+): Unsubscribe {
+  const ref = doc(db, "config", "membershipSettings");
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (!snap.exists()) {
+        callback(DEFAULT_MEMBERSHIP_SETTINGS);
+      } else {
+        callback(snap.data() as MembershipSettings);
+      }
+    },
+    (error) => {
+      logFsError("subscribeMembershipSettings", error);
+    }
+  );
+}
+
+/**
+ * Update membership settings (admin only)
+ * @throws Error if user is not authenticated
+ */
+export async function updateMembershipSettings(
+  settings: Partial<Omit<MembershipSettings, "updatedAt" | "updatedBy">>
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Must be authenticated to update membership settings");
+  }
+
+  const ref = doc(db, "config", "membershipSettings");
+  logFsStart("updateMembershipSettings", settings);
+
+  try {
+    await setDoc(
+      ref,
+      {
+        ...settings,
+        updatedAt: serverTimestamp(),
+        updatedBy: user.uid,
+      },
+      { merge: true }
+    );
+    logFsSuccess("updateMembershipSettings");
+  } catch (e) {
+    logFsError("updateMembershipSettings", e);
     throw e;
   }
 }

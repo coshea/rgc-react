@@ -218,6 +218,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Config collection: membership settings and other configuration
+    match /config/{docId} {
+      // Anyone authenticated can read config (needed for membership settings)
+      allow read: if request.auth != null;
+      
+      // Only admins can write config
+      allow write: if isAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;
