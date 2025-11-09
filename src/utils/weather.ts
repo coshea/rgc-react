@@ -54,7 +54,6 @@ export async function fetchHistoricalWeather(
     // The API returns hourly data from 00:00 to 23:00
     const startHour = 7;
     const endHour = 13;
-    const hours = endHour - startHour + 1; // 7 hours total
 
     // Calculate averages for the time period
     let tempSum = 0;
