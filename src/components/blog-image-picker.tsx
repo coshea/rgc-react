@@ -70,7 +70,16 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
       setSelectedFile(null);
       setCustomFilename("");
       // Reload images list
-      await loadImages();
+      try {
+        await loadImages();
+      } catch (error) {
+        console.error("Failed to refresh image list after upload", error);
+        addToast({
+          title: "Warning",
+          description: "Image uploaded, but failed to refresh image list.",
+          color: "warning",
+        });
+      }
     } catch (error) {
       console.error("Upload failed", error);
       addToast({
