@@ -212,19 +212,20 @@ export const BlogListPage: React.FC = () => {
       {/* Blog Posts List */}
       <div className="space-y-4">
         {filteredPosts.map((post) => (
-          <Card
-            key={post.id}
-            isPressable
-            onPress={() => navigate(`/announcements/${post.slug}`)}
-          >
+          <Card key={post.id}>
             <CardBody className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Featured Image */}
                 {post.featuredImage && (
-                  <div className="md:w-48 md:flex-shrink-0">
+                  <div
+                    className="md:w-48 md:flex-shrink-0 cursor-pointer"
+                    onClick={() => navigate(`/announcements/${post.slug}`)}
+                  >
                     <img
                       src={post.featuredImage}
                       alt={post.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-32 md:h-full object-cover rounded-lg"
                     />
                   </div>
@@ -233,7 +234,10 @@ export const BlogListPage: React.FC = () => {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="flex-1 min-w-0">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => navigate(`/announcements/${post.slug}`)}
+                    >
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {post.isPinned && (
                           <Chip

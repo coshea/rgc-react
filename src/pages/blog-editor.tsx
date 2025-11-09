@@ -13,6 +13,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { BlogImagePicker } from "@/components/blog-image-picker";
 import { useAuth } from "@/providers/AuthProvider";
 import { addToast } from "@/providers/toast";
 import {
@@ -410,15 +411,18 @@ export const BlogEditorPage: React.FC = () => {
             description="Short summary shown in lists and previews"
           />
 
-          {/* Featured Image URL */}
-          <Input
-            label="Featured Image URL (Optional)"
-            placeholder="https://example.com/image.jpg"
-            value={formData.featuredImage || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, featuredImage: value })
-            }
-          />
+          {/* Featured Image */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Featured Image (Optional)
+            </label>
+            <BlogImagePicker
+              value={formData.featuredImage}
+              onChange={(url) =>
+                setFormData({ ...formData, featuredImage: url })
+              }
+            />
+          </div>
 
           {/* Pin Post */}
           <Switch

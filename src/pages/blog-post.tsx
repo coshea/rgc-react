@@ -170,6 +170,9 @@ export const BlogPostPage: React.FC = () => {
           <img
             src={post.featuredImage}
             alt={post.title}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="w-full h-full object-cover"
           />
         </div>
