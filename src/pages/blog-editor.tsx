@@ -461,20 +461,19 @@ export const BlogEditorPage: React.FC = () => {
               </h2>
             </CardHeader>
             <CardBody>
-              {tournaments.find((t) => t.firestoreId === selectedTournamentId)
-                ?.winnerGroups ? (
-                <GroupedWinners
-                  groups={
-                    tournaments.find(
-                      (t) => t.firestoreId === selectedTournamentId
-                    )!.winnerGroups!
-                  }
-                />
-              ) : (
-                <p className="text-foreground-500">
-                  No winners data available for this tournament.
-                </p>
-              )}
+              {(() => {
+                const selectedTournament = tournaments.find(
+                  (t) => t.firestoreId === selectedTournamentId
+                );
+                if (selectedTournament?.winnerGroups?.length) {
+                  return <GroupedWinners groups={selectedTournament.winnerGroups} />;
+                }
+                return (
+                  <p className="text-foreground-500">
+                    No winners data available for this tournament.
+                  </p>
+                );
+              })()}
             </CardBody>
           </Card>
         )}
