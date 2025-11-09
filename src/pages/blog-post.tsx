@@ -1,10 +1,17 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardBody, Chip, Button } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Button,
+  Divider,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { BlogPost } from "@/types/blog";
+import { BlogPost, BlogCategory } from "@/types/blog";
 import { getBlogPostBySlug } from "@/api/blog";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
@@ -13,6 +20,7 @@ import GroupedWinners from "@/components/grouped-winners";
 import { onTournament, mapTournamentDoc } from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
 import { addToast } from "@/providers/toast";
+import { getWeatherIcon } from "@/utils/weather";
 
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -166,7 +174,7 @@ export const BlogPostPage: React.FC = () => {
 
       {/* Featured Image */}
       {post.featuredImage && (
-        <div className="mb-8 rounded-lg overflow-hidden aspect-video">
+        <div className="mb-6 rounded-lg overflow-hidden h-48">
           <img
             src={post.featuredImage}
             alt={post.title}
@@ -223,6 +231,61 @@ export const BlogPostPage: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* Tournament Weather (only for tournament results) */}
+      {post.category === BlogCategory.TournamentResults &&
+        tournament?.weather && (
+          <Card shadow="sm" className="mb-6">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <Icon
+                  icon={getWeatherIcon(tournament.weather.condition)}
+                  className="w-5 h-5"
+                />
+                <h2 className="text-lg font-semibold">
+                  Tournament Day Weather
+                </h2>
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="pt-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                    Condition
+                  </p>
+                  <p className="font-semibold text-base">
+                    {tournament.weather.condition}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                    Temperature
+                  </p>
+                  <p className="font-semibold text-base">
+                    {tournament.weather.temperature}°F
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                    Wind Speed
+                  </p>
+                  <p className="font-semibold text-base">
+                    {tournament.weather.windSpeed} mph
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                    Precipitation
+                  </p>
+                  <p className="font-semibold text-base">
+                    {tournament.weather.precipitation}"
+                  </p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
 
       {/* Post Content */}
       <Card>

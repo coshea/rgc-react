@@ -85,6 +85,7 @@ export function mapTournamentDoc(d: any) {
     winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
     previousTournamentId: data.previousTournamentId,
+    weather: data.weather,
   };
 }
 

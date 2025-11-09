@@ -67,7 +67,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
   }
 
   return (
-    <section className="w-full max-w-6xl mx-auto px-4 pt-4 pb-0 overflow-x-hidden">
+    <section className="w-full max-w-6xl mx-auto px-4 pt-4 pb-8 overflow-x-hidden">
       <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold mb-1">Latest News</h2>

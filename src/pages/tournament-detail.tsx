@@ -38,6 +38,7 @@ import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
 import { WinnerDisplay } from "@/components/winner-display";
+import { getWeatherIcon } from "@/utils/weather";
 
 interface RegistrationDoc {
   id: string;
@@ -593,6 +594,60 @@ const TournamentDetailPage: React.FC = () => {
                   </div>
                 </CardBody>
               </Card>
+
+              {/* Weather Card - Only show if weather data exists */}
+              {tournament.weather && (
+                <Card shadow="sm">
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        icon={getWeatherIcon(tournament.weather.condition)}
+                        className="w-5 h-5"
+                      />
+                      <h2 className="text-lg font-semibold">
+                        Tournament Day Weather
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="pt-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Condition
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.condition}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Temperature
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.temperature}°F
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Wind Speed
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.windSpeed} mph
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Precipitation
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.precipitation}"
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
 
               <Card shadow="sm">
                 <CardHeader className="pb-0">
