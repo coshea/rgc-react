@@ -2,6 +2,7 @@ import { TournamentSection } from "@/components/tournament-section";
 import { NewsPage } from "@/pages/news";
 import ContactPage from "./contact";
 import PastChampions from "./past-champions";
+import { RecentBlogPosts } from "@/components/recent-blog-posts";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -19,6 +20,8 @@ export default function HomePage() {
   return (
     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
       <NewsPage />
+      {/* Recent Blog Posts */}
+      <RecentBlogPosts limit={3} />
       <TournamentSection />
       {/* Past Champions */}
       <div id="home-past-champions-section">

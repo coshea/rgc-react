@@ -23,7 +23,11 @@ import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
 import FindAGamePage from "@/pages/find-a-game";
+import { BlogListPage } from "@/pages/blog-list";
+import { BlogPostPage } from "@/pages/blog-post";
+import { BlogEditorPage } from "@/pages/blog-editor";
 import RequireAuth from "@/components/require-auth";
+import RequireAdmin from "@/components/require-admin";
 
 function App() {
   return (
@@ -94,6 +98,25 @@ function App() {
               </RequireAuth>
             }
             path={siteConfig.pages.findGame.link}
+          />
+          {/* Blog Routes */}
+          <Route element={<BlogListPage />} path="/announcements" />
+          <Route element={<BlogPostPage />} path="/announcements/:slug" />
+          <Route
+            element={
+              <RequireAdmin>
+                <BlogEditorPage />
+              </RequireAdmin>
+            }
+            path="/announcements/new"
+          />
+          <Route
+            element={
+              <RequireAdmin>
+                <BlogEditorPage />
+              </RequireAdmin>
+            }
+            path="/announcements/edit/:id"
           />
           <Route element={<NotFoundPage />} path="*" />
         </Routes>
