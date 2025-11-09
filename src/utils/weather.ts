@@ -80,11 +80,15 @@ export async function fetchHistoricalWeather(
     // Use the most common weather code during this period
     const weatherCode =
       weatherCodes.length > 0
-        ? weatherCodes.sort(
-            (a, b) =>
-              weatherCodes.filter((c) => c === b).length -
-              weatherCodes.filter((c) => c === a).length
-          )[0]
+        ? (() => {
+            const freqMap = new Map<number, number>();
+            weatherCodes.forEach((code) =>
+              freqMap.set(code, (freqMap.get(code) || 0) + 1)
+            );
+            return Array.from(freqMap.entries()).reduce((a, b) =>
+              a[1] > b[1] ? a : b
+            )[0];
+          })()
         : 0;
     const condition = getWeatherCondition(weatherCode);
 

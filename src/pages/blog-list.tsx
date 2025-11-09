@@ -8,6 +8,11 @@ import {
   Chip,
   Select,
   SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -212,15 +217,20 @@ export const BlogListPage: React.FC = () => {
       {/* Blog Posts List */}
       <div className="space-y-4">
         {filteredPosts.map((post) => (
-          <Card key={post.id}>
+          <Card
+            key={post.id}
+            isPressable={!isAdmin}
+            onPress={
+              !isAdmin
+                ? () => navigate(`/announcements/${post.slug}`)
+                : undefined
+            }
+          >
             <CardBody className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Featured Image */}
                 {post.featuredImage && (
-                  <div
-                    className="md:w-48 md:flex-shrink-0 cursor-pointer"
-                    onClick={() => navigate(`/announcements/${post.slug}`)}
-                  >
+                  <div className="md:w-48 md:flex-shrink-0">
                     <img
                       src={post.featuredImage}
                       alt={post.title}
@@ -234,10 +244,7 @@ export const BlogListPage: React.FC = () => {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
-                    <div
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => navigate(`/announcements/${post.slug}`)}
-                    >
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {post.isPinned && (
                           <Chip
@@ -266,9 +273,23 @@ export const BlogListPage: React.FC = () => {
                           </Chip>
                         )}
                       </div>
-                      <h2 className="text-2xl font-bold mb-2 line-clamp-2">
-                        {post.title}
-                      </h2>
+                      {isAdmin ? (
+                        <Button
+                          variant="light"
+                          className="h-auto p-0 data-[hover=true]:bg-transparent"
+                          onPress={() =>
+                            navigate(`/announcements/${post.slug}`)
+                          }
+                        >
+                          <h2 className="text-2xl font-bold mb-2 line-clamp-2 text-left">
+                            {post.title}
+                          </h2>
+                        </Button>
+                      ) : (
+                        <h2 className="text-2xl font-bold mb-2 line-clamp-2">
+                          {post.title}
+                        </h2>
+                      )}
                       {post.excerpt && (
                         <p className="text-foreground-600 mb-3 line-clamp-2">
                           {post.excerpt}
@@ -326,37 +347,32 @@ export const BlogListPage: React.FC = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => !deleting && setDeleteConfirm(null)}
-          />
-          <div className="relative z-10 bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium mb-2">Delete Blog Post</h3>
-            <p className="text-sm text-foreground-500 mb-4">
-              Are you sure you want to delete "{deleteConfirm.title}"? This
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => !deleting && setDeleteConfirm(null)}
+      >
+        <ModalContent>
+          <ModalHeader>Delete Blog Post</ModalHeader>
+          <ModalBody>
+            <p>
+              Are you sure you want to delete "{deleteConfirm?.title}"? This
               cannot be undone.
             </p>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="flat"
-                onPress={() => !deleting && setDeleteConfirm(null)}
-                isDisabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                color="danger"
-                onPress={handleDelete}
-                isLoading={deleting}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={() => !deleting && setDeleteConfirm(null)}
+              isDisabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button color="danger" onPress={handleDelete} isLoading={deleting}>
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

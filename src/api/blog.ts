@@ -16,6 +16,7 @@ import {
   addDoc,
   setDoc,
   serverTimestamp,
+  FieldValue,
 } from "firebase/firestore";
 import { BlogPost, BlogPostStatus, BlogCategory } from "@/types/blog";
 
@@ -150,14 +151,18 @@ export async function updateBlogPost(
   updates: Partial<BlogPost>
 ): Promise<void> {
   const docRef = doc(db, BLOG_COLLECTION, id);
-  const updateData: any = {
+  const updateData: Partial<Omit<BlogPost, "updatedAt">> & {
+    updatedAt: FieldValue;
+  } = {
     ...updates,
     updatedAt: serverTimestamp(),
   };
 
   // Remove undefined values
   Object.keys(updateData).forEach(
-    (key) => updateData[key] === undefined && delete updateData[key]
+    (key) =>
+      updateData[key as keyof typeof updateData] === undefined &&
+      delete updateData[key as keyof typeof updateData]
   );
 
   await setDoc(docRef, updateData, { merge: true });
