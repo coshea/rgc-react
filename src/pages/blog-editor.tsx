@@ -225,7 +225,15 @@ export const BlogEditorPage: React.FC = () => {
               title: `${tournament.title} - Tee Times Posted`,
               category: BlogCategory.TeeTimes,
               excerpt: `Tee times are now available for the upcoming ${tournament.title}.`,
-              content: `Tee times for **${tournament.title}** are now available.\n\n## Tournament Details\n- **Date:** ${tournament.date instanceof Date ? tournament.date.toLocaleDateString() : "TBD"}\n- **Prize Pool:** $${tournament.prizePool.toLocaleString()}\n\nGood luck to all participants!`,
+              content: [
+                `Tee times for **${tournament.title}** are now available.`,
+                "",
+                "## Tournament Details",
+                `- **Date:** ${tournament.date instanceof Date ? tournament.date.toLocaleDateString() : "TBD"}`,
+                `- **Prize Pool:** $${tournament.prizePool.toLocaleString()}`,
+                "",
+                "Good luck to all participants!"
+              ].join("\n"),
             });
           }
         }
