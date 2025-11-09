@@ -16,6 +16,15 @@
         { "fieldPath": "year", "order": "DESCENDING" },
         { "fieldPath": "championshipType", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "blogPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "isPinned", "order": "DESCENDING" },
+        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -103,5 +103,11 @@ export const siteConfig = {
       link: "/find-a-game",
       icon: "lucide:handshake",
     },
+    blog: {
+      title: "Announcements",
+      description: "Latest club news and announcements",
+      link: "/announcements",
+      icon: "lucide:newspaper",
+    },
   },
 };

@@ -97,6 +97,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
   const [adding, setAdding] = React.useState(false);
   const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
+  const [weather, setWeather] = React.useState<
+    import("@/types/tournament").TournamentWeather | null
+  >(seed.weather || null);
+  const [fetchingWeather, setFetchingWeather] = React.useState(false);
 
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
@@ -139,6 +143,48 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFetchWeather = async () => {
+    if (!date) {
+      addToast({
+        title: "Date Required",
+        description: "Please set a tournament date before fetching weather",
+        color: "warning",
+      });
+      return;
+    }
+
+    setFetchingWeather(true);
+    try {
+      const { fetchHistoricalWeather } = await import("@/utils/weather");
+      const tournamentDate = new Date(date.toString());
+      const weatherData = await fetchHistoricalWeather(tournamentDate);
+
+      if (weatherData) {
+        setWeather(weatherData);
+        addToast({
+          title: "Weather Fetched",
+          description: `${weatherData.condition}, ${weatherData.temperature}°F`,
+          color: "success",
+        });
+      } else {
+        addToast({
+          title: "No Weather Data",
+          description: "Could not fetch weather for this date",
+          color: "warning",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+      addToast({
+        title: "Error",
+        description: "Failed to fetch weather data",
+        color: "danger",
+      });
+    } finally {
+      setFetchingWeather(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,6 +235,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
+        weather: weather || undefined,
       };
 
       // Add previousTournamentId if it has a value, or use deleteField() to clear it on updates
@@ -620,6 +667,64 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     );
                   })}
               </Select>
+
+              {/* Weather Section */}
+              <Card>
+                <CardBody className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">
+                      Tournament Weather
+                    </h3>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={handleFetchWeather}
+                      isLoading={fetchingWeather}
+                      isDisabled={!date}
+                      startContent={
+                        !fetchingWeather && (
+                          <Icon icon="lucide:cloud" className="w-4 h-4" />
+                        )
+                      }
+                    >
+                      {weather ? "Refresh" : "Fetch"} Weather
+                    </Button>
+                  </div>
+                  {weather ? (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-foreground-500 text-xs">Condition</p>
+                        <p className="font-medium">{weather.condition}</p>
+                      </div>
+                      <div>
+                        <p className="text-foreground-500 text-xs">
+                          Temperature
+                        </p>
+                        <p className="font-medium">{weather.temperature}°F</p>
+                      </div>
+                      <div>
+                        <p className="text-foreground-500 text-xs">
+                          Wind Speed
+                        </p>
+                        <p className="font-medium">{weather.windSpeed} mph</p>
+                      </div>
+                      <div>
+                        <p className="text-foreground-500 text-xs">
+                          Precipitation
+                        </p>
+                        <p className="font-medium">{weather.precipitation}"</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-foreground-500">
+                      {date
+                        ? "Click 'Fetch Weather' to load historical weather data"
+                        : "Set a tournament date to fetch weather"}
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
+
               <div className="flex flex-col gap-4 pt-2">
                 <Select
                   label="Status"

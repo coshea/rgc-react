@@ -100,9 +100,9 @@ export default function PastChampions({
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Past Champions</h1>
-          <p className="text-default-600 max-w-2xl mx-auto">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold mb-2">Past Champions</h1>
+          <p className="text-sm text-default-600 max-w-2xl mx-auto">
             Loading championship records...
           </p>
         </div>
@@ -114,8 +114,8 @@ export default function PastChampions({
   if (isError) {
     return (
       <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Past Champions</h1>
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold mb-2">Past Champions</h1>
           <p className="text-danger">
             Error loading championships: {error?.message || "Unknown error"}
           </p>
@@ -128,25 +128,25 @@ export default function PastChampions({
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">Past Champions</h1>
-        <p className="text-default-600 max-w-2xl mx-auto mb-4">
-          Celebrating our distinguished champions and runners-up across all
-          major tournaments.
-        </p>
-
-        {isAdmin && (
-          <div className="mb-4">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 overflow-x-hidden">
+      <div className="mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+          <h1 className="text-2xl font-bold">Past Champions</h1>
+          {isAdmin && (
             <Button
               color="primary"
               onPress={handleAddNew}
               startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+              className="self-start sm:self-auto"
             >
               Add Championship
             </Button>
-          </div>
-        )}
+          )}
+        </div>
+        <p className="text-sm text-default-600 mb-3">
+          Celebrating our distinguished champions and runners-up across all
+          major tournaments.
+        </p>
 
         {!showAllYears && (
           <div className="text-center">
@@ -179,7 +179,7 @@ export default function PastChampions({
 
       {/* Infinite scroll trigger and loading indicator */}
       {displayChampionships.length > 0 && (
-        <div ref={targetRef} className="flex justify-center py-8">
+        <div ref={targetRef} className="flex justify-center py-4">
           {isFetchingNextPage && (
             <div className="flex items-center gap-2">
               <Spinner size="sm" />

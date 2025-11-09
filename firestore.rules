@@ -227,6 +227,31 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Blog posts collection
+    match /blogPosts/{postId} {
+      // Anyone can read published blog posts
+      allow read: if resource.data.status == 'published' || isAdmin();  
+      
+      // Only admins can create, update, or delete blog posts
+      allow create: if isAdmin() &&
+        request.resource.data.title is string &&
+        request.resource.data.slug is string &&
+        request.resource.data.content is string &&
+        request.resource.data.authorId is string &&
+        request.resource.data.authorName is string &&
+        request.resource.data.status is string &&
+        request.resource.data.category is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp;
+      
+      allow update: if isAdmin() &&  
+        request.resource.data.updatedAt is timestamp &&  
+        request.resource.data.createdAt == resource.data.createdAt &&  
+        request.resource.data.authorId == resource.data.authorId;
+      
+      allow delete: if isAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;
