@@ -60,7 +60,7 @@ export const BlogPostPage: React.FC = () => {
         });
         setLoading(false);
       });
-  }, [slug, navigate]);
+  }, [slug, navigate, isAdmin]);
 
   // Load tournament if referenced
   React.useEffect(() => {
