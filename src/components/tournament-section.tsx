@@ -46,13 +46,13 @@ export function TournamentSection() {
     isMobile && tournaments.length > displayTournaments.length;
 
   return (
-    <section className="py-20 bg-background" id="tournaments">
-      <div className="container mx-auto max-w-6xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">
+    <section className="py-8 bg-background overflow-x-hidden" id="tournaments">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">
             {currentYear} Featured Tournaments
           </h2>
-          <p className="text-default-600 max-w-2xl mx-auto">
+          <p className="text-sm text-default-600">
             Click on a tournament to view details and register
           </p>
         </div>
