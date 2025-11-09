@@ -16,4 +16,6 @@ vi.mock("@iconify/react", () => {
 // Cleanup after each test to prevent memory leaks and unhandled promises
 afterEach(() => {
   cleanup();
+  // Flush microtasks to let framer-motion complete pending state updates
+  return new Promise((resolve) => setImmediate(resolve));
 });
