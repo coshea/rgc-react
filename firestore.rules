@@ -230,7 +230,7 @@ service cloud.firestore {
     // Blog posts collection
     match /blogPosts/{postId} {
       // Anyone can read published blog posts
-      allow read: if true;
+      allow read: if resource.data.status == 'published' || isAdmin();  
       
       // Only admins can create, update, or delete blog posts
       allow create: if isAdmin() &&
@@ -244,8 +244,10 @@ service cloud.firestore {
         request.resource.data.createdAt is timestamp &&
         request.resource.data.updatedAt is timestamp;
       
-      allow update: if isAdmin() &&
-        request.resource.data.updatedAt is timestamp;
+      allow update: if isAdmin() &&  
+        request.resource.data.updatedAt is timestamp &&  
+        request.resource.data.createdAt == resource.data.createdAt &&  
+        request.resource.data.authorId == resource.data.authorId;
       
       allow delete: if isAdmin();
     }
