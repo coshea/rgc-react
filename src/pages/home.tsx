@@ -1,5 +1,4 @@
 import { TournamentSection } from "@/components/tournament-section";
-import { NewsPage } from "@/pages/news";
 import ContactPage from "./contact";
 import PastChampions from "./past-champions";
 import { RecentBlogPosts } from "@/components/recent-blog-posts";
