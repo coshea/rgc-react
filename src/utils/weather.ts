@@ -61,21 +61,41 @@ export async function fetchHistoricalWeather(
     let windSum = 0;
     let precipSum = 0;
     let humiditySum = 0;
+    let tempCount = 0;
+    let windCount = 0;
+    let precipCount = 0;
+    let humidityCount = 0;
     const weatherCodes: number[] = [];
 
     for (let i = startHour; i <= endHour; i++) {
-      tempSum += data.hourly.temperature_2m?.[i] || 0;
-      windSum += data.hourly.windspeed_10m?.[i] || 0;
-      precipSum += data.hourly.precipitation?.[i] || 0;
-      humiditySum += data.hourly.relativehumidity_2m?.[i] || 0;
+      const tempVal = data.hourly.temperature_2m?.[i];
+      if (typeof tempVal === "number") {
+        tempSum += tempVal;
+        tempCount++;
+      }
+      const windVal = data.hourly.windspeed_10m?.[i];
+      if (typeof windVal === "number") {
+        windSum += windVal;
+        windCount++;
+      }
+      const precipVal = data.hourly.precipitation?.[i];
+      if (typeof precipVal === "number") {
+        precipSum += precipVal;
+        precipCount++;
+      }
+      const humidityVal = data.hourly.relativehumidity_2m?.[i];
+      if (typeof humidityVal === "number") {
+        humiditySum += humidityVal;
+        humidityCount++;
+      }
       const code = data.hourly.weathercode?.[i];
       if (code !== undefined) weatherCodes.push(code);
     }
 
-    const temperature = tempSum / hours;
-    const windSpeed = windSum / hours;
-    const precipitation = precipSum / hours;
-    const humidity = humiditySum / hours;
+    const temperature = tempCount > 0 ? tempSum / tempCount : 0;
+    const windSpeed = windCount > 0 ? windSum / windCount : 0;
+    const precipitation = precipCount > 0 ? precipSum / precipCount : 0;
+    const humidity = humidityCount > 0 ? humiditySum / humidityCount : 0;
 
     // Use the most common weather code during this period
     const weatherCode =
