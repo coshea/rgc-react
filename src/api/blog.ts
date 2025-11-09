@@ -158,14 +158,12 @@ export async function updateBlogPost(
     updatedAt: serverTimestamp(),
   };
 
-  // Remove undefined values
-  Object.keys(updateData).forEach(
-    (key) =>
-      updateData[key as keyof typeof updateData] === undefined &&
-      delete updateData[key as keyof typeof updateData]
+  // Remove undefined values (functional, non-mutating)
+  const cleanData = Object.fromEntries(
+    Object.entries(updateData).filter(([_, v]) => v !== undefined)
   );
 
-  await setDoc(docRef, updateData, { merge: true });
+  await setDoc(docRef, cleanData, { merge: true });
 }
 
 // Delete a blog post
