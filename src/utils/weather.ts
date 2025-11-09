@@ -21,7 +21,7 @@ export async function fetchHistoricalWeather(
     url.searchParams.append("longitude", LONGITUDE.toString());
     url.searchParams.append("start_date", dateStr);
     url.searchParams.append("end_date", dateStr);
-    // Request hourly data for 9 AM
+    // Request hourly weather data fields for averaging between 7 AM and 1 PM
     url.searchParams.append(
       "hourly",
       [
