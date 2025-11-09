@@ -21,7 +21,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
   React.useEffect(() => {
     const unsub = onPublishedBlogPosts(
       (snap) => {
-        const blogPosts = snap.docs.map(mapBlogPostDoc).slice(0, limit);
+        const blogPosts = snap.docs.map(mapBlogPostDoc);
         setPosts(blogPosts);
         setLoading(false);
       },
