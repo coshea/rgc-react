@@ -2,12 +2,25 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import MembershipPage from "@/pages/membership";
+import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 
 // Capture toast calls
 const addToastMock = vi.fn();
 
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "u1", email: "user@example.com" } }),
+}));
+
+vi.mock("@/components/membership/hooks", () => ({
+  useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+}));
+
+vi.mock("@/api/membership", () => ({
+  subscribeMembershipSettings: (callback: any) => {
+    // Immediately invoke callback with default settings
+    callback(DEFAULT_MEMBERSHIP_SETTINGS);
+    return () => {}; // unsubscribe function
+  },
 }));
 
 vi.mock("@heroui/react", async (orig) => {
@@ -177,14 +190,14 @@ describe("MembershipPage - dynamic donation labels & handicap", () => {
     switchMode(/Renew/);
     const donationInput = screen.getByLabelText(/Optional Donation/i);
     fireEvent.change(donationInput, { target: { value: "15" } });
-    // Button label should reflect 85 + 15 = 100
+    // Button label should reflect 100 + 15 = 115
     // New compact label should only show total (no parenthetical)
     expect(
-      screen.getByRole("button", { name: /Renew \$100\.00/i })
+      screen.getByRole("button", { name: /Renew \$115\.00/i })
     ).toBeInTheDocument();
     // Breakdown rendered below button now
     expect(
-      screen.getByText(/Includes Membership \$85\.00 \+ Donation \$15\.00/i)
+      screen.getByText(/Includes Membership \$100\.00 \+ Donation \$15\.00/i)
     ).toBeInTheDocument();
   });
 

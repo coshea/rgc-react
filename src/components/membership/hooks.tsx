@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { onAdminDoc, onUsersCollection } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
 
-// Doc-only admin hook (ignores custom claims intentionally)
-export function useDocAdminFlag(user: { uid?: string } | null) {
+// Admin status hook - checks Firestore admin doc
+export function useAdminFlag(user: { uid?: string } | null) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingAdmin, setLoadingAdmin] = useState(!!user);
   useEffect(() => {
@@ -23,6 +23,9 @@ export function useDocAdminFlag(user: { uid?: string } | null) {
   }, [user?.uid]);
   return { isAdmin, loadingAdmin };
 }
+
+// Backward compatibility alias - will be removed in future version
+export const useDocAdminFlag = useAdminFlag;
 
 // Hook: useMembersSubscription - subscribes to users collection when enabled
 export function useMembersSubscription(enabled: boolean) {

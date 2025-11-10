@@ -1,4 +1,4 @@
-import { useParams, Navigate, useNavigate } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -19,6 +19,7 @@ import { button as buttonStyles } from "@heroui/theme";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { UserAvatar } from "@/components/avatar";
+import BackButton from "@/components/back-button";
 import { ProfileForm } from "@/components/profile-form";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserById } from "@/hooks/useUserById";
@@ -33,7 +34,6 @@ import { toDate } from "@/api/users";
 
 const UserProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { user: profileUser, isLoading: userLoading } = useUserById(userId);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -239,14 +239,7 @@ const UserProfilePage: React.FC = () => {
     <div className="max-w-6xl mx-auto p-6 space-y-4">
       {/* Back Button and Edit Profile */}
       <div className="flex items-center justify-between">
-        <Button
-          variant="flat"
-          size="sm"
-          startContent={<Icon icon="lucide:arrow-left" className="w-4 h-4" />}
-          onPress={() => navigate(-1)}
-        >
-          Back
-        </Button>
+        <BackButton />
 
         {isOwnProfile && (
           <Button

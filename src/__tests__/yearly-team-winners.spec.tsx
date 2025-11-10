@@ -21,19 +21,31 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
         completed: true,
         canceled: false,
         prizePool: 500,
-        winners: [
+        winnerGroups: [
           {
-            place: 1,
-            userIds: ["A", "B"],
-            displayNames: ["Alice", "Bob"],
-            prizeAmount: 50,
-            score: "65",
-          },
-          {
-            place: 2,
-            userIds: ["C", "D"],
-            displayNames: ["Carol", "Dan"],
-            prizeAmount: 30,
+            id: "overall",
+            label: "Overall",
+            type: "overall",
+            order: 1,
+            winners: [
+              {
+                place: 1,
+                competitors: [
+                  { userId: "A", displayName: "Alice" },
+                  { userId: "B", displayName: "Bob" },
+                ],
+                prizeAmount: 50,
+                score: "65",
+              },
+              {
+                place: 2,
+                competitors: [
+                  { userId: "C", displayName: "Carol" },
+                  { userId: "D", displayName: "Dan" },
+                ],
+                prizeAmount: 30,
+              },
+            ],
           },
         ],
       },
@@ -46,18 +58,30 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
         completed: true,
         canceled: false,
         prizePool: 400,
-        winners: [
+        winnerGroups: [
           {
-            place: 3,
-            userIds: ["A", "B"],
-            displayNames: ["Alice", "Bob"],
-            prizeAmount: 20,
-          },
-          {
-            place: 1,
-            userIds: ["E", "F"],
-            displayNames: ["Evan", "Frank"],
-            prizeAmount: 55,
+            id: "overall",
+            label: "Overall",
+            type: "overall",
+            order: 1,
+            winners: [
+              {
+                place: 3,
+                competitors: [
+                  { userId: "A", displayName: "Alice" },
+                  { userId: "B", displayName: "Bob" },
+                ],
+                prizeAmount: 20,
+              },
+              {
+                place: 1,
+                competitors: [
+                  { userId: "E", displayName: "Evan" },
+                  { userId: "F", displayName: "Frank" },
+                ],
+                prizeAmount: 55,
+              },
+            ],
           },
         ],
       },

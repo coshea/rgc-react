@@ -34,16 +34,16 @@ export const ContactForm = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8 md:items-stretch">
-      <div className="hidden md:block relative h-[600px]">
+      <div className="hidden md:block relative h-[500px] lg:h-[560px] xl:h-[600px] overflow-hidden rounded-2xl">
         <Image
           src={golfBallHoleImage}
           alt="Contact Us"
-          className="w-full h-full object-cover rounded-2xl"
+          className="w-full h-full object-cover"
         />
       </div>
 
       <Card className="p-2 md:h-full flex flex-col">
-        <CardBody className="space-y-6 grow overflow-y-auto">
+        <CardBody className="space-y-6 grow">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-foreground">
               Contact Us

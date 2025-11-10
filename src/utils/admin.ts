@@ -2,8 +2,8 @@ import { db } from "@/config/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 /**
- * One-shot doc-based admin check. Ignores custom claims intentionally.
- * Returns true if /admin/{uid} has isAdmin/admin flag true (or string 'true').
+ * One-shot admin check via Firestore admin doc.
+ * Returns true if /admin/{uid} has isAdmin or admin flag set to true.
  */
 export async function isAdminUser(
   uid: string | undefined | null
@@ -17,12 +17,17 @@ export async function isAdminUser(
 }
 
 /**
- * Convenience helper that throws if not doc-admin; for guarding imperative flows.
+ * Convenience helper that throws if not admin; for guarding imperative flows.
  */
 export async function requireAdmin(
   uid: string | undefined | null
 ): Promise<void> {
   const ok = await isAdminUser(uid);
-  if (!ok)
-    throw new Error("Not authorized: admin doc not present or not flagged.");
+  if (!ok) throw new Error("Not authorized: admin status required.");
 }
+
+/**
+ * React hook for admin status - use this instead of isAdminUser in components.
+ * Re-exported from @/components/membership/hooks for convenience.
+ */
+export { useAdminFlag } from "@/components/membership/hooks";

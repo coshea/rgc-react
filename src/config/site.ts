@@ -45,6 +45,12 @@ export const siteConfig = {
       link: "/policies",
       icon: "lucide:file-text",
     },
+    cookies: {
+      title: "Cookie Policy",
+      description: "How we use cookies and how to manage your preferences",
+      link: "/cookies",
+      icon: "lucide:cookie",
+    },
     contact: {
       title: "Contact Us",
       description: "Get in touch with the Ridgefield Golf Club",
@@ -96,6 +102,12 @@ export const siteConfig = {
       description: "Find playing partners",
       link: "/find-a-game",
       icon: "lucide:handshake",
+    },
+    blog: {
+      title: "Announcements",
+      description: "Latest club news and announcements",
+      link: "/announcements",
+      icon: "lucide:newspaper",
     },
   },
 };

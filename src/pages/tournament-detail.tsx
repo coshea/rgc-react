@@ -14,9 +14,11 @@ import {
   Button,
   Divider,
   ScrollShadow,
+  Tooltip,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
+import BackButton from "@/components/back-button";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus } from "@/utils/tournamentStatus";
@@ -28,8 +30,6 @@ const TournamentEditor = React.lazy(() =>
     default: m.TournamentEditor,
   }))
 );
-import { Winner } from "@/types/winner";
-import { TournamentWinners } from "@/components/tournament-winners";
 import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
@@ -37,6 +37,8 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
+import { WinnerDisplay } from "@/components/winner-display";
+import { getWeatherIcon } from "@/utils/weather";
 
 interface RegistrationDoc {
   id: string;
@@ -53,6 +55,8 @@ const TournamentDetailPage: React.FC = () => {
   const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
+  const [previousTournament, setPreviousTournament] =
+    React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [regsLoading, setRegsLoading] = React.useState(true);
   const [registrations, setRegistrations] = React.useState<RegistrationDoc[]>(
@@ -145,15 +149,62 @@ const TournamentDetailPage: React.FC = () => {
     return () => unsub();
   }, [firestoreId]);
 
+  // Load previous tournament if previousTournamentId is set
+  React.useEffect(() => {
+    if (!tournament?.previousTournamentId) {
+      setPreviousTournament(null);
+      return;
+    }
+    const unsub = onTournament(
+      tournament.previousTournamentId,
+      (snap: any) => {
+        if (!snap.exists()) {
+          setPreviousTournament(null);
+          return;
+        }
+        try {
+          const prevTournament = mapTournamentDoc(snap);
+          setPreviousTournament(prevTournament);
+        } catch (err) {
+          console.error(err);
+          setPreviousTournament(null);
+        }
+      },
+      (err: any) => {
+        console.error("Failed to load previous tournament", err);
+        setPreviousTournament(null);
+      }
+    );
+    return () => unsub();
+  }, [tournament?.previousTournamentId]);
+
   // Users are now loaded globally via React Query (useUsersMap)
 
-  // All winners sorted by place ascending
-  const allWinners: Winner[] = React.useMemo(() => {
-    if (!tournament?.winners) return [];
-    return [...(tournament.winners || [])].sort((a, b) => a.place - b.place);
-  }, [tournament]);
+  // Get defending champion(s) from previous tournament
+  const defendingChampions = React.useMemo(() => {
+    if (!previousTournament) return null;
 
-  const hasGrouped = Boolean((tournament as any)?.winnerGroups?.length);
+    // Check for grouped winners
+    if ((previousTournament as any)?.winnerGroups?.length) {
+      const overallGroup = (previousTournament as any).winnerGroups.find(
+        (g: any) => g.type === "overall"
+      );
+      if (overallGroup?.winners?.length) {
+        const firstPlace = overallGroup.winners.find((w: any) => w.place === 1);
+        if (firstPlace?.competitors?.length) {
+          return {
+            competitors: firstPlace.competitors.map((c: any) => ({
+              id: c.userId,
+              name: c.displayName || "Unknown",
+            })),
+            score: firstPlace.score,
+          };
+        }
+      }
+    }
+
+    return null;
+  }, [previousTournament]);
 
   const formatDateLong = (date: Date) =>
     new Intl.DateTimeFormat("en-US", {
@@ -284,63 +335,125 @@ const TournamentDetailPage: React.FC = () => {
       ) : (
         <>
           {/* Top navigation row: Back link on the far left */}
-          <div className="mb-3 flex items-center justify-between">
-            <Button
-              size="sm"
-              variant="light"
-              onPress={() => navigate("/tournaments", { replace: false })}
-              startContent={
-                <Icon icon="lucide:arrow-left" className="w-4 h-4" />
-              }
-              aria-label="Go back to tournaments list"
-              className="-ml-1 text-foreground-500"
-            >
-              <span className="hidden sm:inline">Back</span>
-            </Button>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="flat"
-                onPress={shareLink}
-                startContent={<Icon icon="lucide:share" />}
-                aria-label="Share tournament"
-              >
-                <span className="hidden md:inline">Share</span>
-              </Button>
+          <div className="mb-3">
+            {/* Mobile: Two rows, Desktop: Single row */}
+            <div className="md:hidden space-y-2">
+              {/* Mobile First row: Back button and Share button */}
+              <div className="flex items-center justify-between">
+                <BackButton
+                  onPress={() => navigate("/tournaments", { replace: false })}
+                />
+                <Tooltip content="Share tournament">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={shareLink}
+                    startContent={<Icon icon="lucide:share" />}
+                    aria-label="Share tournament"
+                  >
+                    Share
+                  </Button>
+                </Tooltip>
+              </div>
+
+              {/* Mobile Second row: Admin actions */}
               {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={exportRegistrations}
-                  startContent={<Icon icon="lucide:download" />}
-                  aria-label="Export registrations"
-                >
-                  <span className="hidden md:inline">Export</span>
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Tooltip content="Export registrations">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={exportRegistrations}
+                      startContent={<Icon icon="lucide:download" />}
+                      aria-label="Export registrations"
+                    >
+                      Export
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Edit tournament">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={() => setEditOpen(true)}
+                      startContent={<Icon icon="lucide:edit" />}
+                      aria-label="Edit tournament"
+                    >
+                      Edit
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Delete tournament">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={() => setDeleteConfirm(true)}
+                      startContent={<Icon icon="lucide:trash-2" />}
+                      aria-label="Delete tournament"
+                    >
+                      Delete
+                    </Button>
+                  </Tooltip>
+                </div>
               )}
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={() => setEditOpen(true)}
-                  startContent={<Icon icon="lucide:edit" />}
-                  aria-label="Edit tournament"
-                >
-                  <span className="hidden md:inline">Edit</span>
-                </Button>
-              )}
-              {isAdmin && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  onPress={() => setDeleteConfirm(true)}
-                  startContent={<Icon icon="lucide:trash-2" />}
-                  aria-label="Delete tournament"
-                >
-                  <span className="hidden md:inline">Delete</span>
-                </Button>
-              )}
+            </div>
+
+            {/* Desktop: Single row with all buttons */}
+            <div className="hidden md:flex items-center justify-between">
+              <BackButton
+                onPress={() => navigate("/tournaments", { replace: false })}
+              />
+              <div className="flex items-center gap-3">
+                <Tooltip content="Share tournament">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={shareLink}
+                    startContent={<Icon icon="lucide:share" />}
+                    aria-label="Share tournament"
+                  >
+                    Share
+                  </Button>
+                </Tooltip>
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2 pl-2 border-l border-divider">
+                    <Tooltip content="Export registrations">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={exportRegistrations}
+                        startContent={<Icon icon="lucide:download" />}
+                        aria-label="Export registrations"
+                      >
+                        Export
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Edit tournament">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={() => setEditOpen(true)}
+                        startContent={<Icon icon="lucide:edit" />}
+                        aria-label="Edit tournament"
+                      >
+                        Edit
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Delete tournament">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="danger"
+                        onPress={() => setDeleteConfirm(true)}
+                        startContent={<Icon icon="lucide:trash-2" />}
+                        aria-label="Delete tournament"
+                      >
+                        Delete
+                      </Button>
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -482,6 +595,60 @@ const TournamentDetailPage: React.FC = () => {
                 </CardBody>
               </Card>
 
+              {/* Weather Card - Only show if weather data exists */}
+              {tournament.weather && (
+                <Card shadow="sm">
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        icon={getWeatherIcon(tournament.weather.condition)}
+                        className="w-5 h-5"
+                      />
+                      <h2 className="text-lg font-semibold">
+                        Tournament Day Weather
+                      </h2>
+                    </div>
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="pt-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Condition
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.condition}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Temperature
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.temperature}°F
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Wind Speed
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.windSpeed} mph
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                          Precipitation
+                        </p>
+                        <p className="font-semibold text-base">
+                          {tournament.weather.precipitation}"
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+
               <Card shadow="sm">
                 <CardHeader className="pb-0">
                   <h2 className="text-lg font-semibold">Registration</h2>
@@ -565,21 +732,65 @@ const TournamentDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <Card className="md:col-span-2" shadow="sm">
+          {/* Defending Champions Section */}
+          {(defendingChampions && defendingChampions.competitors.length > 0) ||
+          (isAdmin && tournament.previousTournamentId) ? (
+            <div className="mb-12">
+              <Card className="md:col-span-2" shadow="sm">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      icon="lucide:trophy"
+                      className="w-5 h-5 text-warning-500"
+                    />
+                    <h2 className="text-lg font-semibold">
+                      Defending Champion
+                    </h2>
+                  </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="pt-4">
+                  {defendingChampions &&
+                  defendingChampions.competitors.length > 0 ? (
+                    <>
+                      <p className="text-sm text-foreground-600 mb-3">
+                        {previousTournament?.date.getFullYear()} Winner
+                        {defendingChampions.competitors.length > 1 ? "s" : ""}
+                      </p>
+                      <WinnerDisplay
+                        place={1}
+                        competitors={defendingChampions.competitors.map(
+                          (c: { id: string; name: string }) => ({
+                            userId: c.id,
+                            displayName: c.name,
+                          })
+                        )}
+                        score={defendingChampions.score}
+                        isChampion={true}
+                      />
+                    </>
+                  ) : (
+                    <p className="text-sm text-foreground-500 italic">
+                      Previous tournament linked but no winners recorded yet.
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
+          ) : null}
+
+          <div className="mb-12">
+            <Card shadow="sm">
               <CardHeader className="pb-0">
                 <h2 className="text-lg font-semibold">Tournament Winners</h2>
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                {hasGrouped ? (
-                  <GroupedWinners groups={(tournament as any).winnerGroups} />
-                ) : (
-                  <TournamentWinners winners={allWinners} />
-                )}
+                <GroupedWinners
+                  groups={(tournament as any).winnerGroups || []}
+                />
               </CardBody>
             </Card>
-            <div />
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">

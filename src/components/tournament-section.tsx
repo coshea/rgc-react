@@ -1,69 +1,58 @@
-import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
 import { TournamentCard } from "./tournament-card";
-import { db } from "@/config/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import React from "react";
+import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { Link } from "@heroui/react";
+import { useState, useEffect } from "react";
 
 /*
  * Tournament section on the home page displaying a 
 list of tournaments in card view
  */
 export function TournamentSection() {
-  const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const currentYear = new Date().getFullYear();
+  const { tournaments, isLoading: loading } = useYearlyTournaments({
+    year: currentYear,
+  });
 
-  React.useEffect(() => {
-    const fetchTournaments = async () => {
-      setLoading(true);
-      try {
-        const colRef = collection(db, "tournaments");
-        const q = query(colRef, orderBy("date", "asc"));
-        const snap = await getDocs(q);
-        const items: Tournament[] = snap.docs.map((d) => {
-          const data: any = d.data();
-          const dateField =
-            data.date && typeof data.date.toDate === "function"
-              ? data.date.toDate()
-              : data.date
-                ? new Date(data.date)
-                : new Date();
+  const [isMobile, setIsMobile] = useState(false);
 
-          const status: TournamentStatus = getStatus({
-            status: data.status as TournamentStatus | undefined,
-          });
-          return {
-            firestoreId: d.id,
-            title: data.title,
-            date: dateField,
-            description: data.description,
-            detailsMarkdown: data.detailsMarkdown || data.details || "",
-            players: data.players,
-            status,
-            icon: data.icon,
-            href: data.href,
-            prizePool: data.prizePool || 0,
-            winners: data.winners || [],
-            winnerGroups: data.winnerGroups || [],
-          } as Tournament;
-        });
-        setTournaments(items);
-      } catch (err) {
-        console.error("Failed to load tournaments", err);
-      } finally {
-        setLoading(false);
-      }
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
     };
 
-    fetchTournaments();
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // For mobile: show most recent past tournament + next 2 upcoming
+  const getDisplayTournaments = () => {
+    if (!isMobile) return tournaments;
+
+    const now = new Date();
+    const past = tournaments.filter((t) => t.date < now);
+    const upcoming = tournaments.filter((t) => t.date >= now);
+
+    // Get most recent past tournament
+    const recentPast = past.length > 0 ? [past[past.length - 1]] : [];
+    // Get next 2 upcoming tournaments
+    const nextTwo = upcoming.slice(0, 2);
+
+    return [...recentPast, ...nextTwo];
+  };
+
+  const displayTournaments = getDisplayTournaments();
+  const showViewAllLink =
+    isMobile && tournaments.length > displayTournaments.length;
+
   return (
-    <section className="py-20 bg-background" id="tournaments">
-      <div className="container mx-auto max-w-6xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">2025 Featured Tournaments</h2>
-          <p className="text-default-600 max-w-2xl mx-auto">
+    <section className="py-8 bg-background overflow-x-hidden" id="tournaments">
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">
+            {currentYear} Featured Tournaments
+          </h2>
+          <p className="text-sm text-default-600">
             Click on a tournament to view details and register
           </p>
         </div>
@@ -99,7 +88,7 @@ export function TournamentSection() {
               </div>
             </div>
           ) : (
-            tournaments.map((tournament) => (
+            displayTournaments.map((tournament) => (
               <TournamentCard
                 key={tournament.firestoreId || tournament.title}
                 tournament={tournament}
@@ -107,6 +96,13 @@ export function TournamentSection() {
             ))
           )}
         </div>
+        {showViewAllLink && (
+          <div className="text-center mt-8">
+            <Link href="/tournaments" color="success" className="text-lg">
+              View All {currentYear} Tournaments
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

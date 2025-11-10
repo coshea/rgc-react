@@ -20,12 +20,48 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
   const detailHref = tournament.firestoreId
     ? `/tournaments/${tournament.firestoreId}`
     : undefined;
+
+  const status = getStatus(tournament);
+
+  // Define styling based on tournament status
+  const getCardStyles = () => {
+    switch (status) {
+      case TournamentStatus.Open:
+        return {
+          card: "border-2 border-warning-500 bg-warning-50/30 dark:bg-warning-950/20",
+          glow: "shadow-lg shadow-warning-500/20",
+        };
+      case TournamentStatus.InProgress:
+        return {
+          card: "border-2 border-primary-500 bg-primary-50/30 dark:bg-primary-950/20",
+          glow: "shadow-lg shadow-primary-500/20",
+        };
+      case TournamentStatus.Completed:
+        return {
+          card: "border border-default-200 bg-content2 opacity-90",
+          glow: "",
+        };
+      case TournamentStatus.Canceled:
+        return {
+          card: "border-2 border-danger-300 bg-danger-50/20 dark:bg-danger-950/10 opacity-80",
+          glow: "",
+        };
+      default: // Upcoming
+        return {
+          card: "border border-success-200 bg-content1",
+          glow: "",
+        };
+    }
+  };
+
+  const styles = getCardStyles();
+
   return (
     <>
       <Card
         as={detailHref ? Link : undefined}
         to={detailHref || "#"}
-        className={`max-w-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${getStatus(tournament) === TournamentStatus.Completed ? "bg-content2" : "bg-content1"}`}
+        className={`max-w-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-all duration-200 ${styles.card} ${styles.glow}`}
         shadow="md"
         isHoverable
         onPress={() => {
@@ -57,34 +93,73 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
               const label = statusText(s);
               if (s === TournamentStatus.Canceled) {
                 return (
-                  <Chip color="danger" variant="solid" size="sm">
+                  <Chip
+                    color="danger"
+                    variant="solid"
+                    size="sm"
+                    startContent={
+                      <Icon icon="lucide:x-circle" className="w-3.5 h-3.5" />
+                    }
+                  >
                     {label}
                   </Chip>
                 );
               }
               if (s === TournamentStatus.Completed) {
                 return (
-                  <Chip color="default" variant="flat" size="sm">
+                  <Chip
+                    color="success"
+                    variant="flat"
+                    size="sm"
+                    startContent={
+                      <Icon
+                        icon="lucide:check-circle"
+                        className="w-3.5 h-3.5"
+                      />
+                    }
+                  >
                     {label}
                   </Chip>
                 );
               }
               if (s === TournamentStatus.Open) {
                 return (
-                  <Chip color="warning" variant="flat" size="sm">
+                  <Chip
+                    color="warning"
+                    variant="solid"
+                    size="sm"
+                    startContent={
+                      <Icon icon="lucide:user-plus" className="w-3.5 h-3.5" />
+                    }
+                    className="animate-pulse"
+                  >
                     {label}
                   </Chip>
                 );
               }
               if (s === TournamentStatus.InProgress) {
                 return (
-                  <Chip color="primary" variant="flat" size="sm">
+                  <Chip
+                    color="primary"
+                    variant="solid"
+                    size="sm"
+                    startContent={
+                      <Icon icon="lucide:play-circle" className="w-3.5 h-3.5" />
+                    }
+                  >
                     {label}
                   </Chip>
                 );
               }
               return (
-                <Chip color="primary" variant="solid" size="sm">
+                <Chip
+                  color="default"
+                  variant="flat"
+                  size="sm"
+                  startContent={
+                    <Icon icon="lucide:clock" className="w-3.5 h-3.5" />
+                  }
+                >
                   {label}
                 </Chip>
               );

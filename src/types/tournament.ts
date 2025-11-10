@@ -17,11 +17,21 @@ export interface Tournament {
   icon?: string;
   href?: string;
   prizePool: number;
-  winners?: import("./winner").Winner[];
-  /** Phase 1: New grouped winners model (to be used in Phase 2 UI) */
   winnerGroups?: import("./winner").WinnerGroup[];
   // Tee selection for the tournament round
   tee?: TeeName;
+  // Link to previous year's tournament (Firestore ID) to display defending champion
+  previousTournamentId?: string;
+  // Weather data for the tournament day
+  weather?: TournamentWeather;
+}
+
+export interface TournamentWeather {
+  temperature: number; // Fahrenheit
+  condition: string; // e.g., "Partly Cloudy", "Sunny", "Rainy"
+  windSpeed: number; // mph
+  precipitation: number; // inches
+  humidity: number; // percentage
 }
 
 export enum TournamentStatus {

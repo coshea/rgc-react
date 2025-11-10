@@ -45,7 +45,7 @@ vi.mock("@/hooks/useUsers", async () => {
 const janDate = new Date(2024, 0, 10);
 const febDate = new Date(2024, 1, 12);
 
-// Helper to build winners arrays
+// Helper to build winnerGroups arrays
 // Event 1: two-person team wins (positions 1), second place solo, third place solo
 // Event 2: three distinct solo winners positions 1,2,3
 const event1 = {
@@ -59,27 +59,35 @@ const event1 = {
   prizePool: 300,
   registrationOpen: false,
   tee: "Blue",
-  winners: [
+  winnerGroups: [
     {
-      place: 1,
-      displayNames: ["Alice", "Bob"],
-      userIds: ["p1", "p2"],
-      prizeAmount: 100,
-      score: "-5",
-    },
-    {
-      place: 2,
-      displayNames: ["Cara"],
-      userIds: ["p3"],
-      prizeAmount: 60,
-      score: "-2",
-    },
-    {
-      place: 3,
-      displayNames: ["Dan"],
-      userIds: ["p4"],
-      prizeAmount: 40,
-      score: "E",
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [
+            { userId: "p1", displayName: "Alice" },
+            { userId: "p2", displayName: "Bob" },
+          ],
+          prizeAmount: 100,
+          score: "-5",
+        },
+        {
+          place: 2,
+          competitors: [{ userId: "p3", displayName: "Cara" }],
+          prizeAmount: 60,
+          score: "-2",
+        },
+        {
+          place: 3,
+          competitors: [{ userId: "p4", displayName: "Dan" }],
+          prizeAmount: 40,
+          score: "E",
+        },
+      ],
     },
   ],
 };
@@ -94,27 +102,32 @@ const event2 = {
   prizePool: 200,
   registrationOpen: false,
   tee: "White",
-  winners: [
+  winnerGroups: [
     {
-      place: 1,
-      displayNames: ["Eve"],
-      userIds: ["p5"],
-      prizeAmount: 80,
-      score: "-3",
-    },
-    {
-      place: 2,
-      displayNames: ["Alice"],
-      userIds: ["p1"],
-      prizeAmount: 50,
-      score: "-1",
-    },
-    {
-      place: 3,
-      displayNames: ["Bob"],
-      userIds: ["p2"],
-      prizeAmount: 30,
-      score: "+1",
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [{ userId: "p5", displayName: "Eve" }],
+          prizeAmount: 80,
+          score: "-3",
+        },
+        {
+          place: 2,
+          competitors: [{ userId: "p1", displayName: "Alice" }],
+          prizeAmount: 50,
+          score: "-1",
+        },
+        {
+          place: 3,
+          competitors: [{ userId: "p2", displayName: "Bob" }],
+          prizeAmount: 30,
+          score: "+1",
+        },
+      ],
     },
   ],
 };
@@ -155,12 +168,14 @@ describe("TournamentBreakdown (redesigned)", () => {
   it("shows podium grouping with aggregated names for team winners", () => {
     renderComponent();
     // Podium for Winter Classic: position 1 should aggregate Alice • Bob
-    expect(screen.getByText(/Alice • Bob/)).toBeInTheDocument();
-    // Position 2 Cara, Position 3 Dan appear in summary
-    expect(screen.getByText(/Cara/)).toBeInTheDocument();
-    expect(screen.getByText(/Dan/)).toBeInTheDocument();
+    // Note: We now have both mobile and desktop layouts, so there will be multiple matches
+    const aliceBobElements = screen.getAllByText(/Alice • Bob/);
+    expect(aliceBobElements.length).toBeGreaterThan(0);
+    // Position 2 Cara, Position 3 Dan appear in summary (also duplicated for mobile/desktop)
+    expect(screen.getAllByText(/Cara/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Dan/).length).toBeGreaterThan(0);
     // Frostbite Open podium includes Eve (1st), Alice (2nd), Bob (3rd)
-    expect(screen.getByText(/Eve/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Eve/).length).toBeGreaterThan(0);
   });
 
   it("expands and shows full results table with correct per-player prize labels", () => {
@@ -191,5 +206,15 @@ describe("TournamentBreakdown (redesigned)", () => {
     expect(btn).toHaveAttribute("aria-expanded", "true");
     // Label changes
     expect(btn.textContent?.toLowerCase()).toMatch(/hide full results/);
+  });
+
+  it("displays score with 'Score:' label in winner display", () => {
+    renderComponent();
+    // Check that scores are displayed with "Score:" prefix in podium
+    // The text may appear multiple times (mobile + desktop layouts)
+    expect(screen.getAllByText(/Score:/).length).toBeGreaterThan(0);
+    // Verify specific scores are present
+    expect(screen.getAllByText(/Score: -5/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Score: -3/).length).toBeGreaterThan(0);
   });
 });

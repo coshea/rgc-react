@@ -17,12 +17,12 @@ import {
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
+import { getPlaceMeta } from "@/utils/placeMeta";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
-import type { Winner } from "@/types/winner";
 
 interface Props {
   year: number;
@@ -40,10 +40,19 @@ interface ResultRow {
 
 interface TournamentBundle {
   tournament: any;
-  rows: ResultRow[];
+  rows: ResultRow[]; // legacy per-player rows (kept for internal use)
   winnersCount: number;
   podium: ResultRow[]; // first 3 distinct position entries
   positions: Map<number, ResultRow[]>; // position -> rows (teams/players)
+  teamRows: Array<{
+    id: string;
+    teamKey: string;
+    names: string[];
+    userIds: string[];
+    totalPrize: number;
+    bestPosition?: number;
+    score?: string; // representative score (first available)
+  }>;
 }
 
 export function TournamentBreakdown({ year }: Props) {
@@ -52,16 +61,34 @@ export function TournamentBreakdown({ year }: Props) {
     year,
     enabled: userLoggedIn,
   });
-  const { usersMap, isLoading: usersLoading } = useUsersMap();
+  const { usersMap } = useUsersMap();
   const tournamentBundles: TournamentBundle[] = useMemo(() => {
     return tournaments
       .filter((t) => {
         const hasGroups = (t as any).winnerGroups?.length > 0;
-        return hasGroups || (t.winners || []).length > 0;
+        return hasGroups;
       })
       .map((t) => {
         const rows: ResultRow[] = [];
         const winnerIds = new Set<string>();
+        // Team aggregation across all groups for full results
+        const teamMap = new Map<
+          string,
+          {
+            names: string[];
+            userIds: string[];
+            totalPrize: number;
+            bestPosition?: number;
+            score?: string;
+          }
+        >();
+        const makeTeamKey = (
+          comps: Array<{ userId: string; displayName: string }>
+        ) => {
+          // Prefer stable by userId; fallback to display names
+          const parts = comps.map((c) => c.userId || c.displayName).sort();
+          return parts.join("_");
+        };
         const groups = (t as any).winnerGroups as
           | Array<{
               type: string;
@@ -77,7 +104,11 @@ export function TournamentBreakdown({ year }: Props) {
           // Prefer 'overall' groups for podium construction; include all for detailed rows
           groups.forEach((g) => {
             (g.winners || []).forEach((w) => {
-              (w.competitors || []).forEach((c, idx) => {
+              const comps = (w.competitors || []).map((c) => ({
+                userId: c.userId,
+                displayName: c.displayName || c.userId,
+              }));
+              comps.forEach((c, idx) => {
                 winnerIds.add(c.userId);
                 rows.push({
                   id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
@@ -86,30 +117,30 @@ export function TournamentBreakdown({ year }: Props) {
                   name: c.displayName || c.userId,
                   prize: w.prizeAmount || 0,
                   score: w.score,
-                  teamSize: (w.competitors || []).length,
+                  teamSize: comps.length,
                 });
               });
-            });
-          });
-        } else {
-          // Legacy winners
-          (t.winners || []).forEach((w: Winner) => {
-            const ids = w.userIds || [];
-            const names = w.displayNames || [];
-            ids.forEach((uid, idx) => {
-              winnerIds.add(uid);
-              rows.push({
-                id: `${t.firestoreId || t.title}-${w.place}-${uid}`,
-                position: w.place,
-                userId: uid,
-                name: names[idx] || names[0] || uid,
-                prize: w.prizeAmount || 0,
-                score: w.score,
-                teamSize: ids.length,
-              });
+              // Aggregate team totals
+              if (comps.length) {
+                const teamKey = makeTeamKey(comps);
+                const existing = teamMap.get(teamKey);
+                const teamPrize = (w.prizeAmount || 0) * comps.length; // prizeAmount assumed per player share
+                const bestPosition = Math.min(
+                  w.place,
+                  existing?.bestPosition ?? Number.POSITIVE_INFINITY
+                );
+                teamMap.set(teamKey, {
+                  names: existing?.names || comps.map((c) => c.displayName),
+                  userIds: existing?.userIds || comps.map((c) => c.userId),
+                  totalPrize: (existing?.totalPrize || 0) + teamPrize,
+                  bestPosition,
+                  score: existing?.score || w.score,
+                });
+              }
             });
           });
         }
+
         rows.sort((a, b) => a.position - b.position);
         const positions = new Map<number, ResultRow[]>();
         rows.forEach((r) => {
@@ -125,12 +156,31 @@ export function TournamentBreakdown({ year }: Props) {
           const group = positions.get(pos)!;
           podium.push(group[0]);
         });
+        // Build team rows sorted by total winnings desc (rank), tie-break by best official position then name
+        const teamRows = Array.from(teamMap.entries()).map(([teamKey, v]) => ({
+          id: `${t.firestoreId || t.title}-team-${teamKey}`,
+          teamKey,
+          names: v.names,
+          userIds: v.userIds,
+          totalPrize: v.totalPrize,
+          bestPosition: v.bestPosition,
+          score: v.score,
+        }));
+        teamRows.sort((a, b) => {
+          if (b.totalPrize !== a.totalPrize) return b.totalPrize - a.totalPrize;
+          const ap = a.bestPosition ?? Number.POSITIVE_INFINITY;
+          const bp = b.bestPosition ?? Number.POSITIVE_INFINITY;
+          if (ap !== bp) return ap - bp;
+          return (a.names[0] || "").localeCompare(b.names[0] || "");
+        });
+
         return {
           tournament: t,
           rows,
           winnersCount: winnerIds.size,
           podium,
           positions,
+          teamRows,
         };
       });
   }, [tournaments]);
@@ -156,33 +206,29 @@ export function TournamentBreakdown({ year }: Props) {
   }, [tournamentBundles]);
 
   const ordinal = (n: number) => {
-    const s = ["th", "st", "nd", "rd"];
+    const s = ["th", "st", "nd", "rd"]; // basic ordinal suffixes
     const v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  const renderPosition = (pos: number) => {
-    // Custom high-contrast badge (avoid avatar overlap) – using flex box, fixed width
-    const base =
-      "flex items-center justify-center rounded-md text-[11px] font-semibold w-7 h-7 shrink-0 ring-1 ring-black/5 dark:ring-white/10";
-    let style =
-      "bg-default-200 text-default-700 dark:bg-default-100/20 dark:text-default-300";
-    if (pos === 1)
-      style =
-        "bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-amber-950 dark:text-amber-50 shadow-sm";
-    else if (pos === 2)
-      style =
-        "bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-800 dark:from-slate-500 dark:via-slate-400 dark:to-slate-300 dark:text-slate-950";
-    else if (pos === 3)
-      style =
-        "bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 text-purple-50 shadow-sm";
+  const PlaceIndicator: React.FC<{ pos: number; compact?: boolean }> = ({
+    pos,
+    compact = false,
+  }) => {
+    const meta = getPlaceMeta(pos);
     return (
       <span
+        className={
+          "inline-flex items-center gap-1 text-[11px] font-semibold min-w-[40px]" +
+          (compact ? "" : "")
+        }
         aria-label={`${ordinal(pos)} place`}
-        className={`${base} ${style}`}
-        data-rank={pos}
       >
-        {pos}
+        <Icon
+          icon={meta.icon}
+          className={["w-4 h-4", meta.colorClass].join(" ")}
+        />
+        <span className={meta.colorClass}>{ordinal(pos)}</span>
       </span>
     );
   };
@@ -270,7 +316,7 @@ export function TournamentBreakdown({ year }: Props) {
           const { tournament, winnersCount, rows } = bundle;
           const id = tournament.firestoreId || tournament.title;
           const isOpen = expanded.has(id);
-          // Build podium summary (positions map may contain multiple per position for teams)
+          // Build podium summary: keep teams separate and include all tied groups for first 3 distinct positions
           const podiumGroups: { position: number; players: ResultRow[] }[] = [];
           const groups = (tournament as any).winnerGroups as
             | Array<{
@@ -294,34 +340,54 @@ export function TournamentBreakdown({ year }: Props) {
                       (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
                     )[0],
                   ].filter(Boolean as unknown as <T>(x: T) => x is T);
-            const podiumRows: ResultRow[] = [];
+
+            // Build team-level entries directly from winner places
+            type TeamEntry = {
+              position: number;
+              players: ResultRow[];
+              key: string;
+            };
+            const teamEntries: TeamEntry[] = [];
             primary.forEach((g) => {
-              (g.winners || []).forEach((w) => {
-                (w.competitors || []).forEach((c, idx) => {
-                  podiumRows.push({
-                    id: `${id}-podium-${g.type}-${w.place}-${c.userId}-${idx}`,
+              (g.winners || []).forEach((w, wi) => {
+                const members = (w.competitors || []).map((c, ci) => ({
+                  id: `${id}-podium-${g.type}-w${wi}-p${w.place}-${c.userId}-${ci}`,
+                  position: w.place,
+                  userId: c.userId,
+                  name: c.displayName || c.userId,
+                  prize: w.prizeAmount || 0,
+                  score: w.score,
+                  teamSize: (w.competitors || []).length,
+                }));
+                if (members.length) {
+                  const key = `${g.type}-${w.place}-${members.map((m) => m.userId).join("_")}`;
+                  teamEntries.push({
                     position: w.place,
-                    userId: c.userId,
-                    name: c.displayName || c.userId,
-                    prize: w.prizeAmount || 0,
-                    score: w.score,
-                    teamSize: (w.competitors || []).length,
+                    players: members,
+                    key,
                   });
-                });
+                }
               });
             });
-            podiumRows.sort((a, b) => a.position - b.position);
-            const seenPositions = new Set<number>();
-            podiumRows.forEach((r) => {
-              if (seenPositions.size >= 3) return;
-              if (!seenPositions.has(r.position)) {
-                const group = podiumRows.filter(
-                  (x) => x.position === r.position
-                );
-                podiumGroups.push({ position: r.position, players: group });
-                seenPositions.add(r.position);
+            teamEntries.sort((a, b) => a.position - b.position);
+
+            // Take first 3 distinct positions, include all teams (ties) for those positions
+            const distinctPositions: number[] = [];
+            for (const te of teamEntries) {
+              if (!distinctPositions.includes(te.position)) {
+                distinctPositions.push(te.position);
+                if (distinctPositions.length === 3) break;
               }
-            });
+            }
+            const allowedPositions = new Set(distinctPositions);
+            teamEntries
+              .filter((te) => allowedPositions.has(te.position))
+              .forEach((te) =>
+                podiumGroups.push({
+                  position: te.position,
+                  players: te.players,
+                })
+              );
           } else {
             const seenPositions = new Set<number>();
             rows.forEach((r) => {
@@ -471,7 +537,9 @@ export function TournamentBreakdown({ year }: Props) {
                       const champion = g.position === 1;
                       return (
                         <div
-                          key={g.position}
+                          key={`${g.position}-${(g.players || [])
+                            .map((p) => p.userId || p.name)
+                            .join("_")}`}
                           className={
                             "flex items-center gap-3 p-2 rounded-md bg-default-100/50 dark:bg-default-50/5" +
                             (champion
@@ -479,8 +547,9 @@ export function TournamentBreakdown({ year }: Props) {
                               : "")
                           }
                         >
-                          {renderPosition(g.position)}
-                          <div className="flex -space-x-2 rtl:space-x-reverse">
+                          <PlaceIndicator pos={g.position} />
+                          {/* Desktop: avatars inline with names */}
+                          <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
                             {g.players.slice(0, 4).map((p) => {
                               const user = usersMap.get(p.userId);
                               const resolvedName =
@@ -496,10 +565,48 @@ export function TournamentBreakdown({ year }: Props) {
                               );
                             })}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          {/* Mobile: stack avatars above names */}
+                          <div className="flex-1 sm:hidden">
+                            <div className="flex justify-center -space-x-2 rtl:space-x-reverse mb-1.5">
+                              {g.players.slice(0, 4).map((p) => {
+                                const user = usersMap.get(p.userId);
+                                const resolvedName =
+                                  user?.displayName || user?.email || p.name;
+                                return (
+                                  <UserAvatar
+                                    key={p.userId}
+                                    size="sm"
+                                    className="ring-1 ring-background"
+                                    name={resolvedName}
+                                    user={user}
+                                  />
+                                );
+                              })}
+                            </div>
                             <p
                               className={
-                                "text-sm leading-tight" +
+                                "text-sm leading-snug text-center break-words" +
+                                (champion ? " font-semibold" : " font-medium")
+                              }
+                              title={nameList}
+                            >
+                              {nameContent}
+                            </p>
+                            <p
+                              className="text-[11px] text-default-500 text-center"
+                              aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
+                            >
+                              {g.players[0].score
+                                ? `Score: ${g.players[0].score}`
+                                : "—"}{" "}
+                              • {formatPrize(perPlayer)}
+                            </p>
+                          </div>
+                          {/* Desktop: names and info */}
+                          <div className="hidden sm:block flex-1">
+                            <p
+                              className={
+                                "text-sm leading-snug break-words" +
                                 (champion ? " font-semibold" : " font-medium")
                               }
                               title={nameList}
@@ -510,8 +617,10 @@ export function TournamentBreakdown({ year }: Props) {
                               className="text-[11px] text-default-500"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
-                              {g.players[0].score || "—"} •{" "}
-                              {formatPrize(perPlayer)}
+                              {g.players[0].score
+                                ? `Score: ${g.players[0].score}`
+                                : "—"}{" "}
+                              • {formatPrize(perPlayer)}
                             </p>
                           </div>
                           {g.players.length > 4 && (
@@ -557,10 +666,10 @@ export function TournamentBreakdown({ year }: Props) {
                     id={`results-${id}`}
                     aria-hidden={!isOpen}
                     className={[
-                      "mt-2 overflow-hidden transition-all duration-300 ease-in-out",
+                      "mt-2 transition-all duration-300 ease-in-out",
                       isOpen
-                        ? "max-h-[640px] opacity-100"
-                        : "max-h-0 opacity-0",
+                        ? "max-h-[80vh] opacity-100 overflow-y-auto"
+                        : "max-h-0 opacity-0 overflow-hidden",
                     ].join(" ")}
                   >
                     {isOpen && (
@@ -573,52 +682,91 @@ export function TournamentBreakdown({ year }: Props) {
                         }}
                       >
                         <TableHeader>
-                          <TableColumn key="pos">POS</TableColumn>
-                          <TableColumn key="player">PLAYER</TableColumn>
-                          <TableColumn key="score">SCORE</TableColumn>
-                          <TableColumn key="winnings">WINNINGS</TableColumn>
+                          <TableColumn key="pos" className="w-12">
+                            POS
+                          </TableColumn>
+                          <TableColumn key="player">PLAYER(S)</TableColumn>
+                          <TableColumn
+                            key="score"
+                            className="hidden sm:table-cell"
+                          >
+                            SCORE
+                          </TableColumn>
+                          <TableColumn
+                            key="winnings"
+                            className="hidden sm:table-cell"
+                          >
+                            WINNINGS
+                          </TableColumn>
                         </TableHeader>
-                        <TableBody items={rows} emptyContent="No results">
-                          {(item: ResultRow) => {
-                            const user = usersMap.get(item.userId);
-                            const resolvedName =
-                              user?.displayName || user?.email || item.name;
+                        <TableBody
+                          items={bundle.teamRows}
+                          emptyContent="No results"
+                        >
+                          {(team) => {
+                            const rank =
+                              bundle.teamRows.findIndex(
+                                (t) => t.teamKey === (team as any).teamKey
+                              ) + 1;
+                            const names: string[] = (team as any).names;
+                            const userIds: string[] = (team as any).userIds;
+                            const score: string | undefined = (team as any)
+                              .score;
+                            const totalPrize: number = (team as any).totalPrize;
                             return (
-                              <TableRow key={item.id}>
+                              <TableRow key={(team as any).id}>
                                 <TableCell>
-                                  {renderPosition(item.position)}
+                                  <PlaceIndicator pos={rank} compact />
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
-                                    {usersLoading ? (
-                                      <Skeleton className="hidden h-7 w-7 rounded-full sm:flex" />
-                                    ) : (
-                                      <UserAvatar
-                                        size="sm"
-                                        className="hidden sm:flex"
-                                        name={resolvedName}
-                                        user={user}
-                                      />
-                                    )}
-                                    <p className="font-medium text-sm leading-tight">
-                                      {resolvedName}
-                                    </p>
+                                    <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
+                                      {userIds.slice(0, 4).map((uid, i) => {
+                                        const user = usersMap.get(uid);
+                                        const fallback = names[i] || uid;
+                                        return (
+                                          <UserAvatar
+                                            key={uid + i}
+                                            size="sm"
+                                            className="ring-1 ring-background"
+                                            user={user}
+                                            name={user ? undefined : fallback}
+                                          />
+                                        );
+                                      })}
+                                      {userIds.length > 4 && (
+                                        <span className="w-7 h-7 rounded-full bg-default-100 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
+                                          +{userIds.length - 4}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-sm leading-tight break-words">
+                                        {names.join(" • ")}
+                                      </p>
+                                      {/* On small screens, show meta under the name to avoid extra columns */}
+                                      <p className="sm:hidden text-[11px] text-default-500">
+                                        {(score || "—") +
+                                          " • " +
+                                          formatPrize(totalPrize)}
+                                      </p>
+                                    </div>
                                   </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <span
                                     className={
-                                      item.score && item.score.startsWith("-")
+                                      score && score.startsWith("-")
                                         ? "text-success font-medium"
                                         : ""
                                     }
                                   >
-                                    {item.score || "—"}
+                                    {score || "—"}
                                   </span>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="hidden sm:table-cell">
                                   <span className="font-semibold text-sm">
-                                    {formatPrize(item.prize)}
+                                    {formatPrize(totalPrize)}
                                   </span>
                                 </TableCell>
                               </TableRow>

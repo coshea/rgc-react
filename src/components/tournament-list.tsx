@@ -7,16 +7,18 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Tooltip,
   Button,
   Card,
   CardBody,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
+import type { WinnerGroup } from "@/types/winner";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -40,6 +42,34 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 }) => {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
+  const [yearFilter, setYearFilter] = React.useState<number>(() =>
+    new Date().getUTCFullYear()
+  );
+
+  const availableYears = React.useMemo(() => {
+    const years = new Set<number>();
+    for (const t of tournaments) {
+      if (t?.date instanceof Date) {
+        years.add(t.date.getUTCFullYear());
+      } else if (t?.date) {
+        // Fallback in case date is serialized
+        try {
+          const d = new Date(t.date as unknown as string);
+          if (!isNaN(d.getTime())) years.add(d.getUTCFullYear());
+        } catch {}
+      }
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [tournaments]);
+
+  // Ensure selected year defaults to latest available and stays valid when list changes
+  React.useEffect(() => {
+    if (availableYears.length === 0) return;
+    const latest = availableYears[0];
+    if (!availableYears.includes(yearFilter)) {
+      setYearFilter(latest);
+    }
+  }, [availableYears, yearFilter]);
 
   const formatDate = (date: Date): string => {
     // Force UTC timezone so the displayed date matches the stored date
@@ -61,11 +91,23 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     }).format(amount);
   };
 
-  // Filter tournaments based on selected status
-  const filteredTournaments = React.useMemo(() => {
-    if (filterStatus === "all") return tournaments;
+  // First filter by year if selected
+  const yearFilteredTournaments = React.useMemo(() => {
+    return tournaments.filter((t) => {
+      const d = t?.date instanceof Date ? t.date : new Date(t?.date as any);
+      return (
+        d instanceof Date &&
+        !isNaN(d.getTime()) &&
+        d.getUTCFullYear() === yearFilter
+      );
+    });
+  }, [tournaments, yearFilter]);
 
-    return tournaments.filter((tournament) => {
+  // Then filter tournaments based on selected status
+  const filteredTournaments = React.useMemo(() => {
+    if (filterStatus === "all") return yearFilteredTournaments;
+
+    return yearFilteredTournaments.filter((tournament) => {
       const status = getStatus(tournament);
       switch (filterStatus) {
         case "completed":
@@ -80,19 +122,19 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           return true;
       }
     });
-  }, [tournaments, filterStatus]);
+  }, [yearFilteredTournaments, filterStatus]);
 
   // Count tournaments for each filter
   const filterCounts = React.useMemo(() => {
     const counts = {
-      all: tournaments.length,
+      all: yearFilteredTournaments.length,
       completed: 0,
       registration: 0,
       scheduled: 0,
       canceled: 0,
     };
 
-    tournaments.forEach((tournament) => {
+    yearFilteredTournaments.forEach((tournament) => {
       const status = getStatus(tournament);
       if (status === TournamentStatus.Canceled) counts.canceled++;
       else if (status === TournamentStatus.Completed) counts.completed++;
@@ -101,7 +143,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     });
 
     return counts;
-  }, [tournaments]);
+  }, [yearFilteredTournaments]);
 
   // In-app confirmation modal state
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -124,99 +166,50 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     setDeletingId(null);
   };
 
-  // New function to render winners
+  // Card winners summary: simple first-place line from the lowest-order winner group
   const renderWinners = (tournament: Tournament) => {
-    if (getStatus(tournament) !== TournamentStatus.Completed) return null;
+    // Only show a summary when there are grouped winners and the event has results
+    const status = getStatus(tournament);
+    if (status !== TournamentStatus.Completed) return null;
 
-    // Prefer grouped winners: choose overall groups first; fallback to any group
     const groups = (tournament as any).winnerGroups as
-      | Array<{
-          type: string;
-          winners?: Array<{
-            place: number;
-            competitors?: Array<{ displayName: string }>;
-            prizeAmount?: number;
-          }>;
-        }>
+      | WinnerGroup[]
       | undefined;
-    if (groups && groups.length > 0) {
-      const overall = groups.filter((g) => g.type === "overall");
-      const target = overall.length > 0 ? overall : groups;
-      for (const g of target) {
-        const first = (g.winners || []).find((w) => w.place === 1);
-        if (first && first.competitors && first.competitors.length > 0) {
-          const names = first.competitors.map((c) => c.displayName).join(", ");
-          const placeLabel = "1st";
-          return (
-            <div className="mt-2">
-              <p className="text-xs text-foreground-500 mb-1">Winner:</p>
-              <div className="flex flex-wrap gap-1">
-                <Tooltip
-                  content={
-                    <div className="px-1 py-2">
-                      <p className="font-medium">{placeLabel} Place</p>
-                      <p>{names}</p>
-                      {typeof first.prizeAmount === "number" && (
-                        <p className="text-xs mt-1">
-                          ${first.prizeAmount} per person
-                        </p>
-                      )}
-                    </div>
-                  }
-                >
-                  <Chip
-                    size="sm"
-                    variant="flat"
-                    color="warning"
-                    className="cursor-help"
-                    startContent={
-                      <Icon icon="lucide:trophy" className="w-3 h-3" />
-                    }
-                  >
-                    {names}
-                  </Chip>
-                </Tooltip>
-              </div>
-            </div>
-          );
-        }
-      }
-    }
 
-    const legacy = tournament.winners || [];
-    if (legacy.length === 0) return null;
-    const firstPlace = legacy.filter((w) => w.place === 1);
-    if (!firstPlace.length) return null;
-    const champion = firstPlace[0];
-    const names = champion.displayNames.join(", ");
+    if (!groups || groups.length === 0) return null; // skip legacy in summary
+
+    // Pick the winner group with the lowest order that has at least one place
+    const targetGroup = [...groups]
+      .filter((g) => (g.winners || []).length > 0)
+      .sort((a, b) => a.order - b.order)[0];
+    if (!targetGroup) return null;
+
+    const entries = targetGroup.winners || [];
+    if (entries.length === 0) return null;
+
+    // Find the lowest place number present (usually 1)
+    const places = entries
+      .map((e) => (typeof e.place === "number" ? e.place : Infinity))
+      .filter((p) => Number.isFinite(p)) as number[];
+    if (places.length === 0) return null;
+    const topPlace = Math.min(...places);
+    const firstPlaceEntry = entries.find((e) => e.place === topPlace);
+    if (!firstPlaceEntry) return null;
+
+    const names = (firstPlaceEntry.competitors || [])
+      .map((c) => c?.displayName || "")
+      .filter(Boolean);
+    if (names.length === 0) return null;
+
+    const metaBits: string[] = [];
+    if (firstPlaceEntry.score) metaBits.push("Score: " + firstPlaceEntry.score);
+    const meta = metaBits.join(" • ");
+
     return (
-      <div className="mt-2">
-        <p className="text-xs text-foreground-500 mb-1">Winner:</p>
-        <div className="flex flex-wrap gap-1">
-          <Tooltip
-            content={
-              <div className="px-1 py-2">
-                <p className="font-medium">1st Place</p>
-                <p>{names}</p>
-                {typeof champion.prizeAmount === "number" && (
-                  <p className="text-xs mt-1">
-                    ${champion.prizeAmount} per person
-                  </p>
-                )}
-              </div>
-            }
-          >
-            <Chip
-              size="sm"
-              variant="flat"
-              color="warning"
-              className="cursor-help"
-              startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
-            >
-              {names}
-            </Chip>
-          </Tooltip>
-        </div>
+      <div className="mt-2 text-xs text-foreground-500 flex items-center gap-1">
+        <Icon icon="lucide:trophy" className="text-warning shrink-0" />
+        <span>{names.join(", ")}</span>
+        {meta ? <span> • {meta}</span> : null}
       </div>
     );
   };
@@ -367,57 +360,83 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   return (
     <>
-      {/* Filter buttons */}
+      {/* Filters row */}
       <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={filterStatus === "all" ? "solid" : "flat"}
-            color={filterStatus === "all" ? "primary" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("all")}
-          >
-            All ({filterCounts.all})
-          </Button>
-          <Button
-            variant={filterStatus === "registration" ? "solid" : "flat"}
-            color={filterStatus === "registration" ? "warning" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("registration")}
-            startContent={<Icon icon="lucide:user-plus" className="w-4 h-4" />}
-          >
-            Registration Open ({filterCounts.registration})
-          </Button>
-          <Button
-            variant={filterStatus === "scheduled" ? "solid" : "flat"}
-            color={filterStatus === "scheduled" ? "primary" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("scheduled")}
-            startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
-          >
-            Scheduled ({filterCounts.scheduled})
-          </Button>
-          <Button
-            variant={filterStatus === "completed" ? "solid" : "flat"}
-            color={filterStatus === "completed" ? "success" : "default"}
-            size="sm"
-            onPress={() => setFilterStatus("completed")}
-            startContent={
-              <Icon icon="lucide:check-circle" className="w-4 h-4" />
-            }
-          >
-            Completed ({filterCounts.completed})
-          </Button>
-          {filterCounts.canceled > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant={filterStatus === "canceled" ? "solid" : "flat"}
-              color={filterStatus === "canceled" ? "danger" : "default"}
+              variant={filterStatus === "all" ? "solid" : "flat"}
+              color={filterStatus === "all" ? "primary" : "default"}
               size="sm"
-              onPress={() => setFilterStatus("canceled")}
-              startContent={<Icon icon="lucide:x-circle" className="w-4 h-4" />}
+              onPress={() => setFilterStatus("all")}
             >
-              Canceled ({filterCounts.canceled})
+              All ({filterCounts.all})
             </Button>
-          )}
+            <Button
+              variant={filterStatus === "registration" ? "solid" : "flat"}
+              color={filterStatus === "registration" ? "warning" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("registration")}
+              startContent={
+                <Icon icon="lucide:user-plus" className="w-4 h-4" />
+              }
+            >
+              Registration Open ({filterCounts.registration})
+            </Button>
+            <Button
+              variant={filterStatus === "scheduled" ? "solid" : "flat"}
+              color={filterStatus === "scheduled" ? "primary" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("scheduled")}
+              startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
+            >
+              Scheduled ({filterCounts.scheduled})
+            </Button>
+            <Button
+              variant={filterStatus === "completed" ? "solid" : "flat"}
+              color={filterStatus === "completed" ? "success" : "default"}
+              size="sm"
+              onPress={() => setFilterStatus("completed")}
+              startContent={
+                <Icon icon="lucide:check-circle" className="w-4 h-4" />
+              }
+            >
+              Completed ({filterCounts.completed})
+            </Button>
+            {filterCounts.canceled > 0 && (
+              <Button
+                variant={filterStatus === "canceled" ? "solid" : "flat"}
+                color={filterStatus === "canceled" ? "danger" : "default"}
+                size="sm"
+                onPress={() => setFilterStatus("canceled")}
+                startContent={
+                  <Icon icon="lucide:x-circle" className="w-4 h-4" />
+                }
+              >
+                Canceled ({filterCounts.canceled})
+              </Button>
+            )}
+          </div>
+          <div className="min-w-[8rem]">
+            <Select
+              aria-label="Filter by year"
+              label="Year"
+              size="sm"
+              selectedKeys={availableYears.length ? [String(yearFilter)] : []}
+              onSelectionChange={(keys) => {
+                const val = Array.from(keys)[0];
+                if (val !== undefined) setYearFilter(Number(val));
+              }}
+              className="w-36"
+              isDisabled={availableYears.length === 0}
+            >
+              {availableYears.map((y) => (
+                <SelectItem key={String(y)} textValue={String(y)}>
+                  {y}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
         </div>
       </div>
       {/* Mobile view (card-based layout) */}

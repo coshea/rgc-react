@@ -14,6 +14,19 @@ service cloud.firestore {
       );
     }
 
+    // Helper: validates required fields for a blog post document
+    function isValidBlogPost(post) {
+      return post.title is string &&
+             post.slug is string &&
+             post.content is string &&
+             post.authorId is string &&
+             post.authorName is string &&
+             post.status is string &&
+             post.category is string &&
+             post.createdAt is timestamp &&
+             post.updatedAt is timestamp;
+    }
+
     // Allow authenticated users to read the users collection
     match /users/{userId} {
       allow read: if request.auth != null;
@@ -215,6 +228,31 @@ service cloud.firestore {
 
 
         
+      allow delete: if isAdmin();
+    }
+
+    // Config collection: membership settings and other configuration
+    match /config/{docId} {
+      // Anyone authenticated can read config (needed for membership settings)
+      allow read: if request.auth != null;
+      
+      // Only admins can write config
+      allow write: if isAdmin();
+    }
+
+    // Blog posts collection
+    match /blogPosts/{postId} {
+      // Anyone can read published blog posts
+      allow read: if resource.data.status == 'published' || isAdmin();  
+      
+      // Only admins can create, update, or delete blog posts
+      allow create: if isAdmin() && isValidBlogPost(request.resource.data);
+      
+      allow update: if isAdmin() &&  
+        request.resource.data.updatedAt is timestamp &&  
+        request.resource.data.createdAt == resource.data.createdAt &&  
+        request.resource.data.authorId == resource.data.authorId;
+      
       allow delete: if isAdmin();
     }
 

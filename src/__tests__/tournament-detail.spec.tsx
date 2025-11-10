@@ -99,8 +99,20 @@ const baseTournament = {
   players: 4,
   status: TournamentStatus.Open,
   prizePool: 500,
-  winners: [
-    { place: 1, displayNames: ["Alice"], userIds: ["u1"], prizeAmount: 100 },
+  winnerGroups: [
+    {
+      id: "overall",
+      label: "Overall",
+      type: "overall",
+      order: 1,
+      winners: [
+        {
+          place: 1,
+          competitors: [{ userId: "u1", displayName: "Alice" }],
+          prizeAmount: 100,
+        },
+      ],
+    },
   ],
   tee: "Blue",
 };
@@ -124,11 +136,11 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("back1");
     emitDoc("tournaments/back1", baseTournament);
     await screen.findByText("Club Championship");
-    const backBtn = screen.getByRole("button", {
-      name: /go back to tournaments list/i,
+    const backBtns = screen.getAllByRole("button", {
+      name: /back/i,
     });
     await act(async () => {
-      backBtn.click();
+      backBtns[0].click();
     });
     await screen.findByTestId("tournaments-list");
   });
@@ -184,19 +196,31 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("win1");
     emitDoc("tournaments/win1", {
       ...baseTournament,
-      winners: [
-        { place: 1, displayNames: ["Champ"], userIds: ["c1"], prizeAmount: 50 },
+      winnerGroups: [
         {
-          place: 2,
-          displayNames: ["Runner"],
-          userIds: ["r1"],
-          prizeAmount: 25,
+          id: "overall",
+          label: "Overall",
+          type: "overall",
+          order: 1,
+          winners: [
+            {
+              place: 1,
+              competitors: [{ userId: "c1", displayName: "Champ" }],
+              prizeAmount: 50,
+            },
+            {
+              place: 2,
+              competitors: [{ userId: "r1", displayName: "Runner" }],
+              prizeAmount: 25,
+            },
+          ],
         },
       ],
     });
     await screen.findByText("Club Championship");
-    expect(screen.getByText(/1st: Champ/)).toBeInTheDocument();
-    expect(screen.getByText(/2nd: Runner/)).toBeInTheDocument();
+    // Position badges now show trophy icons with ordinal text, names are in responsive layout
+    expect(screen.getAllByText("Champ").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Runner").length).toBeGreaterThan(0);
   });
 
   it("shows admin action buttons when user is admin", async () => {
@@ -205,17 +229,18 @@ describe("TournamentDetailPage", () => {
     isAdminMock = true;
     emitDoc("tournaments/admin1", baseTournament);
     await screen.findByText("Club Championship");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /Edit tournament/i })
-      ).toBeInTheDocument()
+    await waitFor(
+      () =>
+        expect(
+          screen.getAllByRole("button", { name: /Edit tournament/i })
+        ).toHaveLength(2) // One for mobile, one for desktop
     );
     expect(
-      screen.getByRole("button", { name: /Delete tournament/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Delete tournament/i })
+    ).toHaveLength(2);
     expect(
-      screen.getByRole("button", { name: /Export registrations/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Export registrations/i })
+    ).toHaveLength(2);
   });
 
   it("highlights teams with open spots", async () => {

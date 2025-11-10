@@ -1,3 +1,12 @@
+/**
+ * LEGACY COMPONENT - NOT IN USE
+ * This component used the old flat Winner model and has been replaced by GroupedWinnersEditor.
+ * Kept for reference only. Tests mock this component but don't actually use it.
+ */
+
+/* eslint-disable */
+// @ts-nocheck
+
 import React from "react";
 import {
   Button,
@@ -11,7 +20,7 @@ import {
 } from "@heroui/react";
 import { Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Winner } from "@/types/winner";
+// import { Winner } from "@/types/winner"; // Legacy type removed
 import { useUsers } from "@/hooks/useUsers";
 import { getPlaceMeta } from "@/utils/placeMeta";
 
@@ -252,6 +261,11 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       onValueChange={(value) =>
                         updateWinner(winner.place, { prizeAmount: value })
                       }
+                      onFocus={(e) => {
+                        if (e.target instanceof HTMLInputElement) {
+                          e.target.select();
+                        }
+                      }}
                       min={0}
                       startContent={
                         <div className="pointer-events-none flex items-center">

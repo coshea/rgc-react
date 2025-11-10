@@ -63,7 +63,6 @@ export function useYearlyTournaments({
           players: data.players || 0,
           status,
           prizePool: data.prizePool || 0,
-          winners: data.winners || [],
           winnerGroups: data.winnerGroups || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,

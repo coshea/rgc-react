@@ -1,12 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { aggregateWinnings } from "@/hooks/useYearlyWinnings";
 import type { Tournament } from "@/types/tournament";
-import type { Winner } from "@/types/winner";
 
 function makeTournament(
   id: string,
   date: Date,
-  winners: Winner[],
+  winners: Array<{
+    place: number;
+    users: string[];
+    names?: string[];
+    prize: number;
+  }>,
   overrides: Partial<Tournament> = {}
 ): Tournament & { firestoreId: string } {
   return {
@@ -19,7 +23,22 @@ function makeTournament(
     canceled: false,
     prizePool: 500,
     registrationOpen: false,
-    winners,
+    winnerGroups: [
+      {
+        id: "overall",
+        label: "Overall",
+        type: "overall",
+        order: 1,
+        winners: winners.map((w) => ({
+          place: w.place,
+          competitors: (w.users || []).map((u, i) => ({
+            userId: u,
+            displayName: (w.names && w.names[i]) || u,
+          })),
+          prizeAmount: w.prize,
+        })),
+      },
+    ],
     tee: "Blue",
     ...overrides,
   } as Tournament & { firestoreId: string };
@@ -30,23 +49,23 @@ describe("aggregateWinnings", () => {
     const t1 = makeTournament("t1", new Date(2025, 0, 10), [
       {
         place: 1,
-        userIds: ["u1"],
-        displayNames: ["Alice"],
-        prizeAmount: 100,
+        users: ["u1"],
+        names: ["Alice"],
+        prize: 100,
       },
       {
         place: 2,
-        userIds: ["u2", "u3"],
-        displayNames: ["Bob", "Charlie"],
-        prizeAmount: 40,
+        users: ["u2", "u3"],
+        names: ["Bob", "Charlie"],
+        prize: 40,
       },
     ]);
     const t2 = makeTournament("t2", new Date(2025, 5, 2), [
       {
         place: 1,
-        userIds: ["u2"],
-        displayNames: ["Bob"],
-        prizeAmount: 120,
+        users: ["u2"],
+        names: ["Bob"],
+        prize: 120,
       },
     ]);
     const result = aggregateWinnings([t1, t2]);
@@ -67,15 +86,15 @@ describe("aggregateWinnings", () => {
     const t = makeTournament("t4", new Date(2025, 3, 1), [
       {
         place: 1,
-        userIds: ["u1", "u2"],
-        displayNames: ["Alice", "Bob"],
-        prizeAmount: 75,
+        users: ["u1", "u2"],
+        names: ["Alice", "Bob"],
+        prize: 75,
       },
       {
         place: 2,
-        userIds: ["u1"],
-        displayNames: ["Alice"],
-        prizeAmount: 25,
+        users: ["u1"],
+        names: ["Alice"],
+        prize: 25,
       },
     ]);
     const res = aggregateWinnings([t]);
