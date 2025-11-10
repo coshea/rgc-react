@@ -6,7 +6,7 @@ import {
   subscribeMembershipSettings,
 } from "@/api/membership";
 import type { MembershipSettings } from "@/types/membershipSettings";
-import { addToast } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 
 interface MembershipAdminModalProps {
   isOpen: boolean;

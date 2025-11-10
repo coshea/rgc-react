@@ -93,7 +93,7 @@ export async function fetchHistoricalWeather(
 
     const temperature = tempCount > 0 ? tempSum / tempCount : 0;
     const windSpeed = windCount > 0 ? windSum / windCount : 0;
-    const precipitation = precipCount > 0 ? precipSum / precipCount : 0;
+    const precipitation = precipCount > 0 ? precipSum : 0; // Sum, not average (precipitation is cumulative)
     const humidity = humidityCount > 0 ? humiditySum / humidityCount : 0;
 
     // Use the most common weather code during this period

@@ -3,6 +3,7 @@ import {
   uploadBytes,
   getDownloadURL,
   listAll,
+  getMetadata,
   StorageReference,
 } from "firebase/storage";
 import { storage, auth } from "@/config/firebase";
@@ -43,7 +44,13 @@ export async function uploadProfilePicture(
   console.debug("uploadProfilePicture: uploading to", path);
 
   const storageRef = ref(storage, path);
-  const snapshot = await uploadBytes(storageRef, file);
+  // Store upload timestamp in custom metadata for consistency
+  const snapshot = await uploadBytes(storageRef, file, {
+    contentType: file.type,
+    customMetadata: {
+      uploadedAt: Date.now().toString(),
+    },
+  });
   const url = await getDownloadURL(snapshot.ref);
   return url;
 }
@@ -80,9 +87,13 @@ export async function uploadBlogImage(
 
   // Upload with cache control metadata for browser caching
   // public,max-age=31536000 = cache for 1 year (images are immutable due to timestamp in filename)
+  // Store upload timestamp in custom metadata for robust sorting
   const snapshot = await uploadBytes(storageRef, file, {
     cacheControl: "public,max-age=31536000,immutable",
     contentType: file.type,
+    customMetadata: {
+      uploadedAt: Date.now().toString(),
+    },
   });
 
   const url = await getDownloadURL(snapshot.ref);
@@ -92,6 +103,7 @@ export async function uploadBlogImage(
 /**
  * Lists all previously uploaded blog images.
  * Returns an array of objects containing the image name and download URL.
+ * Uses custom metadata for robust timestamp retrieval instead of parsing filenames.
  */
 export async function listBlogImages(): Promise<
   Array<{ name: string; url: string; uploadedAt: number }>
@@ -106,9 +118,21 @@ export async function listBlogImages(): Promise<
   const images = await Promise.all(
     result.items.map(async (itemRef: StorageReference) => {
       const url = await getDownloadURL(itemRef);
-      // Extract timestamp from filename (format: timestamp_originalname)
-      const match = itemRef.name.match(/^(\d+)_/);
-      const uploadedAt = match ? parseInt(match[1]) : 0;
+
+      // Retrieve upload timestamp from custom metadata
+      let uploadedAt = 0;
+      try {
+        const metadata = await getMetadata(itemRef);
+        if (metadata.customMetadata?.uploadedAt) {
+          uploadedAt = parseInt(metadata.customMetadata.uploadedAt);
+        }
+      } catch (error) {
+        // Fallback: extract timestamp from filename for backwards compatibility
+        // (format: timestamp_originalname)
+        const match = itemRef.name.match(/^(\d+)_/);
+        uploadedAt = match ? parseInt(match[1]) : 0;
+      }
+
       return {
         name: itemRef.name,
         url,

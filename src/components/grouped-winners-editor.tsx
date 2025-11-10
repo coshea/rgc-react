@@ -125,10 +125,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     } else if (type === "closestToPin") {
       label = "Closest to Pin";
       // Pre-populate with entries for each hole (3, 5, 12, 17)
-      // Use hole number as the "place" field for identification
-      winners = CLOSEST_TO_PIN_HOLES.map((hole) => ({
+      winners = CLOSEST_TO_PIN_HOLES.map((hole, index) => ({
         id: crypto.randomUUID(),
-        place: hole, // Use hole number instead of traditional place (1st, 2nd, etc.)
+        place: index + 1, // Sequential place for sorting/identification
+        holeNumber: hole, // Actual hole number (semantically correct)
         competitors: [],
         prizeAmount: 0,
         score: undefined,
@@ -205,6 +205,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       prizeAmount: base?.prizeAmount ?? 0,
       // Only include score if it's defined to avoid writing undefined to Firestore
       ...(base?.score !== undefined ? { score: base.score } : {}),
+      // Preserve hole number for closest-to-pin entries
+      ...(base?.holeNumber !== undefined
+        ? { holeNumber: base.holeNumber }
+        : {}),
     };
     updateGroup(groupId, { winners: [...g.winners, newPlace] });
   };
@@ -447,7 +451,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                               />
                               <span className="font-medium">
                                 {g.type === "closestToPin"
-                                  ? `Hole ${w.place}`
+                                  ? `Hole ${w.holeNumber || w.place}`
                                   : `Place ${display[index].displayPlace}`}
                               </span>
                             </div>

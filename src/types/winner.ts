@@ -23,6 +23,8 @@ export interface WinnerPlace {
   competitors: Competitor[]; // one per person; teams have >= 2
   prizeAmount?: number; // prize per competitor (preferred) or total if you choose that semantics later
   score?: string; // optional score text
+  /** Hole number for closest-to-pin competitions (e.g., 3, 5, 12, 17). Only used when group type is 'closestToPin' */
+  holeNumber?: number;
 }
 
 export interface WinnerGroup {

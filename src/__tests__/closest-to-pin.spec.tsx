@@ -11,25 +11,29 @@ describe("Closest to Pin Winner Groups", () => {
       winners: [
         {
           id: "hole-3",
-          place: 3, // Hole number is stored in place field
+          place: 1,
+          holeNumber: 3, // Hole number now stored in dedicated field
           competitors: [],
           prizeAmount: 0,
         },
         {
           id: "hole-5",
-          place: 5,
+          place: 2,
+          holeNumber: 5,
           competitors: [],
           prizeAmount: 0,
         },
         {
           id: "hole-12",
-          place: 12,
+          place: 3,
+          holeNumber: 12,
           competitors: [],
           prizeAmount: 0,
         },
         {
           id: "hole-17",
-          place: 17,
+          place: 4,
+          holeNumber: 17,
           competitors: [],
           prizeAmount: 0,
         },
@@ -41,24 +45,25 @@ describe("Closest to Pin Winner Groups", () => {
 
     // Verify all 4 holes are present
     const holeNumbers = ctpGroup.winners
-      .map((w) => w.place)
-      .sort((a, b) => a - b);
+      .map((w) => w.holeNumber)
+      .sort((a, b) => (a || 0) - (b || 0));
     expect(holeNumbers).toEqual([3, 5, 12, 17]);
   });
 
-  it("should use hole numbers in the place field", () => {
+  it("should use holeNumber field for closest-to-pin entries", () => {
     const holes = [3, 5, 12, 17];
 
-    holes.forEach((hole) => {
+    holes.forEach((hole, index) => {
       const winner = {
         id: `hole-${hole}`,
-        place: hole, // Hole number stored as place
+        place: index + 1, // Sequential place for sorting
+        holeNumber: hole, // Actual hole number
         competitors: [{ userId: "user1", displayName: "John Doe" }],
         prizeAmount: 25,
       };
 
-      expect(winner.place).toBe(hole);
-      expect([3, 5, 12, 17]).toContain(winner.place);
+      expect(winner.holeNumber).toBe(hole);
+      expect([3, 5, 12, 17]).toContain(winner.holeNumber);
     });
   });
 
@@ -66,9 +71,10 @@ describe("Closest to Pin Winner Groups", () => {
     // Simulating what happens when addGroup("closestToPin") is called
     const CLOSEST_TO_PIN_HOLES = [3, 5, 12, 17];
 
-    const winners = CLOSEST_TO_PIN_HOLES.map((hole) => ({
+    const winners = CLOSEST_TO_PIN_HOLES.map((hole, index) => ({
       id: `hole-${hole}`,
-      place: hole,
+      place: index + 1,
+      holeNumber: hole,
       competitors: [],
       prizeAmount: 0,
       score: undefined,
@@ -84,7 +90,9 @@ describe("Closest to Pin Winner Groups", () => {
 
     expect(group.winners).toHaveLength(4);
 
-    const holeNumbers = group.winners.map((w) => w.place).sort((a, b) => a - b);
+    const holeNumbers = group.winners
+      .map((w) => w.holeNumber)
+      .sort((a, b) => (a || 0) - (b || 0));
     expect(holeNumbers).toEqual([3, 5, 12, 17]);
 
     // All should start with empty competitors
