@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Link, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ChampionshipsList } from "@/components/championship-display";
@@ -21,6 +21,12 @@ export default function PastChampions({
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 
+  // Calculate latest year from current date for initial query
+  const currentYear = new Date().getFullYear();
+  const [targetYear, setTargetYear] = useState<number | undefined>(
+    showAllYears ? undefined : currentYear - 1
+  );
+
   const {
     championships,
     isLoading,
@@ -31,20 +37,26 @@ export default function PastChampions({
     fetchNextPage,
     refetch,
   } = useInfiniteChampionships({
-    year: showAllYears ? undefined : undefined, // Fetch all to find latest year
+    year: targetYear,
     pageSize: 20,
   });
 
-  // Find the latest year with championship data
-  const latestYear =
-    championships.length > 0
-      ? Math.max(...championships.map((c) => c.year))
-      : new Date().getFullYear() - 1;
+  // Once we have data, calculate the actual latest year
+  const latestYear = useMemo(() => {
+    if (championships.length === 0) return currentYear - 1;
+    return Math.max(...championships.map((c) => c.year));
+  }, [championships, currentYear]);
 
-  // Filter to show only the latest year's championships when not showing all years
-  const displayChampionships = showAllYears
-    ? championships
-    : championships.filter((c) => c.year === latestYear);
+  // Update target year once we know the actual latest year
+  useEffect(() => {
+    if (
+      !showAllYears &&
+      championships.length > 0 &&
+      targetYear !== latestYear
+    ) {
+      setTargetYear(latestYear);
+    }
+  }, [showAllYears, championships.length, targetYear, latestYear]);
 
   const { targetRef, isIntersecting } = useIntersectionObserver({
     threshold: 0.1,
@@ -89,13 +101,13 @@ export default function PastChampions({
   // Apply simple client-side filter: match against winner or runner-up names
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredChampionships = normalizedFilter
-    ? displayChampionships.filter((c) => {
+    ? championships.filter((c: UnifiedChampionship) => {
         const haystack = [...(c.winnerNames || []), ...(c.runnerUpNames || [])]
           .join(" ")
           .toLowerCase();
         return haystack.includes(normalizedFilter);
       })
-    : displayChampionships;
+    : championships;
 
   if (isLoading) {
     return (
@@ -162,7 +174,7 @@ export default function PastChampions({
           filter={filter}
           onFilterChange={setFilter}
           count={filteredChampionships.length}
-          total={displayChampionships.length}
+          total={championships.length}
         />
       )}
 
@@ -178,7 +190,7 @@ export default function PastChampions({
       />
 
       {/* Infinite scroll trigger and loading indicator */}
-      {displayChampionships.length > 0 && (
+      {championships.length > 0 && (
         <div ref={targetRef} className="flex justify-center py-4">
           {isFetchingNextPage && (
             <div className="flex items-center gap-2">
