@@ -235,8 +235,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
-        weather: weather || undefined,
       };
+
+      // Add weather if it has a value, or use deleteField() to clear it on updates
+      if (weather) {
+        (tournamentData as any).weather = weather;
+      } else if (tournament && tournament.firestoreId) {
+        // For updates: explicitly delete the field if it was cleared
+        (tournamentData as any).weather = deleteField();
+      }
 
       // Add previousTournamentId if it has a value, or use deleteField() to clear it on updates
       if (previousTournamentId) {
