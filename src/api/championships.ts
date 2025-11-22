@@ -83,10 +83,8 @@ export async function fetchChampionshipsWithPagination(
     } as UnifiedChampionship;
   });
 
-  // Sort by championship type in JavaScript since we can't include it in the Firestore query
-  championships.sort((a, b) =>
-    a.championshipType.localeCompare(b.championshipType)
-  );
+  // Don't sort here - sorting breaks cursor-based pagination
+  // The consumer can sort if needed, or we rely on Firestore's year DESC ordering
 
   return {
     championships,
