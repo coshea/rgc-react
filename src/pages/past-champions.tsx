@@ -21,11 +21,9 @@ export default function PastChampions({
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 
-  // Calculate latest year from current date for initial query
+  // Start with undefined to discover all years, then narrow to latest year
   const currentYear = new Date().getFullYear();
-  const [targetYear, setTargetYear] = useState<number | undefined>(
-    showAllYears ? undefined : currentYear - 1
-  );
+  const [targetYear, setTargetYear] = useState<number | undefined>(undefined);
 
   const {
     championships,
@@ -47,7 +45,7 @@ export default function PastChampions({
     return Math.max(...championships.map((c) => c.year));
   }, [championships, currentYear]);
 
-  // Update target year once we know the actual latest year
+  // Update target year once we know the actual latest year (only when not showing all years)
   useEffect(() => {
     if (
       !showAllYears &&
