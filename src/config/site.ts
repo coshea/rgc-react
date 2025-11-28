@@ -60,7 +60,7 @@ export const siteConfig = {
     contact: {
       title: "Contact Us",
       description: "Get in touch with the Ridgefield Golf Club",
-      link: "/#home-contact-section",
+      link: "/contact",
       icon: "lucide:mail",
     },
     login: {
