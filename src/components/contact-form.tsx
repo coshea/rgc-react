@@ -83,78 +83,81 @@ export const ContactForm = () => {
           <div className="w-full">
             <Card>
               <CardBody className="p-6 space-y-4">
-            <div className="text-center">
-              <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
-                Contact Us
-              </h1>
-              <p className="text-sm sm:text-base text-default-500 mt-2">
-                Let us know if you have any questions!
-              </p>
-            </div>
+                <div className="text-center">
+                  <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+                    Contact Us
+                  </h1>
+                  <p className="text-sm sm:text-base text-default-500 mt-2">
+                    Let us know if you have any questions!
+                  </p>
+                </div>
 
-            {submitted && (
-              <Alert className="mb-4" color="success">
-                Thanks for reaching out! We'll get back to you soon.
-              </Alert>
-            )}
+                {submitted && (
+                  <Alert className="mb-4" color="success">
+                    Thanks for reaching out! We'll get back to you soon.
+                  </Alert>
+                )}
 
-            {error && (
-              <Alert className="mb-4" color="danger">
-                {error}
-              </Alert>
-            )}
+                {error && (
+                  <Alert className="mb-4" color="danger">
+                    {error}
+                  </Alert>
+                )}
 
-            <Form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
-              <Input
-                isRequired
-                label="Name"
-                placeholder="Enter your name"
-                startContent={
-                  <Icon icon="lucide:user" className="text-default-400" />
-                }
-                value={formData.name}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, name: value })
-                }
-              />
+                <Form
+                  className="space-y-3 sm:space-y-4"
+                  onSubmit={handleSubmit}
+                >
+                  <Input
+                    isRequired
+                    label="Name"
+                    placeholder="Enter your name"
+                    startContent={
+                      <Icon icon="lucide:user" className="text-default-400" />
+                    }
+                    value={formData.name}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, name: value })
+                    }
+                  />
 
-              <Input
-                isRequired
-                type="email"
-                label="Email"
-                placeholder="Enter your email"
-                startContent={
-                  <Icon icon="lucide:mail" className="text-default-400" />
-                }
-                value={formData.email}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, email: value })
-                }
-              />
+                  <Input
+                    isRequired
+                    type="email"
+                    label="Email"
+                    placeholder="Enter your email"
+                    startContent={
+                      <Icon icon="lucide:mail" className="text-default-400" />
+                    }
+                    value={formData.email}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, email: value })
+                    }
+                  />
 
-              <Textarea
-                isRequired
-                label="Message"
-                placeholder="Enter your message"
-                minRows={4}
-                value={formData.message}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, message: value })
-                }
-              />
+                  <Textarea
+                    isRequired
+                    label="Message"
+                    placeholder="Enter your message"
+                    minRows={4}
+                    value={formData.message}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, message: value })
+                    }
+                  />
 
-              <Button
-                type="submit"
-                color="primary"
-                className="w-full"
-                size="md"
-                isLoading={sending}
-                isDisabled={sending}
-              >
-                {sending ? "Sending..." : "Send Message"}
-                {!sending && <Icon icon="lucide:send" className="ml-2" />}
-              </Button>
-            </Form>
+                  <Button
+                    type="submit"
+                    color="primary"
+                    className="w-full"
+                    size="md"
+                    isLoading={sending}
+                    isDisabled={sending}
+                  >
+                    {sending ? "Sending..." : "Send Message"}
+                    {!sending && <Icon icon="lucide:send" className="ml-2" />}
+                  </Button>
+                </Form>
               </CardBody>
             </Card>
           </div>
