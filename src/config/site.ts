@@ -39,11 +39,17 @@ export const siteConfig = {
       link: "/about",
       icon: "lucide:info",
     },
-    policies: {
-      title: "Policies/Rules",
-      description: "View the policies and rules of the Ridgefield Golf Club",
-      link: "/policies",
-      icon: "lucide:file-text",
+    handicapPolicy: {
+      title: "RGC Handicap Policy",
+      description: "Club policy on posting scores and maintaining handicaps",
+      link: "/policies/handicap-policy",
+      icon: "lucide:calculator",
+    },
+    localRules: {
+      title: "Local Rules",
+      description: "Local rules for Ridgefield Golf Course",
+      link: "/policies/local-rules",
+      icon: "lucide:map-pin",
     },
     cookies: {
       title: "Cookie Policy",

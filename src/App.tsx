@@ -9,7 +9,6 @@ import { siteConfig } from "@/config/site";
 import NotFoundPage from "@/pages/404page";
 import LoginPage from "@/pages/login";
 import SignUpPage from "@/pages/signup";
-import PolicyPage from "@/pages/policies";
 import CookiePolicyPage from "@/pages/cookies";
 import PastChampions from "@/pages/past-champions";
 import ProfilePage from "@/pages/profile";
@@ -26,6 +25,8 @@ import FindAGamePage from "@/pages/find-a-game";
 import { BlogListPage } from "@/pages/blog-list";
 import { BlogPostPage } from "@/pages/blog-post";
 import { BlogEditorPage } from "@/pages/blog-editor";
+import { PolicyPage } from "@/pages/policy";
+import { PolicyEditorPage } from "@/pages/policy-editor";
 import RequireAuth from "@/components/require-auth";
 import RequireAdmin from "@/components/require-admin";
 
@@ -42,10 +43,6 @@ function App() {
           />
           <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
           <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />
-          <Route
-            element={<PolicyPage />}
-            path={siteConfig.pages.policies.link}
-          />
           <Route
             element={<CookiePolicyPage />}
             path={siteConfig.pages.cookies.link}
@@ -118,6 +115,18 @@ function App() {
             }
             path="/announcements/edit/:id"
           />
+
+          {/* Policy Routes */}
+          <Route element={<PolicyPage />} path="/policies/:type" />
+          <Route
+            element={
+              <RequireAdmin>
+                <PolicyEditorPage />
+              </RequireAdmin>
+            }
+            path="/admin/policies/:type/edit"
+          />
+
           <Route element={<NotFoundPage />} path="*" />
         </Routes>
       </div>

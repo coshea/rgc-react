@@ -23,23 +23,6 @@ import { ProfileDropdown } from "./profile-dropdown";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
-const menuItemsDesktop = {
-  Home: [siteConfig.pages.home],
-  Tournaments: [
-    siteConfig.pages.tournaments,
-    siteConfig.pages.moneyList,
-    siteConfig.pages.pastchampions,
-  ],
-  Membership: [
-    siteConfig.pages.membership,
-    siteConfig.pages.directory,
-    siteConfig.pages.findGame,
-    siteConfig.pages.board,
-  ],
-  "Policies/Rules": [siteConfig.pages.policies],
-  "Contact Us": [siteConfig.pages.contact],
-};
-
 const menuItemsMobile = {
   Home: [siteConfig.pages.home],
   Tournaments: [
@@ -53,7 +36,30 @@ const menuItemsMobile = {
     siteConfig.pages.findGame,
     siteConfig.pages.board,
   ],
-  "Policies/Rules": [siteConfig.pages.policies],
+  "Policies/Rules": [
+    siteConfig.pages.handicapPolicy,
+    siteConfig.pages.localRules,
+  ],
+  "Contact Us": [siteConfig.pages.contact],
+};
+
+const menuItemsDesktop = {
+  Home: [siteConfig.pages.home],
+  Tournaments: [
+    siteConfig.pages.tournaments,
+    siteConfig.pages.moneyList,
+    siteConfig.pages.pastchampions,
+  ],
+  Membership: [
+    siteConfig.pages.membership,
+    siteConfig.pages.directory,
+    siteConfig.pages.findGame,
+    siteConfig.pages.board,
+  ],
+  "Policies/Rules": [
+    siteConfig.pages.handicapPolicy,
+    siteConfig.pages.localRules,
+  ],
   "Contact Us": [siteConfig.pages.contact],
 };
 
