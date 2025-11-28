@@ -15,6 +15,7 @@
     "firestore": "firebase deploy --only firestore:rules"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@heroicons/react": "^2.2.0",
     "@heroui/avatar": "^2.2.21",
     "@heroui/button": "^2.2.25",
