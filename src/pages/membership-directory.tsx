@@ -223,7 +223,7 @@ export default function MembershipDirectoryPage() {
             onValueChange={setActiveOnly}
             aria-label="Toggle active members only"
           >
-            Active {currentYear} Only
+            Active Last 2 Years
           </Switch>
         </div>
       )}
