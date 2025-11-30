@@ -19,14 +19,5 @@ export function isEmailJSConfigured(): boolean {
     EMAILJS_CONFIG.serviceId.startsWith("service_") &&
     EMAILJS_CONFIG.templateId.startsWith("template_");
 
-  // Debug logging (remove in production)
-  if (!isValid) {
-    console.log("EmailJS Config Debug:", {
-      serviceId: EMAILJS_CONFIG.serviceId,
-      templateId: EMAILJS_CONFIG.templateId,
-      publicKey: EMAILJS_CONFIG.publicKey?.substring(0, 5) + "...",
-    });
-  }
-
   return isValid;
 }

@@ -45,6 +45,7 @@ export const ContactForm = () => {
         {
           from_name: formData.name,
           from_email: formData.email,
+          subject: `Contact Form Message from ${formData.name}`,
           message: formData.message,
           to_name: "RGC Admin", // You can customize this
         },
