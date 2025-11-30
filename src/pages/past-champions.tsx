@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { Button, Link, Spinner } from "@heroui/react";
+import { Button, Link } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ChampionshipsList } from "@/components/championship-display";
 import { DirectorySearchBar } from "@/components/membership/DirectorySearchBar";
 import { ChampionshipsListSkeleton } from "@/components/championship-skeleton";
 import { ChampionshipEditorModal } from "@/components/championship-editor-modal";
 import { useInfiniteChampionships } from "@/hooks/useChampionships";
-import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { UnifiedChampionship } from "@/types/championship";
@@ -21,11 +20,9 @@ export default function PastChampions({
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 
-  // Calculate latest year from current date for initial query
+  // Start with undefined to discover all years, then narrow to latest year
   const currentYear = new Date().getFullYear();
-  const [targetYear, setTargetYear] = useState<number | undefined>(
-    showAllYears ? undefined : currentYear - 1
-  );
+  const [targetYear, setTargetYear] = useState<number | undefined>(undefined);
 
   const {
     championships,
@@ -38,7 +35,7 @@ export default function PastChampions({
     refetch,
   } = useInfiniteChampionships({
     year: targetYear,
-    pageSize: 20,
+    pageSize: 50, // Fetch ~50 championships at a time (approximately 10 years with ~5 championship types per year)
   });
 
   // Once we have data, calculate the actual latest year
@@ -47,7 +44,7 @@ export default function PastChampions({
     return Math.max(...championships.map((c) => c.year));
   }, [championships, currentYear]);
 
-  // Update target year once we know the actual latest year
+  // Update target year once we know the actual latest year (only when not showing all years)
   useEffect(() => {
     if (
       !showAllYears &&
@@ -58,17 +55,69 @@ export default function PastChampions({
     }
   }, [showAllYears, championships.length, targetYear, latestYear]);
 
-  const { targetRef, isIntersecting } = useIntersectionObserver({
-    threshold: 0.1,
-    rootMargin: "100px",
-  });
+  // Filter to only show complete years (exclude partial year data at the boundary)
+  const { completeChampionships, completeYears, hasPartialYear } =
+    useMemo(() => {
+      if (!showAllYears || championships.length === 0) {
+        return {
+          completeChampionships: championships,
+          completeYears: new Set(championships.map((c) => c.year)),
+          hasPartialYear: false,
+        };
+      }
 
-  // Trigger fetch when intersection observer detects end of list
-  useEffect(() => {
-    if (isIntersecting && hasNextPage && !isFetchingNextPage) {
+      // Group championships by year and count how many of each type
+      const yearData = championships.reduce(
+        (acc, champ) => {
+          if (!acc[champ.year]) {
+            acc[champ.year] = { types: new Set(), championships: [] };
+          }
+          acc[champ.year].types.add(champ.championshipType);
+          acc[champ.year].championships.push(champ);
+          return acc;
+        },
+        {} as Record<
+          number,
+          { types: Set<string>; championships: UnifiedChampionship[] }
+        >
+      );
+
+      const years = Object.keys(yearData)
+        .map(Number)
+        .sort((a, b) => b - a);
+
+      // Find the most common championship type count (mode)
+      const typeCounts = years.map((year) => yearData[year].types.size);
+      const maxTypeCount = typeCounts.length > 0 ? Math.max(...typeCounts) : 0;
+
+      // If the last (oldest) year has fewer championship types than the max, it's likely incomplete
+      const lastYear = years[years.length - 1];
+      const isLastYearPartial =
+        hasNextPage && yearData[lastYear]?.types.size < maxTypeCount;
+
+      // Filter out the partial year if detected
+      const completeYearsList = isLastYearPartial ? years.slice(0, -1) : years;
+      const completeYearsSet = new Set(completeYearsList);
+
+      const filtered = championships.filter((c) =>
+        completeYearsSet.has(c.year)
+      );
+
+      return {
+        completeChampionships: filtered,
+        completeYears: completeYearsSet,
+        hasPartialYear: isLastYearPartial,
+      };
+    }, [championships, showAllYears, hasNextPage]);
+
+  // Determine if we should show "Load More" button (when showing all years and more data available)
+  const shouldShowLoadMore = showAllYears && (hasNextPage || hasPartialYear);
+
+  const handleLoadMore = () => {
+    if (!isFetchingNextPage && hasNextPage) {
       fetchNextPage();
     }
-  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  };
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<
@@ -101,13 +150,13 @@ export default function PastChampions({
   // Apply simple client-side filter: match against winner or runner-up names
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredChampionships = normalizedFilter
-    ? championships.filter((c: UnifiedChampionship) => {
+    ? completeChampionships.filter((c: UnifiedChampionship) => {
         const haystack = [...(c.winnerNames || []), ...(c.runnerUpNames || [])]
           .join(" ")
           .toLowerCase();
         return haystack.includes(normalizedFilter);
       })
-    : championships;
+    : completeChampionships;
 
   if (isLoading) {
     return (
@@ -174,7 +223,7 @@ export default function PastChampions({
           filter={filter}
           onFilterChange={setFilter}
           count={filteredChampionships.length}
-          total={championships.length}
+          total={completeChampionships.length}
         />
       )}
 
@@ -189,17 +238,29 @@ export default function PastChampions({
         }
       />
 
-      {/* Infinite scroll trigger and loading indicator */}
-      {championships.length > 0 && (
-        <div ref={targetRef} className="flex justify-center py-4">
-          {isFetchingNextPage && (
-            <div className="flex items-center gap-2">
-              <Spinner size="sm" />
-              <span className="text-default-500">
-                Loading more championships...
-              </span>
-            </div>
-          )}
+      {/* Load More button for pagination */}
+      {shouldShowLoadMore && (
+        <div className="flex flex-col items-center gap-3 py-8">
+          <p className="text-sm text-default-500">
+            Showing {completeYears.size}{" "}
+            {completeYears.size === 1 ? "year" : "years"} of championship
+            history
+          </p>
+          <Button
+            color="primary"
+            variant="bordered"
+            size="lg"
+            onPress={handleLoadMore}
+            isLoading={isFetchingNextPage}
+            startContent={
+              !isFetchingNextPage && (
+                <Icon icon="lucide:chevron-down" className="w-5 h-5" />
+              )
+            }
+            className="min-w-[200px]"
+          >
+            {isFetchingNextPage ? "Loading..." : "Load More Years"}
+          </Button>
         </div>
       )}
 

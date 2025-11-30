@@ -14,7 +14,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import NavDropdown from "@/components/nav-dropdown";
-import { useNavigate, useLocation } from "react-router-dom";
 
 import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
@@ -23,7 +22,7 @@ import { ProfileDropdown } from "./profile-dropdown";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
-const menuItemsDesktop = {
+const menuItemsMobile = {
   Home: [siteConfig.pages.home],
   Tournaments: [
     siteConfig.pages.tournaments,
@@ -40,7 +39,7 @@ const menuItemsDesktop = {
   "Contact Us": [siteConfig.pages.contact],
 };
 
-const menuItemsMobile = {
+const menuItemsDesktop = {
   Home: [siteConfig.pages.home],
   Tournaments: [
     siteConfig.pages.tournaments,
@@ -60,8 +59,6 @@ const menuItemsMobile = {
 export const MainNavbar = (_props: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userLoggedIn, loading } = useAuth(); // Get auth state
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -84,21 +81,6 @@ export const MainNavbar = (_props: NavbarProps) => {
       document.removeEventListener("keydown", onKey);
     };
   }, [openDropdown]);
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleGoToContact = (e?: any) => {
-    e?.preventDefault?.();
-    const id = "home-contact-section";
-    if (location.pathname === "/") {
-      scrollToSection(id);
-    } else {
-      navigate("/", { state: { scrollTo: id } });
-    }
-  };
 
   return (
     <Navbar
@@ -142,17 +124,7 @@ dark:bg-default-100/50"
                   className="mb-2 w-full text-default-500"
                   href={Array.isArray(items) && items[0] ? items[0].link : "#"}
                   size="md"
-                  onClick={
-                    Array.isArray(items) &&
-                    items[0] &&
-                    items[0].link &&
-                    items[0].link.includes("#home-contact-section")
-                      ? (e: any) => {
-                          handleGoToContact(e);
-                          setIsMenuOpen(false);
-                        }
-                      : () => setIsMenuOpen(false)
-                  }
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   {Array.isArray(items) && items[0] ? items[0].title : label}
                 </Link>
@@ -193,14 +165,6 @@ dark:bg-default-100/50"
                 className="text-default-500 flex items-center gap-2"
                 href={Array.isArray(items) && items[0] ? items[0].link : "#"}
                 size="sm"
-                onClick={
-                  Array.isArray(items) &&
-                  items[0] &&
-                  items[0].link &&
-                  items[0].link.includes("#home-contact-section")
-                    ? handleGoToContact
-                    : undefined
-                }
               >
                 {Array.isArray(items) && items[0] && items[0].icon && (
                   <Icon icon={items[0].icon} className="text-base" />

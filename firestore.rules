@@ -256,6 +256,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Policies collection - admin-editable markdown documents
+    match /policies/{policyType} {
+      // Anyone can read policies
+      allow read: if true;
+      
+      // Only admins can create or update policies
+      allow create, update: if isAdmin() && 
+        request.resource.data.type is string &&
+        request.resource.data.title is string &&
+        request.resource.data.content is string &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.lastUpdatedBy is string &&
+        request.resource.data.lastUpdatedByName is string;
+      
+      // Only admins can delete policies (but should be rare)
+      allow delete: if isAdmin();
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

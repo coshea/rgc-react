@@ -37,6 +37,26 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // Documents folder: authenticated users can read, admins can write
+    match /docs/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.token.admin == true ||
+        firestore.get(/databases/(default)/documents/admin/$(request.auth.uid)).data.isAdmin == true ||
+        firestore.get(/databases/(default)/documents/admin/$(request.auth.uid)).data.admin == true
+      );
+    }
+
+    // Public documents folder: anyone can read, only admins can write
+    match /public-docs/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        request.auth.token.admin == true ||
+        firestore.get(/databases/(default)/documents/admin/$(request.auth.uid)).data.isAdmin == true ||
+        firestore.get(/databases/(default)/documents/admin/$(request.auth.uid)).data.admin == true
+      );
+    }
+
     // Default: deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

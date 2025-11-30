@@ -2,10 +2,8 @@ import { title } from "@/components/primitives";
 import { siteConfig } from "@/config/site";
 import { Button, Link, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useNavigate } from "react-router-dom";
 
 export default function AboutPage() {
-  const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-12">
       <div className="inline-block max-w-3xl text-center justify-center">
@@ -73,12 +71,6 @@ export default function AboutPage() {
           <a
             href={siteConfig.pages.contact.link}
             className="text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate(siteConfig.pages.home.link, {
-                state: { scrollTo: "home-contact-section" },
-              });
-            }}
           >
             Contact us
           </a>

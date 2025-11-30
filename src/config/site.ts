@@ -40,10 +40,22 @@ export const siteConfig = {
       icon: "lucide:info",
     },
     policies: {
-      title: "Policies/Rules",
-      description: "View the policies and rules of the Ridgefield Golf Club",
+      title: "Policies & Rules",
+      description: "Club policies and course rules",
       link: "/policies",
-      icon: "lucide:file-text",
+      icon: "lucide:scroll-text",
+    },
+    handicapPolicy: {
+      title: "RGC Handicap Policy",
+      description: "Club policy on posting scores and maintaining handicaps",
+      link: "/policies/handicap-policy",
+      icon: "lucide:calculator",
+    },
+    localRules: {
+      title: "Local Rules",
+      description: "Local rules for Ridgefield Golf Course",
+      link: "/policies/local-rules",
+      icon: "lucide:map-pin",
     },
     cookies: {
       title: "Cookie Policy",
@@ -54,7 +66,7 @@ export const siteConfig = {
     contact: {
       title: "Contact Us",
       description: "Get in touch with the Ridgefield Golf Club",
-      link: "/#home-contact-section",
+      link: "/contact",
       icon: "lucide:mail",
     },
     login: {

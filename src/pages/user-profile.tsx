@@ -451,7 +451,7 @@ const UserProfilePage: React.FC = () => {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
+                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-default/10 to-default/5 border border-default/20 text-center"
                   >
                     <Skeleton className="w-8 h-8 rounded mb-2" />
                     <Skeleton className="h-4 w-20 mb-1 rounded" />
@@ -465,7 +465,11 @@ const UserProfilePage: React.FC = () => {
                 {majorChampionships.map((championship) => (
                   <div
                     key={championship.id}
-                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
+                    className={`flex flex-col items-center p-3 rounded-lg text-center ${
+                      championship.placement === "champion"
+                        ? "bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20"
+                        : "bg-gradient-to-r from-default/10 to-default/5 border border-default/20"
+                    }`}
                   >
                     <Icon
                       icon={
@@ -473,14 +477,24 @@ const UserProfilePage: React.FC = () => {
                           ? "lucide:crown"
                           : "lucide:medal"
                       }
-                      className="w-8 h-8 text-warning mb-2"
+                      className={`w-8 h-8 mb-2 ${
+                        championship.placement === "champion"
+                          ? "text-warning"
+                          : "text-default-500"
+                      }`}
                     />
                     <h4 className="font-semibold text-foreground text-sm mb-1">
                       {CHAMPIONSHIP_TYPES[
                         championship.championshipType as keyof typeof CHAMPIONSHIP_TYPES
                       ] || championship.tournamentName}
                     </h4>
-                    <div className="text-lg font-bold text-warning mb-1">
+                    <div
+                      className={`text-lg font-bold mb-1 ${
+                        championship.placement === "champion"
+                          ? "text-warning"
+                          : "text-default-700"
+                      }`}
+                    >
                       {championship.year}
                     </div>
                     <Chip
