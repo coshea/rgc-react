@@ -90,8 +90,6 @@ After deployment, test the contact form. Check the browser console for any confi
 Your EmailJS template should include these variables:
 
 ```
-Subject: {{subject}}
-
 From: {{from_name}} <{{from_email}}>
 
 Message:
