@@ -15,7 +15,7 @@ import { Policy, PolicyType } from "@/types/policy";
 const POLICIES_COLLECTION = "policies";
 
 // Helper to convert Firestore timestamp to Date
-function toDate(timestamp: any): Date | undefined {
+export function toDate(timestamp: any): Date | undefined {
   if (!timestamp) return undefined;
   if (timestamp instanceof Date) return timestamp;
   if (timestamp?.toDate) return timestamp.toDate();

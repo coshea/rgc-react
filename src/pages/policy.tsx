@@ -12,7 +12,7 @@ import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Policy, PolicyType, POLICY_LABELS } from "@/types/policy";
-import { onPolicy } from "@/api/policy";
+import { onPolicy, toDate } from "@/api/policy";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
 import BackButton from "@/components/back-button";
@@ -63,15 +63,9 @@ export const PolicyPage: React.FC = () => {
     return () => unsub();
   }, [type, navigate]);
 
-  const formatDate = (date: any) => {
+  const formatDate = (date: Date | undefined) => {
     if (!date) return "";
-    const d =
-      date instanceof Date
-        ? date
-        : date.toDate
-          ? date.toDate()
-          : new Date(date);
-    return d.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -148,7 +142,7 @@ export const PolicyPage: React.FC = () => {
           {policy.updatedAt && (
             <div className="flex items-center gap-2 text-sm text-default-500 w-full">
               <Icon icon="lucide:calendar" className="w-4 h-4" />
-              <span>Last updated: {formatDate(policy.updatedAt)}</span>
+              <span>Last updated: {formatDate(toDate(policy.updatedAt))}</span>
               {policy.lastUpdatedByName && (
                 <>
                   <span>•</span>
