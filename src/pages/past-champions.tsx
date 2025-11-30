@@ -88,7 +88,7 @@ export default function PastChampions({
 
       // Find the most common championship type count (mode)
       const typeCounts = years.map((year) => yearData[year].types.size);
-      const maxTypeCount = Math.max(...typeCounts);
+      const maxTypeCount = typeCounts.length > 0 ? Math.max(...typeCounts) : 0;
 
       // If the last (oldest) year has fewer championship types than the max, it's likely incomplete
       const lastYear = years[years.length - 1];
