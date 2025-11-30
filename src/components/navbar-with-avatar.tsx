@@ -35,10 +35,7 @@ const menuItemsMobile = {
     siteConfig.pages.findGame,
     siteConfig.pages.board,
   ],
-  "Policies/Rules": [
-    siteConfig.pages.handicapPolicy,
-    siteConfig.pages.localRules,
-  ],
+  "Policies/Rules": [siteConfig.pages.policies],
   "Contact Us": [siteConfig.pages.contact],
 };
 
@@ -55,10 +52,7 @@ const menuItemsDesktop = {
     siteConfig.pages.findGame,
     siteConfig.pages.board,
   ],
-  "Policies/Rules": [
-    siteConfig.pages.handicapPolicy,
-    siteConfig.pages.localRules,
-  ],
+  "Policies/Rules": [siteConfig.pages.policies],
   "Contact Us": [siteConfig.pages.contact],
 };
 

@@ -39,6 +39,12 @@ export const siteConfig = {
       link: "/about",
       icon: "lucide:info",
     },
+    policies: {
+      title: "Policies & Rules",
+      description: "Club policies and course rules",
+      link: "/policies",
+      icon: "lucide:scroll-text",
+    },
     handicapPolicy: {
       title: "RGC Handicap Policy",
       description: "Club policy on posting scores and maintaining handicaps",

@@ -27,6 +27,7 @@ import { BlogPostPage } from "@/pages/blog-post";
 import { BlogEditorPage } from "@/pages/blog-editor";
 import { PolicyPage } from "@/pages/policy";
 import { PolicyEditorPage } from "@/pages/policy-editor";
+import { PoliciesListPage } from "@/pages/policies-list";
 import RequireAuth from "@/components/require-auth";
 import RequireAdmin from "@/components/require-admin";
 
@@ -117,6 +118,7 @@ function App() {
           />
 
           {/* Policy Routes */}
+          <Route element={<PoliciesListPage />} path="/policies" />
           <Route element={<PolicyPage />} path="/policies/:type" />
           <Route
             element={
