@@ -13,6 +13,7 @@ import {
   MembersList,
   EditMemberModal,
   DeleteMemberModal,
+  MergeDuplicatesModal,
 } from "@/components/membership"; // barrel export
 import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
 import { useMembers } from "@/hooks/useMembers";
@@ -35,6 +36,8 @@ export default function MembershipDirectoryPage() {
   const [form, setForm] = useState<Record<string, any>>({});
   // Delete confirmation state
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
+  // Merge duplicates modal state
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   // search filter
   const [filter, setFilter] = useState("");
@@ -208,7 +211,11 @@ export default function MembershipDirectoryPage() {
       className="px-4 py-4 max-w-4xl mx-auto w-full overflow-x-hidden"
       data-testid="membership-directory-root"
     >
-      <DirectoryHeader isAdmin={isAdmin} onAdd={openAdd} />
+      <DirectoryHeader
+        isAdmin={isAdmin}
+        onAdd={openAdd}
+        onFindDuplicates={() => setShowMergeModal(true)}
+      />
       <DirectorySearchBar
         filter={filter}
         onFilterChange={setFilter}
@@ -254,6 +261,15 @@ export default function MembershipDirectoryPage() {
         selfId={user?.uid}
         onCancel={() => setConfirmDelete(null)}
         onConfirm={confirmDeleteUser}
+      />
+      <MergeDuplicatesModal
+        isOpen={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        users={members}
+        onMergeComplete={() => {
+          // Invalidate users query to refresh the list after merge
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+        }}
       />
     </div>
   );

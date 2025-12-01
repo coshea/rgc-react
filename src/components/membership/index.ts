@@ -5,4 +5,5 @@ export * from "./MemberRow";
 export * from "./MemberCardMobile";
 export * from "./EditMemberModal";
 export * from "./DeleteMemberModal";
+export * from "./MergeDuplicatesModal";
 export * from "./hooks";

@@ -42,9 +42,12 @@ export function useMembersSubscription(enabled: boolean) {
     const unsub = onUsersCollection(
       (snap: any) => {
         const arr: DirectoryUser[] = [];
-        snap.forEach((d: any) =>
-          arr.push({ id: d.id, ...(d.data() as any) } as DirectoryUser)
-        );
+        snap.forEach((d: any) => {
+          const userData = d.data() as any;
+          // Filter out migrated users (soft deleted)
+          if (userData?.isMigrated === true) return;
+          arr.push({ id: d.id, ...userData } as DirectoryUser);
+        });
         arr.sort((a, b) => {
           const A = (a.displayName || a.email || "").toLowerCase();
           const B = (b.displayName || b.email || "").toLowerCase();
