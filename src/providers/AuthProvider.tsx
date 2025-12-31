@@ -12,6 +12,7 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  sendPasswordResetEmail,
   UserCredential,
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
@@ -33,6 +34,7 @@ interface AuthContextType {
   sendLoginLink: (email: string) => Promise<void>;
   signInWithLink: (email: string, href: string) => Promise<UserCredential>;
   signInWithGoogle: () => Promise<UserCredential>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -177,6 +179,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     setLoading(true);
     setError(null);
@@ -201,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sendLoginLink,
     signInWithLink,
     signInWithGoogle,
+    resetPassword,
     logout,
   };
 

@@ -136,9 +136,17 @@ export default function SignUpPage() {
       case "auth/weak-password":
         return "Password is too weak. Use at least 6 characters (more is better).";
       case "auth/operation-not-allowed":
-        return "Email/password sign up is disabled. Contact support.";
+        return "Sign up is disabled. Please contact support.";
       case "auth/popup-closed-by-user":
         return "The sign up popup was closed before completing.";
+      case "auth/missing-email":
+        return "Please provide an email address.";
+      case "auth/invalid-continue-uri":
+        return "Configuration error: Invalid redirect URL.";
+      case "auth/unauthorized-continue-uri":
+        return "Configuration error: Domain not authorized in Firebase Console.";
+      case "auth/quota-exceeded":
+        return "Sign-in quota exceeded. Please try again later.";
       default:
         return fallback || "Failed to sign up. Please try again.";
     }

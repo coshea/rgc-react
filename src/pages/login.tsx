@@ -22,6 +22,7 @@ export default function LoginPage() {
     sendLoginLink,
     signInWithLink,
     signInWithGoogle,
+    resetPassword,
     loading: authLoading,
   } = useAuth(); // Get auth functions and state
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const navigate = useNavigate(); // Initialize navigate
   const location = useLocation();
   const state = (location.state || {}) as { from?: string; message?: string };
+  const [email, setEmail] = React.useState("");
 
   useEffect(() => {
     if (userLoggedIn && !authLoading) {
@@ -74,7 +76,6 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
     setInlineError(null);
@@ -207,6 +208,26 @@ export default function LoginPage() {
     );
   }
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setInlineError("Please enter your email address to reset your password.");
+      return;
+    }
+    try {
+      await resetPassword(email);
+      addToast({
+        title: "Reset email sent",
+        description: "Check your email for password reset instructions.",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Reset Password failed:", error);
+      const err = error as any;
+      const msg = getAuthErrorMessage(err?.code, err?.message);
+      setInlineError(msg);
+    }
+  };
+
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div
@@ -242,6 +263,8 @@ export default function LoginPage() {
             placeholder="Enter your email"
             type="email"
             variant="bordered"
+            value={email}
+            onValueChange={setEmail}
           />
           {loginMode === "password" && (
             <Input
@@ -281,7 +304,11 @@ export default function LoginPage() {
               <Checkbox name="remember" size="sm">
                 Remember me
               </Checkbox>
-              <Link className="text-default-500" href="#" size="sm">
+              <Link
+                className="text-default-500 cursor-pointer"
+                onPress={handleForgotPassword}
+                size="sm"
+              >
                 Forgot password?
               </Link>
             </div>

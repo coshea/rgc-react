@@ -26,7 +26,7 @@ const ProfilePage = () => {
   return (
     <div className="p-6 max-w-3xl mx-auto text-center">
       <h1 className="text-2xl font-semibold mb-4">Profile Information</h1>
-      <ProfileForm />
+      <ProfileForm onSaved={() => navigate(siteConfig.pages.home.link)} />
     </div>
   );
 };
