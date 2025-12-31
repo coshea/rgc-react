@@ -5,13 +5,22 @@ import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
 import { addToast } from "@/providers/toast";
+import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
+import { auth } from "@/config/firebase";
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
+  const [loginMode, setLoginMode] = React.useState<"magic-link" | "password">(
+    "magic-link"
+  );
+  const [linkSent, setLinkSent] = React.useState(false);
+
   const {
     userLoggedIn, // We can use this to redirect if already logged in
     loginEmailAndPassword, // Import the email/password login function
+    sendLoginLink,
+    signInWithLink,
     signInWithGoogle,
     loading: authLoading,
   } = useAuth(); // Get auth functions and state
@@ -29,45 +38,103 @@ export default function LoginPage() {
     }
   }, [userLoggedIn, authLoading, navigate]);
 
+  // Check for incoming magic link
+  useEffect(() => {
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem("emailForSignIn");
+      if (!email) {
+        // User opened link on different device. Ask for email.
+        email = window.prompt("Please provide your email for confirmation");
+      }
+      if (email) {
+        signInWithLink(email, window.location.href)
+          .then((result) => {
+            const additionalUserInfo = getAdditionalUserInfo(result);
+            if (additionalUserInfo?.isNewUser) {
+              navigate(siteConfig.pages.profile.link);
+            } else {
+              const dest = state?.from || siteConfig.pages.home.link;
+              navigate(dest);
+            }
+          })
+          .catch((error) => {
+            console.error("Magic Link Sign-In failed:", error);
+            const msg = getAuthErrorMessage(error?.code, error?.message);
+            setInlineError(msg);
+            addToast({
+              title: "Sign in failed",
+              description: msg,
+              color: "danger",
+            });
+          });
+      }
+    }
+  }, []);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    if (email && password) {
-      try {
-        await loginEmailAndPassword(email, password);
-        // Navigate to original destination if provided, otherwise home
-        const dest = state?.from || siteConfig.pages.home.link;
-        navigate(dest);
-      } catch (error) {
-        console.error("Email/Password Sign-In failed on LoginPage:", error);
-        const err = error as any;
-        const msg = getAuthErrorMessage(err?.code, err?.message);
-        // show toast and set inline fallback
+    setInlineError(null);
+
+    if (loginMode === "magic-link") {
+      if (email) {
         try {
+          await sendLoginLink(email);
+          setLinkSent(true);
           addToast({
-            title: "Sign in failed",
-            description: msg,
-            color: "danger",
+            title: "Link sent!",
+            description: "Check your email for the sign-in link.",
+            color: "success",
           });
-        } catch (e) {
-          // if toast fails for some reason, still set inline error
-          console.warn("Toast failed:", e);
+        } catch (error) {
+          console.error("Send Link failed:", error);
+          const err = error as any;
+          const msg = getAuthErrorMessage(err?.code, err?.message);
+          setInlineError(msg);
         }
-        setInlineError(msg);
+      }
+    } else {
+      if (email && password) {
+        try {
+          await loginEmailAndPassword(email, password);
+          // Navigate to original destination if provided, otherwise home
+          const dest = state?.from || siteConfig.pages.home.link;
+          navigate(dest);
+        } catch (error) {
+          console.error("Email/Password Sign-In failed on LoginPage:", error);
+          const err = error as any;
+          const msg = getAuthErrorMessage(err?.code, err?.message);
+          // show toast and set inline fallback
+          try {
+            addToast({
+              title: "Sign in failed",
+              description: msg,
+              color: "danger",
+            });
+          } catch (e) {
+            // if toast fails for some reason, still set inline error
+            console.warn("Toast failed:", e);
+          }
+          setInlineError(msg);
+        }
       }
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
       // Navigation or further actions on successful Google sign-in
-      // can be handled here or by observing userLoggedIn state elsewhere.
-      const dest = state?.from || siteConfig.pages.home.link;
-      navigate(dest);
+      const additionalUserInfo = getAdditionalUserInfo(result);
+      if (additionalUserInfo?.isNewUser) {
+        navigate(siteConfig.pages.profile.link);
+      } else {
+        const dest = state?.from || siteConfig.pages.home.link;
+        navigate(dest);
+      }
     } catch (error) {
       console.error("Google Sign-In failed on LoginPage:", error);
       const err = error as any;
@@ -101,6 +168,10 @@ export default function LoginPage() {
         return "Sign in popup was closed before completing. Try again.";
       case "auth/cancelled-popup-request":
         return "Sign in was cancelled. Try again.";
+      case "auth/expired-action-code":
+        return "The sign-in link has expired. Please try again.";
+      case "auth/invalid-action-code":
+        return "The sign-in link is invalid. Please try again.";
       default:
         return fallback || "Failed to sign in. Please try again.";
     }
@@ -110,6 +181,32 @@ export default function LoginPage() {
   if (userLoggedIn && !authLoading) {
     return null; // Or a loading spinner
   }
+
+  if (linkSent) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small text-center">
+          <Icon
+            icon="solar:letter-linear"
+            className="mx-auto text-6xl text-primary"
+          />
+          <h1 className="text-large font-medium">Check your email</h1>
+          <p className="text-small text-default-500">
+            We sent a sign-in link to your email address. Click the link to sign
+            in.
+          </p>
+          <Button
+            variant="light"
+            onPress={() => setLinkSent(false)}
+            className="mt-2"
+          >
+            Back to Sign In
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div
@@ -146,54 +243,81 @@ export default function LoginPage() {
             type="email"
             variant="bordered"
           />
-          <Input
-            isRequired
-            endContent={
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                onPress={toggleVisibility}
-                aria-label={isVisible ? "Hide password" : "Show password"}
-                className="min-w-0 h-auto"
-              >
-                {isVisible ? (
-                  <Icon
-                    className="text-2xl text-default-400"
-                    icon="solar:eye-closed-linear"
-                  />
-                ) : (
-                  <Icon
-                    className="text-2xl text-default-400"
-                    icon="solar:eye-bold"
-                  />
-                )}
-              </Button>
-            }
-            label="Password"
-            name="password"
-            placeholder="Enter your password"
-            type={isVisible ? "text" : "password"}
-            variant="bordered"
-          />
-          <div className="flex w-full items-center justify-between px-1 py-2">
-            <Checkbox name="remember" size="sm">
-              Remember me
-            </Checkbox>
-            <Link className="text-default-500" href="#" size="sm">
-              Forgot password?
-            </Link>
-          </div>
-          {/* authError is shown via toast; remove inline Firebase error message to avoid exposing raw messages */}
+          {loginMode === "password" && (
+            <Input
+              isRequired
+              endContent={
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={toggleVisibility}
+                  aria-label={isVisible ? "Hide password" : "Show password"}
+                  className="min-w-0 h-auto"
+                >
+                  {isVisible ? (
+                    <Icon
+                      className="text-2xl text-default-400"
+                      icon="solar:eye-closed-linear"
+                    />
+                  ) : (
+                    <Icon
+                      className="text-2xl text-default-400"
+                      icon="solar:eye-bold"
+                    />
+                  )}
+                </Button>
+              }
+              label="Password"
+              name="password"
+              placeholder="Enter your password"
+              type={isVisible ? "text" : "password"}
+              variant="bordered"
+            />
+          )}
+
+          {loginMode === "password" && (
+            <div className="flex w-full items-center justify-between px-1 py-2">
+              <Checkbox name="remember" size="sm">
+                Remember me
+              </Checkbox>
+              <Link className="text-default-500" href="#" size="sm">
+                Forgot password?
+              </Link>
+            </div>
+          )}
+
           <Button
             className="w-full"
             color="primary"
             type="submit"
             isDisabled={authLoading}
           >
-            {authLoading ? "Signing In..." : "Sign In"}
+            {authLoading
+              ? "Processing..."
+              : loginMode === "magic-link"
+                ? "Send Sign-In Link"
+                : "Sign In"}
           </Button>
         </Form>
+
+        <div className="flex flex-col items-center gap-2">
+          <Button
+            variant="light"
+            size="sm"
+            className="text-default-500"
+            onPress={() =>
+              setLoginMode(
+                loginMode === "magic-link" ? "password" : "magic-link"
+              )
+            }
+          >
+            {loginMode === "magic-link"
+              ? "Sign in with password instead"
+              : "Sign in with email link instead"}
+          </Button>
+        </div>
+
         <div className="flex items-center gap-4 py-2">
           <Divider className="flex-1" />
           <p className="shrink-0 text-tiny text-default-500">OR</p>
