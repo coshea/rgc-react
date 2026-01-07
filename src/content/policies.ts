@@ -13,10 +13,6 @@ export const termsSections: PolicySection[] = [
     body: "By accessing or using the Ridgefield Golf Club (RGC) website you agree to these Terms of Use and to abide by all applicable laws. If you do not agree, please discontinue use immediately.",
   },
   {
-    title: "Changes and Contact",
-    body: `We may update these Terms from time to time. Continued use of the site after changes become effective constitutes acceptance. Questions may be directed to the Contact page or emailed to ${contactEmail}.`,
-  },
-  {
     title: "Acceptable Use",
     body: "Do not attempt to disrupt the site, harvest member data, impersonate others, or upload unlawful, defamatory, or infringing content. We may suspend access if we detect misuse or security risks.",
   },

@@ -120,7 +120,7 @@ export const PolicyPage: React.FC = () => {
             <div className="flex items-center gap-3">
               <Icon
                 icon="lucide:file-text"
-                className="w-8 h-8 text-primary flex-shrink-0"
+                className="w-8 h-8 text-primary shrink-0"
               />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {policy.title || POLICY_LABELS[policy.type]}

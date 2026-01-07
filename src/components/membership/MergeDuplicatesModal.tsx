@@ -237,42 +237,30 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
               </div>
               <div className="space-y-1 text-sm text-default-600">
                 <div className="flex items-center gap-2">
-                  <Icon icon="lucide:mail" className="w-4 h-4 flex-shrink-0" />
+                  <Icon icon="lucide:mail" className="w-4 h-4 shrink-0" />
                   <span className="truncate">{user.email || "No email"}</span>
                 </div>
                 {user.phone && (
                   <div className="flex items-center gap-2">
-                    <Icon
-                      icon="lucide:phone"
-                      className="w-4 h-4 flex-shrink-0"
-                    />
+                    <Icon icon="lucide:phone" className="w-4 h-4 shrink-0" />
                     <span>{user.phone}</span>
                   </div>
                 )}
                 {user.ghinNumber && (
                   <div className="flex items-center gap-2">
-                    <Icon
-                      icon="lucide:hash"
-                      className="w-4 h-4 flex-shrink-0"
-                    />
+                    <Icon icon="lucide:hash" className="w-4 h-4 shrink-0" />
                     <span>GHIN: {user.ghinNumber}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Icon
-                    icon="lucide:calendar"
-                    className="w-4 h-4 flex-shrink-0"
-                  />
+                  <Icon icon="lucide:calendar" className="w-4 h-4 shrink-0" />
                   <span>
                     Last Paid: {user.lastPaidYear ? user.lastPaidYear : "Never"}
                   </span>
                 </div>
                 {user.createdAt && (
                   <div className="flex items-center gap-2">
-                    <Icon
-                      icon="lucide:clock"
-                      className="w-4 h-4 flex-shrink-0"
-                    />
+                    <Icon icon="lucide:clock" className="w-4 h-4 shrink-0" />
                     <span>
                       Created:{" "}
                       {user.createdAt instanceof Date
@@ -358,7 +346,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                       <div className="flex items-start gap-2">
                         <Icon
                           icon="lucide:alert-triangle"
-                          className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+                          className="w-5 h-5 text-warning shrink-0 mt-0.5"
                         />
                         <div className="text-sm">
                           <p className="font-semibold text-warning-800 dark:text-warning-200 mb-1">
@@ -379,7 +367,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                       <div className="flex items-start gap-3">
                         <Icon
                           icon="lucide:sparkles"
-                          className="w-5 h-5 text-primary flex-shrink-0"
+                          className="w-5 h-5 text-primary shrink-0"
                         />
                         <div>
                           <h3 className="font-semibold">Manual Merge</h3>
@@ -397,7 +385,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                           users={usersForManualA}
                           value={manualUserA}
                           onChange={(val) =>
-                            setManualUserA(coerceSelectionValue(val))
+                            setManualUserA(normalizeToSingleValue(val))
                           }
                         />
 
@@ -407,7 +395,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                           users={usersForManualB}
                           value={manualUserB}
                           onChange={(val) =>
-                            setManualUserB(coerceSelectionValue(val))
+                            setManualUserB(normalizeToSingleValue(val))
                           }
                         />
                       </div>
@@ -487,7 +475,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     <div className="flex items-start gap-2">
                       <Icon
                         icon="lucide:info"
-                        className="w-5 h-5 text-primary flex-shrink-0 mt-0.5"
+                        className="w-5 h-5 text-primary shrink-0 mt-0.5"
                       />
                       <div className="text-sm">
                         <p className="font-semibold text-primary-800 dark:text-primary-200 mb-1">
@@ -538,7 +526,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     <div className="flex items-start gap-2">
                       <Icon
                         icon="lucide:alert-triangle"
-                        className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
+                        className="w-5 h-5 text-danger shrink-0 mt-0.5"
                       />
                       <div className="text-sm">
                         <p className="font-semibold text-danger-800 dark:text-danger-200 mb-1">
