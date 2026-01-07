@@ -52,7 +52,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
   const [manualUserA, setManualUserA] = useState<string>("");
   const [manualUserB, setManualUserB] = useState<string>("");
 
-  const coerceSelectionValue = (value: string | string[]): string =>
+  const normalizeToSingleValue = (value: string | string[]): string =>
     Array.isArray(value) ? (value[0] ?? "") : value;
 
   const manualSelectionReady =
