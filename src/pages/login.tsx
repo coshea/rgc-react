@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
@@ -15,6 +15,7 @@ export default function LoginPage() {
     "magic-link"
   );
   const [linkSent, setLinkSent] = React.useState(false);
+  const handledMagicLink = useRef(false);
 
   const {
     userLoggedIn, // We can use this to redirect if already logged in
@@ -42,6 +43,9 @@ export default function LoginPage() {
 
   // Check for incoming magic link
   useEffect(() => {
+    if (handledMagicLink.current) {
+      return;
+    }
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let email = window.localStorage.getItem("emailForSignIn");
       if (!email) {
@@ -49,6 +53,7 @@ export default function LoginPage() {
         email = window.prompt("Please provide your email for confirmation");
       }
       if (email) {
+        handledMagicLink.current = true;
         signInWithLink(email, window.location.href)
           .then((result) => {
             const additionalUserInfo = getAdditionalUserInfo(result);
@@ -71,7 +76,7 @@ export default function LoginPage() {
           });
       }
     }
-  }, []);
+  }, [navigate, signInWithLink, state?.from]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
