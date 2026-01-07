@@ -22,7 +22,7 @@ export const termsSections: PolicySection[] = [
   },
   {
     title: "Contact",
-    body: `Questions about this Privacy Policy can be directed through the Contact page or by emailing ${contactEmail}.`,
+    body: `Questions about these Terms of Use can be directed through the Contact page or by emailing ${contactEmail}.`,
   },
   {
     title: "Intellectual Property",
