@@ -5,7 +5,7 @@ import type { User } from "@/api/users";
  */
 
 export interface DuplicateGroup {
-  reason: "email" | "name";
+  reason: "email" | "name" | "manual";
   users: User[];
   // For display: the common value that makes them duplicates
   matchValue: string;

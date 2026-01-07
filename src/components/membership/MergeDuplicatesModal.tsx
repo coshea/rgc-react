@@ -26,6 +26,7 @@ import { addToast } from "@/providers/toast";
 import { auth, db } from "@/config/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { UserAvatar } from "@/components/avatar";
+import { UserSelect } from "@/components/UserSelect";
 
 interface MergeDuplicatesModalProps {
   isOpen: boolean;
@@ -48,15 +49,39 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
   );
   const [primaryUserId, setPrimaryUserId] = useState<string>("");
   const [merging, setMerging] = useState(false);
+  const [manualUserA, setManualUserA] = useState<string>("");
+  const [manualUserB, setManualUserB] = useState<string>("");
+
+  const coerceSelectionValue = (value: string | string[]): string =>
+    Array.isArray(value) ? (value[0] ?? "") : value;
+
+  const manualSelectionReady =
+    Boolean(manualUserA) && Boolean(manualUserB) && manualUserA !== manualUserB;
 
   // Find all duplicate groups
   const duplicateGroups = useMemo(() => findDuplicates(users), [users]);
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => {
+      const labelA = (a.displayName || a.email || "").toLowerCase();
+      const labelB = (b.displayName || b.email || "").toLowerCase();
+      return labelA.localeCompare(labelB);
+    });
+  }, [users]);
+  const usersForManualA = useMemo(() => {
+    if (!manualUserB) return sortedUsers;
+    return sortedUsers.filter((user) => user.id !== manualUserB);
+  }, [sortedUsers, manualUserB]);
+  const usersForManualB = useMemo(() => {
+    if (!manualUserA) return sortedUsers;
+    return sortedUsers.filter((user) => user.id !== manualUserA);
+  }, [sortedUsers, manualUserA]);
 
-  // Reset state when modal closes
   const handleClose = () => {
     setStep("scan");
     setSelectedGroup(null);
     setPrimaryUserId("");
+    setManualUserA("");
+    setManualUserB("");
     setMerging(false);
     onClose();
   };
@@ -67,6 +92,44 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
     // Auto-suggest the primary user
     const suggested = suggestPrimaryUser(group.users);
     setPrimaryUserId(suggested.id);
+    setStep("review");
+  };
+
+  const handleManualReview = () => {
+    if (!manualSelectionReady) {
+      addToast({
+        title: "Selection Required",
+        description: "Pick two different users to merge",
+        color: "warning",
+      });
+      return;
+    }
+
+    const userA = users.find((user) => user.id === manualUserA);
+    const userB = users.find((user) => user.id === manualUserB);
+
+    if (!userA || !userB) {
+      addToast({
+        title: "Users Not Found",
+        description:
+          "One or both selected users are unavailable. Refresh the list and try again.",
+        color: "danger",
+      });
+      return;
+    }
+
+    const describeUser = (user: User) =>
+      user.displayName || user.email || user.id;
+
+    const manualGroup: DuplicateGroup = {
+      reason: "manual",
+      users: [userA, userB],
+      matchValue: `${describeUser(userA)} ↔ ${describeUser(userB)}`,
+    };
+
+    setSelectedGroup(manualGroup);
+    const suggested = suggestPrimaryUser(manualGroup.users);
+    setPrimaryUserId(suggested?.id ?? manualGroup.users[0]?.id ?? "");
     setStep("review");
   };
 
@@ -233,6 +296,27 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
     );
   };
 
+  const renderReasonChip = (reason: DuplicateGroup["reason"]) => {
+    const color =
+      reason === "email"
+        ? "danger"
+        : reason === "name"
+          ? "warning"
+          : "secondary";
+    const label =
+      reason === "email"
+        ? "Same Email"
+        : reason === "name"
+          ? "Same Name"
+          : "Manual Selection";
+
+    return (
+      <Chip size="sm" color={color} variant="flat">
+        {label}
+      </Chip>
+    );
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -253,7 +337,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
             </ModalHeader>
 
             <ModalBody>
-              {/* Scan Step: Show all duplicate groups */}
+              {/* Scan Step: Show duplicate groups and manual form */}
               {step === "scan" && (
                 <div className="space-y-4">
                   {duplicateGroups.length === 0 ? (
@@ -270,89 +354,128 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                       </p>
                     </div>
                   ) : (
-                    <>
-                      <div className="bg-warning-50 dark:bg-warning-100/10 border border-warning-200 rounded-lg p-3">
-                        <div className="flex items-start gap-2">
-                          <Icon
-                            icon="lucide:alert-triangle"
-                            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
-                          />
-                          <div className="text-sm">
-                            <p className="font-semibold text-warning-800 dark:text-warning-200 mb-1">
-                              {duplicateGroups.length} Duplicate Group
-                              {duplicateGroups.length !== 1 ? "s" : ""} Found
-                            </p>
-                            <p className="text-warning-700 dark:text-warning-300">
-                              Users with matching emails or identical first and
-                              last names may be duplicates.
-                            </p>
-                          </div>
+                    <div className="bg-warning-50 dark:bg-warning-100/10 border border-warning-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Icon
+                          icon="lucide:alert-triangle"
+                          className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+                        />
+                        <div className="text-sm">
+                          <p className="font-semibold text-warning-800 dark:text-warning-200 mb-1">
+                            {duplicateGroups.length} Duplicate Group
+                            {duplicateGroups.length !== 1 ? "s" : ""} Found
+                          </p>
+                          <p className="text-warning-700 dark:text-warning-300">
+                            Users with matching emails or identical first and
+                            last names may be duplicates.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Card className="border border-default-200">
+                    <CardBody className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <Icon
+                          icon="lucide:sparkles"
+                          className="w-5 h-5 text-primary flex-shrink-0"
+                        />
+                        <div>
+                          <h3 className="font-semibold">Manual Merge</h3>
+                          <p className="text-sm text-default-600">
+                            Pick any two users to merge, even if they were not
+                            detected automatically.
+                          </p>
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        {duplicateGroups.map((group, idx) => (
-                          <Card key={idx} className="border border-default-200">
-                            <CardBody className="p-4">
-                              <div className="flex items-start justify-between gap-3 mb-3">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Chip
-                                      size="sm"
-                                      color={
-                                        group.reason === "email"
-                                          ? "danger"
-                                          : "warning"
-                                      }
-                                      variant="flat"
-                                    >
-                                      {group.reason === "email"
-                                        ? "Same Email"
-                                        : "Same Name"}
-                                    </Chip>
-                                    <span className="text-sm text-default-600">
-                                      {group.users.length} users
-                                    </span>
-                                  </div>
-                                  <p className="text-sm font-mono text-default-700">
-                                    {group.matchValue}
-                                  </p>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  color="primary"
-                                  variant="flat"
-                                  onPress={() => handleReviewGroup(group)}
-                                  endContent={
-                                    <Icon
-                                      icon="lucide:arrow-right"
-                                      className="w-4 h-4"
-                                    />
-                                  }
-                                >
-                                  Review
-                                </Button>
-                              </div>
-                              <div className="space-y-2">
-                                {group.users.map((user) => (
-                                  <div
-                                    key={user.id}
-                                    className="flex items-center gap-2 text-sm"
-                                  >
-                                    <UserAvatar user={user} size="sm" />
-                                    <span className="truncate">
-                                      {user.displayName ||
-                                        user.email ||
-                                        "No name"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardBody>
-                          </Card>
-                        ))}
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <UserSelect
+                          label="User A"
+                          placeholder="Type to search members"
+                          users={usersForManualA}
+                          value={manualUserA}
+                          onChange={(val) =>
+                            setManualUserA(coerceSelectionValue(val))
+                          }
+                        />
+
+                        <UserSelect
+                          label="User B"
+                          placeholder="Type to search members"
+                          users={usersForManualB}
+                          value={manualUserB}
+                          onChange={(val) =>
+                            setManualUserB(coerceSelectionValue(val))
+                          }
+                        />
                       </div>
-                    </>
+
+                      <div className="flex justify-end">
+                        <Button
+                          color="primary"
+                          variant="solid"
+                          isDisabled={!manualSelectionReady}
+                          onPress={handleManualReview}
+                        >
+                          Review Manual Selection
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {duplicateGroups.length > 0 && (
+                    <div className="space-y-3">
+                      {duplicateGroups.map((group, idx) => (
+                        <Card key={idx} className="border border-default-200">
+                          <CardBody className="p-4">
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  {renderReasonChip(group.reason)}
+                                  <span className="text-sm text-default-600">
+                                    {group.users.length} users
+                                  </span>
+                                </div>
+                                <p className="text-sm font-mono text-default-700">
+                                  {group.matchValue}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                color="primary"
+                                variant="flat"
+                                onPress={() => handleReviewGroup(group)}
+                                endContent={
+                                  <Icon
+                                    icon="lucide:arrow-right"
+                                    className="w-4 h-4"
+                                  />
+                                }
+                              >
+                                Review
+                              </Button>
+                            </div>
+                            <div className="space-y-2">
+                              {group.users.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center gap-2 text-sm"
+                                >
+                                  <UserAvatar user={user} size="sm" />
+                                  <span className="truncate">
+                                    {user.displayName ||
+                                      user.email ||
+                                      "No name"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
@@ -381,19 +504,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Chip
-                        size="sm"
-                        color={
-                          selectedGroup.reason === "email"
-                            ? "danger"
-                            : "warning"
-                        }
-                        variant="flat"
-                      >
-                        {selectedGroup.reason === "email"
-                          ? "Same Email"
-                          : "Same Name"}
-                      </Chip>
+                      {renderReasonChip(selectedGroup.reason)}
                       <span className="text-sm text-default-600">
                         {selectedGroup.matchValue}
                       </span>
