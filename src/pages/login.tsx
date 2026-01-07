@@ -1,5 +1,17 @@
 import React, { useEffect, useRef } from "react";
-import { Button, Input, Checkbox, Link, Form, Divider } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Checkbox,
+  Link,
+  Form,
+  Divider,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
@@ -32,6 +44,57 @@ export default function LoginPage() {
   const location = useLocation();
   const state = (location.state || {}) as { from?: string; message?: string };
   const [email, setEmail] = React.useState("");
+  const [pendingMagicLink, setPendingMagicLink] = React.useState<string | null>(
+    null
+  );
+  const [isEmailConfirmationModalOpen, setEmailConfirmationModalOpen] =
+    React.useState(false);
+  const [emailConfirmationValue, setEmailConfirmationValue] =
+    React.useState("");
+  const [emailConfirmationError, setEmailConfirmationError] = React.useState<
+    string | null
+  >(null);
+  const [magicLinkSubmitting, setMagicLinkSubmitting] = React.useState(false);
+
+  const completeMagicLinkSignIn = React.useCallback(
+    async (emailAddress: string, link: string) => {
+      handledMagicLink.current = true;
+      setMagicLinkSubmitting(true);
+      setEmailConfirmationError(null);
+      try {
+        const result = await signInWithLink(emailAddress, link);
+        const additionalUserInfo = getAdditionalUserInfo(result);
+        if (additionalUserInfo?.isNewUser) {
+          navigate(siteConfig.pages.profile.link);
+        } else {
+          const dest = state?.from || siteConfig.pages.home.link;
+          navigate(dest);
+        }
+      } catch (error) {
+        handledMagicLink.current = false;
+        console.error("Magic Link Sign-In failed:", error);
+        const err = error as { code?: string; message?: string };
+        const msg = getAuthErrorMessage(err?.code, err?.message);
+        setInlineError(msg);
+        setEmailConfirmationError(msg);
+        setPendingMagicLink(link);
+        setEmailConfirmationModalOpen(true);
+        setEmailConfirmationValue(emailAddress);
+        try {
+          addToast({
+            title: "Sign in failed",
+            description: msg,
+            color: "danger",
+          });
+        } catch (toastError) {
+          console.warn("Toast failed:", toastError);
+        }
+      } finally {
+        setMagicLinkSubmitting(false);
+      }
+    },
+    [navigate, signInWithLink, state?.from]
+  );
 
   useEffect(() => {
     if (userLoggedIn && !authLoading) {
@@ -46,37 +109,20 @@ export default function LoginPage() {
     if (handledMagicLink.current) {
       return;
     }
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      let email = window.localStorage.getItem("emailForSignIn");
-      if (!email) {
-        // User opened link on different device. Ask for email.
-        email = window.prompt("Please provide your email for confirmation");
-      }
-      if (email) {
-        handledMagicLink.current = true;
-        signInWithLink(email, window.location.href)
-          .then((result) => {
-            const additionalUserInfo = getAdditionalUserInfo(result);
-            if (additionalUserInfo?.isNewUser) {
-              navigate(siteConfig.pages.profile.link);
-            } else {
-              const dest = state?.from || siteConfig.pages.home.link;
-              navigate(dest);
-            }
-          })
-          .catch((error) => {
-            console.error("Magic Link Sign-In failed:", error);
-            const msg = getAuthErrorMessage(error?.code, error?.message);
-            setInlineError(msg);
-            addToast({
-              title: "Sign in failed",
-              description: msg,
-              color: "danger",
-            });
-          });
-      }
+    const currentUrl = window.location.href;
+    if (!isSignInWithEmailLink(auth, currentUrl)) {
+      return;
     }
-  }, [navigate, signInWithLink, state?.from]);
+    const storedEmail = window.localStorage.getItem("emailForSignIn");
+    if (storedEmail) {
+      completeMagicLinkSignIn(storedEmail, currentUrl);
+      return;
+    }
+    setPendingMagicLink(currentUrl);
+    setEmailConfirmationModalOpen(true);
+    setEmailConfirmationError(null);
+    setEmailConfirmationValue("");
+  }, [completeMagicLinkSignIn]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -233,146 +279,239 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <div className="flex h-full w-full items-center justify-center">
-      <div
-        className="flex w-full max-w-sm flex-col gap-4 rounded-large 
-        bg-content1 px-8 pb-10 pt-6 shadow-small"
-      >
-        <div className="flex flex-col gap-1">
-          <h1 className="text-large font-medium">Sign in to your account</h1>
-          <p className="text-small text-default-500">
-            to continue to Ridgefield Golf Club
-          </p>
-          {state?.message ? (
-            <div className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
-              {state.message}
-            </div>
-          ) : null}
-          {inlineError ? (
-            <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {inlineError}
-            </div>
-          ) : null}
-        </div>
+  const handleEmailConfirmationSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+    if (!pendingMagicLink) {
+      setEmailConfirmationError(
+        "We couldn't find your sign-in link. Please click the link again."
+      );
+      return;
+    }
+    if (!emailConfirmationValue.trim()) {
+      setEmailConfirmationError("Email address is required.");
+      return;
+    }
+    await completeMagicLinkSignIn(
+      emailConfirmationValue.trim(),
+      pendingMagicLink
+    );
+  };
 
-        <Form
-          className="flex flex-col gap-3"
-          validationBehavior="native"
-          onSubmit={handleSubmit}
+  const handleEmailPromptClose = () => {
+    if (magicLinkSubmitting) {
+      return;
+    }
+    setEmailConfirmationModalOpen(false);
+    setEmailConfirmationError(null);
+    setPendingMagicLink(null);
+    handledMagicLink.current = true;
+    navigate(siteConfig.pages.home.link, { replace: true });
+  };
+
+  return (
+    <>
+      <div className="flex h-full w-full items-center justify-center">
+        <div
+          className="flex w-full max-w-sm flex-col gap-4 rounded-large 
+        bg-content1 px-8 pb-10 pt-6 shadow-small"
         >
-          <Input
-            isRequired
-            label="Email Address"
-            name="email"
-            placeholder="Enter your email"
-            type="email"
-            variant="bordered"
-            value={email}
-            onValueChange={setEmail}
-          />
-          {loginMode === "password" && (
+          <div className="flex flex-col gap-1">
+            <h1 className="text-large font-medium">Sign in to your account</h1>
+            <p className="text-small text-default-500">
+              to continue to Ridgefield Golf Club
+            </p>
+            {state?.message ? (
+              <div className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-800">
+                {state.message}
+              </div>
+            ) : null}
+            {inlineError ? (
+              <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                {inlineError}
+              </div>
+            ) : null}
+          </div>
+
+          <Form
+            className="flex flex-col gap-3"
+            validationBehavior="native"
+            onSubmit={handleSubmit}
+          >
             <Input
               isRequired
-              endContent={
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={toggleVisibility}
-                  aria-label={isVisible ? "Hide password" : "Show password"}
-                  className="min-w-0 h-auto"
-                >
-                  {isVisible ? (
-                    <Icon
-                      className="text-2xl text-default-400"
-                      icon="solar:eye-closed-linear"
-                    />
-                  ) : (
-                    <Icon
-                      className="text-2xl text-default-400"
-                      icon="solar:eye-bold"
-                    />
-                  )}
-                </Button>
-              }
-              label="Password"
-              name="password"
-              placeholder="Enter your password"
-              type={isVisible ? "text" : "password"}
+              label="Email Address"
+              name="email"
+              placeholder="Enter your email"
+              type="email"
               variant="bordered"
+              value={email}
+              onValueChange={setEmail}
             />
-          )}
+            {loginMode === "password" && (
+              <Input
+                isRequired
+                endContent={
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    onPress={toggleVisibility}
+                    aria-label={isVisible ? "Hide password" : "Show password"}
+                    className="min-w-0 h-auto"
+                  >
+                    {isVisible ? (
+                      <Icon
+                        className="text-2xl text-default-400"
+                        icon="solar:eye-closed-linear"
+                      />
+                    ) : (
+                      <Icon
+                        className="text-2xl text-default-400"
+                        icon="solar:eye-bold"
+                      />
+                    )}
+                  </Button>
+                }
+                label="Password"
+                name="password"
+                placeholder="Enter your password"
+                type={isVisible ? "text" : "password"}
+                variant="bordered"
+              />
+            )}
 
-          {loginMode === "password" && (
-            <div className="flex w-full items-center justify-between px-1 py-2">
-              <Checkbox name="remember" size="sm">
-                Remember me
-              </Checkbox>
-              <Link
-                className="text-default-500 cursor-pointer"
-                onPress={handleForgotPassword}
-                size="sm"
-              >
-                Forgot password?
-              </Link>
-            </div>
-          )}
+            {loginMode === "password" && (
+              <div className="flex w-full items-center justify-between px-1 py-2">
+                <Checkbox name="remember" size="sm">
+                  Remember me
+                </Checkbox>
+                <Link
+                  className="text-default-500 cursor-pointer"
+                  onPress={handleForgotPassword}
+                  size="sm"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
 
-          <Button
-            className="w-full"
-            color="primary"
-            type="submit"
-            isDisabled={authLoading}
-          >
-            {authLoading
-              ? "Processing..."
-              : loginMode === "magic-link"
-                ? "Send Sign-In Link"
-                : "Sign In"}
-          </Button>
-        </Form>
+            <Button
+              className="w-full"
+              color="primary"
+              type="submit"
+              isDisabled={authLoading}
+            >
+              {authLoading
+                ? "Processing..."
+                : loginMode === "magic-link"
+                  ? "Send Sign-In Link"
+                  : "Sign In"}
+            </Button>
+          </Form>
 
-        <div className="flex flex-col items-center gap-2">
-          <Button
-            variant="light"
-            size="sm"
-            className="text-default-500"
-            onPress={() =>
-              setLoginMode(
-                loginMode === "magic-link" ? "password" : "magic-link"
-              )
-            }
-          >
-            {loginMode === "magic-link"
-              ? "Sign in with password instead"
-              : "Sign in with email link instead"}
-          </Button>
+          <div className="flex flex-col items-center gap-2">
+            <Button
+              variant="light"
+              size="sm"
+              className="text-default-500"
+              onPress={() =>
+                setLoginMode(
+                  loginMode === "magic-link" ? "password" : "magic-link"
+                )
+              }
+            >
+              {loginMode === "magic-link"
+                ? "Sign in with password instead"
+                : "Sign in with email link instead"}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 py-2">
+            <Divider className="flex-1" />
+            <p className="shrink-0 text-tiny text-default-500">OR</p>
+            <Divider className="flex-1" />
+          </div>
+          <div className="flex flex-col gap-2">
+            {/* Google Sign-In Button */}
+            <Button
+              startContent={<Icon icon="flat-color-icons:google" width={24} />}
+              variant="bordered"
+              onPress={handleGoogleSignIn}
+              isDisabled={authLoading}
+            >
+              {authLoading ? "Signing in..." : "Continue with Google"}
+            </Button>
+          </div>
+          <p className="text-center text-small">
+            Need to create an account?&nbsp;
+            <Link href={siteConfig.pages.signup.link} size="sm">
+              Sign Up
+            </Link>
+          </p>
         </div>
-
-        <div className="flex items-center gap-4 py-2">
-          <Divider className="flex-1" />
-          <p className="shrink-0 text-tiny text-default-500">OR</p>
-          <Divider className="flex-1" />
-        </div>
-        <div className="flex flex-col gap-2">
-          {/* Google Sign-In Button */}
-          <Button
-            startContent={<Icon icon="flat-color-icons:google" width={24} />}
-            variant="bordered"
-            onPress={handleGoogleSignIn}
-            isDisabled={authLoading}
-          >
-            {authLoading ? "Signing in..." : "Continue with Google"}
-          </Button>
-        </div>
-        <p className="text-center text-small">
-          Need to create an account?&nbsp;
-          <Link href={siteConfig.pages.signup.link} size="sm">
-            Sign Up
-          </Link>
-        </p>
       </div>
-    </div>
+      <Modal
+        isOpen={isEmailConfirmationModalOpen}
+        isDismissable={!magicLinkSubmitting}
+        hideCloseButton={magicLinkSubmitting}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleEmailPromptClose();
+          }
+        }}
+      >
+        <ModalContent>
+          {() => (
+            <form onSubmit={handleEmailConfirmationSubmit}>
+              <ModalHeader className="flex flex-col gap-1">
+                Confirm your email
+              </ModalHeader>
+              <ModalBody className="flex flex-col gap-3">
+                <p className="text-small text-default-500">
+                  Enter the email address you used to request the sign-in link
+                  so we can complete your login.
+                </p>
+                <Input
+                  autoFocus
+                  isRequired
+                  label="Email Address"
+                  type="email"
+                  value={emailConfirmationValue}
+                  onValueChange={(value) => {
+                    setEmailConfirmationValue(value);
+                    if (emailConfirmationError) {
+                      setEmailConfirmationError(null);
+                    }
+                  }}
+                  isInvalid={Boolean(emailConfirmationError)}
+                  errorMessage={emailConfirmationError || undefined}
+                  isDisabled={magicLinkSubmitting}
+                  variant="bordered"
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  type="button"
+                  variant="light"
+                  onPress={handleEmailPromptClose}
+                  isDisabled={magicLinkSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  type="submit"
+                  isDisabled={magicLinkSubmitting}
+                >
+                  {magicLinkSubmitting ? "Signing in..." : "Confirm"}
+                </Button>
+              </ModalFooter>
+            </form>
+          )}
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
