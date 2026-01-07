@@ -28,10 +28,6 @@ export const termsSections: PolicySection[] = [
     title: "Disclaimers and Liability",
     body: 'The site is provided on an "as is" basis. RGC disclaims all warranties, including implied warranties of merchantability, fitness for a particular purpose, and non-infringement. To the fullest extent permitted by law, RGC is not liable for indirect or consequential damages arising from your use of the site.',
   },
-  {
-    title: "Changes and Contact",
-    body: `We may update these Terms from time to time. Continued use of the site after changes become effective constitutes acceptance. Questions may be directed to the Contact page or emailed to ${contactEmail}.`,
-  },
 ];
 
 export const privacySections: PolicySection[] = [
