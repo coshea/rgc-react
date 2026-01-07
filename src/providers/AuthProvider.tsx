@@ -9,6 +9,11 @@ import {
   signOut,
   User as FirebaseUser,
   ActionCodeSettings,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  sendPasswordResetEmail,
+  UserCredential,
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 
@@ -18,9 +23,18 @@ interface AuthContextType {
   userLoggedIn: boolean;
   loading: boolean;
   error: Error | null;
-  loginEmailAndPassword: (email: string, password: string) => Promise<void>;
-  signupEmailAndPassword: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  loginEmailAndPassword: (
+    email: string,
+    password: string
+  ) => Promise<UserCredential>;
+  signupEmailAndPassword: (
+    email: string,
+    password: string
+  ) => Promise<UserCredential>;
+  sendLoginLink: (email: string) => Promise<void>;
+  signInWithLink: (email: string, href: string) => Promise<UserCredential>;
+  signInWithGoogle: () => Promise<UserCredential>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -66,7 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result;
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
       setError(err as Error);
@@ -99,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(ve as Error);
         }
       }
+      return userCredential;
     } catch (err) {
       setError(err as Error);
       throw err; // Re-throw the error for the calling component
@@ -115,12 +131,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("profile");
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" }); // Ensure explicit account selection
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      return result;
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
     } catch (err) {
       setError(err as Error);
       throw err; // Re-throw the error for the calling component
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendLoginLink = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const actionCodeSettings: ActionCodeSettings = {
+        url: window.location.origin + "/login",
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem("emailForSignIn", email);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithLink = async (email: string, href: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (isSignInWithEmailLink(auth, href)) {
+        const result = await signInWithEmailLink(auth, email, href);
+        window.localStorage.removeItem("emailForSignIn");
+        return result;
+      }
+      throw new Error("Invalid sign-in link");
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -147,7 +213,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     loginEmailAndPassword,
     signupEmailAndPassword,
+    sendLoginLink,
+    signInWithLink,
     signInWithGoogle,
+    resetPassword,
     logout,
   };
 
