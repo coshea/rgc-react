@@ -1,6 +1,6 @@
 // Centralized blog-related Firestore access.
 // Following project conventions: components import from this module, not directly from firebase SDK.
-
+import { toDate } from "@/api/users";
 import { db } from "@/config/firebase";
 import {
   doc,
@@ -22,14 +22,6 @@ import { BlogPost, BlogPostStatus, BlogCategory } from "@/types/blog";
 
 const BLOG_COLLECTION = "blogPosts";
 
-// Helper to convert Firestore timestamp to Date
-function toDate(timestamp: any): Date | undefined {
-  if (!timestamp) return undefined;
-  if (timestamp instanceof Date) return timestamp;
-  if (timestamp?.toDate) return timestamp.toDate();
-  return undefined;
-}
-
 // Map Firestore document to BlogPost
 export function mapBlogPostDoc(snap: any): BlogPost {
   const data = snap.data();
@@ -43,7 +35,7 @@ export function mapBlogPostDoc(snap: any): BlogPost {
     authorName: data.authorName || "",
     authorPhotoURL: data.authorPhotoURL,
     status: data.status || BlogPostStatus.Draft,
-    publishedAt: toDate(data.publishedAt),
+    publishedAt: toDate(data.publishedAt) || undefined,
     createdAt: toDate(data.createdAt) || new Date(),
     updatedAt: toDate(data.updatedAt) || new Date(),
     category: data.category || BlogCategory.General,

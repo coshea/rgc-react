@@ -1,4 +1,4 @@
-import type { User } from "@/api/users";
+import { toDate, type User } from "@/api/users";
 
 /**
  * Duplicate detection utilities for finding potential duplicate users
@@ -95,22 +95,8 @@ export function suggestPrimaryUser(users: User[]): User {
   // Sort by priority criteria
   const sorted = [...users].sort((a, b) => {
     // 1. Prefer most recently created user (newer account = user sign-up)
-    const aCreated =
-      a.createdAt instanceof Date
-        ? a.createdAt.getTime()
-        : a.createdAt &&
-            typeof a.createdAt === "object" &&
-            "toDate" in a.createdAt
-          ? a.createdAt.toDate().getTime()
-          : 0;
-    const bCreated =
-      b.createdAt instanceof Date
-        ? b.createdAt.getTime()
-        : b.createdAt &&
-            typeof b.createdAt === "object" &&
-            "toDate" in b.createdAt
-          ? b.createdAt.toDate().getTime()
-          : 0;
+    const aCreated = toDate(a.createdAt)?.getTime() ?? 0;
+    const bCreated = toDate(b.createdAt)?.getTime() ?? 0;
     if (aCreated !== bCreated) return bCreated - aCreated; // Newer first
 
     // 2. Prefer user with more recent payment

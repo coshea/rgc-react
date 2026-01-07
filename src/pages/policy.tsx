@@ -12,7 +12,8 @@ import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Policy, PolicyType, POLICY_LABELS } from "@/types/policy";
-import { onPolicy, toDate } from "@/api/policy";
+import { onPolicy } from "@/api/policy";
+import { toDate } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
 import BackButton from "@/components/back-button";
@@ -63,7 +64,7 @@ export const PolicyPage: React.FC = () => {
     return () => unsub();
   }, [type, navigate]);
 
-  const formatDate = (date: Date | undefined) => {
+  const formatDate = (date: Date | null | undefined) => {
     if (!date) return "";
     return date.toLocaleDateString("en-US", {
       year: "numeric",
