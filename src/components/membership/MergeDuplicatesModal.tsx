@@ -263,13 +263,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     <Icon icon="lucide:clock" className="w-4 h-4 shrink-0" />
                     <span>
                       Created:{" "}
-                      {user.createdAt instanceof Date
-                        ? user.createdAt.toLocaleDateString()
-                        : user.createdAt &&
-                            typeof user.createdAt === "object" &&
-                            "toDate" in user.createdAt
-                          ? user.createdAt.toDate().toLocaleDateString()
-                          : "Unknown"}
+toDate(user.createdAt)?.toLocaleDateString() ?? "Unknown"
                     </span>
                   </div>
                 )}
