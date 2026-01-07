@@ -20,6 +20,7 @@ import { termsSections, privacySections } from "@/content/policies";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { addToast } from "@/providers/toast";
+import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 
 export default function SignUpPage() {
   const [isVisible, setIsVisible] = React.useState(false);
@@ -70,10 +71,9 @@ export default function SignUpPage() {
             description: "Check your email for the sign-up link.",
             color: "success",
           });
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Send Link failed:", error);
-          const err = error as any;
-          const msg = getSignupErrorMessage(err?.code, err?.message);
+          const msg = getFirebaseSignupErrorMessage(error);
           setInlineError(msg);
         }
       }
@@ -91,9 +91,8 @@ export default function SignUpPage() {
       try {
         await signupEmailAndPassword(email, password);
         navigate(siteConfig.pages.verifyEmail.link);
-      } catch (error) {
-        const err = error as any;
-        const msg = getSignupErrorMessage(err?.code, err?.message);
+      } catch (error: unknown) {
+        const msg = getFirebaseSignupErrorMessage(error);
         setInlineError(msg);
         console.error("Email/Password Sign-Up failed:", error);
       }
@@ -111,9 +110,8 @@ export default function SignUpPage() {
           navigate(siteConfig.pages.home.link);
         }
       }
-    } catch (error) {
-      const err = error as any;
-      const msg = getSignupErrorMessage(err?.code, err?.message);
+    } catch (error: unknown) {
+      const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);
       console.error("Google Sign-Up failed:", error);
     }
@@ -144,6 +142,11 @@ export default function SignUpPage() {
       default:
         return fallback || "Failed to sign up. Please try again.";
     }
+  }
+
+  function getFirebaseSignupErrorMessage(error: unknown) {
+    const firebaseError = extractFirebaseAuthError(error);
+    return getSignupErrorMessage(firebaseError?.code, firebaseError?.message);
   }
 
   const PolicyModal = ({

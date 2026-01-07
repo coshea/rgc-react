@@ -19,6 +19,7 @@ import { useNavigate, useLocation } from "react-router-dom"; // Import useNaviga
 import { addToast } from "@/providers/toast";
 import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
 import { auth } from "@/config/firebase";
+import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 
 export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
@@ -70,11 +71,10 @@ export default function LoginPage() {
           const dest = state?.from || siteConfig.pages.home.link;
           navigate(dest);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         handledMagicLink.current = false;
         console.error("Magic Link Sign-In failed:", error);
-        const err = error as { code?: string; message?: string };
-        const msg = getAuthErrorMessage(err?.code, err?.message);
+        const msg = getFirebaseAuthErrorMessage(error);
         setInlineError(msg);
         setEmailConfirmationError(msg);
         setPendingMagicLink(link);
@@ -86,7 +86,7 @@ export default function LoginPage() {
             description: msg,
             color: "danger",
           });
-        } catch (toastError) {
+        } catch (toastError: unknown) {
           console.warn("Toast failed:", toastError);
         }
       } finally {
@@ -141,10 +141,9 @@ export default function LoginPage() {
             description: "Check your email for the sign-in link.",
             color: "success",
           });
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Send Link failed:", error);
-          const err = error as any;
-          const msg = getAuthErrorMessage(err?.code, err?.message);
+          const msg = getFirebaseAuthErrorMessage(error);
           setInlineError(msg);
         }
       }
@@ -155,10 +154,9 @@ export default function LoginPage() {
           // Navigate to original destination if provided, otherwise home
           const dest = state?.from || siteConfig.pages.home.link;
           navigate(dest);
-        } catch (error) {
+        } catch (error: unknown) {
           console.error("Email/Password Sign-In failed on LoginPage:", error);
-          const err = error as any;
-          const msg = getAuthErrorMessage(err?.code, err?.message);
+          const msg = getFirebaseAuthErrorMessage(error);
           // show toast and set inline fallback
           try {
             addToast({
@@ -166,9 +164,9 @@ export default function LoginPage() {
               description: msg,
               color: "danger",
             });
-          } catch (e) {
+          } catch (toastError: unknown) {
             // if toast fails for some reason, still set inline error
-            console.warn("Toast failed:", e);
+            console.warn("Toast failed:", toastError);
           }
           setInlineError(msg);
         }
@@ -187,18 +185,17 @@ export default function LoginPage() {
         const dest = state?.from || siteConfig.pages.home.link;
         navigate(dest);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Google Sign-In failed on LoginPage:", error);
-      const err = error as any;
-      const msg = getAuthErrorMessage(err?.code, err?.message);
+      const msg = getFirebaseAuthErrorMessage(error);
       try {
         addToast({
           title: "Sign in failed",
           description: msg,
           color: "danger",
         });
-      } catch (e) {
-        console.warn("Toast failed:", e);
+      } catch (toastError: unknown) {
+        console.warn("Toast failed:", toastError);
       }
       setInlineError(msg);
     }
@@ -227,6 +224,11 @@ export default function LoginPage() {
       default:
         return fallback || "Failed to sign in. Please try again.";
     }
+  }
+
+  function getFirebaseAuthErrorMessage(error: unknown) {
+    const firebaseError = extractFirebaseAuthError(error);
+    return getAuthErrorMessage(firebaseError?.code, firebaseError?.message);
   }
 
   // If already logged in and not loading, render null or a loading indicator to prevent flash of login form
@@ -271,10 +273,9 @@ export default function LoginPage() {
         description: "Check your email for password reset instructions.",
         color: "success",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Reset Password failed:", error);
-      const err = error as any;
-      const msg = getAuthErrorMessage(err?.code, err?.message);
+      const msg = getFirebaseAuthErrorMessage(error);
       setInlineError(msg);
     }
   };
