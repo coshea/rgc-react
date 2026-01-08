@@ -18,6 +18,18 @@ import {
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 
+const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
+
+function normalizeAndValidateEmail(email: string): string {
+  const trimmed = email.trim();
+  // Intentionally lightweight validation (matches other parts of the app).
+  // Prevents persisting malformed values that could break the email-link flow.
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) {
+    throw new Error("Please enter a valid email address.");
+  }
+  return trimmed;
+}
+
 // Define the shape of the context value
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -148,12 +160,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      const safeEmail = normalizeAndValidateEmail(email);
       const actionCodeSettings: ActionCodeSettings = {
         url: siteConfig.pages.login.link,
         handleCodeInApp: true,
       };
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem("emailForSignIn", email);
+      await sendSignInLinkToEmail(auth, safeEmail, actionCodeSettings);
+      window.localStorage.setItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY, safeEmail);
     } catch (err) {
       setError(err as Error);
       throw err;
@@ -166,9 +179,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      const safeEmail = normalizeAndValidateEmail(email);
       if (isSignInWithEmailLink(auth, href)) {
-        const result = await signInWithEmailLink(auth, email, href);
-        window.localStorage.removeItem("emailForSignIn");
+        const result = await signInWithEmailLink(auth, safeEmail, href);
+        window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY);
         return result;
       }
       throw new Error("Invalid sign-in link");

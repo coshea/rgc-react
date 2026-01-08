@@ -24,7 +24,7 @@ import {
 import { mergeUserIds } from "@/api/mergeUsers";
 import { addToast } from "@/providers/toast";
 import { auth, db } from "@/config/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { UserAvatar } from "@/components/avatar";
 import { UserSelect } from "@/components/UserSelect";
 
@@ -166,9 +166,11 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
       let totalChampionships = 0;
       let totalTournaments = 0;
 
-      // Merge each duplicate user into the primary user
+      // Merge each duplicate user into the primary user.
+      // Important: we only mark users as migrated after ALL merges succeed,
+      // to avoid leaving the UI in a partially-migrated state if a merge fails midway.
+      const mergedUserIds: string[] = [];
       for (const userToMerge of usersToMerge) {
-        // Call the merge Cloud Function
         const result = await mergeUserIds(
           primaryUserId,
           userToMerge.id,
@@ -176,12 +178,14 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
         );
         totalChampionships += result.championshipsUpdated;
         totalTournaments += result.tournamentsUpdated;
-
-        // Mark the merged user as migrated (soft delete)
-        await updateDoc(doc(db, "users", userToMerge.id), {
-          isMigrated: true,
-        });
+        mergedUserIds.push(userToMerge.id);
       }
+
+      const batch = writeBatch(db);
+      mergedUserIds.forEach((uid) => {
+        batch.update(doc(db, "users", uid), { isMigrated: true });
+      });
+      await batch.commit();
 
       addToast({
         title: "Merge Complete",
@@ -262,8 +266,8 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   <div className="flex items-center gap-2">
                     <Icon icon="lucide:clock" className="w-4 h-4 shrink-0" />
                     <span>
-                      Created:{" "}
-toDate(user.createdAt)?.toLocaleDateString() ?? "Unknown"
+                      Created: toDate(user.createdAt)?.toLocaleDateString() ??
+                      "Unknown"
                     </span>
                   </div>
                 )}

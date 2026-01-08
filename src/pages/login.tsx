@@ -57,11 +57,21 @@ export default function LoginPage() {
   >(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = React.useState(false);
 
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const completeMagicLinkSignIn = React.useCallback(
     async (emailAddress: string, link: string) => {
       handledMagicLink.current = true;
-      setMagicLinkSubmitting(true);
-      setEmailConfirmationError(null);
+      if (isMountedRef.current) {
+        setMagicLinkSubmitting(true);
+        setEmailConfirmationError(null);
+      }
       try {
         const result = await signInWithLink(emailAddress, link);
         const additionalUserInfo = getAdditionalUserInfo(result);
@@ -75,11 +85,13 @@ export default function LoginPage() {
         handledMagicLink.current = false;
         console.error("Magic Link Sign-In failed:", error);
         const msg = getFirebaseAuthErrorMessage(error);
-        setInlineError(msg);
-        setEmailConfirmationError(msg);
-        setPendingMagicLink(link);
-        setEmailConfirmationModalOpen(true);
-        setEmailConfirmationValue(emailAddress);
+        if (isMountedRef.current) {
+          setInlineError(msg);
+          setEmailConfirmationError(msg);
+          setPendingMagicLink(link);
+          setEmailConfirmationModalOpen(true);
+          setEmailConfirmationValue(emailAddress);
+        }
         try {
           addToast({
             title: "Sign in failed",
@@ -90,7 +102,9 @@ export default function LoginPage() {
           console.warn("Toast failed:", toastError);
         }
       } finally {
-        setMagicLinkSubmitting(false);
+        if (isMountedRef.current) {
+          setMagicLinkSubmitting(false);
+        }
       }
     },
     [navigate, signInWithLink, state?.from]
