@@ -106,22 +106,39 @@ export default function LoginPage() {
 
   // Check for incoming magic link
   useEffect(() => {
-    if (handledMagicLink.current) {
-      return;
-    }
-    const currentUrl = window.location.href;
-    if (!isSignInWithEmailLink(auth, currentUrl)) {
-      return;
-    }
-    const storedEmail = window.localStorage.getItem("emailForSignIn");
-    if (storedEmail) {
-      completeMagicLinkSignIn(storedEmail, currentUrl);
-      return;
-    }
-    setPendingMagicLink(currentUrl);
-    setEmailConfirmationModalOpen(true);
-    setEmailConfirmationError(null);
-    setEmailConfirmationValue("");
+    let isCancelled = false;
+
+    const checkMagicLink = async () => {
+      if (handledMagicLink.current) {
+        return;
+      }
+
+      const currentUrl = window.location.href;
+      if (!isSignInWithEmailLink(auth, currentUrl)) {
+        return;
+      }
+
+      const storedEmail = window.localStorage.getItem("emailForSignIn");
+      if (storedEmail) {
+        await completeMagicLinkSignIn(storedEmail, currentUrl);
+        return;
+      }
+
+      if (isCancelled) {
+        return;
+      }
+
+      setPendingMagicLink(currentUrl);
+      setEmailConfirmationModalOpen(true);
+      setEmailConfirmationError(null);
+      setEmailConfirmationValue("");
+    };
+
+    void checkMagicLink();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [completeMagicLinkSignIn]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
