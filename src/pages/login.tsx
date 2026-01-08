@@ -406,7 +406,7 @@ export default function LoginPage() {
                   Remember me
                 </Checkbox>
                 <Link
-                  className="text-default-500 cursor-pointer"
+                  className="text-default-500"
                   onPress={handleForgotPassword}
                   size="sm"
                 >
