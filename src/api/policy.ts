@@ -11,16 +11,9 @@ import {
   FirestoreError,
 } from "firebase/firestore";
 import { Policy, PolicyType } from "@/types/policy";
+import { toDate } from "@/api/users";
 
 const POLICIES_COLLECTION = "policies";
-
-// Helper to convert Firestore timestamp to Date
-export function toDate(timestamp: any): Date | undefined {
-  if (!timestamp) return undefined;
-  if (timestamp instanceof Date) return timestamp;
-  if (timestamp?.toDate) return timestamp.toDate();
-  return undefined;
-}
 
 // Map Firestore document to Policy
 export function mapPolicyDoc(snap: any): Policy {

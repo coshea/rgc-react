@@ -13,7 +13,6 @@ export interface Tournament {
    * For backward compatibility, the boolean flags are still present and kept in sync client-side.
    */
   status?: TournamentStatus;
-  // legacy boolean flags removed; `status` is the single source of truth
   icon?: string;
   href?: string;
   prizePool: number;

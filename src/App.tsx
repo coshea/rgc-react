@@ -4,6 +4,8 @@ import SiteFooter from "@/components/footer";
 import HomePage from "@/pages/home";
 import AboutPage from "@/pages/about";
 import ContactPage from "@/pages/contact";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
 
 import { siteConfig } from "@/config/site";
 import NotFoundPage from "@/pages/404page";
@@ -41,6 +43,11 @@ function App() {
           <Route
             element={<ContactPage />}
             path={siteConfig.pages.contact.link}
+          />
+          <Route element={<TermsPage />} path={siteConfig.pages.terms.link} />
+          <Route
+            element={<PrivacyPage />}
+            path={siteConfig.pages.privacy.link}
           />
           <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
           <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />

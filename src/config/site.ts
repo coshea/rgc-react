@@ -8,6 +8,7 @@ export const siteConfig = {
   
   Tournament winners receive Ridgefield Golf Course Pro-Shop credit which can be used for golf merchandise.`,
   links: {},
+  contactEmail: "RidgefieldCTGolfClub@gmail.com",
   pages: {
     home: {
       title: "Home",
@@ -68,6 +69,18 @@ export const siteConfig = {
       description: "Get in touch with the Ridgefield Golf Club",
       link: "/contact",
       icon: "lucide:mail",
+    },
+    terms: {
+      title: "Terms of Use",
+      description: "Rules for using the Ridgefield Golf Club website",
+      link: "/terms",
+      icon: "lucide:scale",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      description: "How we collect and protect member information",
+      link: "/privacy",
+      icon: "lucide:lock",
     },
     login: {
       title: "Login",

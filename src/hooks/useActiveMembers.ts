@@ -13,9 +13,11 @@ export function useActiveMembers(year = new Date().getFullYear()) {
   return useQuery({
     queryKey: ["activeMembers", year],
     queryFn: async () => {
+      // Query for current and previous year to include recently active members
+      const lastYear = year - 1;
       const q = query(
         collection(db, "memberPayments"),
-        where("year", "==", year),
+        where("year", "in", [year, lastYear]),
         where("status", "==", "confirmed")
       );
       const snap = await getDocs(q);

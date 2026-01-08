@@ -97,14 +97,13 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
       const combo = (fi + li).trim();
       return combo || "?";
     };
-    const initials = computeInitials(resolvedName);
-
     return (
       <Avatar
         ref={ref}
         showFallback
         radius={squared ? "sm" : "full"}
-        name={initials}
+        name={resolvedName}
+        getInitials={computeInitials}
         size={size}
         className={clsx(className)}
         src={resolvedSrc}

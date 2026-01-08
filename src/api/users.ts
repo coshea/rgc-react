@@ -48,16 +48,11 @@ export function toDate(timestamp: FirestoreTimestamp | undefined): Date | null {
  * - phone: Normalized phone string (see format helpers) used for directory and contact; optional.
  * - ghinNumber: External GHIN / handicap system identifier.
  * - photoURL: Avatar image URL (Firebase Storage or external); null indicates explicit removal.
- * - admin: (Deprecated UI usage) Legacy custom claim / flag. Do NOT surface in forms. Current admin detection uses `admin/{uid}` doc.
- * - active: Boolean denormalized convenience flag indicating the member is considered an "active" participant for the current season.
- *   Typically set during yearly membership payment confirmation or batch activation. Not a security primitive—purely for filtering.
- *   Some hooks (e.g. membership directory filters) derive an activeSet from payment records; this flag can short‑circuit recomputation
- *   for performance or be used for imported historical data. If absent, active status is inferred elsewhere.
- * - registered: Indicates the user has completed any required registration/onboarding flow beyond just account creation.
  * - boardMember: True if serving on the Board of Governors (governs visibility of role and directory highlighting).
  * - role: Normalized board role string (validated against ALLOWED_BOARD_ROLES elsewhere). Null/empty when not a board member.
  * - membershipType: Current membership classification. 'full' grants full tournament privileges; 'handicap' limited scope.
  * - lastPaidYear: Highest year (e.g. 2025) for which a confirmed (paid) membership payment record exists; used for active season gating.
+ * - isMigrated: Boolean flag indicating this user has been merged into another user and should be hidden from all queries (soft delete).
  */
 export type UserProfilePayload = {
   firstName?: string;
@@ -67,13 +62,11 @@ export type UserProfilePayload = {
   phone?: string;
   ghinNumber?: string;
   photoURL?: string | null;
-  admin?: boolean;
-  active?: boolean;
-  registered?: boolean;
   boardMember?: boolean;
   role?: string;
   membershipType?: "full" | "handicap";
   lastPaidYear?: number;
+  isMigrated?: boolean;
 };
 
 export type User = UserProfilePayload & {
@@ -132,12 +125,7 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
 
   // Create payload and explicitly exclude board fields for security
   // Only admins should be able to set these fields
-  const {
-    boardMember: _boardMember,
-    role: _role,
-    admin: _admin,
-    ...safeData
-  } = data;
+  const { boardMember: _boardMember, role: _role, ...safeData } = data;
   const payload = {
     ...safeData,
     updatedAt: serverTimestamp(),
@@ -194,13 +182,19 @@ export async function getUserProfile(
 
 export async function getUsers(): Promise<User[]> {
   const usersCol = collection(db, "users");
-  // Return users ordered by displayName for predictable alphabetical listing
+  // Return users ordered by displayName
   const q = query(usersCol, orderBy("displayName", "asc"));
   const userSnapshot = await getDocs(q);
-  const userList = userSnapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  })) as User[];
+  // Filter out migrated users client-side (can't use where "!=" as it excludes docs without the field)
+  const userList = userSnapshot.docs
+    .map(
+      (docSnap) =>
+        ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        }) as User
+    )
+    .filter((user) => !user.isMigrated);
   // Some users may have blank/missing displayName; apply stable secondary sort by email
   userList.sort((a, b) => {
     const A = (a.displayName || a.email || "").toLowerCase();
@@ -273,8 +267,6 @@ export async function bulkCreateUsers(
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      if (typeof r.active === "boolean") payload.active = r.active;
-      if (typeof r.registered === "boolean") payload.registered = r.registered;
       if (typeof r.boardMember === "boolean")
         payload.boardMember = r.boardMember;
       if (r.role) payload.role = r.role;

@@ -1,4 +1,5 @@
 import { auth } from "@/config/firebase";
+import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -9,8 +10,25 @@ import {
   signOut,
   User as FirebaseUser,
   ActionCodeSettings,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  sendPasswordResetEmail,
+  UserCredential,
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
+
+const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
+
+function normalizeAndValidateEmail(email: string): string {
+  const trimmed = email.trim();
+  // Intentionally lightweight validation (matches other parts of the app).
+  // Prevents persisting malformed values that could break the email-link flow.
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) {
+    throw new Error("Please enter a valid email address.");
+  }
+  return trimmed;
+}
 
 // Define the shape of the context value
 interface AuthContextType {
@@ -18,9 +36,18 @@ interface AuthContextType {
   userLoggedIn: boolean;
   loading: boolean;
   error: Error | null;
-  loginEmailAndPassword: (email: string, password: string) => Promise<void>;
-  signupEmailAndPassword: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  loginEmailAndPassword: (
+    email: string,
+    password: string
+  ) => Promise<UserCredential>;
+  signupEmailAndPassword: (
+    email: string,
+    password: string
+  ) => Promise<UserCredential>;
+  sendLoginLink: (email: string) => Promise<void>;
+  signInWithLink: (email: string, href: string) => Promise<UserCredential>;
+  signInWithGoogle: () => Promise<UserCredential>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -66,7 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result;
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
       setError(err as Error);
@@ -99,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(ve as Error);
         }
       }
+      return userCredential;
     } catch (err) {
       setError(err as Error);
       throw err; // Re-throw the error for the calling component
@@ -115,12 +144,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("profile");
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" }); // Ensure explicit account selection
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      return result;
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
     } catch (err) {
       setError(err as Error);
       throw err; // Re-throw the error for the calling component
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendLoginLink = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const safeEmail = normalizeAndValidateEmail(email);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: siteConfig.pages.login.link,
+        handleCodeInApp: true,
+      };
+      await sendSignInLinkToEmail(auth, safeEmail, actionCodeSettings);
+      window.localStorage.setItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY, safeEmail);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithLink = async (email: string, href: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const safeEmail = normalizeAndValidateEmail(email);
+      if (isSignInWithEmailLink(auth, href)) {
+        const result = await signInWithEmailLink(auth, safeEmail, href);
+        window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY);
+        return result;
+      }
+      throw new Error("Invalid sign-in link");
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -147,7 +228,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     loginEmailAndPassword,
     signupEmailAndPassword,
+    sendLoginLink,
+    signInWithLink,
     signInWithGoogle,
+    resetPassword,
     logout,
   };
 
