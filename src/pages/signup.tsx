@@ -75,6 +75,11 @@ export default function SignUpPage() {
           console.error("Send Link failed:", error);
           const msg = getFirebaseSignupErrorMessage(error);
           setInlineError(msg);
+          addToast({
+            title: "Unable to send link",
+            description: msg,
+            color: "danger",
+          });
         }
       }
       return;
