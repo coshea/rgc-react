@@ -45,6 +45,7 @@ export default function LoginPage() {
   const location = useLocation();
   const state = (location.state || {}) as { from?: string; message?: string };
   const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [pendingMagicLink, setPendingMagicLink] = React.useState<string | null>(
     null
   );
@@ -116,7 +117,7 @@ export default function LoginPage() {
       const dest = state?.from || siteConfig.pages.home.link;
       navigate(dest);
     }
-  }, [userLoggedIn, authLoading, navigate]);
+  }, [userLoggedIn, authLoading, navigate, state?.from]);
 
   // Check for incoming magic link
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function LoginPage() {
       setPendingMagicLink(currentUrl);
       setEmailConfirmationModalOpen(true);
       setEmailConfirmationError(null);
-      setEmailConfirmationValue("");
+      setEmailConfirmationValue(email.trim());
     };
 
     void checkMagicLink();
@@ -153,12 +154,10 @@ export default function LoginPage() {
     return () => {
       isCancelled = true;
     };
-  }, [completeMagicLinkSignIn]);
+  }, [completeMagicLinkSignIn, email]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const password = formData.get("password") as string;
 
     setInlineError(null);
 
@@ -421,6 +420,8 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 type={isVisible ? "text" : "password"}
                 variant="bordered"
+                value={password}
+                onValueChange={setPassword}
               />
             )}
 
@@ -458,11 +459,14 @@ export default function LoginPage() {
               variant="light"
               size="sm"
               className="text-default-500"
-              onPress={() =>
-                setLoginMode(
-                  loginMode === "magic-link" ? "password" : "magic-link"
-                )
-              }
+              onPress={() => {
+                const nextMode =
+                  loginMode === "magic-link" ? "password" : "magic-link";
+                setLoginMode(nextMode);
+                if (nextMode === "magic-link") {
+                  setPassword("");
+                }
+              }}
             >
               {loginMode === "magic-link"
                 ? "Sign in with password instead"
