@@ -16,7 +16,7 @@ export async function mergeUserIds(
   idToken: string
 ): Promise<{ championshipsUpdated: number; tournamentsUpdated: number }> {
   const endpoint =
-    "https://us-central1-ridgefield-golf-club.cloudfunctions.net/merge_user_ids";
+    "https://us-central1-ridgefield-golf-club.cloudfunctions.net/merge_user_ids"; // TODO: move to env variable
 
   const response = await fetch(endpoint, {
     method: "POST",
