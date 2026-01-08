@@ -13,7 +13,7 @@ export function useActiveMembers(year = new Date().getFullYear()) {
   return useQuery({
     queryKey: ["activeMembers", year],
     queryFn: async () => {
-      // Query for last 2 years to include more recent members
+      // Query for current and previous year to include recently active members
       const lastYear = year - 1;
       const q = query(
         collection(db, "memberPayments"),

@@ -346,28 +346,32 @@ export default function SignUpPage() {
                 </>
               )}
             </div>
-            <Checkbox isRequired className="py-4" size="sm">
+            <Checkbox
+              isRequired
+              className="py-4"
+              size="sm"
+              aria-describedby="terms-privacy-modal-hint"
+            >
+              <span id="terms-privacy-modal-hint" className="sr-only">
+                Terms and Privacy Policy open in-page dialogs.
+              </span>
               I agree with the&nbsp;
               <Link
                 className="relative z-1"
-                href={siteConfig.pages.terms.link}
                 size="sm"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setIsTermsOpen(true);
-                }}
+                onPress={() => setIsTermsOpen(true)}
+                aria-label="View Terms of Use (opens dialog)"
+                aria-haspopup="dialog"
               >
                 Terms
               </Link>
               &nbsp; and&nbsp;
               <Link
                 className="relative z-1"
-                href={siteConfig.pages.privacy.link}
                 size="sm"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setIsPrivacyOpen(true);
-                }}
+                onPress={() => setIsPrivacyOpen(true)}
+                aria-label="View Privacy Policy (opens dialog)"
+                aria-haspopup="dialog"
               >
                 Privacy Policy
               </Link>

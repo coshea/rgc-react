@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { onAdminDoc, onUsersCollection } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
+import type {
+  DocumentData,
+  DocumentSnapshot,
+  FirestoreError,
+  QueryDocumentSnapshot,
+  QuerySnapshot,
+} from "firebase/firestore";
 
 // Admin status hook - checks Firestore admin doc
 export function useAdminFlag(user: { uid?: string } | null) {
@@ -12,13 +19,16 @@ export function useAdminFlag(user: { uid?: string } | null) {
       setLoadingAdmin(false);
       return;
     }
-    const unsub = onAdminDoc(user.uid, (snap: any) => {
-      const d = snap.data();
-      const flag =
-        d?.isAdmin === true || d?.admin === true || d?.admin === "true";
-      setIsAdmin(flag);
-      setLoadingAdmin(false);
-    });
+    const unsub = onAdminDoc(
+      user.uid,
+      (snap: DocumentSnapshot<DocumentData>) => {
+        const d = snap.data();
+        const flag =
+          d?.isAdmin === true || d?.admin === true || d?.admin === "true";
+        setIsAdmin(flag);
+        setLoadingAdmin(false);
+      }
+    );
     return () => unsub();
   }, [user?.uid]);
   return { isAdmin, loadingAdmin };
@@ -33,6 +43,12 @@ export function useMembersSubscription(enabled: boolean) {
   const [loadingMembers, setLoadingMembers] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
 
+  const toError = (err: unknown): Error => {
+    if (err instanceof Error) return err;
+    if (typeof err === "string") return new Error(err);
+    return new Error("Unknown error");
+  };
+
   useEffect(() => {
     if (!enabled) {
       setMembers([]);
@@ -40,13 +56,13 @@ export function useMembersSubscription(enabled: boolean) {
       return;
     }
     const unsub = onUsersCollection(
-      (snap: any) => {
+      (snap: QuerySnapshot<DocumentData>) => {
         const arr: DirectoryUser[] = [];
-        snap.forEach((d: any) => {
-          const userData = d.data() as any;
+        snap.forEach((d: QueryDocumentSnapshot<DocumentData>) => {
+          const userData = d.data() as Omit<DirectoryUser, "id">;
           // Filter out migrated users (soft deleted)
           if (userData?.isMigrated === true) return;
-          arr.push({ id: d.id, ...userData } as DirectoryUser);
+          arr.push({ id: d.id, ...userData });
         });
         arr.sort((a, b) => {
           const A = (a.displayName || a.email || "").toLowerCase();
@@ -58,9 +74,9 @@ export function useMembersSubscription(enabled: boolean) {
         setMembers(arr);
         setLoadingMembers(false);
       },
-      (err) => {
+      (err: FirestoreError) => {
         console.error("[useMembersSubscription] snapshot error", err);
-        setError(err as any);
+        setError(toError(err));
         setMembers([]);
         setLoadingMembers(false);
       }
@@ -81,8 +97,7 @@ export function preflightCsv(rows: UserProfilePayload[]): CsvPreflightResult {
   if (!rows.length) return { ok: false, error: "No rows" };
   const invalidBoard = rows.some(
     (r) =>
-      (r as any).boardMember === true ||
-      (typeof (r as any).role === "string" && (r as any).role.trim())
+      r.boardMember === true || (typeof r.role === "string" && r.role.trim())
   );
   if (invalidBoard)
     return { ok: false, error: "Bulk upload cannot assign board roles" };

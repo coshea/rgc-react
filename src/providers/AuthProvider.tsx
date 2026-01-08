@@ -1,4 +1,5 @@
 import { auth } from "@/config/firebase";
+import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const actionCodeSettings: ActionCodeSettings = {
-        url: window.location.origin + "/login",
+        url: siteConfig.pages.login.link,
         handleCodeInApp: true,
       };
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
