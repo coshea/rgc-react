@@ -175,6 +175,16 @@ export default function LoginPage() {
         } catch (error: unknown) {
           console.error("Send Link failed:", error);
           const msg = getFirebaseAuthErrorMessage(error);
+          try {
+            addToast({
+              title: "Magic link sign-in failed",
+              description: msg,
+              color: "danger",
+            });
+          } catch (toastError: unknown) {
+            // if toast fails for some reason, still set inline error
+            console.warn("Toast failed:", toastError);
+          }
           setInlineError(msg);
         }
       }
