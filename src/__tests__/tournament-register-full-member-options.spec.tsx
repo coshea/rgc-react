@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TournamentRegister from "@/pages/tournament-register";
 
@@ -17,16 +17,6 @@ vi.mock("firebase/firestore", () => ({
   orderBy: vi.fn(() => ({})),
   serverTimestamp: vi.fn(() => new Date()),
   onSnapshot: vi.fn(() => () => {}),
-}));
-
-vi.mock("@/config/firebase", () => ({
-  db: {
-    _delegate: {
-      app: { options: {} },
-      settings: {},
-    },
-  },
-  auth: { currentUser: { uid: "u1" } },
 }));
 
 // Polyfill CSS.escape for HeroUI Select (react-aria)
@@ -101,26 +91,28 @@ describe("TournamentRegister teammate options (full members only)", () => {
     // The component label used is 'Team Leader / You' via RegistrationEditor labels prop
     const combo = screen.getByRole("combobox", { name: /Team Leader \/ You/i });
 
+    const openAndExpectOption = async (filter: string, optionName: string) => {
+      // Ensure focus; ArrowDown behavior is flaky in CI without it
+      fireEvent.click(combo);
+      fireEvent.focus(combo);
+      await act(async () => {
+        // react-aria listens to input events; fireEvent.input is closer to real typing
+        fireEvent.input(combo, { target: { value: filter } });
+        fireEvent.keyDown(combo, { key: "ArrowDown" });
+      });
+      const listbox = await screen.findByRole("listbox");
+      const option = await within(listbox).findByRole("option", {
+        name: optionName,
+      });
+      expect(option).toBeInTheDocument();
+    };
+
     // Assert full members appear as options
     // Type to filter to 'Captain' and check option exists
-    await act(async () => {
-      fireEvent.change(combo, { target: { value: "Captain" } });
-      fireEvent.keyDown(combo, { key: "ArrowDown" });
-    });
-    const captainOption = await screen.findByRole("option", {
-      name: "Captain Full",
-    });
-    expect(captainOption).toBeInTheDocument();
+    await openAndExpectOption("Captain", "Captain Full");
 
     // Type to filter to 'Second' and check option exists
-    await act(async () => {
-      fireEvent.change(combo, { target: { value: "Second" } });
-      fireEvent.keyDown(combo, { key: "ArrowDown" });
-    });
-    const secondOption = await screen.findByRole("option", {
-      name: "Second Full",
-    });
-    expect(secondOption).toBeInTheDocument();
+    await openAndExpectOption("Second", "Second Full");
 
     // Ensure non-full members are NOT present as selectable options
     const handicapHidden = screen.queryByRole("option", {
