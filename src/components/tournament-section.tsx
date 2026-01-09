@@ -2,6 +2,7 @@ import { TournamentCard } from "./tournament-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { Link } from "@heroui/react";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 /*
  * Tournament section on the home page displaying a 
@@ -9,8 +10,36 @@ list of tournaments in card view
  */
 export function TournamentSection() {
   const currentYear = new Date().getFullYear();
-  const { tournaments, isLoading: loading } = useYearlyTournaments({
-    year: currentYear,
+
+  const { data: latestYear, isLoading: latestYearLoading } = useQuery<
+    number | null
+  >({
+    queryKey: ["latestTournamentYear"],
+    queryFn: async () => {
+      const { db } = await import("@/config/firebase");
+      const { collection, query, orderBy, limit, getDocs } = await import(
+        "firebase/firestore"
+      );
+
+      const colRef = collection(db, "tournaments");
+      const snap = await getDocs(
+        query(colRef, orderBy("date", "desc"), limit(1))
+      );
+      if (snap.empty) return null;
+
+      const data = snap.docs[0]?.data();
+      const rawDate = data?.date?.toDate ? data.date.toDate() : data?.date;
+      const dateObj = rawDate instanceof Date ? rawDate : new Date(rawDate);
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return null;
+      return dateObj.getUTCFullYear();
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const yearToShow = latestYear ?? currentYear;
+  const { tournaments, isLoading: tournamentsLoading } = useYearlyTournaments({
+    year: yearToShow,
+    enabled: !latestYearLoading,
   });
 
   const [isMobile, setIsMobile] = useState(false);
@@ -50,14 +79,14 @@ export function TournamentSection() {
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold mb-2">
-            {currentYear} Featured Tournaments
+            {yearToShow} Featured Tournaments
           </h2>
           <p className="text-sm text-default-600">
             Click on a tournament to view details and register
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {loading ? (
+          {latestYearLoading || tournamentsLoading ? (
             <div className="col-span-full flex items-center justify-center py-12">
               <div className="flex flex-col items-center gap-2">
                 <i className="text-3xl text-primary animate-spin">
@@ -99,7 +128,7 @@ export function TournamentSection() {
         {showViewAllLink && (
           <div className="text-center mt-8">
             <Link href="/tournaments" color="success" className="text-lg">
-              View All {currentYear} Tournaments
+              View All {yearToShow} Tournaments
             </Link>
           </div>
         )}
