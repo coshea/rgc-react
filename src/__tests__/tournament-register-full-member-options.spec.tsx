@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TournamentRegister from "@/pages/tournament-register";
 
@@ -92,18 +92,14 @@ describe("TournamentRegister teammate options (full members only)", () => {
     const combo = screen.getByRole("combobox", { name: /Team Leader \/ You/i });
 
     const openAndExpectOption = async (filter: string, optionName: string) => {
-      // Ensure focus; ArrowDown behavior is flaky in CI without it
       fireEvent.click(combo);
-      fireEvent.focus(combo);
-      await act(async () => {
-        // react-aria listens to input events; fireEvent.input is closer to real typing
-        fireEvent.input(combo, { target: { value: filter } });
-        fireEvent.keyDown(combo, { key: "ArrowDown" });
-      });
-      const listbox = await screen.findByRole("listbox");
-      const option = await within(listbox).findByRole("option", {
-        name: optionName,
-      });
+      fireEvent.change(combo, { target: { value: "" } });
+      fireEvent.change(combo, { target: { value: filter } });
+      fireEvent.keyDown(combo, { key: "ArrowDown" });
+
+      // HeroUI Autocomplete renders options in an overlay; waiting on the option
+      // is more stable than waiting on the listbox container in CI.
+      const option = await screen.findByRole("option", { name: optionName });
       expect(option).toBeInTheDocument();
     };
 
@@ -115,13 +111,15 @@ describe("TournamentRegister teammate options (full members only)", () => {
     await openAndExpectOption("Second", "Second Full");
 
     // Ensure non-full members are NOT present as selectable options
-    const handicapHidden = screen.queryByRole("option", {
-      name: "Handicap Member",
-    });
-    const socialHidden = screen.queryByRole("option", {
-      name: "Social Member",
-    });
-    expect(handicapHidden).toBeNull();
-    expect(socialHidden).toBeNull();
+    fireEvent.click(combo);
+    fireEvent.change(combo, { target: { value: "" } });
+    fireEvent.change(combo, { target: { value: "Full" } });
+    fireEvent.keyDown(combo, { key: "ArrowDown" });
+    await screen.findByRole("option", { name: "Captain Full" });
+
+    expect(
+      screen.queryByRole("option", { name: "Handicap Member" })
+    ).toBeNull();
+    expect(screen.queryByRole("option", { name: "Social Member" })).toBeNull();
   });
 });

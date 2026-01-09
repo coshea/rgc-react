@@ -41,6 +41,9 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   className,
   showRemovedHint,
 }) => {
+  // Hook must be unconditional (even though it's only used in multiple mode)
+  const [inputValue, setInputValue] = React.useState("");
+
   // Alphabetical sort by displayName/email (case-insensitive)
   const sortedUsers = React.useMemo(() => {
     const list = [...(users || [])];
@@ -85,7 +88,6 @@ export const UserSelect: React.FC<UserSelectProps> = ({
       maxSelected > 0 &&
       selected.length >= maxSelected
     );
-    const [inputValue, setInputValue] = React.useState("");
     const lowered = inputValue.trim().toLowerCase();
     const filteredRemaining = lowered
       ? remainingUsers.filter((u) => {

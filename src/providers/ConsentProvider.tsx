@@ -50,14 +50,18 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const accept = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, "accepted");
-    } catch {}
+    } catch {
+      // ignore storage failures
+    }
     setStatus("accepted");
   }, []);
 
   const reject = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, "rejected");
-    } catch {}
+    } catch {
+      // ignore storage failures
+    }
     setStatus("rejected");
   }, []);
 

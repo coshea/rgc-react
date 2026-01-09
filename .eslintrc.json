@@ -16,6 +16,14 @@
     "prettier"
   ],
   "settings": { "react": { "version": "detect" } },
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "react/prop-types": "off"
+      }
+    }
+  ],
   "rules": {
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-explicit-any": "off",

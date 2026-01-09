@@ -56,7 +56,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         try {
           const d = new Date(t.date as unknown as string);
           if (!isNaN(d.getTime())) years.add(d.getUTCFullYear());
-        } catch {}
+        } catch {
+          // intentionally ignore invalid date values
+        }
       }
     }
     return Array.from(years).sort((a, b) => b - a);

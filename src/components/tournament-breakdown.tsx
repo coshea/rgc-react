@@ -219,7 +219,7 @@ export function TournamentBreakdown({ year }: Props) {
     return (
       <span
         className={
-          "inline-flex items-center gap-1 text-[11px] font-semibold min-w-[40px]" +
+          "inline-flex items-center gap-1 text-[11px] font-semibold min-w-10" +
           (compact ? "" : "")
         }
         aria-label={`${ordinal(pos)} place`}
@@ -405,7 +405,7 @@ export function TournamentBreakdown({ year }: Props) {
               className="relative overflow-hidden rounded-lg border border-default-200/60 dark:border-default-100/10 bg-content1 shadow-sm hover:shadow-md transition-shadow"
               aria-labelledby={`tournament-${id}`}
             >
-              <div className="h-1 w-full bg-gradient-to-r from-primary/40 via-primary/10 to-transparent" />
+              <div className="h-1 w-full bg-linear-to-r from-primary/40 via-primary/10 to-transparent" />
               <Card shadow="none" className="bg-transparent">
                 <CardBody className="space-y-4">
                   {/* Header */}
@@ -585,7 +585,7 @@ export function TournamentBreakdown({ year }: Props) {
                             </div>
                             <p
                               className={
-                                "text-sm leading-snug text-center break-words" +
+                                "text-sm leading-snug text-center wrap-break-word" +
                                 (champion ? " font-semibold" : " font-medium")
                               }
                               title={nameList}
@@ -606,7 +606,7 @@ export function TournamentBreakdown({ year }: Props) {
                           <div className="hidden sm:block flex-1">
                             <p
                               className={
-                                "text-sm leading-snug break-words" +
+                                "text-sm leading-snug wrap-break-word" +
                                 (champion ? " font-semibold" : " font-medium")
                               }
                               title={nameList}
@@ -741,7 +741,7 @@ export function TournamentBreakdown({ year }: Props) {
                                       )}
                                     </div>
                                     <div className="min-w-0">
-                                      <p className="font-medium text-sm leading-tight break-words">
+                                      <p className="font-medium text-sm leading-tight wrap-break-word">
                                         {names.join(" • ")}
                                       </p>
                                       {/* On small screens, show meta under the name to avoid extra columns */}

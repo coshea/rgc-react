@@ -126,7 +126,7 @@ export async function listBlogImages(): Promise<
         if (metadata.customMetadata?.uploadedAt) {
           uploadedAt = parseInt(metadata.customMetadata.uploadedAt);
         }
-      } catch (error) {
+      } catch {
         // Fallback: extract timestamp from filename for backwards compatibility
         // (format: timestamp_originalname)
         const match = itemRef.name.match(/^(\d+)_/);
