@@ -11,9 +11,11 @@ import {
   DatePicker,
   TimeInput,
 } from "@heroui/react";
+import type { PopoverProps } from "@heroui/popover";
 import { Icon } from "@iconify/react";
-import { parseDate, parseTime } from "@internationalized/date";
+import { type DateValue, parseDate, parseTime } from "@internationalized/date";
 import { toYMD } from "@/api/find-a-game";
+import { useCallback, useState } from "react";
 
 export type Mode = "needPlayers" | "needGroup";
 
@@ -52,9 +54,38 @@ export default function FindAGamePostModal({
   title,
   submitLabel,
 }: FindAGamePostModalProps) {
+  // When used inside a modal, Select/DatePicker popovers must render *within* the modal subtree.
+  // Otherwise, the modal's aria-hide-outside behavior can mark the focused option as aria-hidden,
+  // triggering the browser warning about hiding focused descendants.
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
+  const setPortalRef = useCallback((node: HTMLDivElement | null) => {
+    setPortalContainer(node);
+  }, []);
+
+  const popoverProps = useCallback((): Partial<PopoverProps> => {
+    return {
+      portalContainer: portalContainer ?? undefined,
+      // Keep overlays within the modal viewport.
+      containerPadding: 12,
+    };
+  }, [portalContainer]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      scrollBehavior="inside"
+      classNames={{
+        // Mobile: shorter modal, but positioned higher to leave room for the calendar to open downward.
+        // Desktop: keep the usual centered dialog feel.
+        wrapper: "items-start pt-8 sm:items-center sm:pt-0",
+        base: "mx-3 my-3 max-h-[85dvh] sm:max-h-[90vh] sm:max-w-lg",
+      }}
+    >
       <ModalContent>
+        <div ref={setPortalRef} />
         <ModalHeader className="flex flex-col gap-1">
           <div className="text-lg font-semibold">{title || "Create Post"}</div>
         </ModalHeader>
@@ -75,7 +106,8 @@ export default function FindAGamePostModal({
                   const v = Array.from(keys)[0] as Mode;
                   onModeChange(v);
                 }}
-                className="min-w-[220px] w-[240px]"
+                popoverProps={popoverProps()}
+                className="min-w-[220px] w-60"
               >
                 <SelectItem
                   key="needPlayers"
@@ -99,10 +131,23 @@ export default function FindAGamePostModal({
 
               <DatePicker
                 label="Date"
-                value={date ? (parseDate(date) as any) : null}
-                onChange={(v) => onDateChange(v ? v.toString() : "")}
+                value={date ? parseDate(date) : null}
+                onChange={(v: DateValue | null) =>
+                  onDateChange(v ? v.toString() : "")
+                }
                 minValue={parseDate(toYMD(new Date()))}
+                popoverProps={{
+                  ...popoverProps(),
+                  placement: "bottom",
+                  shouldFlip: false,
+                  offset: 8,
+                }}
                 className="w-48"
+                classNames={{
+                  // Keep the calendar within the modal/screen on small devices.
+                  popoverContent: "max-w-[90vw] max-h-[55vh] overflow-auto",
+                  calendarContent: "max-w-[90vw]",
+                }}
                 isRequired
               />
 
@@ -110,7 +155,7 @@ export default function FindAGamePostModal({
                 <>
                   <TimeInput
                     label="Tee Time"
-                    value={time ? (parseTime(time) as any) : null}
+                    value={time ? parseTime(time) : null}
                     onChange={(v) => onTimeChange(v ? v.toString() : "")}
                     granularity="minute"
                     hourCycle={12}
@@ -122,6 +167,7 @@ export default function FindAGamePostModal({
                     onSelectionChange={(keys) =>
                       onOpenSpotsChange(String(Array.from(keys)[0] || "1"))
                     }
+                    popoverProps={popoverProps()}
                     className="w-36"
                   >
                     <SelectItem key="1">1</SelectItem>

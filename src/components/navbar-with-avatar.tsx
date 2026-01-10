@@ -107,8 +107,8 @@ export const MainNavbar = (_props: NavbarProps) => {
           className="
           md:hidden
           top-[calc(var(--navbar-height)-1px)] 
-max-h-fit bg-default-200/50 pb-6 pt-6 shadow-medium backdrop-blur-md backdrop-saturate-150 
-dark:bg-default-100/50"
+max-h-fit bg-background pb-6 pt-4 shadow-large border-b border-default-200/60 
+dark:border-default-100/10"
         >
           {Object.entries(menuItemsMobile).map(([label, items]: any, idx) => (
             <NavbarMenuItem key={`${label}-${idx}`}>
@@ -121,7 +121,7 @@ dark:bg-default-100/50"
                 />
               ) : (
                 <Link
-                  className="mb-2 w-full text-default-500"
+                  className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default-100"
                   href={Array.isArray(items) && items[0] ? items[0].link : "#"}
                   size="md"
                   onClick={() => setIsMenuOpen(false)}

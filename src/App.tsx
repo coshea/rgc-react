@@ -91,7 +91,14 @@ function App() {
             element={<MembershipDirectoryPage />}
             path="/membership/member-directory"
           />
-          <Route element={<BoardOfGovernorsPage />} path="/board" />
+          <Route
+            element={
+              <RequireAuth>
+                <BoardOfGovernorsPage />
+              </RequireAuth>
+            }
+            path="/board"
+          />
           <Route
             element={<VerifyEmailPage />}
             path={siteConfig.pages.verifyEmail.link}

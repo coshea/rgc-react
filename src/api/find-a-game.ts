@@ -59,12 +59,18 @@ export async function createPartnerPost(input: CreatePostInput) {
   if (!input.date || !/\d{4}-\d{2}-\d{2}/.test(input.date))
     throw new Error("Invalid date format (expected YYYY-MM-DD)");
   if (input.type === "needPlayers") {
+    const spots = input.openSpots;
     if (
-      typeof input.openSpots !== "number" ||
-      input.openSpots < 1 ||
-      input.openSpots > 3
-    )
-      throw new Error("Open spots must be 1-3 for 'need players'");
+      typeof spots !== "number" ||
+      !Number.isFinite(spots) ||
+      !Number.isInteger(spots) ||
+      spots < 1 ||
+      spots > 3
+    ) {
+      throw new Error(
+        "Open spots must be an integer from 1 to 3 for 'need players'"
+      );
+    }
   }
 
   const { addDoc, collection, serverTimestamp } = await import(
@@ -78,13 +84,13 @@ export async function createPartnerPost(input: CreatePostInput) {
     createdAt: serverTimestamp(),
   };
 
-  // Only include time if provided and not empty
-  if (input.time && input.time.trim() !== "") {
-    payload.time = input.time.trim();
-  }
-
   // Handle type-specific fields
   if (input.type === "needPlayers") {
+    // Only include time for needPlayers (rules reject time for needGroup)
+    if (input.time && input.time.trim() !== "") {
+      payload.time = input.time.trim();
+    }
+
     // input.openSpots is validated above to be a number in [1,3]
     payload.openSpots = input.openSpots!;
   }
@@ -190,8 +196,17 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   if (nextType === "needPlayers") {
     const t = updates.time ?? data.time;
     const s = updates.openSpots ?? data.openSpots;
-    if (typeof s !== "number" || s < 1 || s > 3)
-      throw new Error("Open spots must be 1-3 for 'need players'");
+    if (
+      typeof s !== "number" ||
+      !Number.isFinite(s) ||
+      !Number.isInteger(s) ||
+      s < 1 ||
+      s > 3
+    ) {
+      throw new Error(
+        "Open spots must be an integer from 1 to 3 for 'need players'"
+      );
+    }
 
     // Only include time if provided and not empty
     if (t && String(t).trim() !== "") {

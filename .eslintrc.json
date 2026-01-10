@@ -27,6 +27,17 @@
   "rules": {
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/no-explicit-any": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword']",
+        "message": "Do not use `as any`. Use a proper type, a type guard, or a typed utility function."
+      },
+      {
+        "selector": "TSTypeAssertion[typeAnnotation.type='TSAnyKeyword']",
+        "message": "Do not use `<any>` type assertions. Use a proper type, a type guard, or a typed utility function."
+      }
+    ],
     "@typescript-eslint/no-unused-vars": [
       "warn",
       { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }

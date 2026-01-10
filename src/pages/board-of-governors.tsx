@@ -1,9 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardBody, CardHeader, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { useBoardMembers } from "@/hooks/useBoardMembers";
-import { useAuth } from "@/providers/AuthProvider";
 
 // Assumptions about User type extension:
 // - user.role?: string (e.g., 'president', 'vice-president', 'secretary', etc.) or
@@ -14,7 +14,7 @@ import { useAuth } from "@/providers/AuthProvider";
 // prettyRole replaced by formatBoardRoleLabel from roles.ts
 
 const BoardOfGovernorsPage: React.FC = () => {
-  useAuth(); // potential future personalization (auth context retained if needed later)
+  const navigate = useNavigate();
   const { boardMembers, president, isLoading } = useBoardMembers();
 
   return (
@@ -42,7 +42,7 @@ const BoardOfGovernorsPage: React.FC = () => {
           No board member data available.
         </p>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {boardMembers.map((member) => {
             const meta = member.roleMeta;
             const isPresident = member.isPresident;
@@ -50,22 +50,25 @@ const BoardOfGovernorsPage: React.FC = () => {
               !isPresident && meta ? (
                 <Icon icon={meta.icon} className="w-3 h-3" />
               ) : undefined;
+
             return (
               <Card
                 key={member.id}
                 shadow="sm"
-                className={`relative border border-default-200 bg-content1/60 hover:bg-content2 transition-colors ${isPresident ? "ring-2 ring-warning" : ""}`}
+                isPressable
+                onPress={() => navigate(`/profile/${member.id}`)}
+                className={`relative border border-default-200 bg-content1/60 hover:bg-content2 transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
               >
-                <CardHeader className="pb-0 flex flex-col items-center text-center">
-                  <div className="relative mb-3">
+                <CardHeader className="py-3 flex flex-col items-center text-center">
+                  <div className="relative mb-2">
                     <UserAvatar
                       user={member}
-                      className={`w-20 h-20 text-large ${isPresident ? "border-2 border-warning" : ""}`}
-                      size="lg"
+                      className={`w-10 h-10 text-small ${isPresident ? "border-2 border-warning" : ""}`}
+                      size="sm"
                       alt={member.displayName || member.email}
                     />
                   </div>
-                  <h3 className="font-semibold text-base">
+                  <h3 className="font-semibold text-sm leading-tight">
                     {member.displayName || member.email}
                   </h3>
                   <div className="mt-2">
@@ -85,27 +88,7 @@ const BoardOfGovernorsPage: React.FC = () => {
                     )}
                   </div>
                 </CardHeader>
-                <CardBody className="pt-4 text-sm text-center space-y-3">
-                  {(member as any).bio && (
-                    <p className="text-xs text-foreground-500 line-clamp-4 leading-relaxed">
-                      {(member as any).bio}
-                    </p>
-                  )}
-                  <div className="flex justify-center gap-2 flex-wrap">
-                    {member.email && (
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color="primary"
-                        startContent={
-                          <Icon icon="lucide:mail" className="w-3 h-3" />
-                        }
-                      >
-                        Contact
-                      </Chip>
-                    )}
-                  </div>
-                </CardBody>
+                <CardBody className="pt-0 pb-3" />
               </Card>
             );
           })}
