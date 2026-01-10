@@ -113,6 +113,11 @@ export const UserSelect: React.FC<UserSelectProps> = ({
         <Autocomplete
           label={label}
           placeholder={placeholder}
+          inputProps={{
+            classNames: {
+              input: "text-base",
+            },
+          }}
           isDisabled={disabled || !canAddMore}
           isRequired={required}
           isInvalid={invalid}
@@ -172,6 +177,11 @@ export const UserSelect: React.FC<UserSelectProps> = ({
       <Autocomplete
         label={label}
         placeholder={placeholder}
+        inputProps={{
+          classNames: {
+            input: "text-base",
+          },
+        }}
         selectedKey={selectedKey}
         onSelectionChange={(key) => {
           onChange(((key as string) || "") as string);
