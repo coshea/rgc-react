@@ -894,6 +894,7 @@ const TournamentDetailPage: React.FC = () => {
                               maxPlayers - team.length,
                               0
                             );
+                            const leaderId = reg.ownerId || team[0]?.id;
                             return (
                               <div
                                 key={reg.id}
@@ -912,13 +913,19 @@ const TournamentDetailPage: React.FC = () => {
                                         m.id ||
                                         ""
                                       ).toString();
+                                      const isLeader =
+                                        !!leaderId && m.id === leaderId;
                                       return (
                                         <UserAvatar
                                           key={m.id || i}
                                           size="sm"
                                           user={memberUser}
                                           name={memberUser ? undefined : label}
-                                          className="border border-default-200"
+                                          className={
+                                            isLeader
+                                              ? "border border-default-200 ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                              : "border border-default-200"
+                                          }
                                           alt={label}
                                         />
                                       );
@@ -938,11 +945,33 @@ const TournamentDetailPage: React.FC = () => {
                                       Team {originalIdx + 1}
                                     </p>
                                     <ul className="text-sm font-medium leading-snug space-y-0.5">
-                                      {team.map((m, i) => (
-                                        <li key={i} className="truncate">
-                                          {m.displayName || m.id}
-                                        </li>
-                                      ))}
+                                      {team.map((m, i) => {
+                                        const isLeader =
+                                          !!leaderId && m.id === leaderId;
+                                        return (
+                                          <li
+                                            key={i}
+                                            className={
+                                              "truncate flex items-center gap-2 " +
+                                              (isLeader ? "text-primary" : "")
+                                            }
+                                          >
+                                            <span className="truncate">
+                                              {m.displayName || m.id}
+                                            </span>
+                                            {isLeader && (
+                                              <Chip
+                                                size="sm"
+                                                variant="flat"
+                                                color="primary"
+                                                className="h-5 px-2 text-[10px]"
+                                              >
+                                                Leader
+                                              </Chip>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
                                     </ul>
                                     {openSpots > 0 && (
                                       <p className="mt-1 text-[11px] font-medium text-warning flex items-center gap-1">
