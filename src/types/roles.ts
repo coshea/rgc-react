@@ -42,7 +42,7 @@ export const BOARD_ROLE_META: Record<
   },
   Webmaster: {
     icon: "lucide:globe",
-    color: "primary",
+    color: "danger",
     label: "Webmaster",
     priority: 5,
   },

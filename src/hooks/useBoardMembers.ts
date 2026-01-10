@@ -29,13 +29,15 @@ export function useBoardMembers() {
   const { users, isLoading, isFetching, isError, error, refetch } = useUsers();
 
   const boardMembers: EnrichedBoardMember[] = useMemo(() => {
-    if (!users) return [];
-    const filtered = users.filter(
-      (u: any) => u.boardMember || u.role || u.boardRole
-    );
+    if (!users?.length) return [];
 
-    const enriched: EnrichedBoardMember[] = filtered.map((u: any) => {
-      const rawRole: string | null = u.role || u.boardRole || null;
+    // Single source of truth: only users explicitly flagged as board members.
+    // We DO NOT treat `role`/`boardRole` presence as implying board membership;
+    // legacy docs may have stale role fields and should not appear here.
+    const filtered = users.filter((u) => u.boardMember === true);
+
+    const enriched: EnrichedBoardMember[] = filtered.map((u) => {
+      const rawRole = u.role ?? null;
       const normalizedRole = coerceBoardRole(rawRole);
       const rolePriority = getBoardRolePriority(rawRole);
       const roleLabel = formatBoardRoleLabel(rawRole);
@@ -43,8 +45,9 @@ export function useBoardMembers() {
       const isPresident =
         normalizedRole === "President" ||
         roleLabel.toLowerCase() === "president";
+
       return {
-        ...(u as User),
+        ...u,
         normalizedRole,
         roleLabel,
         rolePriority,
