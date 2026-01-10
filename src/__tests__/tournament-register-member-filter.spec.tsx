@@ -79,12 +79,13 @@ vi.mock("@/hooks/useUsers", () => ({
 // Capture toasts to avoid errors (noop) via provider
 vi.mock("@/providers/toast", () => ({ addToast: vi.fn() }));
 
-describe("TournamentRegister full member filter", () => {
-  it("blocks non-full current user from registering", async () => {
+describe("TournamentRegister registration eligibility", () => {
+  it("does not block non-full members from registering", async () => {
     render(<TournamentRegister />);
-    // Should show restriction message instead of form select
+    // Should render the registration UI for any authenticated user
     expect(
-      await screen.findByText(/Registration Restricted/i)
+      await screen.findByText(/Register for Member Only Event/i)
     ).toBeInTheDocument();
+    expect(screen.queryByText(/Registration Restricted/i)).toBeNull();
   });
 });

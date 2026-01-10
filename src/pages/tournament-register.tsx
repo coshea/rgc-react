@@ -18,11 +18,6 @@ import { getStatus } from "@/utils/tournamentStatus";
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
-// user types imported indirectly via hooks; no direct type import required here
-import {
-  isActiveFullMember,
-  isFullMember as isFullMemberUtil,
-} from "@/utils/membership";
 import RegistrationEditor from "@/components/registration-editor";
 // Static import for registrations list to ensure test mocks attach
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
@@ -34,13 +29,9 @@ const TournamentRegister: React.FC = () => {
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
   const { users } = useUsers();
-  // Refine types and avoid any-casts with a small type guard
-  const isFullMember = React.useCallback(isFullMemberUtil, []);
-  // Filter to full members only for selection (business rule: only full members can register / be teammates)
-  const fullMembers = React.useMemo(
-    () => users.filter(isFullMember),
-    [users, isFullMember]
-  );
+  // Tournament registration is open to all authenticated users.
+  // We still use the known users list to populate teammate selection.
+  const selectableUsers = users;
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
@@ -102,21 +93,6 @@ const TournamentRegister: React.FC = () => {
   );
   // store registrations for conflict detection
   const [registrations, setRegistrations] = React.useState<any[]>([]);
-  // Whether to show the registration restricted modal when the current user
-  // is not a full member. Kept alongside other hooks to preserve hook order.
-  const [showRestricted, setShowRestricted] = React.useState(false);
-  const currentUserIsEligible = React.useMemo(() => {
-    const me = users.find((u) => u.id === user?.uid);
-    // Primary rule: active full member (paid for current year)
-    if (isActiveFullMember(me)) return true;
-    // Legacy fallback: if membershipType is full but lastPaidYear is missing/unknown,
-    // allow registration to avoid blocking older profiles that haven't recorded payment year.
-    // Once lastPaidYear exists, the primary rule above applies.
-    if (me && me.membershipType === "full" && me.lastPaidYear == null) {
-      return true;
-    }
-    return false;
-  }, [users, user?.uid]);
 
   React.useEffect(() => {
     const fetchTournament = async () => {
@@ -220,7 +196,7 @@ const TournamentRegister: React.FC = () => {
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
     if (!users || users.length === 0) return;
-    const valid = new Set(fullMembers.map((u) => u.id));
+    const valid = new Set(selectableUsers.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
       id && valid.has(id) ? id : id === "" ? "" : ""
@@ -233,13 +209,6 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
-  // If the current user isn't eligible (not full-paid), show restriction modal here.
-  React.useEffect(() => {
-    if (!loading && tournament && user && !currentUserIsEligible) {
-      setShowRestricted(true);
-    }
-  }, [loading, tournament, user, currentUserIsEligible]);
-
   if (loading) return <div>Loading...</div>;
 
   if (!tournament) {
@@ -250,17 +219,6 @@ const TournamentRegister: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent | Event) => {
     e.preventDefault();
-
-    // Guard: ineligible users cannot submit
-    if (!currentUserIsEligible) {
-      addToast({
-        title: "Registration Restricted",
-        description: "Only active full members can register for tournaments.",
-        color: "danger",
-      });
-      setShowRestricted(true);
-      return;
-    }
 
     if (!tournament || !tournament.firestoreId) {
       addToast({
@@ -291,26 +249,14 @@ const TournamentRegister: React.FC = () => {
 
     // validate teammates - ensure no empty selections
     let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
-    // Fallback: if nothing selected yet but the current user is a valid full member,
+    // Fallback: if nothing selected yet but the current user is in our users list,
     // auto-include them as team leader to avoid a race with the auto-select effect.
     if (
       selectedIds.length === 0 &&
       user?.uid &&
-      fullMembers.some((m) => m.id === user.uid)
+      users.some((m) => m.id === user.uid)
     ) {
       selectedIds = [user.uid];
-    }
-    // Ensure all selected teammates are full members
-    const allFull = selectedIds.every((id) =>
-      fullMembers.some((m) => m.id === id)
-    );
-    if (!allFull) {
-      addToast({
-        title: "Invalid Team",
-        description: "All teammates must be full members.",
-        color: "danger",
-      });
-      return;
     }
     if (selectedIds.length === 0) {
       addToast({
@@ -323,7 +269,7 @@ const TournamentRegister: React.FC = () => {
 
     // map ids to display names (never surface raw id in UI; raw id only persisted behind the scenes)
     const members = selectedIds.map((id) => {
-      const u = fullMembers.find((x) => x.id === id);
+      const u = selectableUsers.find((x) => x.id === id);
       return {
         id,
         displayName: u?.displayName || u?.email || id,
@@ -355,7 +301,7 @@ const TournamentRegister: React.FC = () => {
         const regMemberIds = reg.team.map((m: any) => m.id);
         regMemberIds.forEach((pid: string) => {
           if (lowerSelected.has(pid)) {
-            const pUser = fullMembers.find((u) => u.id === pid);
+            const pUser = selectableUsers.find((u) => u.id === pid);
             foundConflicts.push({
               playerId: pid,
               playerName: pUser?.displayName || pUser?.email || pid,
@@ -435,10 +381,10 @@ const TournamentRegister: React.FC = () => {
             <RegistrationEditor
               value={teammates}
               onChange={setTeammates}
-              users={fullMembers}
+              users={selectableUsers}
               maxSize={maxTeamSize}
               labels={{ leader: "Team Leader / You" }}
-              disabled={!currentUserIsEligible}
+              disabled={!user?.uid}
             />
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
@@ -479,7 +425,7 @@ const TournamentRegister: React.FC = () => {
                     className="w-full"
                     type="submit"
                     color="primary"
-                    isDisabled={submitting || !currentUserIsEligible}
+                    isDisabled={submitting || !user?.uid}
                   >
                     {submitting
                       ? registrationId
@@ -526,39 +472,6 @@ const TournamentRegister: React.FC = () => {
               </ModalContent>
             </Modal>
           </form>
-          {/* Ineligible user blocking modal */}
-          <Modal
-            isOpen={showRestricted && !!user && !!tournament}
-            onOpenChange={(open) => setShowRestricted(open)}
-            size="md"
-            hideCloseButton
-          >
-            <ModalContent>
-              {() => (
-                <>
-                  <ModalHeader>Registration Restricted</ModalHeader>
-                  <ModalBody>
-                    <p className="text-sm text-foreground-500">
-                      Only active full members can register for tournaments.
-                      Please renew your membership or contact an administrator
-                      if you believe this is an error.
-                    </p>
-                  </ModalBody>
-                  <ModalFooter>
-                    <Button
-                      color="default"
-                      variant="flat"
-                      onPress={() =>
-                        navigate(`/tournaments/${tournament!.firestoreId}`)
-                      }
-                    >
-                      Go to Tournament Details
-                    </Button>
-                  </ModalFooter>
-                </>
-              )}
-            </ModalContent>
-          </Modal>
           {/* Duplicate conflict confirmation modal */}
           <Modal
             isOpen={conflictModalOpen && conflicts.length > 0}
@@ -580,7 +493,7 @@ const TournamentRegister: React.FC = () => {
                     <div className="space-y-4 max-h-72 overflow-auto pr-1">
                       {conflicts.map((c, idx) => {
                         const resolveName = (id: string) => {
-                          const u = fullMembers.find((fm) => fm.id === id);
+                          const u = selectableUsers.find((fm) => fm.id === id);
                           return (
                             u?.displayName ||
                             u?.email ||
@@ -603,7 +516,7 @@ const TournamentRegister: React.FC = () => {
                               <div className="flex items-start gap-4">
                                 <div className="flex -space-x-2">
                                   {teamMemberIds.map((mid) => {
-                                    const memberUser = fullMembers.find(
+                                    const memberUser = selectableUsers.find(
                                       (u) => u.id === mid
                                     );
                                     const label = resolveName(mid);

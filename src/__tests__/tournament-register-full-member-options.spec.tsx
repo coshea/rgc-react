@@ -80,8 +80,8 @@ vi.mock("@/hooks/useUsers", () => ({
 // Silence toasts via provider
 vi.mock("@/providers/toast", () => ({ addToast: vi.fn() }));
 
-describe("TournamentRegister teammate options (full members only)", () => {
-  it("shows only full members in teammate Select options", async () => {
+describe("TournamentRegister teammate options", () => {
+  it("shows all members in teammate Select options", async () => {
     render(<TournamentRegister />);
 
     // Wait for title
@@ -104,22 +104,13 @@ describe("TournamentRegister teammate options (full members only)", () => {
     };
 
     // Assert full members appear as options
-    // Type to filter to 'Captain' and check option exists
     await openAndExpectOption("Captain", "Captain Full");
 
     // Type to filter to 'Second' and check option exists
     await openAndExpectOption("Second", "Second Full");
 
-    // Ensure non-full members are NOT present as selectable options
-    fireEvent.click(combo);
-    fireEvent.change(combo, { target: { value: "" } });
-    fireEvent.change(combo, { target: { value: "Full" } });
-    fireEvent.keyDown(combo, { key: "ArrowDown" });
-    await screen.findByRole("option", { name: "Captain Full" });
-
-    expect(
-      screen.queryByRole("option", { name: "Handicap Member" })
-    ).toBeNull();
-    expect(screen.queryByRole("option", { name: "Social Member" })).toBeNull();
+    // Non-full members should also be selectable
+    await openAndExpectOption("Handicap", "Handicap Member");
+    await openAndExpectOption("Social", "Social Member");
   });
 });
