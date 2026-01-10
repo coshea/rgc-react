@@ -424,7 +424,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               aria-label="Filter by year"
               label="Year"
               size="sm"
-              selectedKeys={availableYears.length ? [String(yearFilter)] : []}
+              selectedKeys={
+                availableYears.includes(yearFilter) ? [String(yearFilter)] : []
+              }
               onSelectionChange={(keys) => {
                 const val = Array.from(keys)[0];
                 if (val !== undefined) setYearFilter(Number(val));

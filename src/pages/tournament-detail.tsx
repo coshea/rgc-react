@@ -75,6 +75,15 @@ const TournamentDetailPage: React.FC = () => {
     );
   }, [registrations, userId]);
 
+  const hasOpenTeamSlots = React.useMemo(() => {
+    const maxPlayers = tournament?.players;
+    if (!maxPlayers || !registrations.length) return false;
+    return registrations.some((r) => {
+      const team = Array.isArray(r.team) ? r.team : [];
+      return team.length < maxPlayers;
+    });
+  }, [registrations, tournament?.players]);
+
   // Load tournament document (real-time)
   React.useEffect(() => {
     if (!firestoreId) return;
@@ -837,120 +846,140 @@ const TournamentDetailPage: React.FC = () => {
                     No teams registered yet.
                   </p>
                 ) : (
-                  <ScrollShadow className="md:max-h-80 pr-1">
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {registrations
-                        .filter((reg) => {
-                          if (!showNeedingPlayers || !tournament) return true;
-                          const team = Array.isArray(reg.team) ? reg.team : [];
-                          return (
-                            team.length < (tournament.players || team.length)
-                          );
-                        })
-                        .map((reg) => {
-                          const originalIdx = registrations.findIndex(
-                            (r) => r.id === reg.id
-                          );
-                          const team = Array.isArray(reg.team) ? reg.team : [];
-                          const dateStr = reg.registeredAt?.toDate
-                            ? new Date(
-                                reg.registeredAt.toDate()
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })
-                            : "";
-                          const maxPlayers = tournament.players || team.length;
-                          const openSpots = Math.max(
-                            maxPlayers - team.length,
-                            0
-                          );
-                          return (
-                            <div
-                              key={reg.id}
-                              className={`rounded-md border transition-colors p-3 flex flex-col h-full gap-2 relative group ${
-                                openSpots > 0
-                                  ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
-                                  : "border-default-200 bg-content2/60 hover:bg-content2"
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="flex -space-x-2">
-                                  {team.map((m, i) => {
-                                    const memberUser = usersMap.get(m.id);
-                                    const label = (
-                                      m.displayName ||
-                                      m.id ||
-                                      ""
-                                    ).toString();
-                                    return (
-                                      <UserAvatar
-                                        key={m.id || i}
-                                        size="sm"
-                                        user={memberUser}
-                                        name={memberUser ? undefined : label}
-                                        className="border border-default-200"
-                                        alt={label}
-                                      />
-                                    );
-                                  })}
-                                  {openSpots > 0 && (
-                                    <div
-                                      className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
-                                      aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
-                                      title={`${openSpots} open spot${openSpots === 1 ? "" : "s"}`}
-                                    >
-                                      +{openSpots}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
-                                    Team {originalIdx + 1}
-                                  </p>
-                                  <ul className="text-sm font-medium leading-snug space-y-0.5">
-                                    {team.map((m, i) => (
-                                      <li key={i} className="truncate">
-                                        {m.displayName || m.id}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                  {openSpots > 0 && (
-                                    <p className="mt-1 text-[11px] font-medium text-warning flex items-center gap-1">
-                                      <Icon
-                                        icon="lucide:alert-circle"
-                                        className="w-3.5 h-3.5"
-                                        aria-hidden="true"
-                                      />
-                                      {openSpots === 1
-                                        ? "1 Spot Open"
-                                        : `${openSpots} Spots Open`}
+                  <>
+                    {hasOpenTeamSlots && (
+                      <div className="mb-3 text-xs text-foreground-500 flex items-start gap-2">
+                        <Icon
+                          icon="lucide:info"
+                          className="w-4 h-4 mt-0.5 text-foreground-400"
+                          aria-hidden="true"
+                        />
+                        <p>
+                          Want to join a team with an open spot? Contact the
+                          team members to be added.
+                        </p>
+                      </div>
+                    )}
+                    <ScrollShadow className="md:max-h-80 pr-1">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {registrations
+                          .filter((reg) => {
+                            if (!showNeedingPlayers || !tournament) return true;
+                            const team = Array.isArray(reg.team)
+                              ? reg.team
+                              : [];
+                            return (
+                              team.length < (tournament.players || team.length)
+                            );
+                          })
+                          .map((reg) => {
+                            const originalIdx = registrations.findIndex(
+                              (r) => r.id === reg.id
+                            );
+                            const team = Array.isArray(reg.team)
+                              ? reg.team
+                              : [];
+                            const dateStr = reg.registeredAt?.toDate
+                              ? new Date(
+                                  reg.registeredAt.toDate()
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : "";
+                            const maxPlayers =
+                              tournament.players || team.length;
+                            const openSpots = Math.max(
+                              maxPlayers - team.length,
+                              0
+                            );
+                            return (
+                              <div
+                                key={reg.id}
+                                className={`rounded-md border transition-colors p-3 flex flex-col h-full gap-2 relative group ${
+                                  openSpots > 0
+                                    ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
+                                    : "border-default-200 bg-content2/60 hover:bg-content2"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="flex -space-x-2">
+                                    {team.map((m, i) => {
+                                      const memberUser = usersMap.get(m.id);
+                                      const label = (
+                                        m.displayName ||
+                                        m.id ||
+                                        ""
+                                      ).toString();
+                                      return (
+                                        <UserAvatar
+                                          key={m.id || i}
+                                          size="sm"
+                                          user={memberUser}
+                                          name={memberUser ? undefined : label}
+                                          className="border border-default-200"
+                                          alt={label}
+                                        />
+                                      );
+                                    })}
+                                    {openSpots > 0 && (
+                                      <div
+                                        className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
+                                        aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
+                                        title={`${openSpots} open spot${openSpots === 1 ? "" : "s"}`}
+                                      >
+                                        +{openSpots}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
+                                      Team {originalIdx + 1}
                                     </p>
-                                  )}
+                                    <ul className="text-sm font-medium leading-snug space-y-0.5">
+                                      {team.map((m, i) => (
+                                        <li key={i} className="truncate">
+                                          {m.displayName || m.id}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    {openSpots > 0 && (
+                                      <p className="mt-1 text-[11px] font-medium text-warning flex items-center gap-1">
+                                        <Icon
+                                          icon="lucide:alert-circle"
+                                          className="w-3.5 h-3.5"
+                                          aria-hidden="true"
+                                        />
+                                        {openSpots === 1
+                                          ? "1 Spot Open"
+                                          : `${openSpots} Spots Open`}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="mt-auto flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
+                                  <span className="flex items-center gap-1">
+                                    <Icon
+                                      icon="lucide:calendar-clock"
+                                      className="w-3.5 h-3.5"
+                                    />
+                                    {dateStr}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Icon
+                                      icon="lucide:users"
+                                      className="w-3.5 h-3.5"
+                                    />
+                                    {team.length}
+                                  </span>
                                 </div>
                               </div>
-                              <div className="mt-auto flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
-                                <span className="flex items-center gap-1">
-                                  <Icon
-                                    icon="lucide:calendar-clock"
-                                    className="w-3.5 h-3.5"
-                                  />
-                                  {dateStr}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Icon
-                                    icon="lucide:users"
-                                    className="w-3.5 h-3.5"
-                                  />
-                                  {team.length}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </ScrollShadow>
+                            );
+                          })}
+                      </div>
+                    </ScrollShadow>
+                  </>
                 )}
               </CardBody>
             </Card>

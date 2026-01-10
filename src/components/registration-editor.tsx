@@ -42,9 +42,10 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   // Effect: whenever the users list changes, drop any stale ids that no longer exist
   React.useEffect(() => {
     if (!ids.length) return;
-    const filtered = ids.filter((id) => id && validUserIds.has(id));
-    if (filtered.length !== ids.length) {
-      onChange(filtered);
+    // Preserve empty placeholder slots (""), but clear any non-empty ids that are no longer valid.
+    const cleaned = ids.map((id) => (id && validUserIds.has(id) ? id : ""));
+    if (cleaned.some((id, i) => id !== ids[i])) {
+      onChange(cleaned);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);

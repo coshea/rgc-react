@@ -53,8 +53,8 @@ describe("RegistrationEditor selectedKeys sanitization", () => {
     // Effect runs asynchronously in microtask; flush
     act(() => {});
 
-    // After sanitization, currentValue should only contain user-a
-    expect(currentValue).toEqual(["user-a"]);
+    // After sanitization, user-b is cleared but the placeholder slot is preserved.
+    expect(currentValue).toEqual(["user-a", ""]);
     // No UI assertion needed here; this test focuses on value sanitization
   });
 });
