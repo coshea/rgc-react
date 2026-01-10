@@ -4,13 +4,20 @@ service cloud.firestore {
     // Helper: returns true if the requester is a super-admin (custom claim)
     // or is listed in the admin collection (/admin/{uid}.isAdmin == true).
     function isAdmin() {
-      let adminDoc = get(/databases/$(database)/documents/admin/$(request.auth.uid));
+      // Important: avoid calling get() with a null uid. Some rule paths are public
+      // (e.g. published blog posts), and should not error just because request.auth
+      // is null. Only evaluate admin doc when authenticated.
       return request.auth != null && (
         // Custom claim OR explicit admin doc flags only
         request.auth.token.admin == true
-        || adminDoc.data.isAdmin == true
-        || adminDoc.data.admin == true
-        || adminDoc.data.admin == 'true'
+        || (
+          exists(/databases/$(database)/documents/admin/$(request.auth.uid))
+          && (
+            get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+            || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.admin == true
+            || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.admin == 'true'
+          )
+        )
       );
     }
 

@@ -39,7 +39,7 @@ export const BlogPostPage: React.FC = () => {
     setLoading(true);
     getBlogPostBySlug(slug)
       .then((blogPost) => {
-        if (!blogPost || (blogPost.status !== "published" && !isAdmin)) {
+        if (!blogPost) {
           addToast({
             title: "Not found",
             description: "Blog post not found",

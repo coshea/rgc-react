@@ -116,7 +116,14 @@ export async function getBlogPostBySlug(
   slug: string
 ): Promise<BlogPost | null> {
   const col = collection(db, BLOG_COLLECTION);
-  const q = query(col, where("slug", "==", slug), limit(1));
+  // Public-safe: only fetch published posts by slug.
+  // Admins access drafts via the editor routes by document id.
+  const q = query(
+    col,
+    where("slug", "==", slug),
+    where("status", "==", BlogPostStatus.Published),
+    limit(1)
+  );
   const snap = await getDocs(q);
   if (snap.empty) return null;
   return mapBlogPostDoc(snap.docs[0]);
