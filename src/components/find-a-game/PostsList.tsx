@@ -104,15 +104,15 @@ export function PostsList({
       <Card
         key={p.id}
         shadow="sm"
-        className="border border-default-200 h-full hover:shadow-lg hover:border-primary-200 transition-all duration-200 cursor-pointer group bg-gradient-to-br from-background to-default-50"
+        className="border border-default-200 h-full hover:shadow-lg hover:border-primary-200 transition-all duration-200 cursor-pointer group bg-linear-to-br from-background to-default-50"
       >
         <CardBody className="p-0 overflow-hidden">
           {/* Header with gradient background */}
           <div
             className={`px-4 py-3 ${
               isNeedPlayers
-                ? "bg-gradient-to-r from-primary-50 to-primary-100/50 border-b border-primary-100"
-                : "bg-gradient-to-r from-secondary-50 to-secondary-100/50 border-b border-secondary-100"
+                ? "bg-linear-to-r from-primary-50 to-primary-100/50 border-b border-primary-100"
+                : "bg-linear-to-r from-secondary-50 to-secondary-100/50 border-b border-secondary-100"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -123,8 +123,8 @@ export function PostsList({
                 <div
                   className={`w-14 h-14 rounded-xl ${
                     isNeedPlayers
-                      ? "bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25"
-                      : "bg-gradient-to-br from-secondary-500 to-secondary-600 text-white shadow-lg shadow-secondary-500/25"
+                      ? "bg-linear-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25"
+                      : "bg-linear-to-br from-secondary-500 to-secondary-600 text-white shadow-lg shadow-secondary-500/25"
                   } flex flex-col items-center justify-center`}
                 >
                   <div className="text-[9px] font-medium opacity-90">{wk}</div>
@@ -253,7 +253,7 @@ export function PostsList({
     <div className="space-y-8">
       {posts.length === 0 && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-default-100 to-default-200 flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
             <Icon
               icon="lucide:calendar-search"
               className="w-8 h-8 text-default-400"
@@ -272,7 +272,7 @@ export function PostsList({
       {needPlayers.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center gap-3 pb-2 border-b border-primary-100">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+            <div className="p-2 rounded-lg bg-linear-to-r from-primary-500 to-primary-600 text-white">
               <Icon icon="lucide:user-plus" className="w-4 h-4" />
             </div>
             <div>
@@ -293,7 +293,7 @@ export function PostsList({
       {needGroup.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center gap-3 pb-2 border-b border-secondary-100">
-            <div className="p-2 rounded-lg bg-gradient-to-r from-secondary-500 to-secondary-600 text-white">
+            <div className="p-2 rounded-lg bg-linear-to-r from-secondary-500 to-secondary-600 text-white">
               <Icon icon="lucide:users" className="w-4 h-4" />
             </div>
             <div>

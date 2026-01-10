@@ -12,7 +12,7 @@ import {
   TimeInput,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { parseDate, parseTime } from "@internationalized/date";
+import { type DateValue, parseDate, parseTime } from "@internationalized/date";
 import { toYMD } from "@/api/find-a-game";
 import { useCallback, useState } from "react";
 
@@ -117,8 +117,10 @@ export default function FindAGamePostModal({
 
               <DatePicker
                 label="Date"
-                value={date ? (parseDate(date) as any) : null}
-                onChange={(v) => onDateChange(v ? v.toString() : "")}
+                value={date ? parseDate(date) : null}
+                onChange={(v: DateValue | null) =>
+                  onDateChange(v ? v.toString() : "")
+                }
                 minValue={parseDate(toYMD(new Date()))}
                 popoverProps={popoverProps()}
                 className="w-48"
@@ -129,7 +131,7 @@ export default function FindAGamePostModal({
                 <>
                   <TimeInput
                     label="Tee Time"
-                    value={time ? (parseTime(time) as any) : null}
+                    value={time ? parseTime(time) : null}
                     onChange={(v) => onTimeChange(v ? v.toString() : "")}
                     granularity="minute"
                     hourCycle={12}

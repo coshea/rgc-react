@@ -99,7 +99,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
             <CardBody className="p-0">
               <div className="flex flex-col h-full">
                 {post.featuredImage && (
-                  <div className="h-32 w-full flex-shrink-0 overflow-hidden">
+                  <div className="h-32 w-full shrink-0 overflow-hidden">
                     <img
                       src={post.featuredImage}
                       alt={post.title}

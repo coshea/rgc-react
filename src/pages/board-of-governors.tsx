@@ -51,11 +51,6 @@ const BoardOfGovernorsPage: React.FC = () => {
                 <Icon icon={meta.icon} className="w-3 h-3" />
               ) : undefined;
 
-            const bio = (() => {
-              const b = (member as unknown as { bio?: unknown }).bio;
-              return typeof b === "string" && b.trim().length ? b : null;
-            })();
-
             return (
               <Card
                 key={member.id}
@@ -93,13 +88,7 @@ const BoardOfGovernorsPage: React.FC = () => {
                     )}
                   </div>
                 </CardHeader>
-                <CardBody className="pt-0 pb-3 text-xs text-center space-y-2">
-                  {bio && (
-                    <p className="text-xs text-foreground-500 line-clamp-3 leading-relaxed">
-                      {bio}
-                    </p>
-                  )}
-                </CardBody>
+                <CardBody className="pt-0 pb-3" />
               </Card>
             );
           })}
