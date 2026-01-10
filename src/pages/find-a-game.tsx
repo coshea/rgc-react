@@ -102,9 +102,11 @@ export default function FindAGamePage() {
       }
     } catch (e) {
       console.error(e);
+      const message =
+        e instanceof Error && e.message ? e.message : "Could not create post";
       addToast({
         title: "Error",
-        description: "Could not create post",
+        description: message,
         color: "danger",
       });
     } finally {
@@ -143,9 +145,11 @@ export default function FindAGamePage() {
       setEditOpen(false);
     } catch (e) {
       console.error(e);
+      const message =
+        e instanceof Error && e.message ? e.message : "Could not update post.";
       addToast({
         title: "Error",
-        description: "Could not update post.",
+        description: message,
         color: "danger",
       });
     } finally {

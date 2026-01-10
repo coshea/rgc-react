@@ -145,9 +145,25 @@ service cloud.firestore {
       }
 
       function playersFieldsValid(d) {
-        // For 'needPlayers': time is optional (can be null or string), openSpots required 1..3. For 'needGroup': time/openSpots should be absent or null.
-        return (d.type == 'needPlayers' && (d.time == null || (d.time is string && d.time != '')) && d.openSpots is int && d.openSpots >= 1 && d.openSpots <= 3)
-          || (d.type == 'needGroup' && (d.time == null || !(d.time is string)) && (d.openSpots == null || !(d.openSpots is int)));
+        // For 'needPlayers':
+        // - time is optional (null or non-empty string)
+        // - openSpots must be exactly 1, 2, or 3
+        // NOTE: The JS Firestore SDK commonly encodes numeric fields as a double; requiring `is int`
+        // can reject valid values. Using membership on [1,2,3] enforces integer-ness and range.
+        //
+        // For 'needGroup': time/openSpots should be absent or null.
+        return (d.type == 'needPlayers'
+            && (!('time' in d) || d.time == null || (d.time is string && d.time != ''))
+            && ('openSpots' in d)
+            && ((d.openSpots is int) || (d.openSpots is float))
+            // Accept both int and float representations commonly produced by client SDKs.
+            && (
+              d.openSpots == 1 || d.openSpots == 2 || d.openSpots == 3
+              || d.openSpots == 1.0 || d.openSpots == 2.0 || d.openSpots == 3.0
+            ))
+          || (d.type == 'needGroup'
+            && (!('time' in d) || d.time == null)
+            && (!('openSpots' in d) || d.openSpots == null));
       }
 
       // Owner must match auth on create; admins also allowed, but ownerId must equal auth.uid to keep clear ownership
