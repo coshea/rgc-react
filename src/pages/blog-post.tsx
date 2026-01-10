@@ -180,7 +180,6 @@ export const BlogPostPage: React.FC = () => {
             alt={post.title}
             loading="eager"
             decoding="async"
-            fetchPriority="high"
             className="w-full h-full object-cover"
           />
         </div>
