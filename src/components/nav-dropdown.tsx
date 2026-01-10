@@ -66,16 +66,24 @@ export default function NavDropdown({
   if (isMobile) {
     return (
       <div ref={containerRef}>
-        <div className="mb-2 w-full text-default-500 font-medium">{label}</div>
-        <div className="pl-2">
+        <div className="mb-1 w-full px-2 text-xs font-semibold tracking-wide text-foreground-500">
+          {label}
+        </div>
+        <div className="mt-1">
           {items.map((child) => (
             <Link
               key={child.link}
-              className="block mb-2 text-default-500"
+              className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-default-100"
               href={child.link}
               onClick={() => onNavigate?.()}
             >
-              {child.title}
+              {child.icon ? (
+                <Icon
+                  icon={child.icon}
+                  className="text-lg text-foreground-500"
+                />
+              ) : null}
+              <span className="flex-1">{child.title}</span>
             </Link>
           ))}
         </div>
