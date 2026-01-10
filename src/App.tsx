@@ -14,6 +14,7 @@ import SignUpPage from "@/pages/signup";
 import CookiePolicyPage from "@/pages/cookies";
 import PastChampions from "@/pages/past-champions";
 import ProfilePage from "@/pages/profile";
+import ProfileEditPage from "@/pages/profile-edit";
 import UserProfilePage from "@/pages/user-profile";
 import TournamentsPage from "@/pages/tournaments";
 import TournamentRegister from "@/pages/tournament-register";
@@ -62,6 +63,14 @@ function App() {
           <Route
             element={<ProfilePage />}
             path={siteConfig.pages.profile.link}
+          />
+          <Route
+            element={
+              <RequireAuth>
+                <ProfileEditPage />
+              </RequireAuth>
+            }
+            path="/profile/edit"
           />
           <Route
             element={

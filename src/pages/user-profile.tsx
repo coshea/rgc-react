@@ -1,4 +1,4 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import {
   Card,
   CardBody,
@@ -34,6 +34,7 @@ import { toDate } from "@/api/users";
 
 const UserProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { user: profileUser, isLoading: userLoading } = useUserById(userId);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -247,7 +248,13 @@ const UserProfilePage: React.FC = () => {
             variant="flat"
             size="sm"
             startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
-            onPress={onOpen}
+            onPress={() => {
+              if (window.matchMedia("(max-width: 640px)").matches) {
+                navigate("/profile/edit");
+                return;
+              }
+              onOpen();
+            }}
           >
             Edit Profile
           </Button>
@@ -657,8 +664,17 @@ const UserProfilePage: React.FC = () => {
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         size="2xl"
-        scrollBehavior="inside"
-        placement="center"
+        shouldBlockScroll={false}
+        placement="top-center"
+        classNames={{
+          // Mobile: cap height so the body can scroll (keyboard-safe in practice).
+          // Desktop: keep a centered dialog feel.
+          wrapper: "items-start pt-6 sm:items-center sm:pt-0",
+          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85vh] max-h-[85svh] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
+          header: "shrink-0",
+          body: "flex-1 min-h-0 overflow-hidden p-0",
+          footer: "shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+        }}
       >
         <ModalContent>
           {() => (
@@ -669,12 +685,14 @@ const UserProfilePage: React.FC = () => {
                   Update your profile information and settings
                 </p>
               </ModalHeader>
-              <ModalBody className="pb-8">
-                <ProfileForm
-                  hideActions
-                  formId="profile-edit-form"
-                  onSaved={() => onOpenChange()}
-                />
+              <ModalBody>
+                <div className="h-full overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  <ProfileForm
+                    hideActions
+                    formId="profile-edit-form"
+                    onSaved={() => onOpenChange()}
+                  />
+                </div>
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={() => onOpenChange()}>
