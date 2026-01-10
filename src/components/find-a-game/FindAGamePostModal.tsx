@@ -11,6 +11,7 @@ import {
   DatePicker,
   TimeInput,
 } from "@heroui/react";
+import type { PopoverProps } from "@heroui/popover";
 import { Icon } from "@iconify/react";
 import { type DateValue, parseDate, parseTime } from "@internationalized/date";
 import { toYMD } from "@/api/find-a-game";
@@ -63,13 +64,26 @@ export default function FindAGamePostModal({
     setPortalContainer(node);
   }, []);
 
-  const popoverProps = useCallback(
-    () => ({ portalContainer: portalContainer ?? undefined }),
-    [portalContainer]
-  );
+  const popoverProps = useCallback((): Partial<PopoverProps> => {
+    return {
+      portalContainer: portalContainer ?? undefined,
+      // Keep overlays within the modal viewport.
+      containerPadding: 12,
+    };
+  }, [portalContainer]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      scrollBehavior="inside"
+      classNames={{
+        // Mobile: shorter modal, but positioned higher to leave room for the calendar to open downward.
+        // Desktop: keep the usual centered dialog feel.
+        wrapper: "items-start pt-8 sm:items-center sm:pt-0",
+        base: "mx-3 my-3 max-h-[85dvh] sm:max-h-[90vh] sm:max-w-lg",
+      }}
+    >
       <ModalContent>
         <div ref={setPortalRef} />
         <ModalHeader className="flex flex-col gap-1">
@@ -122,8 +136,18 @@ export default function FindAGamePostModal({
                   onDateChange(v ? v.toString() : "")
                 }
                 minValue={parseDate(toYMD(new Date()))}
-                popoverProps={popoverProps()}
+                popoverProps={{
+                  ...popoverProps(),
+                  placement: "bottom",
+                  shouldFlip: false,
+                  offset: 8,
+                }}
                 className="w-48"
+                classNames={{
+                  // Keep the calendar within the modal/screen on small devices.
+                  popoverContent: "max-w-[90vw] max-h-[55vh] overflow-auto",
+                  calendarContent: "max-w-[90vw]",
+                }}
                 isRequired
               />
 

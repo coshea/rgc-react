@@ -10,15 +10,14 @@ service cloud.firestore {
       return request.auth != null && (
         // Custom claim OR explicit admin doc flags only
         request.auth.token.admin == true
-        || (  
-          exists(/databases/$(database)/documents/admin/$(request.auth.uid))  
-          && (  
-            let adminData = get(/databases/$(database)/documents/admin/$(request.auth.uid)).data;  
-            adminData.isAdmin == true  
-            || adminData.admin == true  
-            || adminData.admin == 'true'  
-          )  
-        )  
+        || (
+          exists(/databases/$(database)/documents/admin/$(request.auth.uid))
+          && (
+            get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.isAdmin == true
+            || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.admin == true
+            || get(/databases/$(database)/documents/admin/$(request.auth.uid)).data.admin == 'true'
+          )
+        )
       );
     }
 
@@ -160,15 +159,21 @@ service cloud.firestore {
         // can reject valid values. Using membership on [1,2,3] enforces integer-ness and range.
         //
         // For 'needGroup': time/openSpots should be absent or null.
-        return (d.type == 'needPlayers'
+        return (
+          (
+            d.type == 'needPlayers'
             && (!('time' in d) || d.time == null || (d.time is string && d.time != ''))
             && ('openSpots' in d)
-            && (d.openSpots is number)
-            // Accept both int and float representations commonly produced by client SDKs.  
+            // Accept both int and float representations commonly produced by client SDKs.
+            && (d.openSpots is int || d.openSpots is float)
             && d.openSpots in [1, 2, 3]
-          || (d.type == 'needGroup'
+          )
+          || (
+            d.type == 'needGroup'
             && (!('time' in d) || d.time == null)
-            && (!('openSpots' in d) || d.openSpots == null));
+            && (!('openSpots' in d) || d.openSpots == null)
+          )
+        );
       }
 
       // Owner must match auth on create; admins also allowed, but ownerId must equal auth.uid to keep clear ownership
