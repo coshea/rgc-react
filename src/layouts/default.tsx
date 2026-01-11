@@ -6,7 +6,7 @@ export default function DefaultLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex flex-col">
+    <div className="relative flex min-h-screen flex-col">
       <MainNavbar />
       {/* Standardize spacing below the navbar for all pages */}
       <main className="container mx-auto max-w-7xl px-6 pt-8 grow pb-[max(2rem,env(safe-area-inset-bottom))]">
