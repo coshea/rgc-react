@@ -472,8 +472,11 @@ const TournamentRegister: React.FC = () => {
                     className="w-full"
                     type="submit"
                     color="primary"
-                    isDisabled={submitting || !user?.uid}
-                    aria-disabled={minTeamSize > 1 && !hasMinTeamSize}
+                    isDisabled={
+                      submitting ||
+                      !user?.uid ||
+                      (minTeamSize > 1 && !hasMinTeamSize)
+                    }
                   >
                     {submitting
                       ? registrationId
