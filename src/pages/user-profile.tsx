@@ -670,7 +670,7 @@ const UserProfilePage: React.FC = () => {
           // Mobile: cap height so the body can scroll (keyboard-safe in practice).
           // Desktop: keep a centered dialog feel.
           wrapper: "items-start pt-6 sm:items-center sm:pt-0",
-          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85vh] max-h-[85svh] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
+          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
           header: "shrink-0",
           body: "flex-1 min-h-0 overflow-hidden p-0",
           footer: "shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
