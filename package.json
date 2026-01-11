@@ -12,7 +12,8 @@
     "lint": "eslint -c .eslintrc.json ./src/**/**/*.{ts,tsx} --fix",
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
-    "firestore": "firebase deploy --only firestore:rules"
+    "firestore": "firebase deploy --only firestore:rules",
+    "build-full": "npm run build && npm run test && npm run lint"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

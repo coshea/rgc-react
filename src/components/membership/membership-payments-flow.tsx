@@ -13,11 +13,7 @@ import {
   addToast,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import {
-  HANDICAP_FEE,
-  MEMBERSHIP_FEE,
-  formatUSD,
-} from "@/config/membership-pricing";
+import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
@@ -66,11 +62,21 @@ interface DonationState {
   email: string;
 }
 
+export interface MembershipPaymentsFlowProps {
+  membershipAmountDue: number;
+  handicapFee: number;
+  loginFromPath?: string;
+}
+
 function isValidEmail(email: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
 }
 
-export default function MembershipPaymentsV2Page() {
+export default function MembershipPaymentsFlow({
+  membershipAmountDue,
+  handicapFee,
+  loginFromPath = siteConfig.pages.membership.link,
+}: MembershipPaymentsFlowProps) {
   const currency = formatUSD;
 
   const navigate = useNavigate();
@@ -109,9 +115,6 @@ export default function MembershipPaymentsV2Page() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const membershipAmountDue = useMemo(() => MEMBERSHIP_FEE, []);
-  const handicapFee = useMemo(() => HANDICAP_FEE, []);
-
   const stepsCount = 4;
   const currentStepIndex = useMemo(() => {
     if (step.kind === "select") return 0;
@@ -124,7 +127,14 @@ export default function MembershipPaymentsV2Page() {
     return 0;
   }, [step.kind]);
 
-  const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}`;
+  const stepTitles = useMemo(
+    () => ["Select option", "Confirm details", "Payment", "Complete"],
+    []
+  );
+
+  const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
+    stepTitles[currentStepIndex]
+  }`;
 
   function onStepperChange(next: number) {
     // Only allow moving backwards. Moving forward should happen via form actions.
@@ -135,7 +145,7 @@ export default function MembershipPaymentsV2Page() {
       return;
     }
 
-    // Step 2 means “details”; we can only return to renew lookup from renew_confirm.
+    // Step 2 means “confirm details”; we can only return to renew lookup from renew_confirm.
     if (next === 1) {
       if (step.kind === "renew_confirm") {
         setStep({ kind: "renew_lookup" });
@@ -160,7 +170,7 @@ export default function MembershipPaymentsV2Page() {
           color: "warning",
         });
         navigate(siteConfig.pages.login.link, {
-          state: { from: siteConfig.pages.membershipV2.link },
+          state: { from: loginFromPath },
         });
         return;
       }
@@ -207,13 +217,17 @@ export default function MembershipPaymentsV2Page() {
   function onPayRenew() {
     addToast({
       title: "Payment Recorded",
-      description: `Annual dues payment of ${currency(membershipAmountDue)} recorded (demo).`,
+      description: `Annual dues payment of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
       color: "success",
     });
     setStep({
       kind: "done",
       title: "Payment complete",
-      description: `Annual dues payment of ${currency(membershipAmountDue)} recorded (demo).`,
+      description: `Annual dues payment of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
     });
   }
 
@@ -242,13 +256,17 @@ export default function MembershipPaymentsV2Page() {
 
     addToast({
       title: "Application Submitted",
-      description: `Application submitted and dues of ${currency(membershipAmountDue)} recorded (demo).`,
+      description: `Application submitted and dues of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
       color: "success",
     });
     setStep({
       kind: "done",
       title: "Application submitted",
-      description: `Application submitted and dues of ${currency(membershipAmountDue)} recorded (demo).`,
+      description: `Application submitted and dues of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
     });
   }
 
@@ -336,18 +354,6 @@ export default function MembershipPaymentsV2Page() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
-      <header className="w-full max-w-3xl text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-          Membership & Annual Dues
-        </h1>
-        <Spacer y={2} />
-        <p className="text-default-500 text-base">
-          Please select the option that best applies to you.
-        </p>
-      </header>
-
-      <Spacer y={10} />
-
       <div className="w-full max-w-4xl">
         <MinimalRowSteps
           currentStep={currentStepIndex}
@@ -362,7 +368,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "select" && (
         <Card className="w-full max-w-4xl" shadow="sm">
           <CardHeader className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold">Step 1: Select an Option</h2>
+            <h2 className="text-lg font-semibold">Step 1: Select option</h2>
             <p className="text-sm text-default-600">Membership & Payments</p>
           </CardHeader>
           <Divider />
@@ -445,9 +451,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "renew_lookup" && (
         <Card className="w-full max-w-3xl" shadow="sm">
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              Step 2: Renew Membership (Existing Members)
-            </h2>
+            <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
             <Button variant="light" onPress={goToSelect}>
               Back
             </Button>
@@ -491,7 +495,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "renew_confirm" && (
         <Card className="w-full max-w-3xl" shadow="sm">
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Membership Found</h2>
+            <h2 className="text-lg font-semibold">Step 3: Payment</h2>
             <Button variant="light" onPress={goToSelect}>
               Back
             </Button>
@@ -528,9 +532,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "new_apply" && (
         <Card className="w-full max-w-4xl" shadow="sm">
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              Step 2: New Member Application
-            </h2>
+            <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
             <Button variant="light" onPress={goToSelect}>
               Back
             </Button>
@@ -662,9 +664,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "handicap" && (
         <Card className="w-full max-w-3xl" shadow="sm">
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              Step 2: Handicap Index Only
-            </h2>
+            <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
             <Button variant="light" onPress={goToSelect}>
               Back
             </Button>
@@ -720,7 +720,7 @@ export default function MembershipPaymentsV2Page() {
       {step.kind === "donation" && (
         <Card className="w-full max-w-3xl" shadow="sm">
           <CardHeader className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Step 2: Donation</h2>
+            <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
             <Button variant="light" onPress={goToSelect}>
               Back
             </Button>

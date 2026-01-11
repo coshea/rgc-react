@@ -23,7 +23,7 @@ export default function MinimalRowSteps({
   return (
     <div className="w-full">
       {label ? (
-        <div className="mb-3 text-sm text-default-500">{label}</div>
+        <div className="mb-3 text-center text-sm text-default-500">{label}</div>
       ) : null}
 
       <div className="flex items-center gap-2">
