@@ -64,14 +64,7 @@ function App() {
             element={<ProfilePage />}
             path={siteConfig.pages.profile.link}
           />
-          <Route
-            element={
-              <RequireAuth>
-                <ProfileEditPage />
-              </RequireAuth>
-            }
-            path="/profile/edit"
-          />
+          <Route element={<ProfileEditPage />} path="/profile/edit" />
           <Route
             element={
               <RequireAuth>
