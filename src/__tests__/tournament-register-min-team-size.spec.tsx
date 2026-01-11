@@ -96,22 +96,11 @@ describe("TournamentRegister min team size", () => {
 
     // With only the auto-selected leader, register should be blocked.
     const submitBtn = screen.getByRole("button", { name: /^Register$/i });
-    expect(submitBtn).toHaveAttribute("aria-disabled", "true");
-
-    await act(async () => {
-      submitBtn.click();
-    });
-
+    expect(submitBtn).toBeDisabled();
+    expect(
+      screen.getByText(/add at least one teammate to register/i)
+    ).toBeInTheDocument();
     expect(upsertRegistrationMock).not.toHaveBeenCalled();
-
-    expect(addToastMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        color: "danger",
-      })
-    );
-    const last =
-      addToastMock.mock.calls[addToastMock.mock.calls.length - 1]?.[0];
-    expect(String(last?.description || "")).toMatch(/at least 2 players/i);
   });
 
   it("allows solo registration when team size is 1", async () => {
@@ -132,7 +121,7 @@ describe("TournamentRegister min team size", () => {
     await screen.findByText(/Register for\s+Solo Tournament/i);
 
     const submitBtn = screen.getByRole("button", { name: /^Register$/i });
-    expect(submitBtn).not.toHaveAttribute("aria-disabled", "true");
+    expect(submitBtn).not.toBeDisabled();
 
     await act(async () => {
       submitBtn.click();

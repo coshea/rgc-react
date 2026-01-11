@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -23,6 +24,7 @@ import BackButton from "@/components/back-button";
 import { ProfileForm } from "@/components/profile-form";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserById } from "@/hooks/useUserById";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   useUserChampionships,
   useUserTournamentWins,
@@ -38,6 +40,7 @@ const UserProfilePage: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { user: profileUser, isLoading: userLoading } = useUserById(userId);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // Check if the current user is viewing their own profile
   const isOwnProfile = currentUser?.uid === userId;
@@ -249,7 +252,7 @@ const UserProfilePage: React.FC = () => {
             size="sm"
             startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
             onPress={() => {
-              if (window.matchMedia("(max-width: 640px)").matches) {
+              if (isMobile) {
                 navigate("/profile/edit");
                 return;
               }
@@ -670,7 +673,7 @@ const UserProfilePage: React.FC = () => {
           // Mobile: cap height so the body can scroll (keyboard-safe in practice).
           // Desktop: keep a centered dialog feel.
           wrapper: "items-start pt-6 sm:items-center sm:pt-0",
-          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
+          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85vh] max-h-[85svh] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
           header: "shrink-0",
           body: "flex-1 min-h-0 overflow-hidden p-0",
           footer: "shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]",

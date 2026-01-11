@@ -11,10 +11,21 @@ const ProfileEditPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user && !user.emailVerified) {
-      navigate(siteConfig.pages.verifyEmail.link);
+    if (!loading && !user) {
+      navigate(siteConfig.pages.login.link, {
+        state: {
+          from: "/profile/edit",
+          message: "You must be logged in to edit your profile",
+        },
+        replace: true,
+      });
+      return;
     }
-  }, [user, loading, navigate]);
+
+    if (!loading && user && !user.emailVerified) {
+      navigate(siteConfig.pages.verifyEmail.link, { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   if (loading) {
     return (
@@ -23,6 +34,8 @@ const ProfileEditPage = () => {
       </div>
     );
   }
+
+  if (!user) return null;
 
   if (user && !user.emailVerified) return null;
 
