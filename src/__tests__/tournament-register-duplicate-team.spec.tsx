@@ -2,14 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
-// Polyfill CSS.escape used by @react-aria
-if (!(globalThis as any).CSS) {
-  (globalThis as any).CSS = {};
-}
-if (!(globalThis as any).CSS.escape) {
-  (globalThis as any).CSS.escape = (s: string) => s;
-}
-
 // Mock hooks and APIs
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));
@@ -112,11 +104,12 @@ describe("TournamentRegister duplicate teammate detection", () => {
       expect(fetchAllRegistrationsMock).toHaveBeenCalled();
     });
 
-    // Change leader slot selection to Player Two (conflicting user)
-    const leaderInput = screen.getByRole("combobox", { name: /team leader/i });
-    // Type to filter, then open suggestions
-    fireEvent.change(leaderInput, { target: { value: "Player Two" } });
-    fireEvent.keyDown(leaderInput, { key: "ArrowDown" });
+    // Select Player Two (conflicting user) as teammate
+    const teammate2Input = await screen.findByRole("combobox", {
+      name: /teammate 2/i,
+    });
+    fireEvent.change(teammate2Input, { target: { value: "Player Two" } });
+    fireEvent.keyDown(teammate2Input, { key: "ArrowDown" });
     const p2Option = await screen.findByRole("option", { name: "Player Two" });
     fireEvent.click(p2Option);
 

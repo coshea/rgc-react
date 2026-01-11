@@ -19,11 +19,6 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: vi.fn(() => () => {}),
 }));
 
-// Polyfill CSS.escape for HeroUI Select (react-aria)
-if (!(globalThis as any).CSS) (globalThis as any).CSS = {};
-if (!(globalThis as any).CSS.escape)
-  (globalThis as any).CSS.escape = (s: string) => s;
-
 // Mock router params & navigation
 vi.mock("react-router-dom", () => ({
   useParams: () => ({ firestoreId: "tFull" }),
@@ -38,9 +33,9 @@ vi.mock("@/config/firebase", () => ({
 
 // Tournaments API mocks
 vi.mock("@/api/tournaments", async (importOriginal) => {
-  const original = await importOriginal();
+  const original = await importOriginal<typeof import("@/api/tournaments")>();
   return {
-    ...(original as any),
+    ...original,
     fetchTournament: vi.fn(async () => ({
       firestoreId: "tFull",
       title: "Full Member Test",

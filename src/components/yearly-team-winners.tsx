@@ -51,13 +51,13 @@ export function YearlyTeamWinners({ year }: Props) {
             const existing = map.get(key);
             const groupKey = g?.id || g?.label || String(g?.order ?? "group");
             const entryKey = [
-              (t as any).firestoreId || "unknown",
+              t.firestoreId || "unknown",
               groupKey,
               String(w.place ?? ""),
               userIds.join(","),
             ].join("|");
             const entry = {
-              tournamentId: (t as any).firestoreId || "unknown",
+              tournamentId: t.firestoreId || "unknown",
               entryKey,
               title: t.title,
               date: t.date instanceof Date ? t.date : new Date(t.date),

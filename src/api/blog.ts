@@ -147,12 +147,24 @@ export async function createBlogPost(
 // Update an existing blog post
 export async function updateBlogPost(
   id: string,
-  updates: Partial<BlogPost>
+  updates: Partial<
+    Omit<BlogPost, "createdAt" | "updatedAt" | "publishedAt">
+  > & {
+    createdAt?: BlogPost["createdAt"] | FieldValue;
+    updatedAt?: BlogPost["updatedAt"] | FieldValue;
+    publishedAt?: BlogPost["publishedAt"] | FieldValue;
+  }
 ): Promise<void> {
   const docRef = doc(db, BLOG_COLLECTION, id);
-  const updateData: Partial<Omit<BlogPost, "updatedAt">> & {
+  type BlogPostUpdatePayload = Partial<
+    Omit<BlogPost, "id" | "createdAt" | "updatedAt" | "publishedAt">
+  > & {
+    createdAt?: BlogPost["createdAt"] | FieldValue;
+    publishedAt?: BlogPost["publishedAt"] | FieldValue;
     updatedAt: FieldValue;
-  } = {
+  };
+
+  const updateData: BlogPostUpdatePayload = {
     ...updates,
     updatedAt: serverTimestamp(),
   };
@@ -175,7 +187,7 @@ export async function deleteBlogPost(id: string): Promise<void> {
 export async function publishBlogPost(id: string): Promise<void> {
   await updateBlogPost(id, {
     status: BlogPostStatus.Published,
-    publishedAt: serverTimestamp() as any,
+    publishedAt: serverTimestamp(),
   });
 }
 

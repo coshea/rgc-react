@@ -178,9 +178,17 @@ const TournamentRegister: React.FC = () => {
         const existing = await api.fetchUserRegistration(firestoreId, user.uid);
         if (existing) {
           setRegistrationId(existing.id);
-          if (Array.isArray(existing.team) && existing.team.length > 0) {
-            const ids = existing.team.map((m: any) => m.id || "");
-            setTeammates(ids.length ? ids : [""]);
+          const maybeTeam = (existing as Record<string, unknown>).team;
+          if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
+            const ids = maybeTeam.map((m) =>
+              typeof m === "object" && m !== null
+                ? (m as Record<string, unknown>).id
+                : ""
+            );
+            const cleaned = ids
+              .map((id) => (typeof id === "string" ? id : ""))
+              .filter(Boolean);
+            setTeammates(cleaned.length ? cleaned : [""]);
           }
         }
       } catch (err) {
@@ -192,6 +200,31 @@ const TournamentRegister: React.FC = () => {
   }, [firestoreId, user]);
 
   const maxTeamSize = tournament?.players ?? 1;
+  const minTeamSize = maxTeamSize <= 1 ? 1 : 2;
+
+  // Ensure we render at least the minimum number of slots for this tournament.
+  // This keeps the UI aligned with the min team size requirement (e.g., show 2 slots for team events).
+  React.useEffect(() => {
+    if (!tournament) return;
+    setTeammates((prev) => {
+      const next = Array.isArray(prev) ? [...prev] : [""];
+      while (next.length < minTeamSize) next.push("");
+      return next;
+    });
+    // We intentionally key this to tournament/minTeamSize changes only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tournament?.firestoreId, minTeamSize]);
+
+  const selectedCount = teammates.filter(
+    (t) => t && t.trim().length > 0
+  ).length;
+  const effectiveSelectedCount =
+    selectedCount > 0
+      ? selectedCount
+      : user?.uid && users.some((m) => m.id === user.uid)
+        ? 1
+        : 0;
+  const hasMinTeamSize = effectiveSelectedCount >= minTeamSize;
 
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
@@ -258,10 +291,13 @@ const TournamentRegister: React.FC = () => {
     ) {
       selectedIds = [user.uid];
     }
-    if (selectedIds.length === 0) {
+    if (selectedIds.length < minTeamSize) {
       addToast({
         title: "Error",
-        description: "Please select at least one teammate.",
+        description:
+          minTeamSize === 1
+            ? "Please select at least one player."
+            : "Teams must have at least 2 players for this tournament.",
         color: "danger",
       });
       return;
@@ -365,8 +401,13 @@ const TournamentRegister: React.FC = () => {
                 Register for {tournament.title}
               </h2>
               <p className="text-sm text-foreground-500">
-                Maximum teammates: {maxTeamSize}
+                Maximum players: {maxTeamSize}
               </p>
+              {minTeamSize > 1 ? (
+                <p className="text-sm text-foreground-500">
+                  Minimum players: {minTeamSize}
+                </p>
+              ) : null}
               {registrationId ? (
                 <p className="text-sm text-foreground-500 mt-2">
                   You're already registered — update your team below.
@@ -386,6 +427,12 @@ const TournamentRegister: React.FC = () => {
               labels={{ leader: "Team Leader / You" }}
               disabled={!user?.uid}
             />
+
+            {minTeamSize > 1 && !hasMinTeamSize ? (
+              <div className="text-sm text-danger">
+                Add at least one teammate to register.
+              </div>
+            ) : null}
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
 
@@ -425,7 +472,11 @@ const TournamentRegister: React.FC = () => {
                     className="w-full"
                     type="submit"
                     color="primary"
-                    isDisabled={submitting || !user?.uid}
+                    isDisabled={
+                      submitting ||
+                      !user?.uid ||
+                      (minTeamSize > 1 && !hasMinTeamSize)
+                    }
                   >
                     {submitting
                       ? registrationId

@@ -38,9 +38,9 @@ vi.mock("@/config/firebase", () => ({
 
 // API mocks for tournaments
 vi.mock("@/api/tournaments", async (importOriginal) => {
-  const original = await importOriginal();
+  const original = await importOriginal<typeof import("@/api/tournaments")>();
   return {
-    ...(original as any),
+    ...original,
     fetchTournament: vi.fn(async () => ({
       firestoreId: "t1",
       title: "Member Only Event",

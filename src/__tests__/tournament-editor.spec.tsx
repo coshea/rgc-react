@@ -157,7 +157,7 @@ describe("TournamentEditor - edit mode", () => {
       date: new Date(),
       tee: "Blue",
       firestoreId: "abc123",
-    } as any;
+    };
     const onSave = vi.fn();
     const qc = new QueryClient();
     render(
@@ -205,14 +205,14 @@ describe("TournamentEditor - winners validation", () => {
               place: 1,
               prizeAmount: 20,
               competitors: [{ userId: "u1", displayName: "User 1" }],
-            } as any,
+            },
           ],
-        } as any,
+        },
       ],
       date: new Date(),
       tee: "Red",
       firestoreId: "zzz",
-    } as any;
+    };
     const qc = new QueryClient();
     render(
       <QueryClientProvider client={qc}>

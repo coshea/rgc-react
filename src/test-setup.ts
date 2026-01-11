@@ -3,14 +3,19 @@ import React from "react";
 import { vi, afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
+// Polyfill CSS.escape used by @react-aria in jsdom
+vi.stubGlobal("CSS", { escape: (s: string) => s });
+
 // Mock @iconify/react with a lightweight functional component that does not schedule timers.
 vi.mock("@iconify/react", () => {
-  const Icon = (props: any) =>
+  type IconProps = { icon?: string; className?: string };
+  const Icon: React.FC<IconProps> = (props) =>
     React.createElement("span", {
       "data-icon": props.icon || "mock-icon",
       className: props.className || "",
     });
-  return { Icon, default: Icon } as any;
+
+  return { Icon, default: Icon };
 });
 
 // Cleanup after each test to prevent memory leaks and unhandled promises

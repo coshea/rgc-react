@@ -19,6 +19,6 @@ describe("Board Roles", () => {
     }
     expect(isAllowedBoardRole("Secretary")).toBe(false);
     expect(isAllowedBoardRole("")).toBe(false);
-    expect(isAllowedBoardRole(undefined as any)).toBe(false);
+    expect(isAllowedBoardRole(undefined as unknown as string)).toBe(false);
   });
 });

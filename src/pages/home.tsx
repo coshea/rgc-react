@@ -9,9 +9,14 @@ export default function HomePage() {
   const location = useLocation();
 
   useEffect(() => {
-    const state: any = (location && (location as any).state) || {};
-    if (state?.scrollTo) {
-      const el = document.getElementById(state.scrollTo);
+    const state = location.state;
+    const scrollTo =
+      state && typeof state === "object" && "scrollTo" in state
+        ? (state as { scrollTo?: unknown }).scrollTo
+        : undefined;
+
+    if (typeof scrollTo === "string" && scrollTo) {
+      const el = document.getElementById(scrollTo);
       if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }, [location]);

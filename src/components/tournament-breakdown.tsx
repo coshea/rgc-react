@@ -21,6 +21,8 @@ import { getPlaceMeta } from "@/utils/placeMeta";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
+import type { Tournament } from "@/types/tournament";
+import type { WinnerGroup } from "@/types/winner";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
 
@@ -39,7 +41,7 @@ interface ResultRow {
 }
 
 interface TournamentBundle {
-  tournament: any;
+  tournament: Tournament;
   rows: ResultRow[]; // legacy per-player rows (kept for internal use)
   winnersCount: number;
   podium: ResultRow[]; // first 3 distinct position entries
@@ -65,7 +67,7 @@ export function TournamentBreakdown({ year }: Props) {
   const tournamentBundles: TournamentBundle[] = useMemo(() => {
     return tournaments
       .filter((t) => {
-        const hasGroups = (t as any).winnerGroups?.length > 0;
+        const hasGroups = (t.winnerGroups?.length ?? 0) > 0;
         return hasGroups;
       })
       .map((t) => {
@@ -89,17 +91,7 @@ export function TournamentBreakdown({ year }: Props) {
           const parts = comps.map((c) => c.userId || c.displayName).sort();
           return parts.join("_");
         };
-        const groups = (t as any).winnerGroups as
-          | Array<{
-              type: string;
-              winners?: Array<{
-                place: number;
-                competitors?: Array<{ userId: string; displayName: string }>;
-                prizeAmount?: number;
-                score?: string;
-              }>;
-            }>
-          | undefined;
+        const groups = t.winnerGroups as WinnerGroup[] | undefined;
         if (groups && groups.length > 0) {
           // Prefer 'overall' groups for podium construction; include all for detailed rows
           groups.forEach((g) => {
@@ -318,18 +310,7 @@ export function TournamentBreakdown({ year }: Props) {
           const isOpen = expanded.has(id);
           // Build podium summary: keep teams separate and include all tied groups for first 3 distinct positions
           const podiumGroups: { position: number; players: ResultRow[] }[] = [];
-          const groups = (tournament as any).winnerGroups as
-            | Array<{
-                type: string;
-                winners?: Array<{
-                  place: number;
-                  competitors?: Array<{ userId: string; displayName: string }>;
-                  prizeAmount?: number;
-                  score?: string;
-                }>;
-                order?: number;
-              }>
-            | undefined;
+          const groups = tournament.winnerGroups as WinnerGroup[] | undefined;
           if (groups && groups.length > 0) {
             const overall = groups.filter((g) => g.type === "overall");
             const primary =
@@ -704,17 +685,18 @@ export function TournamentBreakdown({ year }: Props) {
                           emptyContent="No results"
                         >
                           {(team) => {
+                            const row =
+                              team as TournamentBundle["teamRows"][number];
                             const rank =
                               bundle.teamRows.findIndex(
-                                (t) => t.teamKey === (team as any).teamKey
+                                (t) => t.teamKey === row.teamKey
                               ) + 1;
-                            const names: string[] = (team as any).names;
-                            const userIds: string[] = (team as any).userIds;
-                            const score: string | undefined = (team as any)
-                              .score;
-                            const totalPrize: number = (team as any).totalPrize;
+                            const names: string[] = row.names;
+                            const userIds: string[] = row.userIds;
+                            const score: string | undefined = row.score;
+                            const totalPrize: number = row.totalPrize;
                             return (
-                              <TableRow key={(team as any).id}>
+                              <TableRow key={row.id}>
                                 <TableCell>
                                   <PlaceIndicator pos={rank} compact />
                                 </TableCell>

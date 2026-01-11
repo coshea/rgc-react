@@ -21,7 +21,7 @@ export interface UserAvatarProps {
   alt?: string; // explicit alt text (falls back to name)
   // Allow passing through typical Avatar props from HeroUI (subset typed loosely to avoid tight coupling)
   isBordered?: boolean;
-  color?: string;
+  color?: React.ComponentProps<typeof Avatar>["color"];
   as?: any;
   onClick?: React.MouseEventHandler<HTMLElement>;
   onPress?: (...args: any[]) => void; // synthetic press handler (map to onClick)
@@ -109,7 +109,7 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         src={resolvedSrc}
         alt={alt || resolvedName}
         isBordered={isBordered}
-        color={color as any}
+        color={color}
         as={as}
         role={finalRole}
         tabIndex={finalTabIndex}

@@ -3,13 +3,6 @@ import { render, screen, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 // --- Mocks (must be declared before importing component) ---
-// Polyfill CSS.escape used by @react-aria in Select internals (jsdom lacks it)
-if (!(globalThis as any).CSS) {
-  (globalThis as any).CSS = {};
-}
-if (!(globalThis as any).CSS.escape) {
-  (globalThis as any).CSS.escape = (s: string) => s;
-}
 vi.mock("@/hooks/useUsers", () => {
   let usersState = [
     { id: "u1", displayName: "Alpha", membershipType: "full" },
@@ -25,9 +18,9 @@ vi.mock("@/hooks/useUsers", () => {
 });
 
 vi.mock("@/api/tournaments", async (importOriginal) => {
-  const original = await importOriginal();
+  const original = await importOriginal<typeof import("@/api/tournaments")>();
   return {
-    ...(original as any),
+    ...original,
     fetchTournament: vi.fn(async () => ({
       firestoreId: "t1",
       title: "Test Tournament",
@@ -79,7 +72,9 @@ vi.mock("@/providers/AuthProvider", () => ({
 import TournamentRegister from "@/pages/tournament-register";
 // Access mock helper (not in real module types)
 import * as UsersHookModule from "@/hooks/useUsers";
-const { __setMockUsers } = UsersHookModule as any;
+const { __setMockUsers } = UsersHookModule as unknown as {
+  __setMockUsers: (u: Array<unknown>) => void;
+};
 
 describe("TournamentRegister teammate selection sanitization", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;

@@ -113,7 +113,7 @@ export function useUserTournamentWins(userId: string | undefined) {
           date: dateObj,
         } as unknown as Tournament & { firestoreId: string };
 
-        const groups = (data as any).winnerGroups as
+        const groups = (data as { winnerGroups?: unknown }).winnerGroups as
           | Array<{
               winners?: Array<{
                 place: number;

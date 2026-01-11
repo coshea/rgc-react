@@ -29,9 +29,8 @@ vi.mock("@/providers/AuthProvider", () => ({
 }));
 
 // Mock HeroUI components that aren't essential to the test logic.
-vi.mock("@heroui/react", async (orig) => {
-  const actual: any =
-    (await (orig as any).importActual?.("@heroui/react")) || {};
+vi.mock("@heroui/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@heroui/react")>();
   // Provide light stubs for only what we exercise; if real components exist they will be used.
   return {
     ...actual,
@@ -91,15 +90,18 @@ vi.mock("@/components/theme-switch", () => ({ ThemeSwitch: () => <div /> }));
 beforeAll(() => {
   if (!window.matchMedia) {
     // minimal mock
-    (window as any).matchMedia = (query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }),
     });
   }
 });

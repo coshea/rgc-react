@@ -101,18 +101,37 @@ service cloud.firestore {
       // tournaments/{tournamentId}/registrations/{registrationId}
       // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
       match /registrations/{registrationId} {
+        function tournamentAllowsRegistration(t) {
+          // Newer client logic relies on explicit status (see getStatus()).
+          // Keep legacy support for boolean registrationOpen.
+          return (('status' in t) && (t.status == 'Registration Open' || t.status == 'Open'))
+            || (('registrationOpen' in t) && t.registrationOpen == true);
+        }
+
+        function teamSizeValid(team, t) {
+          return team is list
+            && team.size() > 0
+            // Cap size when players is configured.
+            && ( !(t.players is number) || team.size() <= t.players )
+            // Disallow solo teams for tournaments with players > 1.
+            && ( !(t.players is number) || t.players <= 1 || team.size() >= 2 );
+        }
+
         // Create:
         // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
         // - Admins: may create regardless of registrationOpen; ownerId can be "__admin__" or their own uid.
         allow create: if request.auth != null
-          && request.resource.data.team is list
-          && request.resource.data.team.size() > 0
-          && ( !(get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players is int)
-               || request.resource.data.team.size() <= get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.players )
+          && request.resource.data.ownerId is string
+          && teamSizeValid(
+            request.resource.data.team,
+            get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
+          )
           && (
             (
               request.auth.uid == request.resource.data.ownerId &&
-              get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.registrationOpen == true
+              tournamentAllowsRegistration(
+                get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
+              )
             )
             || (
               isAdmin() && (
