@@ -36,16 +36,15 @@ beforeEach(() => {
 });
 
 function switchMode(labelRegex: RegExp) {
-  // Try radio role first
-  const radios = screen.queryAllByRole("radio", { name: labelRegex });
-  if (radios.length > 0) {
-    fireEvent.click(radios[0]);
+  // New UI uses pressable Cards with role="button" and an aria-label
+  const buttons = screen.queryAllByRole("button", { name: labelRegex });
+  if (buttons.length > 0) {
+    fireEvent.click(buttons[0]);
     return;
   }
-  // fallback: find all matching text nodes, click closest label parent
+  // fallback: click a heading/text node
   const matches = screen.getAllByText(labelRegex);
-  const target = matches.find((el) => el.closest("label"));
-  if (target) fireEvent.click(target.closest("label")!);
+  fireEvent.click(matches[0]);
 }
 
 describe("MembershipPage - new member validation", () => {
@@ -88,7 +87,7 @@ describe("MembershipPage - new member validation", () => {
 describe("MembershipPage - donation only", () => {
   it("requires donation amount", async () => {
     render(<MembershipPage />);
-    switchMode(/Donation Only/i);
+    switchMode(/Select Donation Only/i);
     fireEvent.click(screen.getByRole("button", { name: /^Donate$/i }));
     await waitFor(() => {
       expect(screen.getByText(/Enter an amount/i)).toBeInTheDocument();
@@ -98,7 +97,7 @@ describe("MembershipPage - donation only", () => {
 
   it("validates positive donation amount", async () => {
     render(<MembershipPage />);
-    switchMode(/Donation Only/i);
+    switchMode(/Select Donation Only/i);
     const input = screen.getByLabelText(/Donation Amount/i);
     fireEvent.change(input, { target: { value: "-10" } });
     fireEvent.click(screen.getByRole("button", { name: /^Donate$/i }));
@@ -109,7 +108,7 @@ describe("MembershipPage - donation only", () => {
 
   it("submits valid donation", async () => {
     render(<MembershipPage />);
-    switchMode(/Donation Only/i);
+    switchMode(/Select Donation Only/i);
     const input = screen.getByLabelText(/Donation Amount/i);
     fireEvent.change(input, { target: { value: "150" } });
     fireEvent.click(screen.getByRole("button", { name: /Donate \$150\.00/i }));
@@ -123,7 +122,7 @@ describe("MembershipPage - donation only", () => {
 describe("MembershipPage - renewal", () => {
   it("allows renewal without donation", async () => {
     render(<MembershipPage />);
-    switchMode(/Renew \(\$/i);
+    switchMode(/Select Renew Membership/i);
     const renewButton = screen.getByRole("button", { name: /Renew \$/i });
     fireEvent.click(renewButton);
     await waitFor(() => {
@@ -136,7 +135,7 @@ describe("MembershipPage - renewal", () => {
 
   it("allows renewal with optional donation", async () => {
     render(<MembershipPage />);
-    switchMode(/Renew \(\$/i);
+    switchMode(/Select Renew Membership/i);
     const optionalDonation = screen.getByLabelText(/Optional Donation/i);
     fireEvent.change(optionalDonation, { target: { value: "25" } });
     fireEvent.click(screen.getByRole("button", { name: /Renew \$/i }));
@@ -158,12 +157,12 @@ describe("MembershipPage - reset behavior", () => {
     fireEvent.change(screen.getByLabelText(/^Email$/i), {
       target: { value: "temp@example.com" },
     });
-    switchMode(/Renew \(\$/i);
+    switchMode(/Select Renew Membership/i);
     const optionalDonation = screen.getByLabelText(/Optional Donation/i);
     fireEvent.change(optionalDonation, { target: { value: "40" } });
     fireEvent.click(screen.getByRole("button", { name: /Reset/i }));
     // Switch back to new mode to inspect form fields state
-    switchMode(/New Member/i);
+    switchMode(/Select New Member/i);
     expect(
       (screen.getByLabelText(/Full Name/i) as HTMLInputElement).value
     ).toBe("");
@@ -187,7 +186,7 @@ describe("MembershipPage - dynamic donation labels & handicap", () => {
       target: { value: "1 Test Way" },
     });
     // Add donation via switching to renew not required; donation for new member currently only supported implicitly if we add donation input (not present). So switch to renew to test dynamic then back? Simpler: Use renew flow since it has donation field.
-    switchMode(/Renew/);
+    switchMode(/Select Renew Membership/i);
     const donationInput = screen.getByLabelText(/Optional Donation/i);
     fireEvent.change(donationInput, { target: { value: "15" } });
     // Button label should reflect 100 + 15 = 115
@@ -203,7 +202,7 @@ describe("MembershipPage - dynamic donation labels & handicap", () => {
 
   it("handles handicap-only flow with donation", async () => {
     render(<MembershipPage />);
-    switchMode(/Handicap Only/);
+    switchMode(/Select Handicap Only/i);
     const donationInput = screen.getByLabelText(/Optional Donation/i);
     fireEvent.change(donationInput, { target: { value: "10" } });
     const btn = screen.getByRole("button", { name: /Handicap \$60\.00/i });

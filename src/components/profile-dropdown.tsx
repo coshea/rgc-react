@@ -42,11 +42,11 @@ export const ProfileDropdown = () => {
               />
               {isAdmin && (
                 <span
-                  className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
+                  className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-linear-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
                   aria-label="Admin user"
                   title="Admin"
                 >
-                  <span className="block w-[6px] h-[6px] rounded-full bg-white/90" />
+                  <span className="block w-1.5 h-1.5 rounded-full bg-white/90" />
                 </span>
               )}
             </div>

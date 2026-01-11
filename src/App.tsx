@@ -21,6 +21,7 @@ import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
 import MembershipPage from "@/pages/membership";
+import MembershipPaymentsV2Page from "@/pages/membership-v2";
 import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
@@ -89,6 +90,10 @@ function App() {
             path="/tournaments/:firestoreId/register"
           />
           <Route element={<MembershipPage />} path="/membership" />
+          <Route
+            element={<MembershipPaymentsV2Page />}
+            path={siteConfig.pages.membershipV2.link}
+          />
           <Route
             element={<MembershipDirectoryPage />}
             path="/membership/member-directory"

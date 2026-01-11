@@ -42,8 +42,8 @@ export function ChampionshipCard({
     <Card
       className={`w-full transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
         isClubChampion
-          ? "border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10"
-          : "bg-gradient-to-br from-content1 to-content2/50 hover:bg-gradient-to-br hover:from-content1 hover:to-content2"
+          ? "border-2 border-primary bg-linear-to-brrom-primary/5 to-primary/10"
+          : "bg-linear-to-br from-content1 to-content2/50 hover:bg-linear-to-br hover:from-content1 hover:to-content2"
       }`}
       shadow={isClubChampion ? "lg" : "md"}
     >
@@ -91,7 +91,7 @@ export function ChampionshipCard({
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md hover:shadow-lg transition-all duration-200"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <UserAvatar
                     user={winnerUser}
@@ -129,7 +129,7 @@ export function ChampionshipCard({
               );
             })
           ) : (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md">
               <UserAvatar
                 src={undefined}
                 name="Unknown Champion"
@@ -166,7 +166,7 @@ export function ChampionshipCard({
                 return (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-slate-50 to-stone-50 dark:from-slate-950/30 dark:to-stone-950/30 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-slate-50 to-stone-50 dark:from-slate-950/30 dark:to-stone-950/30 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <UserAvatar
                       user={runnerUpUser}
@@ -239,16 +239,16 @@ export function ChampionshipYearGroup({
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3">
-        <div className="w-1 h-8 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
+        <div className="w-1 h-8 bg-linear-to-b from-primary to-primary/50 rounded-full"></div>
         <Chip
           size="lg"
           variant="solid"
           color="primary"
-          className="text-lg font-bold px-6 py-2 bg-gradient-to-r from-primary to-primary/80"
+          className="text-lg font-bold px-6 py-2 bg-linear-to-r from-primary to-primary/80"
         >
           {year}
         </Chip>
-        <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent"></div>
+        <div className="flex-1 h-px bg-linear-to-r from-primary/20 to-transparent"></div>
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pb-6">
@@ -302,7 +302,7 @@ export function ChampionshipsList({
   if (years.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-default-100 to-default-200 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
           <Icon icon="lucide:trophy" className="w-8 h-8 text-default-400" />
         </div>
         <h3 className="text-lg font-semibold text-default-600 mb-2">
