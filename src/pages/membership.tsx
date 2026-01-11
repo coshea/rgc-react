@@ -243,7 +243,16 @@ export default function MembershipPage() {
             <RadioGroup
               orientation="horizontal"
               value={mode}
-              onValueChange={(v) => setMode(v as any)}
+              onValueChange={(v) => {
+                if (
+                  v === "new" ||
+                  v === "renew" ||
+                  v === "donate" ||
+                  v === "handicap"
+                ) {
+                  setMode(v);
+                }
+              }}
               aria-label="Choose membership action"
               className="flex flex-wrap gap-4"
             >

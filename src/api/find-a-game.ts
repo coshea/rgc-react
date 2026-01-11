@@ -112,7 +112,7 @@ export async function onPostsForDate(
     q,
     (snap) => {
       const rows: FindAGamePost[] = snap.docs.map((d) => {
-        const data = d.data() as any;
+        const data = d.data();
         return {
           id: d.id,
           type: data.type,
@@ -150,7 +150,7 @@ export async function onFuturePosts(
     q,
     (snap) => {
       const rows: FindAGamePost[] = snap.docs.map((d) => {
-        const data = d.data() as any;
+        const data = d.data();
         return {
           id: d.id,
           type: data.type,
@@ -176,7 +176,7 @@ export async function updatePartnerPost(id: string, updates: UpdatePostInput) {
   const ref = doc(db, "findAGame", id);
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error("Post not found");
-  const data = snap.data() as any;
+  const data = snap.data();
   const ownerId = data.ownerId as string | undefined;
   const admin = await isAdminUser(user.uid);
   if (user.uid !== ownerId && !admin)
@@ -232,7 +232,7 @@ export async function deletePartnerPost(id: string) {
   const ref = doc(db, "findAGame", id);
   const snap = await getDoc(ref);
   if (!snap.exists()) return; // already gone
-  const data = snap.data() as any;
+  const data = snap.data();
   const ownerId = data.ownerId as string | undefined;
   const admin = await isAdminUser(user.uid);
   if (user.uid !== ownerId && !admin)

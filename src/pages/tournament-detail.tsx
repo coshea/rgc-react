@@ -100,7 +100,7 @@ const TournamentDetailPage: React.FC = () => {
           navigate("/tournaments");
           return;
         }
-        setTournament(mapTournamentDoc(snap) as any);
+        setTournament(mapTournamentDoc(snap));
         setLoading(false);
       },
       (err) => {
@@ -122,10 +122,10 @@ const TournamentDetailPage: React.FC = () => {
     const unsub = onTournamentRegistrations(
       firestoreId,
       (snap: any) => {
-        const list: RegistrationDoc[] = snap.docs.map((d: any) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
+        const list: RegistrationDoc[] = snap.docs.map((d: any) => {
+          const data = d.data() as unknown as Omit<RegistrationDoc, "id">;
+          return { id: d.id, ...data };
+        });
         setRegistrations(list);
         setRegsLoading(false);
       },
@@ -173,15 +173,14 @@ const TournamentDetailPage: React.FC = () => {
     if (!previousTournament) return null;
 
     // Check for grouped winners
-    if ((previousTournament as any)?.winnerGroups?.length) {
-      const overallGroup = (previousTournament as any).winnerGroups.find(
-        (g: any) => g.type === "overall"
-      );
+    const groups = previousTournament.winnerGroups;
+    if (groups?.length) {
+      const overallGroup = groups.find((g) => g.type === "overall");
       if (overallGroup?.winners?.length) {
-        const firstPlace = overallGroup.winners.find((w: any) => w.place === 1);
+        const firstPlace = overallGroup.winners.find((w) => w.place === 1);
         if (firstPlace?.competitors?.length) {
           return {
-            competitors: firstPlace.competitors.map((c: any) => ({
+            competitors: firstPlace.competitors.map((c) => ({
               id: c.userId,
               name: c.displayName || "Unknown",
             })),
@@ -549,7 +548,7 @@ const TournamentDetailPage: React.FC = () => {
                         <p className="font-medium">Tee</p>
                         <p>
                           <TeeBadge
-                            tee={tournament.tee as any}
+                            tee={tournament.tee || "Mixed"}
                             size="xs"
                             ariaLabel={`Tournament tee: ${tournament.tee || "Mixed"}`}
                           />
@@ -768,9 +767,7 @@ const TournamentDetailPage: React.FC = () => {
               </CardHeader>
               <Divider />
               <CardBody className="pt-4">
-                <GroupedWinners
-                  groups={(tournament as any).winnerGroups || []}
-                />
+                <GroupedWinners groups={tournament.winnerGroups || []} />
               </CardBody>
             </Card>
           </div>

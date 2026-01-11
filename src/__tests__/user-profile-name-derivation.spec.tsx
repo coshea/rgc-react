@@ -35,7 +35,7 @@ describe("useUserProfile name derivation", () => {
           lastName: "Wonder",
           email: "a@example.com",
         },
-      } as any);
+      });
     });
     // Ensure save was called with computed displayName
     const savedArgs = saveUserProfileMock.mock.calls[0][1];
@@ -49,7 +49,7 @@ describe("useUserProfile name derivation", () => {
     await act(async () => {
       await result.current.save({
         data: { displayName: "Solo Name", email: "s@example.com" },
-      } as any);
+      });
     });
     const savedArgs = saveUserProfileMock.mock.calls[0][1];
     expect(savedArgs.displayName).toBe("Solo Name");

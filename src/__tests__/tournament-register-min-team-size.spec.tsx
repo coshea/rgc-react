@@ -5,14 +5,6 @@ import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
 import { TournamentStatus } from "@/types/tournament";
 
-// Polyfill CSS.escape used by @react-aria
-if (!(globalThis as any).CSS) {
-  (globalThis as any).CSS = {};
-}
-if (!(globalThis as any).CSS.escape) {
-  (globalThis as any).CSS.escape = (s: string) => s;
-}
-
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));
 

@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
+import type { Tournament } from "@/types/tournament";
 
 // Mock auth to enable queries
 vi.mock("@/providers/AuthProvider", () => ({
@@ -134,7 +135,10 @@ const event2 = {
 
 vi.mock("@/hooks/useYearlyTournaments", () => ({
   useYearlyTournaments: () => ({
-    tournaments: [event1 as any, event2 as any],
+    tournaments: [
+      event1 as unknown as Tournament,
+      event2 as unknown as Tournament,
+    ],
     isLoading: false,
   }),
 }));

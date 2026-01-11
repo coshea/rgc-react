@@ -112,9 +112,9 @@ service cloud.firestore {
           return team is list
             && team.size() > 0
             // Cap size when players is configured.
-            && ( !((t.players is int) || (t.players is float)) || team.size() <= t.players )
+            && ( !(t.players is number) || team.size() <= t.players )
             // Disallow solo teams for tournaments with players > 1.
-            && ( !((t.players is int) || (t.players is float)) || t.players <= 1 || team.size() >= 2 );
+            && ( !(t.players is number) || t.players <= 1 || team.size() >= 2 );
         }
 
         // Create:

@@ -165,7 +165,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         {forceEdit ? (
           fillHeight ? (
             <textarea
-              ref={textareaRef as any}
+              ref={textareaRef}
               placeholder={placeholder}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -173,7 +173,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             />
           ) : (
             <Textarea
-              ref={textareaRef as any}
+              ref={textareaRef}
               placeholder={placeholder}
               minRows={minRows}
               value={value}
@@ -184,7 +184,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         ) : !preview ? (
           fillHeight ? (
             <textarea
-              ref={textareaRef as any}
+              ref={textareaRef}
               placeholder={placeholder}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -192,7 +192,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             />
           ) : (
             <Textarea
-              ref={textareaRef as any}
+              ref={textareaRef}
               placeholder={placeholder}
               minRows={minRows}
               value={value}

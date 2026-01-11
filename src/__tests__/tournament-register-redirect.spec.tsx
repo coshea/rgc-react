@@ -23,9 +23,9 @@ const upsertSpy = vi.fn(async (..._args: any[]) => {});
 import { TournamentStatus } from "@/types/tournament";
 
 vi.mock("@/api/tournaments", async (importOriginal) => {
-  const original = await importOriginal();
+  const original = await importOriginal<typeof import("@/api/tournaments")>();
   return {
-    ...(original as any),
+    ...original,
     fetchTournament: vi.fn(async () => ({
       firestoreId: "abc123",
       title: "Fall Classic",

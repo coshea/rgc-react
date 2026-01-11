@@ -18,7 +18,6 @@ import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus, statusText } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
-import type { WinnerGroup } from "@/types/winner";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -96,7 +95,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   // First filter by year if selected
   const yearFilteredTournaments = React.useMemo(() => {
     return tournaments.filter((t) => {
-      const d = t?.date instanceof Date ? t.date : new Date(t?.date as any);
+      const d = t.date;
       return (
         d instanceof Date &&
         !isNaN(d.getTime()) &&
@@ -174,9 +173,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     const status = getStatus(tournament);
     if (status !== TournamentStatus.Completed) return null;
 
-    const groups = (tournament as any).winnerGroups as
-      | WinnerGroup[]
-      | undefined;
+    const groups = tournament.winnerGroups;
 
     if (!groups || groups.length === 0) return null; // skip legacy in summary
 
@@ -268,8 +265,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     return (
       <Card
         key={tournament.firestoreId}
+        isPressable
         className="mb-4 border border-default-200 cursor-pointer hover:bg-content2 transition-colors"
-        onPress={goToDetails as any}
+        onPress={goToDetails}
         role="link"
         aria-label={`View details for ${tournament.title}`}
       >
@@ -285,7 +283,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   {formatDate(tournament.date)}
                 </span>
                 <TeeBadge
-                  tee={tournament.tee}
+                  tee={tournament.tee || "Mixed"}
                   size="xs"
                   ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
                 />
@@ -419,7 +417,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               </Button>
             )}
           </div>
-          <div className="min-w-[8rem]">
+          <div className="min-w-32">
             <Select
               aria-label="Filter by year"
               label="Year"
@@ -529,7 +527,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 <TableCell>
                   <div className="flex items-center">
                     <TeeBadge
-                      tee={tournament.tee as any}
+                      tee={tournament.tee || "Mixed"}
                       size="sm"
                       ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
                     />

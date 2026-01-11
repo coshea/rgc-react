@@ -105,7 +105,7 @@ export async function fetchUserRegistration(tournamentId: string, uid: string) {
   const snaps = await getDocs(q);
   if (snaps.empty) return null;
   const d = snaps.docs[0];
-  return { id: d.id, ...(d.data() as any) };
+  return { id: d.id, ...(d.data() ?? {}) };
 }
 
 export interface RegistrationMember {
@@ -126,7 +126,7 @@ export async function upsertRegistration(
   const base = {
     ...payload,
     registeredAt: serverTimestamp(),
-  } as any;
+  };
   if (registrationId) {
     const ref = doc(
       db,
@@ -161,5 +161,5 @@ export async function deleteRegistration(
 export async function fetchAllRegistrations(tournamentId: string) {
   const colRef = collection(db, "tournaments", tournamentId, "registrations");
   const snaps = await getDocs(colRef);
-  return snaps.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  return snaps.docs.map((d) => ({ id: d.id, ...(d.data() ?? {}) }));
 }

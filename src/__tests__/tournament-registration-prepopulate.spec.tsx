@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
+import type { Tournament } from "@/types/tournament";
+import { TournamentStatus } from "@/types/tournament";
 
 // Start with a clean module registry so we can control mocks for this test file
 vi.resetModules();
@@ -102,15 +104,13 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
       title: "Test",
       description: "desc",
       players: 2,
-      completed: false,
-      canceled: false,
       prizePool: 0,
-      winners: [],
-      registrationOpen: true,
+      status: TournamentStatus.Open,
+      winnerGroups: [],
       date: new Date(),
       tee: "Blue",
       firestoreId: "t1",
-    } as any;
+    } satisfies Tournament;
 
     const qc = new QueryClient();
     render(

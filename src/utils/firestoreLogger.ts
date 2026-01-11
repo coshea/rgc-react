@@ -12,7 +12,7 @@ const PREFIX = "[FS]";
 function normError(err: unknown) {
   if (!err) return undefined;
   if (err instanceof Error) {
-    const anyErr: any = err as any;
+    const anyErr = err as Error & { code?: unknown; details?: unknown };
     return {
       message: err.message,
       name: err.name,
@@ -21,7 +21,8 @@ function normError(err: unknown) {
       details: anyErr.details,
     };
   }
-  if (typeof err === "object") return { ...(err as any) };
+  if (typeof err === "object" && err !== null)
+    return { ...(err as Record<string, unknown>) };
   return { value: String(err) };
 }
 

@@ -2,14 +2,6 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
-// Polyfill CSS.escape used by @react-aria
-if (!(globalThis as any).CSS) {
-  (globalThis as any).CSS = {};
-}
-if (!(globalThis as any).CSS.escape) {
-  (globalThis as any).CSS.escape = (s: string) => s;
-}
-
 // Mock hooks and APIs
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));

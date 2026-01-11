@@ -29,6 +29,7 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { computeTotalPayout } from "@/utils/winners";
+import type { DocumentData } from "firebase/firestore";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -57,20 +58,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
   const [completed, setCompleted] = React.useState(
-    getStatus(seed as any) === TournamentStatus.Completed ||
-      getStatus(seed as any) === TournamentStatus.InProgress
+    getStatus(seed) === TournamentStatus.Completed ||
+      getStatus(seed) === TournamentStatus.InProgress
   );
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winnerGroups, setWinnerGroups] = React.useState<
     import("@/types/winner").WinnerGroup[]
-  >(
-    isEditing && (tournament as any)?.winnerGroups
-      ? (tournament as any).winnerGroups
-      : []
-  );
-  const [status, setStatus] = React.useState<TournamentStatus>(
-    getStatus(seed as any)
-  );
+  >(tournament?.winnerGroups ?? []);
+  const [status, setStatus] = React.useState<TournamentStatus>(getStatus(seed));
   type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
   const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
   function isTeeColor(value: any): value is TeeColor {
@@ -224,7 +219,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         }),
       }));
 
-      const tournamentData: Partial<Tournament> = {
+      const tournamentData: DocumentData = {
         title,
         description,
         detailsMarkdown,
@@ -239,39 +234,40 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
       // Add weather if it has a value, or use deleteField() to clear it on updates
       if (weather) {
-        (tournamentData as any).weather = weather;
+        tournamentData.weather = weather;
       } else if (tournament && tournament.firestoreId) {
         // For updates: explicitly delete the field if it was cleared
-        (tournamentData as any).weather = deleteField();
+        tournamentData.weather = deleteField();
       }
 
       // Add previousTournamentId if it has a value, or use deleteField() to clear it on updates
       if (previousTournamentId) {
-        (tournamentData as any).previousTournamentId = previousTournamentId;
+        tournamentData.previousTournamentId = previousTournamentId;
       } else if (tournament && tournament.firestoreId) {
         // For updates: explicitly delete the field if it was cleared
-        (tournamentData as any).previousTournamentId = deleteField();
+        tournamentData.previousTournamentId = deleteField();
       }
 
       const colRef = collection(db, "tournaments");
       let createdDocRef: any = null;
       if (tournament && tournament.firestoreId) {
         const docRef = doc(db, "tournaments", tournament.firestoreId);
-        await updateDoc(docRef, tournamentData as any);
+        await updateDoc(docRef, tournamentData);
       } else {
-        createdDocRef = await addDoc(colRef, tournamentData as any);
+        createdDocRef = await addDoc(colRef, tournamentData);
       }
       const savedTournament: Tournament = {
-        title: tournamentData.title as string,
-        description: tournamentData.description as string,
-        detailsMarkdown: tournamentData.detailsMarkdown,
-        players: tournamentData.players as number,
-        status: tournamentData.status as TournamentStatus,
-        prizePool: tournamentData.prizePool as number,
-        winnerGroups: (tournamentData as any).winnerGroups || [],
-        date: tournamentData.date as Date,
-        tee: tournamentData.tee as any,
-        previousTournamentId: tournamentData.previousTournamentId,
+        title,
+        description,
+        detailsMarkdown,
+        players,
+        status,
+        prizePool,
+        winnerGroups: sanitizedGroups,
+        date: date ? new Date(date.toString()) : new Date(),
+        tee,
+        previousTournamentId: previousTournamentId || undefined,
+        weather: weather || undefined,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -310,10 +306,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         // Users real-time
         const usersCol = collection(db, "users");
         unsubUsers = onSnapshot(usersCol, (snap) => {
-          const list: User[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as any),
-          })) as User[];
+          const list: User[] = snap.docs.map((d) => {
+            const data = d.data() as unknown as Omit<User, "id">;
+            return { id: d.id, ...data };
+          });
           setAllUsers(list);
         });
         // Registrations real-time ordered by registeredAt
@@ -327,10 +323,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         unsubRegs = onSnapshot(
           qRegs,
           (snap) => {
-            const list = snap.docs.map((d) => ({
-              id: d.id,
-              ...(d.data() as any),
-            }));
+            const list = snap.docs.map((d) => {
+              const data = d.data() as Record<string, unknown>;
+              return { id: d.id, ...data };
+            });
             setRegistrations(list);
             setRegsLoading(false);
           },
@@ -578,7 +574,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 }}
                 onSelectionChange={(keys) => {
                   const val = Array.from(keys)[0] as string;
-                  if (val) setTee(val as any);
+                  if (val && isTeeColor(val)) setTee(val);
                 }}
                 renderValue={(items) => {
                   const val = items[0]?.key as string | undefined;

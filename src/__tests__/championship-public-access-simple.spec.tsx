@@ -65,7 +65,7 @@ vi.mock("@/providers/AuthProvider", () => {
     AuthProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),
     useAuth: () => {
-      const user = (global as any).__TEST_AUTH_USER ?? null;
+      const user = globalThis.__TEST_AUTH_USER ?? null;
       return {
         user,
         userLoggedIn: !!user,
@@ -131,7 +131,7 @@ describe("Championship Public Access Integration", () => {
     mockGetUsers = vi.mocked(usersApi.getUsers);
     mockGetUsers.mockResolvedValue(mockUsers);
     // Reset test auth global
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
     // Clear DOM between runs
     document.body.innerHTML = "";
   });
@@ -144,7 +144,7 @@ describe("Championship Public Access Integration", () => {
 
   it("can render championship card for unauthenticated users", async () => {
     // Ensure unauthenticated
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
 
     const { ChampionshipCard } = await import(
       "@/components/championship-display"
@@ -168,7 +168,7 @@ describe("Championship Public Access Integration", () => {
       email: "test@example.com",
       emailVerified: true,
     };
-    (global as any).__TEST_AUTH_USER = mockUser;
+    globalThis.__TEST_AUTH_USER = mockUser;
 
     const { ChampionshipCard } = await import(
       "@/components/championship-display"
@@ -194,7 +194,7 @@ describe("Championship Public Access Integration", () => {
 
   it("renders past champions page for unauthenticated users", async () => {
     // Ensure unauthenticated
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
 
     const PastChampionsModule = await import("@/pages/past-champions");
     const PastChampions = PastChampionsModule.default;
@@ -213,7 +213,7 @@ describe("Championship Public Access Integration", () => {
 
   it("can test useUsers hook with public access", async () => {
     // Ensure unauthenticated
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
 
     const { useUsers } = await import("@/hooks/useUsers");
     const wrapper = createWrapper();
@@ -231,7 +231,7 @@ describe("Championship Public Access Integration", () => {
 
   it("can test useUsersMap hook returns Map object", async () => {
     // Ensure unauthenticated
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
 
     const { useUsersMap } = await import("@/hooks/useUsers");
     const wrapper = createWrapper();
@@ -255,7 +255,7 @@ describe("Championship Public Access Integration", () => {
     mockGetUsers.mockRejectedValue(new Error("API Error"));
 
     // Ensure unauthenticated
-    (global as any).__TEST_AUTH_USER = null;
+    globalThis.__TEST_AUTH_USER = null;
 
     const { useUsers } = await import("@/hooks/useUsers");
     const wrapper = createWrapper();

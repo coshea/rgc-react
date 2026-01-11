@@ -178,9 +178,17 @@ const TournamentRegister: React.FC = () => {
         const existing = await api.fetchUserRegistration(firestoreId, user.uid);
         if (existing) {
           setRegistrationId(existing.id);
-          if (Array.isArray(existing.team) && existing.team.length > 0) {
-            const ids = existing.team.map((m: any) => m.id || "");
-            setTeammates(ids.length ? ids : [""]);
+          const maybeTeam = (existing as Record<string, unknown>).team;
+          if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
+            const ids = maybeTeam.map((m) =>
+              typeof m === "object" && m !== null
+                ? (m as Record<string, unknown>).id
+                : ""
+            );
+            const cleaned = ids
+              .map((id) => (typeof id === "string" ? id : ""))
+              .filter(Boolean);
+            setTeammates(cleaned.length ? cleaned : [""]);
           }
         }
       } catch (err) {

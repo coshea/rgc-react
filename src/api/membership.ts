@@ -139,7 +139,11 @@ export async function updateMembershipPayment(params: {
     // CREATE path: permit creating either confirmed OR pending record when membershipType provided.
     if (updates.membershipType) {
       const status: MembershipPayment["status"] =
-        (updates.status as any) || "pending";
+        updates.status === "confirmed" ||
+        updates.status === "pending" ||
+        updates.status === "refunded"
+          ? updates.status
+          : "pending";
       const confirmedCreate = status === "confirmed";
       // Build base payload (paidAt only when confirmed)
       const payload: Partial<MembershipPayment> & {
