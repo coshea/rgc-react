@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Input, Button, Spinner } from "@heroui/react";
+import { Card, Input, Button, Spinner, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
@@ -57,6 +57,21 @@ export function ProfileForm({
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
+
+  const membershipTypeChip =
+    userProfile?.membershipType === "full"
+      ? {
+          label: "Full Member",
+          color: "success" as const,
+          icon: "lucide:badge-check",
+        }
+      : userProfile?.membershipType === "handicap"
+        ? {
+            label: "Handicap Only",
+            color: "primary" as const,
+            icon: "lucide:golf",
+          }
+        : null;
 
   // Initialize form data from userProfile hook (simplified single source of truth)
   React.useEffect(() => {
@@ -301,6 +316,21 @@ export function ProfileForm({
           <p className="text-default-500 text-sm">
             Click to upload profile picture
           </p>
+
+          {membershipTypeChip ? (
+            <div className="mt-2 flex justify-center">
+              <Chip
+                size="sm"
+                variant="flat"
+                color={membershipTypeChip.color}
+                startContent={
+                  <Icon icon={membershipTypeChip.icon} className="w-3 h-3" />
+                }
+              >
+                {membershipTypeChip.label}
+              </Chip>
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-4">

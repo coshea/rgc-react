@@ -314,6 +314,33 @@ const UserProfilePage: React.FC = () => {
                       {formatBoardRoleLabel(profileUser.role)}
                     </Chip>
                   )}
+
+                  {profileUser.membershipType === "full" && (
+                    <Chip
+                      color="success"
+                      variant="flat"
+                      size="sm"
+                      startContent={
+                        <Icon icon="lucide:badge-check" className="w-3 h-3" />
+                      }
+                    >
+                      Full Member
+                    </Chip>
+                  )}
+
+                  {profileUser.membershipType === "handicap" && (
+                    <Chip
+                      color="primary"
+                      variant="flat"
+                      size="sm"
+                      startContent={
+                        <Icon icon="lucide:golf" className="w-3 h-3" />
+                      }
+                    >
+                      Handicap Only
+                    </Chip>
+                  )}
+
                   {!championshipsLoading && majorChampionships.length > 0 && (
                     <Chip
                       color="warning"
