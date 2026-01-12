@@ -12,15 +12,15 @@ env:
   # EmailJS Configuration - Secrets stored in Cloud Secret Manager
   # To create secrets, use: gcloud secrets create SECRET_NAME --data-file=-
   # Then paste the value and press Ctrl+D
-  - variable: VITE_EMAILJS_SERVICE_ID
+  - variable: EMAILJS_SERVICE_ID
     secret: emailjs-service-id
     availability:
       - BUILD
-  - variable: VITE_EMAILJS_TEMPLATE_ID
+  - variable: EMAILJS_TEMPLATE_ID
     secret: emailjs-template-id
     availability:
       - BUILD
-  - variable: VITE_EMAILJS_PUBLIC_KEY
+  - variable: EMAILJS_PUBLIC_KEY
     secret: emailjs-public-key
     availability:
       - BUILD

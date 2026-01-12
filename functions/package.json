@@ -1,0 +1,22 @@
+{
+  "name": "rgc-react-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "lint": "echo \"(no functions lint configured)\"",
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

@@ -5,6 +5,7 @@ import {
   PayPalScriptProvider,
   type PayPalButtonsComponentProps,
 } from "@paypal/react-paypal-js";
+import { httpsCallable } from "firebase/functions";
 import {
   Button,
   Card,
@@ -22,6 +23,7 @@ import { Icon } from "@iconify/react";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { functions } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import MinimalRowSteps from "@/components/minimal-row-steps";
 
@@ -92,6 +94,8 @@ export default function MembershipPaymentsFlow({
 }: MembershipPaymentsFlowProps) {
   const currency = formatUSD;
 
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
   const paypalEnvironmentRaw = import.meta.env.VITE_PAYPAL_ENVIRONMENT;
   const paypalEnvironment =
@@ -107,9 +111,20 @@ export default function MembershipPaymentsFlow({
     typeof paypalClientId === "string" &&
     paypalClientId.trim().length > 0;
 
+  const demoPaymentsEnabled = isVitest;
+
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { userProfile, isLoading: loadingUserProfile } = useUserProfile();
+  const {
+    userProfile,
+    isLoading: loadingUserProfile,
+    refetch: refetchUserProfile,
+  } = useUserProfile();
+
+  const isPaidForCurrentYear =
+    !!user && (userProfile?.lastPaidYear ?? 0) >= currentYear;
+
+  const membershipOptionsDisabled = user ? isPaidForCurrentYear : false;
 
   const [step, setStep] = useState<Step>({ kind: "select" });
 
@@ -221,6 +236,11 @@ export default function MembershipPaymentsFlow({
       ? step.amount.toFixed(2)
       : "0.01";
 
+    const customId =
+      user &&
+      (step.purpose === "renew" || step.purpose === "handicap") &&
+      `${user.uid}:${currentYear}:${step.purpose === "renew" ? "full" : "handicap"}:${step.purpose}`;
+
     return actions.order.create({
       intent: "CAPTURE",
       purchase_units: [
@@ -230,13 +250,14 @@ export default function MembershipPaymentsFlow({
             currency_code: paypalCurrency,
             value,
           },
+          ...(customId ? { custom_id: customId } : {}),
         },
       ],
     });
   };
 
   const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
-    _data,
+    data,
     actions
   ) => {
     if (!actions.order) {
@@ -248,6 +269,8 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
+    // Capture first; then record a Firestore payment record via a trusted backend
+    // (Firestore rules restrict memberPayments writes to admins).
     await actions.order.capture();
 
     if (step.kind !== "paypal") {
@@ -287,6 +310,40 @@ export default function MembershipPaymentsFlow({
       color: "success",
     });
 
+    // Record dues payments (renew/handicap) after a successful PayPal capture.
+    // This uses a callable Cloud Function that verifies the PayPal order server-side
+    // and then writes memberPayments/users with admin privileges.
+    if (
+      user &&
+      (step.purpose === "renew" || step.purpose === "handicap") &&
+      data.orderID
+    ) {
+      try {
+        const callable = httpsCallable(
+          functions,
+          "verifyAndRecordPayPalMembershipPayment"
+        );
+        const membershipType = step.purpose === "renew" ? "full" : "handicap";
+        await callable({
+          orderId: data.orderID,
+          year: currentYear,
+          membershipType,
+          purpose: step.purpose,
+        });
+        await refetchUserProfile();
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Unknown recording error";
+        addToast({
+          title: "Payment captured, but not recorded",
+          description:
+            "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt. " +
+            message,
+          color: "danger",
+        });
+      }
+    }
+
     setStep({
       kind: "done",
       title: doneTitleByPurpose[step.purpose],
@@ -305,6 +362,18 @@ export default function MembershipPaymentsFlow({
 
   function selectOption(option: MembershipOption) {
     setErrors({});
+
+    // If a signed-in member has already paid for the current year, prevent
+    // duplicate dues payments and steer them to Donation instead.
+    if (membershipOptionsDisabled && option !== "donation") {
+      addToast({
+        title: "Already paid",
+        description: `Your ${currentYear} payment is already recorded. You can still make a donation.`,
+        color: "success",
+      });
+      return;
+    }
+
     if (option === "renew") {
       if (!user) {
         addToast({
@@ -359,6 +428,15 @@ export default function MembershipPaymentsFlow({
   }
 
   function onPayRenew() {
+    if (isPaidForCurrentYear) {
+      addToast({
+        title: "Already paid",
+        description: `Your annual dues are already recorded for ${currentYear}.`,
+        color: "success",
+      });
+      return;
+    }
+
     if (paypalEnabled) {
       goToPayPalPayment({
         purpose: "renew",
@@ -368,6 +446,23 @@ export default function MembershipPaymentsFlow({
       });
       return;
     }
+
+    if (!demoPaymentsEnabled) {
+      addToast({
+        title: "PayPal not configured",
+        description:
+          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
+        color: "warning",
+      });
+      goToPayPalPayment({
+        purpose: "renew",
+        title: "Annual Club Membership",
+        description: "Annual dues payment",
+        amount: membershipAmountDue,
+      });
+      return;
+    }
+
     addToast({
       title: "Payment Recorded",
       description: `Annual dues payment of ${currency(
@@ -417,6 +512,22 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
+    if (!demoPaymentsEnabled) {
+      addToast({
+        title: "PayPal not configured",
+        description:
+          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
+        color: "warning",
+      });
+      goToPayPalPayment({
+        purpose: "new",
+        title: "Annual Club Membership",
+        description: "New member application dues",
+        amount: membershipAmountDue,
+      });
+      return;
+    }
+
     addToast({
       title: "Application Submitted",
       description: `Application submitted and dues of ${currency(
@@ -454,6 +565,22 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
+    if (!demoPaymentsEnabled) {
+      addToast({
+        title: "PayPal not configured",
+        description:
+          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
+        color: "warning",
+      });
+      goToPayPalPayment({
+        purpose: "handicap",
+        title: "Handicap Membership",
+        description: "Handicap membership fee",
+        amount: handicapFee,
+      });
+      return;
+    }
+
     addToast({
       title: "Payment Recorded",
       description: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
@@ -482,6 +609,22 @@ export default function MembershipPaymentsFlow({
     if (Object.keys(nextErrors).length > 0) return;
 
     if (paypalEnabled) {
+      goToPayPalPayment({
+        purpose: "donation",
+        title: "Donation",
+        description: "Club donation",
+        amount,
+      });
+      return;
+    }
+
+    if (!demoPaymentsEnabled) {
+      addToast({
+        title: "PayPal not configured",
+        description:
+          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
+        color: "warning",
+      });
       goToPayPalPayment({
         purpose: "donation",
         title: "Donation",
@@ -548,6 +691,28 @@ export default function MembershipPaymentsFlow({
 
       <Spacer y={6} />
 
+      {user && isPaidForCurrentYear && step.kind === "select" && (
+        <div className="w-full max-w-4xl">
+          <Alert color="success">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                Your annual dues are already recorded for {currentYear}. Thank
+                you!
+              </div>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => selectOption("donation")}
+              >
+                Make a donation
+              </Button>
+            </div>
+          </Alert>
+          <Spacer y={4} />
+        </div>
+      )}
+
       {step.kind === "select" && (
         <Card className="w-full max-w-4xl" shadow="sm">
           <CardHeader className="flex flex-col gap-1">
@@ -558,11 +723,15 @@ export default function MembershipPaymentsFlow({
           <CardBody>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Card
-                isPressable
+                isPressable={!membershipOptionsDisabled}
                 onPress={() => selectOption("renew")}
                 role="button"
                 aria-label="Renew Membership"
-                className="border border-default-200 hover:bg-content2"
+                className={
+                  membershipOptionsDisabled
+                    ? "border border-default-200 opacity-60"
+                    : "border border-default-200 hover:bg-content2"
+                }
               >
                 <CardBody className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -570,17 +739,23 @@ export default function MembershipPaymentsFlow({
                     <h3 className="font-semibold">Renew Membership</h3>
                   </div>
                   <p className="text-sm text-default-600">
-                    For current members paying annual dues
+                    {membershipOptionsDisabled
+                      ? `Annual dues already paid for ${currentYear}`
+                      : "For current members paying annual dues"}
                   </p>
                 </CardBody>
               </Card>
 
               <Card
-                isPressable
+                isPressable={!membershipOptionsDisabled}
                 onPress={() => selectOption("new")}
                 role="button"
                 aria-label="New Member Application"
-                className="border border-default-200 hover:bg-content2"
+                className={
+                  membershipOptionsDisabled
+                    ? "border border-default-200 opacity-60"
+                    : "border border-default-200 hover:bg-content2"
+                }
               >
                 <CardBody className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -588,17 +763,23 @@ export default function MembershipPaymentsFlow({
                     <h3 className="font-semibold">New Member Application</h3>
                   </div>
                   <p className="text-sm text-default-600">
-                    Apply to join the club
+                    {membershipOptionsDisabled
+                      ? "Unavailable after payment"
+                      : "Apply to join the club"}
                   </p>
                 </CardBody>
               </Card>
 
               <Card
-                isPressable
+                isPressable={!membershipOptionsDisabled}
                 onPress={() => selectOption("handicap")}
                 role="button"
                 aria-label="Handicap Index Only"
-                className="border border-default-200 hover:bg-content2"
+                className={
+                  membershipOptionsDisabled
+                    ? "border border-default-200 opacity-60"
+                    : "border border-default-200 hover:bg-content2"
+                }
               >
                 <CardBody className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -606,7 +787,9 @@ export default function MembershipPaymentsFlow({
                     <h3 className="font-semibold">Handicap Index Only</h3>
                   </div>
                   <p className="text-sm text-default-600">
-                    GHIN handicap without club membership
+                    {membershipOptionsDisabled
+                      ? "Unavailable after payment"
+                      : "GHIN handicap without club membership"}
                   </p>
                 </CardBody>
               </Card>
@@ -690,6 +873,25 @@ export default function MembershipPaymentsFlow({
               {loadingUserProfile ? " (loading profile…)" : ""}
             </div>
 
+            {isPaidForCurrentYear ? (
+              <Alert color="success">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    Your annual dues are already recorded for {currentYear}. You
+                    don't need to pay again.
+                  </div>
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    onPress={() => setStep({ kind: "donation" })}
+                  >
+                    Make a donation
+                  </Button>
+                </div>
+              </Alert>
+            ) : null}
+
             <div className="text-sm text-default-600">Name</div>
             <div className="text-base font-semibold">{membershipFoundName}</div>
 
@@ -705,7 +907,11 @@ export default function MembershipPaymentsFlow({
           </CardBody>
           <Divider />
           <CardFooter className="flex justify-end">
-            <Button color="primary" onPress={onPayRenew}>
+            <Button
+              color="primary"
+              onPress={onPayRenew}
+              isDisabled={isPaidForCurrentYear}
+            >
               {paypalEnabled ? "Continue to PayPal" : "Pay Annual Dues"}
             </Button>
           </CardFooter>
