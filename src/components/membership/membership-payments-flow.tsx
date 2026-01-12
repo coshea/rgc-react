@@ -1,11 +1,17 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  PayPalButtons,
+  PayPalScriptProvider,
+  type PayPalButtonsComponentProps,
+} from "@paypal/react-paypal-js";
+import {
   Button,
   Card,
   CardBody,
   CardFooter,
   CardHeader,
+  Alert,
   Checkbox,
   Divider,
   Input,
@@ -28,6 +34,13 @@ type Step =
   | { kind: "new_apply" }
   | { kind: "handicap" }
   | { kind: "donation" }
+  | {
+      kind: "paypal";
+      purpose: MembershipOption;
+      title: string;
+      description: string;
+      amount: number;
+    }
   | {
       kind: "done";
       title: string;
@@ -79,6 +92,21 @@ export default function MembershipPaymentsFlow({
 }: MembershipPaymentsFlowProps) {
   const currency = formatUSD;
 
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+  const paypalEnvironmentRaw = import.meta.env.VITE_PAYPAL_ENVIRONMENT;
+  const paypalEnvironment =
+    typeof paypalEnvironmentRaw === "string" && paypalEnvironmentRaw.trim()
+      ? paypalEnvironmentRaw.trim().toUpperCase()
+      : "SANDBOX";
+  const showPayPalSandboxNotice = paypalEnvironment === "SANDBOX";
+
+  const paypalCurrency: string = "USD";
+  const isVitest = Boolean(import.meta.env.VITEST);
+  const paypalEnabled =
+    !isVitest &&
+    typeof paypalClientId === "string" &&
+    paypalClientId.trim().length > 0;
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, isLoading: loadingUserProfile } = useUserProfile();
@@ -123,6 +151,7 @@ export default function MembershipPaymentsFlow({
     if (step.kind === "handicap") return 1;
     if (step.kind === "donation") return 1;
     if (step.kind === "renew_confirm") return 2;
+    if (step.kind === "paypal") return 2;
     if (step.kind === "done") return 3;
     return 0;
   }, [step.kind]);
@@ -158,6 +187,121 @@ export default function MembershipPaymentsFlow({
     setStep({ kind: "select" });
     setErrors({});
   }
+
+  function goToPayPalPayment(params: {
+    purpose: MembershipOption;
+    title: string;
+    description: string;
+    amount: number;
+  }) {
+    setErrors({});
+    setStep({ kind: "paypal", ...params });
+  }
+
+  const createPayPalOrder: PayPalButtonsComponentProps["createOrder"] = (
+    _data,
+    actions
+  ) => {
+    if (step.kind !== "paypal") {
+      return actions.order.create({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            description: "Membership payment",
+            amount: {
+              currency_code: paypalCurrency,
+              value: "0.01",
+            },
+          },
+        ],
+      });
+    }
+
+    const value = Number.isFinite(step.amount)
+      ? step.amount.toFixed(2)
+      : "0.01";
+
+    return actions.order.create({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          description: step.title,
+          amount: {
+            currency_code: paypalCurrency,
+            value,
+          },
+        },
+      ],
+    });
+  };
+
+  const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
+    _data,
+    actions
+  ) => {
+    if (!actions.order) {
+      addToast({
+        title: "Payment error",
+        description: "PayPal order actions were unavailable.",
+        color: "danger",
+      });
+      return;
+    }
+
+    await actions.order.capture();
+
+    if (step.kind !== "paypal") {
+      setStep({
+        kind: "done",
+        title: "Payment complete",
+        description: "Payment captured successfully.",
+      });
+      return;
+    }
+
+    const paid = currency(step.amount);
+    const titleByPurpose: Record<MembershipOption, string> = {
+      renew: "Payment Recorded",
+      new: "Application Submitted",
+      handicap: "Payment Recorded",
+      donation: "Thank You",
+    };
+
+    const doneTitleByPurpose: Record<MembershipOption, string> = {
+      renew: "Payment complete",
+      new: "Application submitted",
+      handicap: "Payment complete",
+      donation: "Thank you",
+    };
+
+    const descriptionByPurpose: Record<MembershipOption, string> = {
+      renew: `Annual dues payment of ${paid} captured successfully.`,
+      new: `Application submitted and dues of ${paid} captured successfully.`,
+      handicap: `Handicap fee of ${paid} captured successfully.`,
+      donation: `Donation of ${paid} captured successfully.`,
+    };
+
+    addToast({
+      title: titleByPurpose[step.purpose],
+      description: descriptionByPurpose[step.purpose],
+      color: "success",
+    });
+
+    setStep({
+      kind: "done",
+      title: doneTitleByPurpose[step.purpose],
+      description: descriptionByPurpose[step.purpose],
+    });
+  };
+
+  const onPayPalError: PayPalButtonsComponentProps["onError"] = (err) => {
+    const message = err instanceof Error ? err.message : "Unknown PayPal error";
+    addToast({
+      title: "Payment failed",
+      description: message,
+      color: "danger",
+    });
+  };
 
   function selectOption(option: MembershipOption) {
     setErrors({});
@@ -215,6 +359,15 @@ export default function MembershipPaymentsFlow({
   }
 
   function onPayRenew() {
+    if (paypalEnabled) {
+      goToPayPalPayment({
+        purpose: "renew",
+        title: "Annual Club Membership",
+        description: "Annual dues payment",
+        amount: membershipAmountDue,
+      });
+      return;
+    }
     addToast({
       title: "Payment Recorded",
       description: `Annual dues payment of ${currency(
@@ -254,6 +407,16 @@ export default function MembershipPaymentsFlow({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    if (paypalEnabled) {
+      goToPayPalPayment({
+        purpose: "new",
+        title: "Annual Club Membership",
+        description: "New member application dues",
+        amount: membershipAmountDue,
+      });
+      return;
+    }
+
     addToast({
       title: "Application Submitted",
       description: `Application submitted and dues of ${currency(
@@ -281,6 +444,16 @@ export default function MembershipPaymentsFlow({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    if (paypalEnabled) {
+      goToPayPalPayment({
+        purpose: "handicap",
+        title: "Handicap Membership",
+        description: "Handicap membership fee",
+        amount: handicapFee,
+      });
+      return;
+    }
+
     addToast({
       title: "Payment Recorded",
       description: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
@@ -307,6 +480,16 @@ export default function MembershipPaymentsFlow({
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+
+    if (paypalEnabled) {
+      goToPayPalPayment({
+        purpose: "donation",
+        title: "Donation",
+        description: "Club donation",
+        amount,
+      });
+      return;
+    }
 
     addToast({
       title: "Thank You",
@@ -523,9 +706,64 @@ export default function MembershipPaymentsFlow({
           <Divider />
           <CardFooter className="flex justify-end">
             <Button color="primary" onPress={onPayRenew}>
-              Pay Annual Dues
+              {paypalEnabled ? "Continue to PayPal" : "Pay Annual Dues"}
             </Button>
           </CardFooter>
+        </Card>
+      )}
+
+      {step.kind === "paypal" && (
+        <Card className="w-full max-w-3xl" shadow="sm">
+          <CardHeader className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Step 3: Payment</h2>
+            <Button variant="light" onPress={goToSelect}>
+              Back
+            </Button>
+          </CardHeader>
+          <Divider />
+          <CardBody className="space-y-4">
+            {paypalEnabled && showPayPalSandboxNotice && (
+              <Alert color="warning">
+                PayPal is running in SANDBOX mode. Payments are not live.
+              </Alert>
+            )}
+
+            <div>
+              <div className="text-sm text-default-600">{step.title}</div>
+              <div className="text-base font-semibold">{step.description}</div>
+            </div>
+
+            <div>
+              <div className="text-sm text-default-600">Amount</div>
+              <div className="text-base font-semibold">
+                {currency(step.amount)}
+              </div>
+            </div>
+
+            {paypalEnabled ? (
+              <div className="w-full">
+                <PayPalScriptProvider
+                  options={{
+                    clientId: paypalClientId,
+                    currency: paypalCurrency,
+                    intent: "capture",
+                    disableFunding: "paylater",
+                  }}
+                >
+                  <PayPalButtons
+                    style={{ layout: "vertical" }}
+                    createOrder={createPayPalOrder}
+                    onApprove={onPayPalApprove}
+                    onError={onPayPalError}
+                  />
+                </PayPalScriptProvider>
+              </div>
+            ) : (
+              <div className="text-sm text-default-600">
+                PayPal is not configured (missing `VITE_PAYPAL_CLIENT_ID`).
+              </div>
+            )}
+          </CardBody>
         </Card>
       )}
 
@@ -795,7 +1033,6 @@ export default function MembershipPaymentsFlow({
 
       <Spacer y={8} />
       <div className="w-full max-w-4xl text-center text-sm text-default-500 space-y-2">
-        <div>Payments are processed securely. (Demo UI only)</div>
         <div>For questions, please contact the club directly.</div>
         <div className="italic">
           Thank you for being part of our club community.
