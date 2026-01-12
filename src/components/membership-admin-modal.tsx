@@ -36,7 +36,7 @@ export default function MembershipAdminModal({
       setSettings(newSettings);
       setRegistrationOpen(newSettings.registrationOpen);
       setFullPrice(newSettings.fullMembershipPrice.toString());
-      setSocialPrice(newSettings.socialMembershipPrice.toString());
+      setSocialPrice(newSettings.handicapMembershipPrice.toString());
       setClosedMessage(newSettings.closedMessage || "");
       setLoading(false);
     });
@@ -73,7 +73,7 @@ export default function MembershipAdminModal({
       await updateMembershipSettings({
         registrationOpen,
         fullMembershipPrice: parseFloat(fullPrice),
-        socialMembershipPrice: parseFloat(socialPrice),
+        handicapMembershipPrice: parseFloat(socialPrice),
         closedMessage: closedMessage.trim() || undefined,
       });
 
@@ -100,7 +100,7 @@ export default function MembershipAdminModal({
     if (settings) {
       setRegistrationOpen(settings.registrationOpen);
       setFullPrice(settings.fullMembershipPrice.toString());
-      setSocialPrice(settings.socialMembershipPrice.toString());
+      setSocialPrice(settings.handicapMembershipPrice.toString());
       setClosedMessage(settings.closedMessage || "");
       setErrors({});
     }
@@ -113,7 +113,7 @@ export default function MembershipAdminModal({
     settings &&
     (registrationOpen !== settings.registrationOpen ||
       parseFloat(fullPrice) !== settings.fullMembershipPrice ||
-      parseFloat(socialPrice) !== settings.socialMembershipPrice ||
+      parseFloat(socialPrice) !== settings.handicapMembershipPrice ||
       closedMessage !== (settings.closedMessage || ""));
 
   return (
@@ -224,7 +224,7 @@ export default function MembershipAdminModal({
                     errorMessage={errors.fullPrice}
                   />
                   <Input
-                    label="Social Membership Price"
+                    label="Handicap Index Price"
                     placeholder="50"
                     value={socialPrice}
                     onChange={(e) => {

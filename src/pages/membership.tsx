@@ -9,6 +9,7 @@ import MembershipPaymentsFlow from "@/components/membership/membership-payments-
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 import type { MembershipSettings } from "@/types/membershipSettings";
+import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 
 export default function MembershipPage() {
   const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function MembershipPage() {
   }, []);
 
   const membershipAmountDue = settings?.fullMembershipPrice ?? MEMBERSHIP_FEE;
-  const handicapFee = settings?.socialMembershipPrice ?? HANDICAP_FEE;
+  const handicapFee = settings?.handicapMembershipPrice ?? HANDICAP_FEE;
 
   const showClosedMessage =
     !loadingSettings && settings && !settings.registrationOpen;
@@ -81,8 +82,8 @@ export default function MembershipPage() {
                     Registration Closed
                   </h3>
                   <p className="text-foreground-600 whitespace-pre-line">
-                    {settings.closedMessage ||
-                      "Membership registration is currently closed. Please check back later."}
+                    {settings.closedMessage ??
+                      DEFAULT_MEMBERSHIP_SETTINGS.closedMessage}
                   </p>
                 </div>
               </div>
