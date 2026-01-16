@@ -5,7 +5,6 @@ import {
   PayPalScriptProvider,
   type PayPalButtonsComponentProps,
 } from "@paypal/react-paypal-js";
-import { httpsCallable } from "firebase/functions";
 import {
   Button,
   Card,
@@ -23,9 +22,9 @@ import { Icon } from "@iconify/react";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { functions } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import MinimalRowSteps from "@/components/minimal-row-steps";
+import { verifyAndRecordPayPalMembershipPayment } from "@/api/paypal";
 
 type MembershipOption = "renew" | "new" | "handicap" | "donation";
 
@@ -173,7 +172,7 @@ export default function MembershipPaymentsFlow({
 
   const stepTitles = useMemo(
     () => ["Select option", "Confirm details", "Payment", "Complete"],
-    []
+    [],
   );
 
   const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
@@ -215,7 +214,7 @@ export default function MembershipPaymentsFlow({
 
   const createPayPalOrder: PayPalButtonsComponentProps["createOrder"] = (
     _data,
-    actions
+    actions,
   ) => {
     if (step.kind !== "paypal") {
       return actions.order.create({
@@ -258,7 +257,7 @@ export default function MembershipPaymentsFlow({
 
   const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
     data,
-    actions
+    actions,
   ) => {
     if (!actions.order) {
       addToast({
@@ -319,16 +318,15 @@ export default function MembershipPaymentsFlow({
       data.orderID
     ) {
       try {
-        const callable = httpsCallable(
-          functions,
-          "verifyAndRecordPayPalMembershipPayment"
-        );
         const membershipType = step.purpose === "renew" ? "full" : "handicap";
-        await callable({
-          orderId: data.orderID,
-          year: currentYear,
-          membershipType,
-          purpose: step.purpose,
+        await verifyAndRecordPayPalMembershipPayment({
+          user,
+          request: {
+            orderId: data.orderID,
+            year: currentYear,
+            membershipType,
+            purpose: step.purpose,
+          },
         });
         await refetchUserProfile();
       } catch (e) {
@@ -466,7 +464,7 @@ export default function MembershipPaymentsFlow({
     addToast({
       title: "Payment Recorded",
       description: `Annual dues payment of ${currency(
-        membershipAmountDue
+        membershipAmountDue,
       )} recorded (demo).`,
       color: "success",
     });
@@ -474,7 +472,7 @@ export default function MembershipPaymentsFlow({
       kind: "done",
       title: "Payment complete",
       description: `Annual dues payment of ${currency(
-        membershipAmountDue
+        membershipAmountDue,
       )} recorded (demo).`,
     });
   }
@@ -531,7 +529,7 @@ export default function MembershipPaymentsFlow({
     addToast({
       title: "Application Submitted",
       description: `Application submitted and dues of ${currency(
-        membershipAmountDue
+        membershipAmountDue,
       )} recorded (demo).`,
       color: "success",
     });
@@ -539,7 +537,7 @@ export default function MembershipPaymentsFlow({
       kind: "done",
       title: "Application submitted",
       description: `Application submitted and dues of ${currency(
-        membershipAmountDue
+        membershipAmountDue,
       )} recorded (demo).`,
     });
   }
