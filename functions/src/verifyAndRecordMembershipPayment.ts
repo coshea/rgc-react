@@ -70,11 +70,14 @@ export async function verifyAndRecordMembershipPayment(params: {
   }
 
   if (paypalStatus !== "COMPLETED") {
-    logger.warn("verifyAndRecordMembershipPayment: non-completed PayPal status", {
-      uid,
-      orderId: request.orderId,
-      paypalStatus,
-    });
+    logger.warn(
+      "verifyAndRecordMembershipPayment: non-completed PayPal status",
+      {
+        uid,
+        orderId: request.orderId,
+        paypalStatus,
+      }
+    );
 
     return {
       ok: false,
@@ -84,11 +87,14 @@ export async function verifyAndRecordMembershipPayment(params: {
     };
   }
 
-  logger.info("verifyAndRecordMembershipPayment: recording payment to Firestore", {
-    uid,
-    orderId: request.orderId,
-    year: request.year,
-  });
+  logger.info(
+    "verifyAndRecordMembershipPayment: recording payment to Firestore",
+    {
+      uid,
+      orderId: request.orderId,
+      year: request.year,
+    }
+  );
 
   const { reused } = await recordPayPalMembershipPayment({
     db: deps.db,

@@ -109,23 +109,49 @@ export const verifyAndRecordMembershipPayment = onRequest(
         // development we decode the JWT payload without verification to
         // extract the `uid`. This is safe for emulator-only runs because
         // the functions are not exposed to real clients.
-        function decodeJwtNoVerify(t: string): any | null {
+        function decodeJwtNoVerify(t: string): unknown | null {
           try {
             const parts = t.split(".");
             if (parts.length < 2) return null;
             const payload = parts[1];
             const json = Buffer.from(payload, "base64").toString("utf8");
-            return JSON.parse(json);
+            return JSON.parse(json) as unknown;
           } catch {
             return null;
           }
         }
 
+        type JwtPayload = {
+          uid?: string;
+          user_id?: string;
+          sub?: string;
+          [key: string]: unknown;
+        };
+
+        function isJwtPayload(value: unknown): value is JwtPayload {
+          if (typeof value !== "object" || value === null) return false;
+          const rec = value as Record<string, unknown>;
+          const uid = rec["uid"];
+          const userId = rec["user_id"];
+          const sub = rec["sub"];
+          return (
+            (typeof uid === "string" && uid.length > 0) ||
+            (typeof userId === "string" && userId.length > 0) ||
+            (typeof sub === "string" && sub.length > 0)
+          );
+        }
+
         let uid: string;
         if (isFunctionsEmulator()) {
           const payload = decodeJwtNoVerify(token);
-          uid =
-            (payload && (payload.uid || payload.user_id || payload.sub)) || "";
+          if (!isJwtPayload(payload)) {
+            res
+              .status(401)
+              .json({ ok: false, error: "Invalid emulator token payload" });
+            return;
+          }
+
+          uid = payload.uid ?? payload.user_id ?? payload.sub ?? "";
           if (!uid) {
             res
               .status(401)

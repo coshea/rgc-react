@@ -14,11 +14,14 @@ const fallback = {
   info: console.log.bind(console),
   warn: console.warn.bind(console),
   error: console.error.bind(console),
-  debug: console.debug ? console.debug.bind(console) : console.log.bind(console),
+  debug: console.debug
+    ? console.debug.bind(console)
+    : console.log.bind(console),
 };
 
 // The firebase logger package sometimes exports the logger as the default
 // export or as a named `logger` property. Support both shapes.
-export const logger: typeof fallback = (remote && (remote.logger || remote)) || fallback;
+export const logger: typeof fallback =
+  (remote && (remote.logger || remote)) || fallback;
 
 export default logger;
