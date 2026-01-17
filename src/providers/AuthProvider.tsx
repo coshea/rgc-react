@@ -38,11 +38,11 @@ interface AuthContextType {
   error: Error | null;
   loginEmailAndPassword: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<UserCredential>;
   signupEmailAndPassword: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<UserCredential>;
   sendLoginLink: (email: string) => Promise<void>;
   signInWithLink: (email: string, href: string) => Promise<UserCredential>;
@@ -55,7 +55,7 @@ interface AuthContextType {
 // or a default object matching AuthContextType if preferred.
 // Using undefined forces consumers to check if the context is available.
 export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const useAuth = () => {
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
       // onAuthStateChanged will handle setting user and userLoggedIn
       if (userCredential.user) {
@@ -162,7 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const safeEmail = normalizeAndValidateEmail(email);
       const actionCodeSettings: ActionCodeSettings = {
-        url: siteConfig.pages.login.link,
+        // Firebase requires an absolute URL (including domain) for continue URLs.
+        // Use the current origin as a fallback when siteConfig provides a relative path.
+        url: window.location.origin + siteConfig.pages.login.link,
         handleCodeInApp: true,
       };
       await sendSignInLinkToEmail(auth, safeEmail, actionCodeSettings);
