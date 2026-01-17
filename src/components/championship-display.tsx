@@ -42,7 +42,7 @@ export function ChampionshipCard({
     <Card
       className={`w-full transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
         isClubChampion
-          ? "border-2 border-primary bg-linear-to-brrom-primary/5 to-primary/10"
+          ? "border-2 border-primary bg-linear-to-br from-primary/5 to-primary/10"
           : "bg-linear-to-br from-content1 to-content2/50 hover:bg-linear-to-br hover:from-content1 hover:to-content2"
       }`}
       shadow={isClubChampion ? "lg" : "md"}
