@@ -172,7 +172,7 @@ export default function MembershipPaymentsFlow({
 
   const stepTitles = useMemo(
     () => ["Select option", "Confirm details", "Payment", "Complete"],
-    [],
+    []
   );
 
   const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
@@ -214,7 +214,7 @@ export default function MembershipPaymentsFlow({
 
   const createPayPalOrder: PayPalButtonsComponentProps["createOrder"] = (
     _data,
-    actions,
+    actions
   ) => {
     if (step.kind !== "paypal") {
       return actions.order.create({
@@ -257,9 +257,10 @@ export default function MembershipPaymentsFlow({
 
   const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
     data,
-    actions,
+    actions
   ) => {
     if (!actions.order) {
+      console.error("PayPal order actions were unavailable", { step, user });
       addToast({
         title: "Payment error",
         description: "PayPal order actions were unavailable.",
@@ -332,6 +333,11 @@ export default function MembershipPaymentsFlow({
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Unknown recording error";
+        console.error("verifyAndRecordPayPalMembershipPayment failed", {
+          error: e,
+          uid: user?.uid,
+          orderId: data?.orderID,
+        });
         addToast({
           title: "Payment captured, but not recorded",
           description:
@@ -351,6 +357,7 @@ export default function MembershipPaymentsFlow({
 
   const onPayPalError: PayPalButtonsComponentProps["onError"] = (err) => {
     const message = err instanceof Error ? err.message : "Unknown PayPal error";
+    console.error("PayPal error", { err });
     addToast({
       title: "Payment failed",
       description: message,
@@ -464,7 +471,7 @@ export default function MembershipPaymentsFlow({
     addToast({
       title: "Payment Recorded",
       description: `Annual dues payment of ${currency(
-        membershipAmountDue,
+        membershipAmountDue
       )} recorded (demo).`,
       color: "success",
     });
@@ -472,7 +479,7 @@ export default function MembershipPaymentsFlow({
       kind: "done",
       title: "Payment complete",
       description: `Annual dues payment of ${currency(
-        membershipAmountDue,
+        membershipAmountDue
       )} recorded (demo).`,
     });
   }
@@ -529,7 +536,7 @@ export default function MembershipPaymentsFlow({
     addToast({
       title: "Application Submitted",
       description: `Application submitted and dues of ${currency(
-        membershipAmountDue,
+        membershipAmountDue
       )} recorded (demo).`,
       color: "success",
     });
@@ -537,7 +544,7 @@ export default function MembershipPaymentsFlow({
       kind: "done",
       title: "Application submitted",
       description: `Application submitted and dues of ${currency(
-        membershipAmountDue,
+        membershipAmountDue
       )} recorded (demo).`,
     });
   }
@@ -925,7 +932,7 @@ export default function MembershipPaymentsFlow({
             </Button>
           </CardHeader>
           <Divider />
-          <CardBody className="space-y-4">
+          <CardBody className="space-y-4 overflow-visible">
             {paypalEnabled && showPayPalSandboxNotice && (
               <Alert color="warning">
                 PayPal is running in SANDBOX mode. Payments are not live.
