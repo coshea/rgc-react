@@ -7,6 +7,7 @@ import {
   sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   User as FirebaseUser,
   ActionCodeSettings,
@@ -46,7 +47,7 @@ interface AuthContextType {
   ) => Promise<UserCredential>;
   sendLoginLink: (email: string) => Promise<void>;
   signInWithLink: (email: string, href: string) => Promise<UserCredential>;
-  signInWithGoogle: () => Promise<UserCredential>;
+  signInWithGoogle: () => Promise<UserCredential | void>;
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -144,8 +145,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("profile");
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" }); // Ensure explicit account selection
-      const result = await signInWithPopup(auth, provider);
-      return result;
+      // If the page is running in a cross-origin isolated context (COOP/COEP),
+      // accessing `window.closed` from the popup can be blocked causing the
+      // popup-based flow to fail with console errors. Detect that and use the
+      // redirect flow proactively to avoid the popup error noise.
+      // Avoid using `as any` by declaring a local typed Window variant.
+      type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
+      if (
+        typeof window !== "undefined" &&
+        (window as WindowWithCOI).crossOriginIsolated
+      ) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
+      try {
+        const result = await signInWithPopup(auth, provider);
+        return result;
+      } catch (popupErr) {
+        // Some hosting setups (Cross-Origin-Opener-Policy) block reading
+        // `window.closed` from the popup which causes the firebase popup
+        // flow to throw. Fall back to redirect-based sign-in in that case.
+        const message = (popupErr as Error)?.message || "";
+        if (
+          message.includes("Cross-Origin-Opener-Policy") ||
+          message.includes("blocked the window.closed call") ||
+          message.includes("Unable to use window.closed")
+        ) {
+          // Use redirect as a fallback; this will navigate away.
+          await signInWithRedirect(auth, provider);
+          return; // caller should handle void result (redirect occurred)
+        }
+        throw popupErr;
+      }
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
     } catch (err) {
