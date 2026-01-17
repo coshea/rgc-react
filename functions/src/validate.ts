@@ -4,6 +4,11 @@ import type {
   VerifyAndRecordPayPalRequest,
 } from "./types";
 
+// Valid year bounds for membership payments validation. These replace magic
+// numbers previously embedded in the validation logic and make intent clear.
+const MIN_VALID_YEAR = 2020;
+const MAX_VALID_YEAR = 2100;
+
 function isMembershipType(v: unknown): v is MembershipType {
   return v === "full" || v === "handicap";
 }
@@ -33,8 +38,8 @@ export function parseVerifyRequest(
   if (
     typeof year !== "number" ||
     !Number.isFinite(year) ||
-    year < 2020 ||
-    year > 2100
+    year < MIN_VALID_YEAR ||
+    year > MAX_VALID_YEAR
   ) {
     throw new Error("Invalid year");
   }

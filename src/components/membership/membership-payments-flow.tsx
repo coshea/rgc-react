@@ -442,43 +442,17 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
-    if (paypalEnabled) {
-      goToPayPalPayment({
-        purpose: "renew",
-        title: "Annual Club Membership",
-        description: "Annual dues payment",
-        amount: membershipAmountDue,
-      });
-      return;
-    }
-
-    if (!demoPaymentsEnabled) {
-      addToast({
-        title: "PayPal not configured",
-        description:
-          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
-        color: "warning",
-      });
-      goToPayPalPayment({
-        purpose: "renew",
-        title: "Annual Club Membership",
-        description: "Annual dues payment",
-        amount: membershipAmountDue,
-      });
-      return;
-    }
-
-    addToast({
-      title: "Payment Recorded",
-      description: `Annual dues payment of ${currency(
+    handlePaymentDecision({
+      purpose: "renew",
+      title: "Annual Club Membership",
+      description: "Annual dues payment",
+      amount: membershipAmountDue,
+      demoTitle: "Payment Recorded",
+      demoDescription: `Annual dues payment of ${currency(
         membershipAmountDue
       )} recorded (demo).`,
-      color: "success",
-    });
-    setStep({
-      kind: "done",
-      title: "Payment complete",
-      description: `Annual dues payment of ${currency(
+      doneTitle: "Payment complete",
+      doneDescription: `Annual dues payment of ${currency(
         membershipAmountDue
       )} recorded (demo).`,
     });
@@ -507,43 +481,17 @@ export default function MembershipPaymentsFlow({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (paypalEnabled) {
-      goToPayPalPayment({
-        purpose: "new",
-        title: "Annual Club Membership",
-        description: "New member application dues",
-        amount: membershipAmountDue,
-      });
-      return;
-    }
-
-    if (!demoPaymentsEnabled) {
-      addToast({
-        title: "PayPal not configured",
-        description:
-          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
-        color: "warning",
-      });
-      goToPayPalPayment({
-        purpose: "new",
-        title: "Annual Club Membership",
-        description: "New member application dues",
-        amount: membershipAmountDue,
-      });
-      return;
-    }
-
-    addToast({
-      title: "Application Submitted",
-      description: `Application submitted and dues of ${currency(
+    handlePaymentDecision({
+      purpose: "new",
+      title: "Annual Club Membership",
+      description: "New member application dues",
+      amount: membershipAmountDue,
+      demoTitle: "Application Submitted",
+      demoDescription: `Application submitted and dues of ${currency(
         membershipAmountDue
       )} recorded (demo).`,
-      color: "success",
-    });
-    setStep({
-      kind: "done",
-      title: "Application submitted",
-      description: `Application submitted and dues of ${currency(
+      doneTitle: "Application submitted",
+      doneDescription: `Application submitted and dues of ${currency(
         membershipAmountDue
       )} recorded (demo).`,
     });
@@ -560,41 +508,15 @@ export default function MembershipPaymentsFlow({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (paypalEnabled) {
-      goToPayPalPayment({
-        purpose: "handicap",
-        title: "Handicap Membership",
-        description: "Handicap membership fee",
-        amount: handicapFee,
-      });
-      return;
-    }
-
-    if (!demoPaymentsEnabled) {
-      addToast({
-        title: "PayPal not configured",
-        description:
-          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
-        color: "warning",
-      });
-      goToPayPalPayment({
-        purpose: "handicap",
-        title: "Handicap Membership",
-        description: "Handicap membership fee",
-        amount: handicapFee,
-      });
-      return;
-    }
-
-    addToast({
-      title: "Payment Recorded",
-      description: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
-      color: "success",
-    });
-    setStep({
-      kind: "done",
-      title: "Payment complete",
-      description: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+    handlePaymentDecision({
+      purpose: "handicap",
+      title: "Handicap Membership",
+      description: "Handicap membership fee",
+      amount: handicapFee,
+      demoTitle: "Payment Recorded",
+      demoDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+      doneTitle: "Payment complete",
+      doneDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
     });
   }
 
@@ -613,13 +535,41 @@ export default function MembershipPaymentsFlow({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    handlePaymentDecision({
+      purpose: "donation",
+      title: "Donation",
+      description: "Club donation",
+      amount,
+      demoTitle: "Thank You",
+      demoDescription: `Donation of ${currency(amount)} recorded (demo).`,
+      doneTitle: "Thank you",
+      doneDescription: `Donation of ${currency(amount)} recorded (demo).`,
+    });
+  }
+
+  function handlePaymentDecision(params: {
+    purpose: MembershipOption;
+    title: string;
+    description: string;
+    amount: number;
+    demoTitle: string;
+    demoDescription: string;
+    doneTitle: string;
+    doneDescription: string;
+  }) {
+    const {
+      purpose,
+      title,
+      description,
+      amount,
+      demoTitle,
+      demoDescription,
+      doneTitle,
+      doneDescription,
+    } = params;
+
     if (paypalEnabled) {
-      goToPayPalPayment({
-        purpose: "donation",
-        title: "Donation",
-        description: "Club donation",
-        amount,
-      });
+      goToPayPalPayment({ purpose, title, description, amount });
       return;
     }
 
@@ -630,25 +580,16 @@ export default function MembershipPaymentsFlow({
           "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
         color: "warning",
       });
-      goToPayPalPayment({
-        purpose: "donation",
-        title: "Donation",
-        description: "Club donation",
-        amount,
-      });
+      goToPayPalPayment({ purpose, title, description, amount });
       return;
     }
 
     addToast({
-      title: "Thank You",
-      description: `Donation of ${currency(amount)} recorded (demo).`,
+      title: demoTitle,
+      description: demoDescription,
       color: "success",
     });
-    setStep({
-      kind: "done",
-      title: "Thank you",
-      description: `Donation of ${currency(amount)} recorded (demo).`,
-    });
+    setStep({ kind: "done", title: doneTitle, description: doneDescription });
   }
 
   const membershipFoundName = useMemo(() => {
