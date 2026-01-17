@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import type { PayPalEnvironment, PayPalOrderSummary } from "./paypal";
 import { fetchPayPalAccessToken, fetchPayPalOrder } from "./paypal";
+import { logger } from "./logger";
 import { recordPayPalMembershipPayment } from "./firestoreMembership";
 
 export type VerifyDeps = {
@@ -25,7 +26,7 @@ export async function verifyAndRecordMembershipPayment(params: {
   deps: VerifyDeps;
 }): Promise<VerifyAndRecordPayPalResponse> {
   const { uid, request, deps } = params;
-  console.log("verifyAndRecordMembershipPayment: start", {
+  logger.info("verifyAndRecordMembershipPayment: start", {
     uid,
     orderId: request.orderId,
     year: request.year,
@@ -40,7 +41,7 @@ export async function verifyAndRecordMembershipPayment(params: {
     fetchImpl: deps.paypal.fetchImpl,
   });
 
-  console.log("verifyAndRecordMembershipPayment: fetched PayPal access token", {
+  logger.info("verifyAndRecordMembershipPayment: fetched PayPal access token", {
     uid,
     orderId: request.orderId,
   });
@@ -52,7 +53,7 @@ export async function verifyAndRecordMembershipPayment(params: {
     fetchImpl: deps.paypal.fetchImpl,
   });
 
-  console.log("verifyAndRecordMembershipPayment: fetched PayPal order", {
+  logger.info("verifyAndRecordMembershipPayment: fetched PayPal order", {
     uid,
     orderId: order.id,
     status: order.status,
@@ -69,14 +70,11 @@ export async function verifyAndRecordMembershipPayment(params: {
   }
 
   if (paypalStatus !== "COMPLETED") {
-    console.warn(
-      "verifyAndRecordMembershipPayment: non-completed PayPal status",
-      {
-        uid,
-        orderId: request.orderId,
-        paypalStatus,
-      }
-    );
+    logger.warn("verifyAndRecordMembershipPayment: non-completed PayPal status", {
+      uid,
+      orderId: request.orderId,
+      paypalStatus,
+    });
 
     return {
       ok: false,
@@ -86,14 +84,11 @@ export async function verifyAndRecordMembershipPayment(params: {
     };
   }
 
-  console.log(
-    "verifyAndRecordMembershipPayment: recording payment to Firestore",
-    {
-      uid,
-      orderId: request.orderId,
-      year: request.year,
-    }
-  );
+  logger.info("verifyAndRecordMembershipPayment: recording payment to Firestore", {
+    uid,
+    orderId: request.orderId,
+    year: request.year,
+  });
 
   const { reused } = await recordPayPalMembershipPayment({
     db: deps.db,
@@ -110,7 +105,7 @@ export async function verifyAndRecordMembershipPayment(params: {
     },
   });
 
-  console.log("verifyAndRecordMembershipPayment: recorded payment", {
+  logger.info("verifyAndRecordMembershipPayment: recorded payment", {
     uid,
     orderId: request.orderId,
     reused,
