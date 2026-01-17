@@ -26,6 +26,11 @@ export async function verifyAndRecordPayPalMembershipPayment(params: {
 }): Promise<VerifyAndRecordPayPalResponse> {
   const { user, request } = params;
 
+  if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
+    throw new Error(
+      "User must be authenticated with a valid UID to verify membership payment."
+    );
+  }
   const baseUrl = getFirebaseFunctionsBaseUrl();
 
   const token = await user.getIdToken();
