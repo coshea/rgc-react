@@ -182,9 +182,7 @@ export const verify_and_record_membership_payment = onRequest(
         const serverNow =
           fieldValue && typeof fieldValue.serverTimestamp === "function"
             ? fieldValue.serverTimestamp()
-            : (admin.firestore as any).Timestamp
-              ? (admin.firestore as any).Timestamp.now()
-              : null;
+            : admin.firestore.Timestamp.now();
 
         const resp = await verifyAndRecordMembershipPayment({
           uid,
