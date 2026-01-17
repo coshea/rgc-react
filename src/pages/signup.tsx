@@ -27,7 +27,7 @@ export default function SignUpPage() {
   const [isConfirmVisible, setIsConfirmVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
   const [signupMode, setSignupMode] = React.useState<"magic-link" | "password">(
-    "magic-link"
+    "magic-link",
   );
   const [linkSent, setLinkSent] = React.useState(false);
   const [isTermsOpen, setIsTermsOpen] = React.useState(false);
@@ -107,6 +107,8 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     try {
       const result = await signInWithGoogle();
+      // If a redirect fallback was used the function may return void.
+      if (!result) return;
       if (result.user) {
         const additionalUserInfo = getAdditionalUserInfo(result);
         if (additionalUserInfo?.isNewUser) {
@@ -397,7 +399,7 @@ export default function SignUpPage() {
               className="text-default-500"
               onPress={() =>
                 setSignupMode(
-                  signupMode === "magic-link" ? "password" : "magic-link"
+                  signupMode === "magic-link" ? "password" : "magic-link",
                 )
               }
             >

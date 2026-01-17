@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [isVisible, setIsVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
   const [loginMode, setLoginMode] = React.useState<"magic-link" | "password">(
-    "magic-link"
+    "magic-link",
   );
   const [linkSent, setLinkSent] = React.useState(false);
   const handledMagicLink = useRef(false);
@@ -47,7 +47,7 @@ export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [pendingMagicLink, setPendingMagicLink] = React.useState<string | null>(
-    null
+    null,
   );
   const [isEmailConfirmationModalOpen, setEmailConfirmationModalOpen] =
     React.useState(false);
@@ -108,7 +108,7 @@ export default function LoginPage() {
         }
       }
     },
-    [navigate, signInWithLink, state?.from]
+    [navigate, signInWithLink, state?.from],
   );
 
   useEffect(() => {
@@ -217,6 +217,8 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithGoogle();
+      // If redirect fallback was used the function may return void.
+      if (!result) return;
       // Navigation or further actions on successful Google sign-in
       const additionalUserInfo = getAdditionalUserInfo(result);
       if (additionalUserInfo?.isNewUser) {
@@ -321,12 +323,12 @@ export default function LoginPage() {
   };
 
   const handleEmailConfirmationSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
     if (!pendingMagicLink) {
       setEmailConfirmationError(
-        "We couldn't find your sign-in link. Please click the link again."
+        "We couldn't find your sign-in link. Please click the link again.",
       );
       return;
     }
@@ -336,7 +338,7 @@ export default function LoginPage() {
     }
     await completeMagicLinkSignIn(
       emailConfirmationValue.trim(),
-      pendingMagicLink
+      pendingMagicLink,
     );
   };
 

@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -5,7 +6,15 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tsconfigPaths(), tailwindcss()],
+  plugins: [
+    react(),
+    tsconfigPaths(),
+    tailwindcss(),
+    sentryVitePlugin({
+      org: "ridgefield-golf-club",
+      project: "javascript-react",
+    }),
+  ],
   build: {
     rollupOptions: {
       output: {
@@ -33,6 +42,8 @@ export default defineConfig({
         },
       },
     },
+
     chunkSizeWarningLimit: 1200,
+    sourcemap: true,
   },
 });
