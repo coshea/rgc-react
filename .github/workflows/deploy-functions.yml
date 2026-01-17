@@ -1,0 +1,143 @@
+name: Deploy functions on main
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    test-and-deploy:
+        runs-on: ubuntu-latest
+        env:
+            # Dummy values for unit tests / import-time validation.
+            # Real credentials must be configured in Firebase/Cloud Run runtime.
+            PAYPAL_CLIENT_ID: test
+            PAYPAL_CLIENT_SECRET: test
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Cache node modules
+              uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/functions/package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Install function dependencies
+              working-directory: ./functions
+              run: |
+                  npm ci
+
+            - name: Run function unit tests
+              working-directory: ./functions
+              run: |
+                  npm test
+
+            - name: Build functions
+              working-directory: ./functions
+              run: |
+                  npm run build
+
+            - name: Decode service account for later steps
+              env:
+                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+              run: |
+                  if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+                    echo "FIREBASE_SERVICE_ACCOUNT secret not set - aborting"
+                    exit 1
+                  fi
+                  if printf '%s' "$FIREBASE_SERVICE_ACCOUNT" | base64 --decode > /tmp/sa-key.json 2>/dev/null; then
+                    echo "Decoded FIREBASE_SERVICE_ACCOUNT as base64"
+                  else
+                    echo "FIREBASE_SERVICE_ACCOUNT not base64-encoded, writing raw JSON to file"
+                    printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa-key.json
+                  fi
+                  # Export path and project id for later steps
+                  echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
+                  PROJECT_ID=$(node -e "console.log(JSON.parse(require('fs').readFileSync('/tmp/sa-key.json','utf8')).project_id)")
+                  echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+
+            - name: Install gcloud SDK
+              uses: google-github-actions/setup-gcloud@v1
+              with:
+                  project_id: ${{ env.PROJECT_ID }}
+
+            - name: Authenticate gcloud with service account
+              run: |
+                  gcloud auth activate-service-account --key-file=/tmp/sa-key.json
+
+            - name: Verify PAYPAL_CLIENT_SECRET exists in Secret Manager
+              run: |
+                  set -e
+                  if [ -z "$PROJECT_ID" ]; then
+                    echo "PROJECT_ID not available; aborting secret check"
+                    exit 1
+                  fi
+                  echo "Checking Secret Manager for PAYPAL_CLIENT_SECRET in project $PROJECT_ID"
+                  if gcloud secrets versions access latest --secret=PAYPAL_CLIENT_SECRET --project="$PROJECT_ID" >/dev/null 2>&1; then
+                    echo "PAYPAL_CLIENT_SECRET exists in Secret Manager"
+                  else
+                    echo "PAYPAL_CLIENT_SECRET not found in Secret Manager for project $PROJECT_ID"
+                    echo "Abort deploy to avoid runtime failures; ensure secret exists and permission to access it is granted"
+                    exit 1
+                  fi
+
+            - name: Install Firebase CLI
+              run: |
+                  curl -sL https://firebase.tools | bash
+
+            - name: Deploy functions (service account)
+              env:
+                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+              run: |
+                  if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+                    echo "FIREBASE_SERVICE_ACCOUNT secret not set - aborting deploy"
+                    exit 1
+                  fi
+                  # Decode the service account key. Support both base64-encoded
+                  # secrets and raw JSON pasted directly into the secret.
+                  if printf '%s' "$FIREBASE_SERVICE_ACCOUNT" | base64 --decode > /tmp/sa-key.json 2>/dev/null; then
+                    echo "Decoded FIREBASE_SERVICE_ACCOUNT as base64"
+                  else
+                    echo "FIREBASE_SERVICE_ACCOUNT not base64-encoded, writing raw JSON to file"
+                    printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > /tmp/sa-key.json
+                  fi
+                  export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json
+                  # Determine local functions exported in the compiled lib and deploy only those
+                  if [ ! -f functions/lib/index.js ]; then
+                    echo "functions/lib/index.js not found — ensure build emitted compiled functions"
+                    exit 1
+                  fi
+
+                  LOCAL_FUNCS=$(node -e "const fs=require('fs');const s=fs.readFileSync('functions/lib/index.js','utf8');const re=/exports\\.([a-zA-Z0-9_]+)\\s*=\\s*/g;let m;let a=[];while((m=re.exec(s))!==null){a.push(m[1])}console.log(a.join(','))")
+
+                  if [ -z "$LOCAL_FUNCS" ]; then
+                    echo "No functions found in functions/lib/index.js — aborting deploy to avoid accidental deletions"
+                    exit 1
+                  fi
+
+                  # Build firebase --only target list: functions:fn1,functions:fn2
+                  IFS=',' read -r -a arr <<< "$LOCAL_FUNCS"
+                  targets=""
+                  for i in "${arr[@]}"; do
+                    if [ -n "$targets" ]; then targets=","$targets; fi
+                    # prepend functions: to each name
+                    if [ -z "$targets" ]; then
+                      targets="functions:${i}"
+                    else
+                      targets="${targets},functions:${i}"
+                    fi
+                  done
+
+                  echo "Deploying only local functions: $targets"
+                  firebase deploy --only "$targets"
