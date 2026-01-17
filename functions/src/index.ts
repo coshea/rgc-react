@@ -79,7 +79,7 @@ function mockPayPalFetchFromEnv(): typeof fetch | null {
   return fetchImpl;
 }
 
-export const verifyAndRecordMembershipPayment = onRequest(
+export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
   async (req, res) => {
     corsMiddleware(req, res, async () => {
