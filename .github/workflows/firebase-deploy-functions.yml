@@ -9,7 +9,7 @@ permissions:
     id-token: write
 
 jobs:
-    test-and-deploy:
+    test-and-deploy-functions:
         runs-on: ubuntu-latest
         env:
             # Dummy values for unit tests / import-time validation.
