@@ -50,7 +50,7 @@ jobs:
 
             - name: Decode service account for later steps
               env:
-                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}
               run: |
                   if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
                     echo "FIREBASE_SERVICE_ACCOUNT secret not set - aborting"
@@ -98,7 +98,7 @@ jobs:
 
             - name: Deploy functions (service account)
               env:
-                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+                  FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}
               run: |
                   if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
                     echo "FIREBASE_SERVICE_ACCOUNT secret not set - aborting deploy"
