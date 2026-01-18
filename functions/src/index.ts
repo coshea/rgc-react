@@ -178,11 +178,14 @@ export const verify_and_record_membership_payment = onRequest(
         // Support runtimes where `admin.firestore.FieldValue` may not be present
         // (emulator or differing admin SDK shapes). Prefer serverTimestamp
         // sentinel when available, otherwise use a concrete Timestamp.now().
-        const fieldValue = (admin.firestore as any).FieldValue;
         const serverNow =
-          fieldValue && typeof fieldValue.serverTimestamp === "function"
-            ? fieldValue.serverTimestamp()
-            : admin.firestore.Timestamp.now();
+          typeof admin.firestore.FieldValue?.serverTimestamp === "function"
+            ? // FieldValue.serverTimestamp() is the preferred sentinel when
+              // available.
+              admin.firestore.FieldValue.serverTimestamp()
+            : // Fall back to a concrete Timestamp for runtimes that don't
+              // expose the FieldValue sentinel.
+              admin.firestore.Timestamp.now();
 
         const resp = await verifyAndRecordMembershipPayment({
           uid,
