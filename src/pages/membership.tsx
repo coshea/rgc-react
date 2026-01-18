@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import { subscribeMembershipSettings } from "@/api/membership";
+import { addToast } from "@/providers/toast";
 import MembershipAdminModal from "@/components/membership-admin-modal";
 import MembershipPaymentsFlow from "@/components/membership/membership-payments-flow";
 import { useDocAdminFlag } from "@/components/membership/hooks";
@@ -20,10 +21,23 @@ export default function MembershipPage() {
   const [showAdminModal, setShowAdminModal] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = subscribeMembershipSettings((newSettings) => {
-      setSettings(newSettings);
-      setLoadingSettings(false);
-    });
+    const unsubscribe = subscribeMembershipSettings(
+      (newSettings) => {
+        setSettings(newSettings);
+        setLoadingSettings(false);
+      },
+      (error) => {
+        console.error("Failed to subscribe to membership settings:", error);
+        addToast({
+          title: "Settings unavailable",
+          description:
+            "Unable to load membership settings. You may be offline or there was a network error.",
+          color: "warning",
+        });
+        setSettings(null);
+        setLoadingSettings(false);
+      }
+    );
     return () => unsubscribe();
   }, []);
 

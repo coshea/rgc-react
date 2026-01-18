@@ -32,14 +32,26 @@ export default function MembershipAdminModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    const unsubscribe = subscribeMembershipSettings((newSettings) => {
-      setSettings(newSettings);
-      setRegistrationOpen(newSettings.registrationOpen);
-      setFullPrice(newSettings.fullMembershipPrice.toString());
-      setSocialPrice(newSettings.handicapMembershipPrice.toString());
-      setClosedMessage(newSettings.closedMessage || "");
-      setLoading(false);
-    });
+    const unsubscribe = subscribeMembershipSettings(
+      (newSettings) => {
+        setSettings(newSettings);
+        setRegistrationOpen(newSettings.registrationOpen);
+        setFullPrice(newSettings.fullMembershipPrice.toString());
+        setSocialPrice(newSettings.handicapMembershipPrice.toString());
+        setClosedMessage(newSettings.closedMessage || "");
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Failed to subscribe to membership settings:", error);
+        addToast({
+          title: "Settings unavailable",
+          description:
+            "Unable to load membership settings. Check your connection and try again.",
+          color: "danger",
+        });
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, [isOpen]);

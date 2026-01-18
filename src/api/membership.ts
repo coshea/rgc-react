@@ -259,7 +259,8 @@ export async function getMembershipSettings(): Promise<MembershipSettings> {
  * Subscribe to membership settings changes in real-time
  */
 export function subscribeMembershipSettings(
-  callback: (settings: MembershipSettings) => void
+  callback: (settings: MembershipSettings) => void,
+  onError?: (error: unknown) => void
 ): Unsubscribe {
   const ref = doc(db, "config", "membershipSettings");
   return onSnapshot(
@@ -285,6 +286,14 @@ export function subscribeMembershipSettings(
           source: "default",
           reason: "permission-denied",
         });
+        return;
+      }
+
+      // For other errors, prefer to let the caller decide how to handle it
+      // (e.g. surface an offline/error state in the UI). If the caller did
+      // not provide an onError handler, fall back to returning defaults.
+      if (typeof onError === "function") {
+        onError(error);
         return;
       }
 
