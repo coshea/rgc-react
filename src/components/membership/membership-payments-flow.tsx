@@ -1,0 +1,630 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
+import { Spacer, addToast } from "@heroui/react";
+import { formatUSD } from "@/config/membership-pricing";
+import { siteConfig } from "@/config/site";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/providers/AuthProvider";
+import MinimalRowSteps from "@/components/minimal-row-steps";
+import { verifyAndRecordPayPalMembershipPayment } from "@/api/paypal";
+
+import type {
+  DonationState,
+  HandicapState,
+  MembershipOption,
+  NewMemberState,
+  RenewLookupState,
+  Step,
+} from "./membership-payments-flow/types";
+import { AlreadyPaidNotice } from "./membership-payments-flow/steps/AlreadyPaidNotice";
+import { DonationStep } from "./membership-payments-flow/steps/DonationStep";
+import { DoneStep } from "./membership-payments-flow/steps/DoneStep";
+import { HandicapStep } from "./membership-payments-flow/steps/HandicapStep";
+import { NewMemberApplicationStep } from "./membership-payments-flow/steps/NewMemberApplicationStep";
+import { PayPalStep } from "./membership-payments-flow/steps/PayPalStep";
+import { RenewConfirmStep } from "./membership-payments-flow/steps/RenewConfirmStep";
+import { RenewLookupStep } from "./membership-payments-flow/steps/RenewLookupStep";
+import { SelectOptionStep } from "./membership-payments-flow/steps/SelectOptionStep";
+
+export interface MembershipPaymentsFlowProps {
+  membershipAmountDue: number;
+  handicapFee: number;
+  loginFromPath?: string;
+}
+
+export default function MembershipPaymentsFlow({
+  membershipAmountDue,
+  handicapFee,
+  loginFromPath = siteConfig.pages.membership.link,
+}: MembershipPaymentsFlowProps) {
+  const currency = formatUSD;
+
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+  const paypalEnvironmentRaw = import.meta.env.VITE_PAYPAL_ENVIRONMENT;
+  const paypalEnvironment =
+    typeof paypalEnvironmentRaw === "string" && paypalEnvironmentRaw.trim()
+      ? paypalEnvironmentRaw.trim().toUpperCase()
+      : "SANDBOX";
+  const showPayPalSandboxNotice = paypalEnvironment === "SANDBOX";
+
+  const paypalCurrency: string = "USD";
+  const isVitest = Boolean(import.meta.env.VITEST);
+  const paypalEnabled =
+    !isVitest &&
+    typeof paypalClientId === "string" &&
+    paypalClientId.trim().length > 0;
+
+  const demoPaymentsEnabled = isVitest;
+
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const {
+    userProfile,
+    isLoading: loadingUserProfile,
+    refetch: refetchUserProfile,
+  } = useUserProfile();
+
+  const isPaidForCurrentYear =
+    !!user && (userProfile?.lastPaidYear ?? 0) >= currentYear;
+
+  const membershipOptionsDisabled = user ? isPaidForCurrentYear : false;
+
+  const [step, setStep] = useState<Step>({ kind: "select" });
+
+  const [renewLookup, setRenewLookup] = useState<RenewLookupState>({
+    email: "",
+    lastName: "",
+  });
+
+  const [newMember, setNewMember] = useState<NewMemberState>({
+    fullName: "",
+    email: "",
+    phone: "",
+    streetAddress: "",
+    cityStateZip: "",
+    ghin: "",
+    homeCourse: "",
+    acknowledged: false,
+  });
+
+  const [handicap, setHandicap] = useState<HandicapState>({
+    fullName: "",
+    email: "",
+    ghin: "",
+  });
+
+  const [donation, setDonation] = useState<DonationState>({
+    amount: "",
+    name: "",
+    email: "",
+  });
+
+  // Per-step validation is now handled within individual step components.
+
+  const stepsCount = 4;
+  const currentStepIndex = useMemo(() => {
+    if (step.kind === "select") return 0;
+    if (step.kind === "renew_lookup") return 1;
+    if (step.kind === "new_apply") return 1;
+    if (step.kind === "handicap") return 1;
+    if (step.kind === "donation") return 1;
+    if (step.kind === "renew_confirm") return 2;
+    if (step.kind === "paypal") return 2;
+    if (step.kind === "done") return 3;
+    return 0;
+  }, [step.kind]);
+
+  const stepTitles = useMemo(
+    () => ["Select option", "Confirm details", "Payment", "Complete"],
+    []
+  );
+
+  const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
+    stepTitles[currentStepIndex]
+  }`;
+
+  function onStepperChange(next: number) {
+    // Only allow moving backwards. Moving forward should happen via form actions.
+    if (next >= currentStepIndex) return;
+
+    if (next === 0) {
+      goToSelect();
+      return;
+    }
+
+    // Step 2 means “confirm details”; we can only return to renew lookup from renew_confirm.
+    if (next === 1) {
+      if (step.kind === "renew_confirm") {
+        setStep({ kind: "renew_lookup" });
+      }
+      return;
+    }
+  }
+
+  function goToSelect() {
+    setStep({ kind: "select" });
+  }
+
+  function goToPayPalPayment(params: {
+    purpose: MembershipOption;
+    title: string;
+    description: string;
+    amount: number;
+  }) {
+    setStep({ kind: "paypal", ...params });
+  }
+
+  const createPayPalOrder: PayPalButtonsComponentProps["createOrder"] = (
+    _data,
+    actions
+  ) => {
+    if (step.kind !== "paypal") {
+      return actions.order.create({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            description: "Membership payment",
+            amount: {
+              currency_code: paypalCurrency,
+              value: "0.01",
+            },
+          },
+        ],
+      });
+    }
+
+    const value = Number.isFinite(step.amount)
+      ? step.amount.toFixed(2)
+      : "0.01";
+
+    const customId =
+      user &&
+      (step.purpose === "renew" || step.purpose === "handicap") &&
+      `${user.uid}:${currentYear}:${step.purpose === "renew" ? "full" : "handicap"}:${step.purpose}`;
+
+    return actions.order.create({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          description: step.title,
+          amount: {
+            currency_code: paypalCurrency,
+            value,
+          },
+          ...(customId ? { custom_id: customId } : {}),
+        },
+      ],
+    });
+  };
+
+  const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
+    data,
+    actions
+  ) => {
+    if (!actions.order) {
+      console.error("PayPal order actions were unavailable", { step, user });
+      addToast({
+        title: "Payment error",
+        description: "PayPal order actions were unavailable.",
+        color: "danger",
+      });
+      return;
+    }
+
+    // Capture first; then record a Firestore payment record via a trusted backend
+    // (Firestore rules restrict memberPayments writes to admins).
+    await actions.order.capture();
+
+    if (step.kind !== "paypal") {
+      setStep({
+        kind: "done",
+        title: "Payment complete",
+        description: "Payment captured successfully.",
+      });
+      return;
+    }
+
+    const paid = currency(step.amount);
+    const titleByPurpose: Record<MembershipOption, string> = {
+      renew: "Payment Recorded",
+      new: "Application Submitted",
+      handicap: "Payment Recorded",
+      donation: "Thank You",
+    };
+
+    const doneTitleByPurpose: Record<MembershipOption, string> = {
+      renew: "Payment complete",
+      new: "Application submitted",
+      handicap: "Payment complete",
+      donation: "Thank you",
+    };
+
+    const descriptionByPurpose: Record<MembershipOption, string> = {
+      renew: `Annual dues payment of ${paid} captured successfully.`,
+      new: `Application submitted and dues of ${paid} captured successfully.`,
+      handicap: `Handicap fee of ${paid} captured successfully.`,
+      donation: `Donation of ${paid} captured successfully.`,
+    };
+
+    addToast({
+      title: titleByPurpose[step.purpose],
+      description: descriptionByPurpose[step.purpose],
+      color: "success",
+    });
+
+    // Record dues payments (renew/handicap) after a successful PayPal capture.
+    // This uses a callable Cloud Function that verifies the PayPal order server-side
+    // and then writes memberPayments/users with admin privileges.
+    if (
+      user &&
+      (step.purpose === "renew" || step.purpose === "handicap") &&
+      data.orderID
+    ) {
+      try {
+        const membershipType = step.purpose === "renew" ? "full" : "handicap";
+        await verifyAndRecordPayPalMembershipPayment({
+          user,
+          request: {
+            orderId: data.orderID,
+            year: currentYear,
+            membershipType,
+            purpose: step.purpose,
+          },
+        });
+        await refetchUserProfile();
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Unknown recording error";
+        console.error("verifyAndRecordPayPalMembershipPayment failed", {
+          error: e,
+          uid: user?.uid,
+          orderId: data?.orderID,
+        });
+        addToast({
+          title: "Payment captured, but not recorded",
+          description:
+            "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt. " +
+            message,
+          color: "danger",
+        });
+      }
+    }
+
+    setStep({
+      kind: "done",
+      title: doneTitleByPurpose[step.purpose],
+      description: descriptionByPurpose[step.purpose],
+    });
+  };
+
+  const onPayPalError: PayPalButtonsComponentProps["onError"] = (err) => {
+    const message = err instanceof Error ? err.message : "Unknown PayPal error";
+    console.error("PayPal error", { err });
+    addToast({
+      title: "Payment failed",
+      description: message,
+      color: "danger",
+    });
+  };
+
+  function selectOption(option: MembershipOption) {
+    // clear per-step errors handled by the steps themselves
+
+    // If a signed-in member has already paid for the current year, prevent
+    // duplicate dues payments and steer them to Donation instead.
+    if (membershipOptionsDisabled && option !== "donation") {
+      addToast({
+        title: "Already paid",
+        description: `Your ${currentYear} payment is already recorded. You can still make a donation.`,
+        color: "success",
+      });
+      return;
+    }
+
+    if (option === "renew") {
+      if (!user) {
+        addToast({
+          title: "Login required",
+          description:
+            "Please log in to renew. We'll use your account details automatically.",
+          color: "warning",
+        });
+        navigate(siteConfig.pages.login.link, {
+          state: { from: loginFromPath },
+        });
+        return;
+      }
+
+      const email = user.email || userProfile?.email || "";
+      if (!email) {
+        addToast({
+          title: "Cannot renew",
+          description:
+            "Your account doesn't have an email address on file. Please contact the club.",
+          color: "danger",
+        });
+        return;
+      }
+
+      setStep({
+        kind: "renew_confirm",
+        email,
+        lastName: userProfile?.lastName,
+      });
+      return;
+    }
+    if (option === "new") setStep({ kind: "new_apply" });
+    if (option === "handicap") setStep({ kind: "handicap" });
+    if (option === "donation") setStep({ kind: "donation" });
+  }
+
+  function onPayRenew() {
+    if (isPaidForCurrentYear) {
+      addToast({
+        title: "Already paid",
+        description: `Your annual dues are already recorded for ${currentYear}.`,
+        color: "success",
+      });
+      return;
+    }
+
+    handlePaymentDecision({
+      purpose: "renew",
+      title: "Annual Club Membership",
+      description: "Annual dues payment",
+      amount: membershipAmountDue,
+      demoTitle: "Payment Recorded",
+      demoDescription: `Annual dues payment of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
+      doneTitle: "Payment complete",
+      doneDescription: `Annual dues payment of ${currency(
+        membershipAmountDue
+      )} recorded (demo).`,
+    });
+  }
+
+  function handlePaymentDecision(params: {
+    purpose: MembershipOption;
+    title: string;
+    description: string;
+    amount: number;
+    demoTitle: string;
+    demoDescription: string;
+    doneTitle: string;
+    doneDescription: string;
+  }) {
+    const {
+      purpose,
+      title,
+      description,
+      amount,
+      demoTitle,
+      demoDescription,
+      doneTitle,
+      doneDescription,
+    } = params;
+
+    if (paypalEnabled) {
+      goToPayPalPayment({ purpose, title, description, amount });
+      return;
+    }
+
+    if (!demoPaymentsEnabled) {
+      addToast({
+        title: "PayPal not configured",
+        description:
+          "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
+        color: "warning",
+      });
+      goToPayPalPayment({ purpose, title, description, amount });
+      return;
+    }
+
+    addToast({
+      title: demoTitle,
+      description: demoDescription,
+      color: "success",
+    });
+    setStep({ kind: "done", title: doneTitle, description: doneDescription });
+  }
+
+  const membershipFoundName = useMemo(() => {
+    if (step.kind !== "renew_confirm") return null;
+
+    const profileName =
+      userProfile?.displayName?.trim() ||
+      [userProfile?.firstName?.trim(), userProfile?.lastName?.trim()]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      user?.displayName?.trim() ||
+      "";
+    if (profileName) return profileName;
+
+    const localPart = step.email.split("@")[0] ?? "";
+    const guess = localPart
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(" ");
+
+    return guess || "Member";
+  }, [
+    step,
+    user?.displayName,
+    userProfile?.displayName,
+    userProfile?.firstName,
+    userProfile?.lastName,
+  ]);
+
+  return (
+    <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
+      <div className="w-full max-w-4xl">
+        <MinimalRowSteps
+          currentStep={currentStepIndex}
+          stepsCount={stepsCount}
+          label={stepLabel}
+          onStepChange={onStepperChange}
+        />
+      </div>
+
+      <Spacer y={6} />
+
+      {user && isPaidForCurrentYear && step.kind === "select" && (
+        <AlreadyPaidNotice
+          currentYear={currentYear}
+          onDonationPress={() => selectOption("donation")}
+        />
+      )}
+
+      {step.kind === "select" && (
+        <SelectOptionStep
+          membershipOptionsDisabled={membershipOptionsDisabled}
+          currentYear={currentYear}
+          onSelectOption={selectOption}
+        />
+      )}
+
+      {step.kind === "renew_lookup" && (
+        <RenewLookupStep
+          initialValue={renewLookup}
+          onBack={goToSelect}
+          onSubmit={(data) => {
+            setRenewLookup(data);
+            setStep({
+              kind: "renew_confirm",
+              email: data.email.trim(),
+              lastName: data.lastName.trim() || undefined,
+            });
+          }}
+        />
+      )}
+
+      {step.kind === "renew_confirm" && (
+        <RenewConfirmStep
+          email={step.email}
+          loadingUserProfile={loadingUserProfile}
+          isPaidForCurrentYear={isPaidForCurrentYear}
+          currentYear={currentYear}
+          membershipFoundName={membershipFoundName ?? ""}
+          membershipAmountDue={membershipAmountDue}
+          currency={currency}
+          paypalEnabled={paypalEnabled}
+          onBack={goToSelect}
+          onDonation={() => setStep({ kind: "donation" })}
+          onContinueToPay={onPayRenew}
+        />
+      )}
+
+      {step.kind === "paypal" && (
+        <PayPalStep
+          paypalEnabled={paypalEnabled}
+          showPayPalSandboxNotice={showPayPalSandboxNotice}
+          paypalClientId={paypalClientId ?? ""}
+          paypalCurrency={paypalCurrency}
+          title={step.title}
+          description={step.description}
+          amount={step.amount}
+          currency={currency}
+          createOrder={createPayPalOrder}
+          onApprove={onPayPalApprove}
+          onError={onPayPalError}
+          onBack={goToSelect}
+        />
+      )}
+
+      {step.kind === "new_apply" && (
+        <NewMemberApplicationStep
+          initialValue={newMember}
+          membershipAmountDue={membershipAmountDue}
+          currency={currency}
+          onBack={goToSelect}
+          onSubmit={(data) => {
+            setNewMember(data);
+            handlePaymentDecision({
+              purpose: "new",
+              title: "Annual Club Membership",
+              description: "New member application dues",
+              amount: membershipAmountDue,
+              demoTitle: "Application Submitted",
+              demoDescription: `Application submitted and dues of ${currency(
+                membershipAmountDue
+              )} recorded (demo).`,
+              doneTitle: "Application submitted",
+              doneDescription: `Application submitted and dues of ${currency(
+                membershipAmountDue
+              )} recorded (demo).`,
+            });
+          }}
+        />
+      )}
+
+      {step.kind === "handicap" && (
+        <HandicapStep
+          initialValue={handicap}
+          handicapFee={handicapFee}
+          currency={currency}
+          onBack={goToSelect}
+          onPay={(data) => {
+            setHandicap(data);
+            handlePaymentDecision({
+              purpose: "handicap",
+              title: "Handicap Membership",
+              description: "Handicap membership fee",
+              amount: handicapFee,
+              demoTitle: "Payment Recorded",
+              demoDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+              doneTitle: "Payment complete",
+              doneDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+            });
+          }}
+        />
+      )}
+
+      {step.kind === "donation" && (
+        <DonationStep
+          initialValue={donation}
+          onBack={goToSelect}
+          onPay={(data) => {
+            setDonation(data);
+            const amount = parseFloat(data.amount);
+            handlePaymentDecision({
+              purpose: "donation",
+              title: "Donation",
+              description: "Club donation",
+              amount,
+              demoTitle: "Thank You",
+              demoDescription: `Donation of ${currency(amount)} recorded (demo).`,
+              doneTitle: "Thank you",
+              doneDescription: `Donation of ${currency(amount)} recorded (demo).`,
+            });
+          }}
+        />
+      )}
+
+      {step.kind === "done" && (
+        <DoneStep
+          title={step.title}
+          description={step.description}
+          onStartOver={goToSelect}
+          onBackToOptions={goToSelect}
+        />
+      )}
+
+      <Spacer y={8} />
+      <div className="w-full max-w-4xl text-center text-sm text-default-500 space-y-2">
+        <div>For questions, please contact the club directly.</div>
+        <div className="italic">
+          Thank you for being part of our club community.
+        </div>
+      </div>
+    </div>
+  );
+}

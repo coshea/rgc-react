@@ -278,6 +278,13 @@ service cloud.firestore {
     }
 
     // Config collection: membership settings and other configuration
+    match /config/membershipSettings {
+      // Membership pricing + registration-open flag should be visible to everyone
+      // so logged-out users can see the membership flow.
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /config/{docId} {
       // Anyone authenticated can read config (needed for membership settings)
       allow read: if request.auth != null;

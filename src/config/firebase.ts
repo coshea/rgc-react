@@ -6,6 +6,7 @@ import {
   type Analytics,
 } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getFunctions, type Functions } from "firebase/functions";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -30,6 +31,7 @@ const auth: Auth = getAuth(app);
 import { getFirestore, Firestore } from "firebase/firestore";
 const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
+const functions: Functions = getFunctions(app);
 
 // Firebase Analytics is gated behind explicit user consent.
 // We expose a lazy initializer so the app can enable analytics only after opt-in.
@@ -52,4 +54,4 @@ export function getAnalyticsInstance(): Analytics | undefined {
   return analytics;
 }
 
-export { auth, db, analytics, storage };
+export { auth, db, analytics, storage, functions };

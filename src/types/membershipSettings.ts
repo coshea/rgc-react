@@ -11,8 +11,8 @@ export interface MembershipSettings {
   /** Price for full membership (in dollars) */
   fullMembershipPrice: number;
 
-  /** Price for social membership (in dollars) */
-  socialMembershipPrice: number;
+  /** Price for handicap membership (in dollars) */
+  handicapMembershipPrice: number;
 
   /** Message to display when registration is closed */
   closedMessage?: string;
@@ -30,7 +30,7 @@ export interface MembershipSettings {
 export const DEFAULT_MEMBERSHIP_SETTINGS: MembershipSettings = {
   registrationOpen: true,
   fullMembershipPrice: 100,
-  socialMembershipPrice: 50,
+  handicapMembershipPrice: 50,
   closedMessage:
     "Membership registration is currently closed. Please check back later for communication on when registration will open for the year.",
 };

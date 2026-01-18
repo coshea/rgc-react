@@ -22,6 +22,12 @@ export const siteConfig = {
       link: "/membership",
       icon: "lucide:user-plus",
     },
+    membershipV2: {
+      title: "Membership (New Flow)",
+      description: "Compare the new membership payment flow",
+      link: "/membership-v2",
+      icon: "lucide:credit-card",
+    },
     directory: {
       title: "Member Directory",
       description: "View all members",

@@ -1,37 +1,16 @@
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Input,
-  Button,
-  RadioGroup,
-  Radio,
-  Divider,
-  Chip,
-} from "@heroui/react";
+import { useEffect, useState } from "react";
+import { Button, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { addToast } from "@heroui/react";
-import {
-  MEMBERSHIP_FEE,
-  HANDICAP_FEE,
-  formatUSD,
-  computeFeeBreakdown,
-} from "@/config/membership-pricing";
-import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
+import { siteConfig } from "@/config/site";
 import { subscribeMembershipSettings } from "@/api/membership";
-import type { MembershipSettings } from "@/types/membershipSettings";
+import { addToast } from "@/providers/toast";
 import MembershipAdminModal from "@/components/membership-admin-modal";
-
-interface NewMemberFormState {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  ghin: string;
-}
+import MembershipPaymentsFlow from "@/components/membership/membership-payments-flow";
+import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAuth } from "@/providers/AuthProvider";
+import type { MembershipSettings } from "@/types/membershipSettings";
+import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 
 export default function MembershipPage() {
   const { user } = useAuth();
@@ -41,146 +20,46 @@ export default function MembershipPage() {
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
-  const [mode, setMode] = useState<"new" | "renew" | "donate" | "handicap">(
-    "new"
-  );
-  const [donation, setDonation] = useState<string>("");
-  const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState<NewMemberFormState>({
-    name: "",
-    email: user?.email || "",
-    phone: "",
-    address: "",
-    ghin: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Subscribe to membership settings
   useEffect(() => {
-    const unsubscribe = subscribeMembershipSettings((newSettings) => {
-      setSettings(newSettings);
-      setLoadingSettings(false);
-    });
+    const unsubscribe = subscribeMembershipSettings(
+      (newSettings) => {
+        setSettings(newSettings);
+        setLoadingSettings(false);
+      },
+      (error) => {
+        console.error("Failed to subscribe to membership settings:", error);
+        addToast({
+          title: "Settings unavailable",
+          description:
+            "Unable to load membership settings. You may be offline or there was a network error.",
+          color: "warning",
+        });
+        setSettings(null);
+        setLoadingSettings(false);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
-  // fees now sourced from membership-pricing config
+  const membershipAmountDue = settings?.fullMembershipPrice ?? MEMBERSHIP_FEE;
+  const handicapFee = settings?.handicapMembershipPrice ?? HANDICAP_FEE;
 
-  const validate = (): boolean => {
-    const next: Record<string, string> = {};
-    if (mode === "new") {
-      if (!form.name.trim()) next.name = "Name required";
-      if (!form.email.trim()) next.email = "Email required";
-      else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email))
-        next.email = "Invalid email";
-      if (!form.phone.trim()) next.phone = "Phone required";
-      if (!form.address.trim()) next.address = "Address required";
-    }
-    if (mode === "donate" && !donation.trim()) {
-      next.donation = "Enter an amount";
-    }
-    if (mode === "donate" && donation.trim()) {
-      const amt = parseFloat(donation);
-      if (isNaN(amt) || amt <= 0) next.donation = "Amount must be > 0";
-    }
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
-  const currency = formatUSD;
-
-  // Use dynamic pricing from settings, fallback to config defaults
-  const fullMembershipPrice = settings?.fullMembershipPrice ?? MEMBERSHIP_FEE;
-  const socialMembershipPrice = settings?.socialMembershipPrice ?? HANDICAP_FEE;
-
-  function getSubmitLabel() {
-    const donationValue = donation.trim();
-    if (mode === "new") {
-      // No donation input for new members yet; keep label simple
-      return `Apply & Pay ${currency(fullMembershipPrice)}`;
-    }
-    if (mode === "renew") {
-      const breakdown = computeFeeBreakdown(
-        fullMembershipPrice,
-        donationValue,
-        "Membership",
-        "membership"
-      );
-      return breakdown.donation > 0
-        ? `Renew ${currency(breakdown.total)}`
-        : `Renew ${currency(fullMembershipPrice)}`;
-    }
-    if (mode === "handicap") {
-      const breakdown = computeFeeBreakdown(
-        socialMembershipPrice,
-        donationValue,
-        "Handicap",
-        "handicap"
-      );
-      return breakdown.donation > 0
-        ? `Handicap ${currency(breakdown.total)}`
-        : `Handicap ${currency(socialMembershipPrice)}`;
-    }
-    // donate only
-    const breakdown = computeFeeBreakdown(
-      0,
-      donationValue,
-      "Donation",
-      "donationBase"
-    );
-    return breakdown.donation > 0
-      ? `Donate ${currency(breakdown.donation)}`
-      : "Donate";
-  }
-
-  const handleSubmit = async () => {
-    if (!validate()) return;
-    setSubmitting(true);
-    try {
-      // Placeholder: integrate with payment backend / stripe / firestore as needed
-      // We just simulate a short delay
-      await new Promise((res) => setTimeout(res, 700));
-      if (mode === "new") {
-        addToast({
-          title: "Application Submitted",
-          description:
-            "Thank you! We'll review your membership and follow up soon.",
-          color: "success",
-        });
-      } else if (mode === "renew") {
-        addToast({
-          title: "Membership Renewed",
-          description: `Your $${fullMembershipPrice} renewal was recorded (simulation).`,
-          color: "success",
-        });
-      } else {
-        addToast({
-          title: "Donation Received",
-          description: `Thank you for donating ${currency(parseFloat(donation))}! (simulation)`,
-          color: "success",
-        });
-      }
-      // reset donation field
-      if (mode === "donate") setDonation("");
-    } catch (e) {
-      console.error(e);
-      addToast({
-        title: "Error",
-        description: "Could not process request",
-        color: "danger",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const showClosedMessage =
+    !loadingSettings && settings && !settings.registrationOpen;
+  const showFlow = !loadingSettings && (settings?.registrationOpen || isAdmin);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold">Membership</h1>
-          {/* Admin settings button - only visible to admins */}
-          {isAdmin && (
+    <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
+      <header className="w-full max-w-3xl text-center">
+        <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+          Membership & Annual Dues
+        </h1>
+        <p className="mt-2 text-default-500 text-base">
+          Please select the option that best applies to you.
+        </p>
+
+        {isAdmin ? (
+          <div className="mt-6 flex justify-center">
             <Button
               color="primary"
               variant="flat"
@@ -192,17 +71,8 @@ export default function MembershipPage() {
             >
               Settings
             </Button>
-          )}
-        </div>
-        <p className="text-default-600 max-w-2xl text-sm leading-relaxed">
-          Welcome to the Ridgefield Golf Club! We are thrilled you're here. Our
-          annual membership fee is{" "}
-          <strong>{currency(fullMembershipPrice)}</strong> and helps fund
-          tournaments, course enhancements, and member events. New members
-          submit the short application below. Returning members can quickly
-          renew. Anyone can optionally support the club with an additional
-          donation.
-        </p>
+          </div>
+        ) : null}
       </header>
 
       <MembershipAdminModal
@@ -210,304 +80,39 @@ export default function MembershipPage() {
         onClose={() => setShowAdminModal(false)}
       />
 
-      {/* Registration Closed Message */}
-      {!loadingSettings && settings && !settings.registrationOpen && (
-        <Card className="border-2 border-warning">
-          <CardBody className="p-6">
-            <div className="flex items-start gap-4">
-              <Icon
-                icon="lucide:info"
-                width={24}
-                height={24}
-                className="text-warning mt-1 flex-shrink-0"
-              />
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Registration Closed
-                </h3>
-                <p className="text-foreground-600 whitespace-pre-line">
-                  {settings.closedMessage ||
-                    "Membership registration is currently closed. Please check back later."}
-                </p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
-
-      {/* Registration Form - only show if registration is open OR user is admin */}
-      {!loadingSettings && (settings?.registrationOpen || isAdmin) && (
-        <Card shadow="sm">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold">Select an Option</h2>
-            <RadioGroup
-              orientation="horizontal"
-              value={mode}
-              onValueChange={(v) => {
-                if (
-                  v === "new" ||
-                  v === "renew" ||
-                  v === "donate" ||
-                  v === "handicap"
-                ) {
-                  setMode(v);
-                }
-              }}
-              aria-label="Choose membership action"
-              className="flex flex-wrap gap-4"
-            >
-              <Radio value="new" description="Apply as a brand new member">
-                New Member
-              </Radio>
-              <Radio
-                value="renew"
-                description={`Renew existing membership (${currency(fullMembershipPrice)})`}
-              >
-                Renew ({currency(fullMembershipPrice)})
-              </Radio>
-              <Radio
-                value="handicap"
-                description={`Purchase handicap index only (${currency(socialMembershipPrice)})`}
-              >
-                Handicap Only ({currency(socialMembershipPrice)})
-              </Radio>
-              <Radio
-                value="donate"
-                description="Support the club with any amount"
-              >
-                Donation Only
-              </Radio>
-            </RadioGroup>
-          </CardHeader>
-          <Divider />
-          <CardBody className="space-y-6">
-            {mode === "new" && (
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:user-plus" className="w-4 h-4" /> New
-                  Member Application
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="Full Name"
-                    value={form.name}
-                    isInvalid={!!errors.name}
-                    errorMessage={errors.name}
-                    onValueChange={(v) => setForm((f) => ({ ...f, name: v }))}
-                    variant="bordered"
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    value={form.email}
-                    isInvalid={!!errors.email}
-                    errorMessage={errors.email}
-                    onValueChange={(v) => setForm((f) => ({ ...f, email: v }))}
-                    variant="bordered"
-                    type="email"
-                    required
-                  />
-                  <Input
-                    label="Phone"
-                    value={form.phone}
-                    isInvalid={!!errors.phone}
-                    errorMessage={errors.phone}
-                    onValueChange={(v) => setForm((f) => ({ ...f, phone: v }))}
-                    variant="bordered"
-                    placeholder="(xxx) xxx-xxxx"
-                    required
-                  />
-                  <Input
-                    label="Address"
-                    value={form.address}
-                    isInvalid={!!errors.address}
-                    errorMessage={errors.address}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, address: v }))
-                    }
-                    variant="bordered"
-                    required
-                  />
-                  <Input
-                    label="GHIN Number (optional)"
-                    value={form.ghin}
-                    onValueChange={(v) => setForm((f) => ({ ...f, ghin: v }))}
-                    variant="bordered"
-                    placeholder="If you have one from another club"
-                    className="md:col-span-2"
-                  />
-                </div>
-                <Chip size="sm" variant="flat" color="warning">
-                  Payment processing not yet live – submission is for demo only.
-                </Chip>
-              </div>
-            )}
-
-            {mode === "renew" && (
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:refresh-ccw" className="w-4 h-4" /> Renew
-                  Membership
-                </h3>
-                <p className="text-sm text-default-600">
-                  You are renewing for the {new Date().getFullYear()} season.
-                  The renewal fee is <strong>{currency(MEMBERSHIP_FEE)}</strong>
-                  . Add an optional donation below if you'd like to further
-                  support the club.
-                </p>
-                <Input
-                  label="Optional Donation"
-                  startContent={
-                    <span className="text-default-400 text-sm">$</span>
-                  }
-                  value={donation}
-                  onValueChange={setDonation}
-                  placeholder="0.00"
-                  variant="bordered"
-                  type="number"
-                  min={0}
+      {showClosedMessage ? (
+        <div className="mt-10 w-full">
+          <Card className="mx-auto w-full max-w-3xl border-2 border-warning bg-content1/70 backdrop-blur">
+            <CardBody className="p-6">
+              <div className="flex items-start gap-4">
+                <Icon
+                  icon="lucide:info"
+                  width={24}
+                  height={24}
+                  className="text-warning mt-1 shrink-0"
                 />
-              </div>
-            )}
-
-            {mode === "handicap" && (
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:golf" className="w-4 h-4" /> Handicap Index
-                  Only
-                </h3>
-                <p className="text-sm text-default-600">
-                  Purchase or renew only a USGA handicap index through the club
-                  for the current season. This does not include full club
-                  membership benefits. Fee:{" "}
-                  <strong>{currency(HANDICAP_FEE)}</strong>.
-                </p>
-                <Input
-                  label="Optional Donation"
-                  startContent={
-                    <span className="text-default-400 text-sm">$</span>
-                  }
-                  value={donation}
-                  onValueChange={setDonation}
-                  placeholder="0.00"
-                  variant="bordered"
-                  type="number"
-                  min={0}
-                />
-              </div>
-            )}
-
-            {mode === "donate" && (
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Icon icon="lucide:hand-heart" className="w-4 h-4" /> Make a
-                  Donation
-                </h3>
-                <p className="text-sm text-default-600">
-                  Every contribution—large or small—helps us improve
-                  tournaments, technology, and member experience.
-                </p>
-                <Input
-                  label="Donation Amount"
-                  startContent={
-                    <span className="text-default-400 text-sm">$</span>
-                  }
-                  value={donation}
-                  isInvalid={!!errors.donation}
-                  errorMessage={errors.donation}
-                  onValueChange={setDonation}
-                  placeholder="50.00"
-                  variant="bordered"
-                  type="number"
-                  min={0}
-                  required
-                />
-              </div>
-            )}
-          </CardBody>
-          <Divider />
-          <CardFooter className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-              <div className="text-[11px] text-default-500 flex-1">
-                This page is a functional placeholder. Actual payment
-                integration (Stripe, etc.) can be added later.
-              </div>
-              <div className="flex gap-2 items-center">
-                <Button
-                  variant="flat"
-                  onPress={() => {
-                    setErrors({});
-                    setForm({
-                      name: "",
-                      email: user?.email || "",
-                      phone: "",
-                      address: "",
-                      ghin: "",
-                    });
-                    setDonation("");
-                  }}
-                  isDisabled={submitting}
-                >
-                  Reset
-                </Button>
-                <div className="flex flex-col items-stretch">
-                  <Button
-                    color="primary"
-                    onPress={handleSubmit}
-                    isLoading={submitting}
-                    className="truncate max-w-[250px] sm:max-w-none"
-                  >
-                    {getSubmitLabel()}
-                  </Button>
-                  {/* Donation breakdown (kept out of button to avoid overflow) */}
-                  {(() => {
-                    const donationValue = donation.trim();
-                    const hasDonation =
-                      !!donationValue &&
-                      !isNaN(parseFloat(donationValue)) &&
-                      parseFloat(donationValue) > 0;
-                    if (!hasDonation) return null;
-                    if (mode === "renew") {
-                      return (
-                        <div className="text-[10px] text-default-500 mt-1 text-right sm:text-left">
-                          Includes Membership {currency(fullMembershipPrice)} +
-                          Donation {currency(parseFloat(donationValue))}
-                        </div>
-                      );
-                    }
-                    if (mode === "handicap") {
-                      return (
-                        <div className="text-[10px] text-default-500 mt-1 text-right sm:text-left">
-                          Includes Handicap {currency(socialMembershipPrice)} +
-                          Donation {currency(parseFloat(donationValue))}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Registration Closed
+                  </h3>
+                  <p className="text-foreground-600 whitespace-pre-line">
+                    {settings.closedMessage ??
+                      DEFAULT_MEMBERSHIP_SETTINGS.closedMessage}
+                  </p>
                 </div>
               </div>
-            </div>
-          </CardFooter>
-        </Card>
-      )}
+            </CardBody>
+          </Card>
+        </div>
+      ) : null}
 
-      {/* Show loading state */}
-      {loadingSettings && (
-        <Card>
-          <CardBody className="p-6">
-            <div className="flex items-center gap-2 text-foreground-500">
-              <Icon
-                icon="lucide:loader-2"
-                className="animate-spin"
-                width={20}
-                height={20}
-              />
-              <span>Loading membership information...</span>
-            </div>
-          </CardBody>
-        </Card>
-      )}
+      {showFlow ? (
+        <MembershipPaymentsFlow
+          membershipAmountDue={membershipAmountDue}
+          handicapFee={handicapFee}
+          loginFromPath={siteConfig.pages.membership.link}
+        />
+      ) : null}
     </div>
   );
 }

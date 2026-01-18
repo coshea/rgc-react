@@ -1,6 +1,8 @@
 // API for merging duplicate user records
 // This calls a Firebase Cloud Function that consolidates data from an existing user into a new user
 
+import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
+
 /**
  * Merge user data from existingUserId into newUserId.
  * The function will update all championships and tournament references.
@@ -13,10 +15,9 @@
 export async function mergeUserIds(
   newUserId: string,
   existingUserId: string,
-  idToken: string
+  idToken: string,
 ): Promise<{ championshipsUpdated: number; tournamentsUpdated: number }> {
-  const endpoint =
-    "https://us-central1-ridgefield-golf-club.cloudfunctions.net/merge_user_ids"; // TODO: move to env variable
+  const endpoint = `${getFirebaseFunctionsBaseUrl()}/merge_user_ids`;
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -30,7 +31,7 @@ export async function mergeUserIds(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error ?? `merge_user_ids failed (${response.status})`
+      error.error ?? `merge_user_ids failed (${response.status})`,
     );
   }
 

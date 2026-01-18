@@ -239,6 +239,17 @@ export async function getMembershipSettings(): Promise<MembershipSettings> {
     });
     return data;
   } catch (e) {
+    const errorCode =
+      typeof e === "object" && e !== null && "code" in e
+        ? (e as { code?: unknown }).code
+        : undefined;
+    if (errorCode === "permission-denied") {
+      logFsSuccess("getMembershipSettings", {
+        source: "default",
+        reason: "permission-denied",
+      });
+      return DEFAULT_MEMBERSHIP_SETTINGS;
+    }
     logFsError("getMembershipSettings", e);
     throw e;
   }
@@ -248,7 +259,8 @@ export async function getMembershipSettings(): Promise<MembershipSettings> {
  * Subscribe to membership settings changes in real-time
  */
 export function subscribeMembershipSettings(
-  callback: (settings: MembershipSettings) => void
+  callback: (settings: MembershipSettings) => void,
+  onError?: (error: unknown) => void
 ): Unsubscribe {
   const ref = doc(db, "config", "membershipSettings");
   return onSnapshot(
@@ -261,6 +273,31 @@ export function subscribeMembershipSettings(
       }
     },
     (error) => {
+      const errorCode =
+        typeof error === "object" && error !== null && "code" in error
+          ? (error as { code?: unknown }).code
+          : undefined;
+
+      // For logged-out users, rules may deny reading config. In that case,
+      // fall back to defaults so the membership flow can still render.
+      if (errorCode === "permission-denied") {
+        callback(DEFAULT_MEMBERSHIP_SETTINGS);
+        logFsSuccess("subscribeMembershipSettings", {
+          source: "default",
+          reason: "permission-denied",
+        });
+        return;
+      }
+
+      // For other errors, prefer to let the caller decide how to handle it
+      // (e.g. surface an offline/error state in the UI). If the caller did
+      // not provide an onError handler, fall back to returning defaults.
+      if (typeof onError === "function") {
+        onError(error);
+        return;
+      }
+
+      callback(DEFAULT_MEMBERSHIP_SETTINGS);
       logFsError("subscribeMembershipSettings", error);
     }
   );

@@ -7,7 +7,7 @@ runConfig:
   # cpu: 1
   # memoryMiB: 512
 
-# Environment variables and secrets.
+# Environment variables and secrets. - Secrets stored in Cloud Secret Manager
 env:
   # EmailJS Configuration - Secrets stored in Cloud Secret Manager
   # To create secrets, use: gcloud secrets create SECRET_NAME --data-file=-
@@ -22,5 +22,13 @@ env:
       - BUILD
   - variable: EMAILJS_PUBLIC_KEY
     secret: emailjs-public-key
+    availability:
+      - BUILD
+  - variable: VITE_PAYPAL_ENVIRONMENT
+    secret: paypal-environment
+    availability:
+      - BUILD
+  - variable: VITE_PAYPAL_CLIENT_ID
+    secret: paypal-client-id
     availability:
       - BUILD

@@ -64,7 +64,7 @@ const UserProfilePage: React.FC = () => {
         </div>
 
         {/* Profile Header Skeleton */}
-        <Card className="bg-gradient-to-r from-primary/10 to-secondary/10">
+        <Card className="bg-linear-to-r from-primary/10 to-secondary/10">
           <CardBody className="p-8">
             <div className="flex flex-col md:flex-row items-center gap-6">
               <Skeleton className="w-32 h-32 rounded-full" />
@@ -147,7 +147,7 @@ const UserProfilePage: React.FC = () => {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
+                    className="flex flex-col items-center p-3 rounded-lg bg-linear-to-r from-warning/10 to-warning/5 border border-warning/20 text-center"
                   >
                     <Skeleton className="w-8 h-8 rounded mb-2" />
                     <Skeleton className="h-4 w-20 mb-1 rounded" />
@@ -265,7 +265,7 @@ const UserProfilePage: React.FC = () => {
       </div>
 
       {/* Profile Header */}
-      <Card className="bg-gradient-to-r from-primary/10 to-secondary/10">
+      <Card className="bg-linear-to-r from-primary/10 to-secondary/10">
         <CardBody className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <UserAvatar
@@ -314,6 +314,33 @@ const UserProfilePage: React.FC = () => {
                       {formatBoardRoleLabel(profileUser.role)}
                     </Chip>
                   )}
+
+                  {profileUser.membershipType === "full" && (
+                    <Chip
+                      color="success"
+                      variant="flat"
+                      size="sm"
+                      startContent={
+                        <Icon icon="lucide:badge-check" className="w-3 h-3" />
+                      }
+                    >
+                      Full Member
+                    </Chip>
+                  )}
+
+                  {profileUser.membershipType === "handicap" && (
+                    <Chip
+                      color="primary"
+                      variant="flat"
+                      size="sm"
+                      startContent={
+                        <Icon icon="lucide:golf" className="w-3 h-3" />
+                      }
+                    >
+                      Handicap Only
+                    </Chip>
+                  )}
+
                   {!championshipsLoading && majorChampionships.length > 0 && (
                     <Chip
                       color="warning"
@@ -461,7 +488,7 @@ const UserProfilePage: React.FC = () => {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="flex flex-col items-center p-3 rounded-lg bg-gradient-to-r from-default/10 to-default/5 border border-default/20 text-center"
+                    className="flex flex-col items-center p-3 rounded-lg bg-linear-to-r from-default/10 to-default/5 border border-default/20 text-center"
                   >
                     <Skeleton className="w-8 h-8 rounded mb-2" />
                     <Skeleton className="h-4 w-20 mb-1 rounded" />
@@ -477,8 +504,8 @@ const UserProfilePage: React.FC = () => {
                     key={championship.id}
                     className={`flex flex-col items-center p-3 rounded-lg text-center ${
                       championship.placement === "champion"
-                        ? "bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20"
-                        : "bg-gradient-to-r from-default/10 to-default/5 border border-default/20"
+                        ? "bg-linear-to-r from-warning/10 to-warning/5 border border-warning/20"
+                        : "bg-linear-to-r from-default/10 to-default/5 border border-default/20"
                     }`}
                   >
                     <Icon

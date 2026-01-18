@@ -12,7 +12,11 @@
     "lint": "eslint -c .eslintrc.json ./src/**/**/*.{ts,tsx} --fix",
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
-    "firestore": "firebase deploy --only firestore:rules"
+    "emulators": "firebase emulators:start --only auth,firestore,functions",
+    "emulators:functions": "firebase emulators:start --only functions",
+    "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs",
+    "firestore": "firebase deploy --only firestore:rules",
+    "build-full": "npm run build && npm run test && npm run lint"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -32,8 +36,11 @@
     "@heroui/theme": "^2.4.22",
     "@heroui/toast": "^2.0.16",
     "@heroui/use-theme": "^2.1.10",
+    "@paypal/react-paypal-js": "^8.9.2",
     "@react-aria/visually-hidden": "3.8.21",
     "@react-types/shared": "3.28.0",
+    "@sentry/react": "^10.34.0",
+    "@sentry/vite-plugin": "^4.6.2",
     "@tailwindcss/postcss": "^4.1.12",
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/react-query": "^5.87.1",
