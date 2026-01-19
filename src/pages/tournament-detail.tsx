@@ -529,17 +529,21 @@ const TournamentDetailPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <Icon icon="lucide:trophy" className="w-4 h-4 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Prize Pool</p>
-                        <p>${tournament.prizePool.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
                       <Icon icon="lucide:users" className="w-4 h-4 mt-0.5" />
                       <div>
                         <p className="font-medium">Players On A Team</p>
                         <p>{tournament.players}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:clock" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Tee Times</p>
+                        <p>
+                          {tournament.assignedTeeTimes
+                            ? "Assigned"
+                            : "Get your own"}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
@@ -553,6 +557,13 @@ const TournamentDetailPage: React.FC = () => {
                             ariaLabel={`Tournament tee: ${tournament.tee || "Mixed"}`}
                           />
                         </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon icon="lucide:trophy" className="w-4 h-4 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Prize Pool</p>
+                        <p>${tournament.prizePool.toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">

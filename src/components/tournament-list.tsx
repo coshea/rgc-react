@@ -7,6 +7,7 @@ import {
   TableRow,
   TableCell,
   Chip,
+  Tooltip,
   Button,
   Card,
   CardBody,
@@ -456,6 +457,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <TableHeader>
             <TableColumn>TOURNAMENT</TableColumn>
             <TableColumn>DATE</TableColumn>
+            <TableColumn>
+              <div className="flex items-center gap-1">
+                <Icon icon="lucide:clock" className="text-default-400" />
+                <span className="sr-only">TEE TIMES</span>
+              </div>
+            </TableColumn>
             <TableColumn>PLAYERS</TableColumn>
             <TableColumn>TEE</TableColumn>
             <TableColumn>PRIZE POOL</TableColumn>
@@ -517,6 +524,17 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     <Icon icon="lucide:calendar" className="text-default-400" />
                     <span>{formatDate(tournament.date)}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  {tournament.assignedTeeTimes ? (
+                    <Tooltip content="Assigned tee times">
+                      <div className="flex items-center">
+                        <Icon icon="lucide:clock" className="text-primary" />
+                      </div>
+                    </Tooltip>
+                  ) : (
+                    <span className="text-default-300">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

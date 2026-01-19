@@ -10,6 +10,7 @@ import {
   Divider,
   Select,
   SelectItem,
+  Checkbox,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
@@ -73,6 +74,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   }
   const [tee, setTee] = React.useState<TeeColor>(
     isTeeColor(seed.tee) ? seed.tee : "Mixed"
+  );
+  const [assignedTeeTimes, setAssignedTeeTimes] = React.useState<boolean>(
+    Boolean(seed.assignedTeeTimes)
   );
   const [date, setDate] = React.useState<DateValue | null>(
     seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null
@@ -230,6 +234,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
+        assignedTeeTimes,
       };
 
       // Add weather if it has a value, or use deleteField() to clear it on updates
@@ -266,6 +271,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         winnerGroups: sanitizedGroups,
         date: date ? new Date(date.toString()) : new Date(),
         tee,
+        assignedTeeTimes,
         previousTournamentId: previousTournamentId || undefined,
         weather: weather || undefined,
       };
@@ -635,6 +641,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   </SelectItem>
                 ))}
               </Select>
+
+              <Checkbox
+                isSelected={assignedTeeTimes}
+                onValueChange={setAssignedTeeTimes}
+              >
+                Assigned tee times
+              </Checkbox>
               <Select
                 label="Previous Year's Tournament (Optional)"
                 placeholder="Link to previous tournament"

@@ -176,6 +176,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           players: tpl.players,
           prizePool: tpl.prizePool,
           tee: tpl.tee,
+          assignedTeeTimes: tpl.assignedTeeTimes,
         };
       }
     }

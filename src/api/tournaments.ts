@@ -84,6 +84,7 @@ export function mapTournamentDoc(d: any) {
     prizePool: data.prizePool || 0,
     winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
+    assignedTeeTimes: Boolean(data.assignedTeeTimes),
     previousTournamentId: data.previousTournamentId,
     weather: data.weather,
   };

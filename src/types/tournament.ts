@@ -19,6 +19,8 @@ export interface Tournament {
   winnerGroups?: import("./winner").WinnerGroup[];
   // Tee selection for the tournament round
   tee?: TeeName;
+  // True when the event uses assigned tee times.
+  assignedTeeTimes?: boolean;
   // Link to previous year's tournament (Firestore ID) to display defending champion
   previousTournamentId?: string;
   // Weather data for the tournament day

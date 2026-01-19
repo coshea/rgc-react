@@ -2,6 +2,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Tooltip,
   Chip,
   Divider,
   CardFooter,
@@ -86,6 +87,14 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                 day: "numeric",
                 timeZone: "UTC", // Add this line
               })}
+              {tournament.assignedTeeTimes ? (
+                <Tooltip content="Assigned tee times">
+                  <span className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-300">
+                    <Icon icon="lucide:clock" className="w-4 h-4" />
+                    <span className="sr-only">Assigned tee times</span>
+                  </span>
+                </Tooltip>
+              ) : null}
             </div>
             {/* Right: Status Chip */}
             {(() => {
@@ -157,7 +166,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                   variant="flat"
                   size="sm"
                   startContent={
-                    <Icon icon="lucide:clock" className="w-3.5 h-3.5" />
+                    <Icon icon="lucide:calendar-days" className="w-3.5 h-3.5" />
                   }
                 >
                   {label}
