@@ -189,7 +189,7 @@ const UserProfilePage: React.FC = () => {
                           <Skeleton className="w-4 h-4 rounded" />
                           <Skeleton className="h-4 flex-1 rounded" />
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <Skeleton className="h-5 w-8 rounded-full" />
                           <Skeleton className="h-4 w-12 rounded" />
                         </div>
@@ -373,9 +373,12 @@ const UserProfilePage: React.FC = () => {
                 {profileUser.email && (
                   <div className="flex items-center gap-2">
                     <Icon icon="lucide:mail" className="w-4 h-4 text-primary" />
-                    <span className="text-default-700">
+                    <Link
+                      href={`mailto:${profileUser.email}`}
+                      className="text-default-700 underline decoration-dotted underline-offset-2"
+                    >
                       {profileUser.email}
-                    </span>
+                    </Link>
                   </div>
                 )}
                 {profileUser.phone && (
@@ -597,7 +600,7 @@ const UserProfilePage: React.FC = () => {
                           <Skeleton className="w-4 h-4 rounded" />
                           <Skeleton className="h-4 flex-1 rounded" />
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           <Skeleton className="h-5 w-8 rounded-full" />
                           <Skeleton className="h-4 w-12 rounded" />
                         </div>
@@ -643,14 +646,14 @@ const UserProfilePage: React.FC = () => {
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Icon
                               icon="lucide:trophy"
-                              className="w-4 h-4 text-primary flex-shrink-0"
+                              className="w-4 h-4 text-primary shrink-0"
                             />
                             <h5 className="font-semibold text-foreground text-sm truncate">
                               {tournament.tournamentName}
                             </h5>
                           </div>
 
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             {tournament.position && (
                               <Chip size="sm" color="primary" variant="flat">
                                 {tournament.position === 1

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -7,8 +7,9 @@ import TournamentDetailPage from "@/pages/tournament-detail";
 import { TournamentStatus } from "@/types/tournament";
 
 // Mock hooks & Auth
+let authUserMock: { uid: string } | null = { uid: "user1" };
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user1" } }),
+  useAuth: () => ({ user: authUserMock }),
 }));
 vi.mock("@/hooks/useUserProfile", () => ({
   useUserProfile: () => ({ userProfile: {} }),
@@ -121,6 +122,7 @@ describe("TournamentDetailPage", () => {
   beforeEach(() => {
     Object.keys(apiListeners).forEach((k) => delete apiListeners[k]);
     isAdminMock = false;
+    authUserMock = { uid: "user1" };
   });
 
   it("renders loading then tournament title", async () => {
@@ -189,6 +191,16 @@ describe("TournamentDetailPage", () => {
     await screen.findByText("Club Championship");
     expect(
       screen.getByText(/Registration is currently closed/i)
+    ).toBeInTheDocument();
+  });
+
+  it("does not load registered teams when logged out", async () => {
+    authUserMock = null;
+    renderWithRoute("loggedout1");
+    emitDoc("tournaments/loggedout1", baseTournament);
+    await screen.findByText("Club Championship");
+    expect(
+      screen.getByText(/You must be logged in to view registered teams/i)
     ).toBeInTheDocument();
   });
 
@@ -333,6 +345,43 @@ describe("TournamentDetailPage", () => {
       toggleBtn.click();
     });
     await screen.findByText(/Team 1/i);
+  });
+
+  it("opens the open-spot modal when clicked", async () => {
+    renderWithRoute("modal1");
+    emitDoc("tournaments/modal1", { ...baseTournament, players: 4 });
+    emitCollection("tournaments/modal1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "leader1",
+          openSpotsOptIn: true,
+          team: [
+            { id: "leader1", displayName: "Leader One" },
+            { id: "m2", displayName: "Member Two" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+
+    const teamCard = screen.getByRole("button", {
+      name: /open spot details for team 1/i,
+    });
+    await act(async () => {
+      teamCard.click();
+    });
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Team 1/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Leader One/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Member Two/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", {
+        name: /View profile for Leader One/i,
+      })
+    ).toBeInTheDocument();
   });
 
   it("marks teams beyond maxTeams as waitlisted", async () => {
