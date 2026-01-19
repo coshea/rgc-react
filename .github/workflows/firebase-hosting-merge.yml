@@ -25,6 +25,11 @@ jobs:
         run: npm run test
 
       - name: Build
+        env:
+          VITE_PAYPAL_CLIENT_ID: ${{ secrets.VITE_PAYPAL_CLIENT_ID }}
+          VITE_PAYPAL_ENVIRONMENT: ${{ secrets.VITE_PAYPAL_ENVIRONMENT }}
+          VITE_FIREBASE_FUNCTIONS_BASE_URL: ${{ secrets.VITE_FIREBASE_FUNCTIONS_BASE_URL }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: npm run build
 
       - name: Deploy to Firebase

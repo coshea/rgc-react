@@ -52,6 +52,17 @@ All Firebase initialization is centralized in `src/config/firebase.ts`.
 - Local build + deploy via Firebase CLI is supported. GitHub Actions CI requires a `firebaseServiceAccount` secret (JSON service account) for deploys.
 - App Hosting config lives in `apphosting.yaml`.
 
+#### Build-Time Environment Variables (Vite)
+
+The client bundle is built with Vite; only variables prefixed with `VITE_` are embedded into the production build. If a variable like `VITE_PAYPAL_CLIENT_ID` is missing at build time, PayPal will be disabled in production.
+
+For GitHub Actions deployments to Firebase Hosting, configure these repository secrets and ensure they are passed to the `npm run build` step:
+
+- `VITE_PAYPAL_CLIENT_ID` (required for PayPal buttons)
+- `VITE_PAYPAL_ENVIRONMENT` (optional; defaults to `SANDBOX` if unset)
+- `VITE_FIREBASE_FUNCTIONS_BASE_URL` (if your deployment uses a non-default functions base URL)
+- `SENTRY_AUTH_TOKEN` (optional; enables sourcemap upload)
+
 ## Routing & Providers
 
 - App routes are defined in `src/App.tsx` and use `siteConfig.pages` for stable paths.
