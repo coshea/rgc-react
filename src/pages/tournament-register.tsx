@@ -5,6 +5,7 @@ import {
   CardBody,
   Button,
   Divider,
+  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,
@@ -59,16 +60,25 @@ const TournamentRegister: React.FC = () => {
   const pendingMembersRef = React.useRef<{
     members: { id: string; displayName: string }[];
     ownerId: string;
+    openSpotsOptIn: boolean;
   } | null>(null);
 
+  // Explicit opt-in: only advertise open spots when the user chooses to.
+  const [openSpotsOptIn, setOpenSpotsOptIn] = React.useState(false);
+
   const finalizeRegistration = React.useCallback(
-    async (members: { id: string; displayName: string }[], ownerId: string) => {
+    async (
+      members: { id: string; displayName: string }[],
+      ownerId: string,
+      nextOpenSpotsOptIn: boolean
+    ) => {
       if (!tournament?.firestoreId) return;
       setSubmitting(true);
       try {
         await upsertRegistration(tournament.firestoreId, registrationId, {
           team: members,
           ownerId,
+          openSpotsOptIn: nextOpenSpotsOptIn,
         });
         addToast({
           title: "Registered",
@@ -179,6 +189,9 @@ const TournamentRegister: React.FC = () => {
         if (existing) {
           setRegistrationId(existing.id);
           const maybeTeam = (existing as Record<string, unknown>).team;
+          const maybeOptIn = (existing as Record<string, unknown>)
+            .openSpotsOptIn;
+          setOpenSpotsOptIn(maybeOptIn === true);
           if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
             const ids = maybeTeam.map((m) =>
               typeof m === "object" && m !== null
@@ -225,6 +238,8 @@ const TournamentRegister: React.FC = () => {
         ? 1
         : 0;
   const hasMinTeamSize = effectiveSelectedCount >= minTeamSize;
+
+  const openSlotsCount = Math.max(maxTeamSize - effectiveSelectedCount, 0);
 
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
@@ -350,7 +365,11 @@ const TournamentRegister: React.FC = () => {
     });
 
     if (foundConflicts.length > 0 && !conflictsAcknowledged) {
-      pendingMembersRef.current = { members, ownerId: user.uid };
+      pendingMembersRef.current = {
+        members,
+        ownerId: user.uid,
+        openSpotsOptIn,
+      };
       setConflicts(foundConflicts);
       setConflictModalOpen(true);
       return; // wait for user confirmation
@@ -359,8 +378,10 @@ const TournamentRegister: React.FC = () => {
     // Use stored members if we are completing after a conflict acknowledgement
     const finalMembers = pendingMembersRef.current?.members || members;
     const ownerId = pendingMembersRef.current?.ownerId || user.uid;
+    const finalOpenSpotsOptIn =
+      pendingMembersRef.current?.openSpotsOptIn ?? openSpotsOptIn;
 
-    await finalizeRegistration(finalMembers, ownerId);
+    await finalizeRegistration(finalMembers, ownerId, finalOpenSpotsOptIn);
   };
 
   const handleConfirmCancel = async () => {
@@ -376,6 +397,7 @@ const TournamentRegister: React.FC = () => {
       });
       setRegistrationId(null);
       setTeammates([""]);
+      setOpenSpotsOptIn(false);
       setConfirmOpen(false);
       // Navigate back to the tournament details page after successful cancellation
       navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
@@ -427,6 +449,15 @@ const TournamentRegister: React.FC = () => {
               labels={{ leader: "Team Leader / You" }}
               disabled={!user?.uid}
             />
+
+            {maxTeamSize > 1 && openSlotsCount > 0 ? (
+              <Checkbox
+                isSelected={openSpotsOptIn}
+                onValueChange={setOpenSpotsOptIn}
+              >
+                Let others contact me to fill open spots
+              </Checkbox>
+            ) : null}
 
             {minTeamSize > 1 && !hasMinTeamSize ? (
               <div className="text-sm text-danger">
@@ -641,7 +672,8 @@ const TournamentRegister: React.FC = () => {
                           queueMicrotask(() =>
                             finalizeRegistration(
                               pending.members,
-                              pending.ownerId
+                              pending.ownerId,
+                              pending.openSpotsOptIn
                             )
                           );
                         }

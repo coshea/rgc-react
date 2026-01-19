@@ -251,6 +251,7 @@ describe("TournamentDetailPage", () => {
         id: "r1",
         data: () => ({
           ownerId: "other",
+          openSpotsOptIn: true,
           team: [
             { id: "u10", displayName: "Player A" },
             { id: "u11", displayName: "Player B" },
@@ -262,6 +263,28 @@ describe("TournamentDetailPage", () => {
     await screen.findByText("Club Championship");
     expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/2 open team spots?/i)).toBeInTheDocument();
+  });
+
+  it("does not advertise open spots unless opted in", async () => {
+    renderWithRoute("spots2");
+    emitDoc("tournaments/spots2", { ...baseTournament, players: 4 });
+    emitCollection("tournaments/spots2/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "other",
+          openSpotsOptIn: false,
+          team: [
+            { id: "u10", displayName: "Player A" },
+            { id: "u11", displayName: "Player B" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+    expect(screen.queryByText(/Spots Open/i)).toBeNull();
+    expect(screen.queryByLabelText(/open team spots?/i)).toBeNull();
   });
 
   it("filters to show only teams needing players when toggle active", async () => {
@@ -285,6 +308,7 @@ describe("TournamentDetailPage", () => {
         id: "open1",
         data: () => ({
           ownerId: "o2",
+          openSpotsOptIn: true,
           team: [
             { id: "e", displayName: "E" },
             { id: "f", displayName: "F" },

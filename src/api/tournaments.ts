@@ -117,6 +117,8 @@ export interface RegistrationMember {
 export interface RegistrationPayload {
   team: RegistrationMember[];
   ownerId: string;
+  /** When true, the captain opts in to advertising open spots on the team. */
+  openSpotsOptIn?: boolean;
 }
 
 // Create or update a registration. If registrationId provided, merges; else adds.

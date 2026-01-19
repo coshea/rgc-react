@@ -43,6 +43,7 @@ interface RegistrationDoc {
   ownerId?: string;
   team?: Array<{ id: string; displayName?: string }>;
   registeredAt?: any;
+  openSpotsOptIn?: boolean;
 }
 
 const TournamentDetailPage: React.FC = () => {
@@ -80,7 +81,7 @@ const TournamentDetailPage: React.FC = () => {
     if (!maxPlayers || !registrations.length) return false;
     return registrations.some((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
-      return team.length < maxPlayers;
+      return r.openSpotsOptIn === true && team.length < maxPlayers;
     });
   }, [registrations, tournament?.players]);
 
@@ -893,6 +894,7 @@ const TournamentDetailPage: React.FC = () => {
                               ? reg.team
                               : [];
                             return (
+                              reg.openSpotsOptIn === true &&
                               team.length < (tournament.players || team.length)
                             );
                           })
@@ -926,12 +928,14 @@ const TournamentDetailPage: React.FC = () => {
                               maxPlayers - team.length,
                               0
                             );
+                            const showOpenSpots =
+                              reg.openSpotsOptIn === true && openSpots > 0;
                             const leaderId = reg.ownerId || team[0]?.id;
                             return (
                               <div
                                 key={reg.id}
                                 className={`rounded-md border transition-colors p-3 flex flex-col h-full gap-2 relative group ${
-                                  openSpots > 0
+                                  showOpenSpots
                                     ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
                                     : "border-default-200 bg-content2/60 hover:bg-content2"
                                 }`}
@@ -962,7 +966,7 @@ const TournamentDetailPage: React.FC = () => {
                                         />
                                       );
                                     })}
-                                    {openSpots > 0 && (
+                                    {showOpenSpots && (
                                       <div
                                         className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
                                         aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
@@ -1017,7 +1021,7 @@ const TournamentDetailPage: React.FC = () => {
                                         );
                                       })}
                                     </ul>
-                                    {openSpots > 0 && (
+                                    {showOpenSpots && (
                                       <p className="mt-1 text-[11px] font-medium text-warning flex items-center gap-1">
                                         <Icon
                                           icon="lucide:alert-circle"
