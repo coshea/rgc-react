@@ -263,16 +263,37 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         navigate(`/tournaments/${tournament.firestoreId}`);
       }
     };
+
+    const stopPropagationIfPossible = (event: unknown) => {
+      if (
+        typeof event === "object" &&
+        event !== null &&
+        "stopPropagation" in event &&
+        typeof (event as { stopPropagation?: unknown }).stopPropagation ===
+          "function"
+      ) {
+        (event as { stopPropagation: () => void }).stopPropagation();
+      }
+    };
+
     return (
       <Card
         key={tournament.firestoreId}
-        isPressable
         className="mb-4 border border-default-200 cursor-pointer hover:bg-content2 transition-colors"
-        onPress={goToDetails}
-        role="link"
-        aria-label={`View details for ${tournament.title}`}
       >
-        <CardBody className="p-4" onClick={goToDetails}>
+        <CardBody
+          className="p-4"
+          role="link"
+          tabIndex={0}
+          aria-label={`View details for ${tournament.title}`}
+          onClick={goToDetails}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              goToDetails();
+            }
+          }}
+        >
           <div className="flex justify-between items-start">
             <div>
               <p className="font-medium text-foreground mb-1 flex items-center gap-2">
@@ -312,8 +333,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     size="sm"
                     variant="light"
                     isIconOnly
-                    onPress={(e: any) => {
-                      e?.stopPropagation?.();
+                    onPress={(e: unknown) => {
+                      stopPropagationIfPossible(e);
                       onEdit(tournament);
                     }}
                     aria-label="Edit tournament"
@@ -325,8 +346,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     variant="light"
                     color="danger"
                     isIconOnly
-                    onPress={(e: any) => {
-                      e?.stopPropagation?.();
+                    onPress={(e: unknown) => {
+                      stopPropagationIfPossible(e);
                       openConfirm(tournament.firestoreId);
                     }}
                     aria-label="Delete tournament"

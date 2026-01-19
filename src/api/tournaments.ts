@@ -85,6 +85,7 @@ export function mapTournamentDoc(d: any) {
     winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
     assignedTeeTimes: Boolean(data.assignedTeeTimes),
+    maxTeams: typeof data.maxTeams === "number" ? data.maxTeams : undefined,
     previousTournamentId: data.previousTournamentId,
     weather: data.weather,
   };

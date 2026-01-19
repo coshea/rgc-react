@@ -21,6 +21,8 @@ export interface Tournament {
   tee?: TeeName;
   // True when the event uses assigned tee times.
   assignedTeeTimes?: boolean;
+  // Optional cap on number of registered teams. Sign-ups are not blocked; teams beyond this count are treated as waitlisted in the UI.
+  maxTeams?: number;
   // Link to previous year's tournament (Firestore ID) to display defending champion
   previousTournamentId?: string;
   // Weather data for the tournament day

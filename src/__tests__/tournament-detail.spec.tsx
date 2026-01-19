@@ -310,4 +310,41 @@ describe("TournamentDetailPage", () => {
     });
     await screen.findByText(/Team 1/i);
   });
+
+  it("marks teams beyond maxTeams as waitlisted", async () => {
+    renderWithRoute("wait1");
+    emitDoc("tournaments/wait1", { ...baseTournament, maxTeams: 2 });
+    emitCollection("tournaments/wait1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "o1",
+          team: [{ id: "a", displayName: "A" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "r2",
+        data: () => ({
+          ownerId: "o2",
+          team: [{ id: "b", displayName: "B" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "r3",
+        data: () => ({
+          ownerId: "o3",
+          team: [{ id: "c", displayName: "C" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+
+    await screen.findByText("Club Championship");
+    expect(screen.getByText(/Field Size/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 teams/i)).toBeInTheDocument();
+    expect(screen.getByText("3 / 2")).toBeInTheDocument();
+    expect(screen.getAllByText(/Waitlist/i).length).toBeGreaterThan(0);
+  });
 });

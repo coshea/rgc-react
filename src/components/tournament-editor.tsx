@@ -58,6 +58,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     seed.detailsMarkdown || ""
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
+  const [maxTeams, setMaxTeams] = React.useState<number | undefined>(
+    typeof seed.maxTeams === "number" ? seed.maxTeams : undefined
+  );
   const [completed, setCompleted] = React.useState(
     getStatus(seed) === TournamentStatus.Completed ||
       getStatus(seed) === TournamentStatus.InProgress
@@ -122,6 +125,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (!date) newErrors.date = "Date is required";
     // markdown not required but if provided can be large; no validation now
     if (players < 1) newErrors.players = "Must have at least 1 player";
+    if (maxTeams !== undefined && maxTeams < 1) {
+      newErrors.maxTeams = "Must be at least 1 team";
+    }
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
 
     // Grouped winners validation replaces legacy winners
@@ -236,6 +242,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         tee,
         assignedTeeTimes,
       };
+
+      if (
+        typeof maxTeams === "number" &&
+        Number.isFinite(maxTeams) &&
+        maxTeams > 0
+      ) {
+        tournamentData.maxTeams = maxTeams;
+      } else if (tournament && tournament.firestoreId) {
+        tournamentData.maxTeams = deleteField();
+      }
 
       // Add weather if it has a value, or use deleteField() to clear it on updates
       if (weather) {
@@ -547,7 +563,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
             </div>
             <div className="space-y-6">
               <NumberInput
-                label="Number of Players"
+                label="Number of Players On A Team"
                 placeholder="Enter number of players"
                 value={players}
                 onValueChange={setPlayers}
@@ -555,6 +571,23 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 max={100}
                 isInvalid={!!errors.players}
                 errorMessage={errors.players}
+              />
+              <NumberInput
+                label="Max Registered Teams (Optional)"
+                placeholder="Leave blank for unlimited"
+                value={maxTeams}
+                onValueChange={(value) => {
+                  setMaxTeams(
+                    typeof value === "number" &&
+                      Number.isFinite(value) &&
+                      value > 0
+                      ? value
+                      : undefined
+                  );
+                }}
+                min={1}
+                isInvalid={!!errors.maxTeams}
+                errorMessage={errors.maxTeams}
               />
               <NumberInput
                 label="Prize Pool ($)"

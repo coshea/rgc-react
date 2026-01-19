@@ -535,6 +535,17 @@ const TournamentDetailPage: React.FC = () => {
                         <p>{tournament.players}</p>
                       </div>
                     </div>
+                    {typeof tournament.maxTeams === "number" &&
+                    Number.isFinite(tournament.maxTeams) &&
+                    tournament.maxTeams > 0 ? (
+                      <div className="flex items-start gap-2">
+                        <Icon icon="lucide:users" className="w-4 h-4 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Field Size</p>
+                          <p>{tournament.maxTeams} teams</p>
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="flex items-start gap-2">
                       <Icon icon="lucide:clock" className="w-4 h-4 mt-0.5" />
                       <div>
@@ -792,6 +803,11 @@ const TournamentDetailPage: React.FC = () => {
                   {!regsLoading && registrations.length > 0 && (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                       {registrations.length}
+                      {typeof tournament.maxTeams === "number" &&
+                      Number.isFinite(tournament.maxTeams) &&
+                      tournament.maxTeams > 0
+                        ? ` / ${tournament.maxTeams}`
+                        : ""}
                     </span>
                   )}
                 </h2>
@@ -884,6 +900,14 @@ const TournamentDetailPage: React.FC = () => {
                             const originalIdx = registrations.findIndex(
                               (r) => r.id === reg.id
                             );
+                            const maxTeams =
+                              typeof tournament.maxTeams === "number" &&
+                              Number.isFinite(tournament.maxTeams) &&
+                              tournament.maxTeams > 0
+                                ? tournament.maxTeams
+                                : undefined;
+                            const isWaitlisted =
+                              maxTeams !== undefined && originalIdx >= maxTeams;
                             const team = Array.isArray(reg.team)
                               ? reg.team
                               : [];
@@ -949,9 +973,21 @@ const TournamentDetailPage: React.FC = () => {
                                     )}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium mb-1">
-                                      Team {originalIdx + 1}
-                                    </p>
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                      <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium">
+                                        Team {originalIdx + 1}
+                                      </p>
+                                      {isWaitlisted ? (
+                                        <Chip
+                                          size="sm"
+                                          variant="flat"
+                                          color="warning"
+                                          className="h-5 px-2 text-[10px]"
+                                        >
+                                          Waitlist
+                                        </Chip>
+                                      ) : null}
+                                    </div>
                                     <ul className="text-sm font-medium leading-snug space-y-0.5">
                                       {team.map((m, i) => {
                                         const isLeader =
