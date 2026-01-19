@@ -127,10 +127,10 @@ export async function upsertRegistration(
   registrationId: string | null,
   payload: RegistrationPayload
 ) {
-  const base = {
-    ...payload,
-    registeredAt: serverTimestamp(),
-  };
+  // When creating a new registration, stamp it with the server timestamp so
+  // ordering by `registeredAt` reflects the original registration time.
+  // When updating an existing registration, DO NOT modify `registeredAt` to
+  // preserve original ordering.
   if (registrationId) {
     const ref = doc(
       db,
@@ -139,11 +139,17 @@ export async function upsertRegistration(
       "registrations",
       registrationId
     );
-    await setDoc(ref, base, { merge: true });
+    // Merge the payload but intentionally omit `registeredAt` so the existing
+    // value remains unchanged.
+    await setDoc(ref, { ...payload }, { merge: true });
     return registrationId;
   }
+
   const col = collection(db, "tournaments", tournamentId, "registrations");
-  const created = await addDoc(col, base);
+  const created = await addDoc(col, {
+    ...payload,
+    registeredAt: serverTimestamp(),
+  });
   return created.id;
 }
 
