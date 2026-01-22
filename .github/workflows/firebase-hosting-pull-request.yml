@@ -18,6 +18,7 @@ jobs:
           VITE_PAYPAL_ENVIRONMENT: ${{ secrets.VITE_PAYPAL_ENVIRONMENT }}
           VITE_FIREBASE_FUNCTIONS_BASE_URL: ${{ secrets.VITE_FIREBASE_FUNCTIONS_BASE_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VITE_SENTRY_ENABLE_LOGS: ${{ secrets.VITE_SENTRY_ENABLE_LOGS }}
         run: npm ci && npm run test && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
