@@ -1399,7 +1399,7 @@ const TournamentDetailPage: React.FC = () => {
                     </div>
 
                     <p className="text-xs text-foreground-500">
-                      Tip: tap the leader to request being added.
+                      Tip: use "View profile" to contact a team member or the leader.
                     </p>
                   </div>
                 ) : (
