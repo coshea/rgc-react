@@ -34,6 +34,7 @@ vi.mock("@/config/firebase", () => ({
     },
   },
   auth: { currentUser: { uid: "u2" } },
+  getAnalyticsInstance: () => null,
 }));
 
 // API mocks for tournaments
@@ -84,7 +85,7 @@ describe("TournamentRegister registration eligibility", () => {
     render(<TournamentRegister />);
     // Should render the registration UI for any authenticated user
     expect(
-      await screen.findByText(/Register for Member Only Event/i)
+      await screen.findByText(/Register for Member Only Event/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Registration Restricted/i)).toBeNull();
   });

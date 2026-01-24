@@ -5,6 +5,7 @@ import { uploadProfilePicture } from "@/api/storage";
 vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "uid123" } },
   storage: {},
+  getAnalyticsInstance: () => null,
 }));
 
 // We'll mock firebase/storage methods used in the implementation.
@@ -24,7 +25,7 @@ describe("uploadProfilePicture", () => {
     const url = await uploadProfilePicture("uid123", file);
     // url should contain the generated timestamped filename under avatars/uid123
     expect(url).toMatch(
-      /^https:\/\/storage\.test\/avatars\/uid123\/\d+_avatar\.png$/
+      /^https:\/\/storage\.test\/avatars\/uid123\/\d+_avatar\.png$/,
     );
   });
 });

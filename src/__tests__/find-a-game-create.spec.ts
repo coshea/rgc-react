@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/config/firebase", () => ({
   db: {},
   auth: { currentUser: { uid: "u1" } },
+  getAnalyticsInstance: () => null,
 }));
 
 const { addDocMock, collectionMock, serverTimestampMock, docMock, getDocMock } =
@@ -11,11 +12,11 @@ const { addDocMock, collectionMock, serverTimestampMock, docMock, getDocMock } =
     const addDocMock = vi.fn<
       (
         col: unknown,
-        payload: Record<string, unknown>
+        payload: Record<string, unknown>,
       ) => Promise<{ id: string }>
     >(async () => ({ id: "new-id" }));
     const collectionMock = vi.fn<(db: unknown, path: string) => unknown>(
-      () => ({})
+      () => ({}),
     );
     const serverTimestampMock = vi.fn<() => unknown>(() => ({ __ts: true }));
 
@@ -96,7 +97,7 @@ describe("createPartnerPost", () => {
         date: "2099-01-02",
         time: "09:00",
         openSpots: Number(""), // NaN
-      })
+      }),
     ).rejects.toThrow(/Open spots must be an integer/i);
 
     expect(addDocMock).not.toHaveBeenCalled();

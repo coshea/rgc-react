@@ -55,6 +55,7 @@ vi.mock("@/components/winner-form", () => ({
 vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "user1" } },
   db: {},
+  getAnalyticsInstance: () => null,
 }));
 
 // Mock firebase/firestore with controlled onSnapshot that yields a users snapshot

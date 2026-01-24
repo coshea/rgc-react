@@ -74,7 +74,10 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: vi.fn(() => () => {}),
 }));
 
-vi.mock("@/config/firebase", () => ({ db: {} }));
+vi.mock("@/config/firebase", () => ({
+  db: {},
+  getAnalyticsInstance: () => null,
+}));
 
 import TournamentRegister from "@/pages/tournament-register";
 import "@/api/tournaments";

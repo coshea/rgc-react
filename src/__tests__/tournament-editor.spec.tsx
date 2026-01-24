@@ -46,6 +46,7 @@ const updateDocMock = vi.fn(async (..._args: any[]) => {});
 vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "user1" } },
   db: {},
+  getAnalyticsInstance: () => null,
 }));
 
 vi.mock("firebase/firestore", () => ({
