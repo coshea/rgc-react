@@ -272,7 +272,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         players,
         status,
         prizePool,
-        // winners removed (legacy); only persist grouped model going forward
         winnerGroups: sanitizedGroups, // grouped model
         date: date ? new Date(date.toString()) : new Date(),
         tee,
@@ -339,6 +338,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         date: date ? new Date(date.toString()) : new Date(),
         tee,
         assignedTeeTimes,
+        maxTeams:
+          typeof maxTeams === "number" &&
+          Number.isFinite(maxTeams) &&
+          maxTeams > 0
+            ? maxTeams
+            : undefined,
         previousTournamentId: previousTournamentId || undefined,
         weather: weather || undefined,
         registrationStart: parsedStart || undefined,

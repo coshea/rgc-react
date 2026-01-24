@@ -304,21 +304,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     return (
       <Card
         key={tournament.firestoreId}
-        className="mb-4 border border-default-200 cursor-pointer hover:bg-content2 transition-colors"
+        isPressable
+        onPress={goToDetails}
+        aria-label={`View details for ${tournament.title}`}
+        className="mb-4 border border-default-200 hover:bg-content2 transition-colors"
       >
-        <CardBody
-          className="p-4"
-          role="link"
-          tabIndex={0}
-          aria-label={`View details for ${tournament.title}`}
-          onClick={goToDetails}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              goToDetails();
-            }
-          }}
-        >
+        <CardBody className="p-4">
           <div className="flex justify-between items-start">
             <div>
               <p className="font-medium text-foreground mb-1 flex items-center gap-2">

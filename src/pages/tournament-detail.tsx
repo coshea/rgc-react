@@ -955,25 +955,22 @@ const TournamentDetailPage: React.FC = () => {
                           className="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"
                           aria-hidden="true"
                         />
-                        <button
-                          type="button"
-                          className="text-[11px] text-foreground-400 underline decoration-dotted underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60 rounded-sm"
-                          aria-label="Real-time updates info"
-                          onFocus={(e) =>
-                            e.currentTarget.setAttribute("data-focus", "true")
-                          }
-                          onBlur={(e) =>
-                            e.currentTarget.removeAttribute("data-focus")
-                          }
+                        <Tooltip
+                          content="Updates in real time as teams register."
+                          placement="bottom"
+                          closeDelay={0}
+                          offset={6}
                         >
-                          Live
-                        </button>
-                        <span
-                          role="tooltip"
-                          className="pointer-events-none opacity-0 group-hover:opacity-100 group-[&_:focus[data-focus]]:opacity-100 transition-opacity absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-content2 text-foreground text-[10px] px-2 py-1 rounded-md shadow-sm border border-default-200 whitespace-nowrap drop-shadow-lg"
-                        >
-                          Updates in real time as teams register.
-                        </span>
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onPress={() => {}}
+                            aria-label="Real-time updates info"
+                            className="min-w-0 h-auto px-0 py-0 text-[11px] text-foreground-400 underline decoration-dotted underline-offset-2"
+                          >
+                            Live
+                          </Button>
+                        </Tooltip>
                       </span>
                     )}
                   </div>
@@ -1072,162 +1069,152 @@ const TournamentDetailPage: React.FC = () => {
                                 setOpenTeamModal(true);
                               };
 
-                              const cardClassName = `rounded-md border transition-colors p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group ${
+                              const cardClassName = `rounded-md border transition-colors ${
                                 showOpenSpots
                                   ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
                                   : "border-default-200 bg-content2/60 hover:bg-content2"
                               }${showOpenSpots ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-warning/60" : ""}`;
                               return (
-                                <div
+                                <Card
                                   key={reg.id}
                                   className={cardClassName}
-                                  role={showOpenSpots ? "button" : undefined}
-                                  tabIndex={showOpenSpots ? 0 : undefined}
                                   aria-label={
                                     showOpenSpots
                                       ? `Open spot details for Team ${originalIdx + 1}`
                                       : undefined
                                   }
-                                  onClick={
+                                  isPressable={showOpenSpots}
+                                  onPress={
                                     showOpenSpots
                                       ? openTeamModalForTeam
                                       : undefined
                                   }
-                                  onKeyDown={
-                                    showOpenSpots
-                                      ? (e) => {
-                                          if (
-                                            e.key === "Enter" ||
-                                            e.key === " "
-                                          ) {
-                                            e.preventDefault();
-                                            openTeamModalForTeam();
-                                          }
-                                        }
-                                      : undefined
-                                  }
                                 >
-                                  <div className="flex items-start gap-2 sm:gap-3">
-                                    <div className="flex -space-x-2 shrink-0">
-                                      {team.map((m, i) => {
-                                        const memberUser = usersMap.get(m.id);
-                                        const label = (
-                                          m.displayName ||
-                                          m.id ||
-                                          ""
-                                        ).toString();
-                                        const isLeader =
-                                          !!leaderId && m.id === leaderId;
-                                        return (
-                                          <UserAvatar
-                                            key={m.id || i}
-                                            size="sm"
-                                            user={memberUser}
-                                            name={
-                                              memberUser ? undefined : label
-                                            }
-                                            className={
-                                              isLeader
-                                                ? "border border-default-200 ring-2 ring-primary ring-offset-1 ring-offset-background"
-                                                : "border border-default-200"
-                                            }
-                                            alt={label}
-                                          />
-                                        );
-                                      })}
-                                      {showOpenSpots && (
-                                        <div
-                                          className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
-                                          aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
-                                          title={`${openSpots} open spot${openSpots === 1 ? "" : "s"}`}
-                                        >
-                                          +{openSpots}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between gap-2 mb-1">
-                                        <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium">
-                                          Team {originalIdx + 1}
-                                        </p>
-                                        {isWaitlisted ? (
-                                          <Chip
-                                            size="sm"
-                                            variant="flat"
-                                            color="warning"
-                                            className="h-5 px-2 text-[10px]"
-                                          >
-                                            Waitlist
-                                          </Chip>
-                                        ) : null}
-                                      </div>
-                                      <ul className="text-[13px] sm:text-sm font-medium leading-tight sm:leading-snug space-y-0">
+                                  <CardBody className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
+                                    <div className="flex items-start gap-2 sm:gap-3">
+                                      <div className="flex -space-x-2 shrink-0">
                                         {team.map((m, i) => {
+                                          const memberUser = usersMap.get(m.id);
+                                          const label = (
+                                            m.displayName ||
+                                            m.id ||
+                                            ""
+                                          ).toString();
                                           const isLeader =
                                             !!leaderId && m.id === leaderId;
                                           return (
-                                            <li
-                                              key={i}
-                                              className={
-                                                "min-w-0 flex items-center gap-1.5 " +
-                                                (isLeader ? "text-primary" : "")
+                                            <UserAvatar
+                                              key={m.id || i}
+                                              size="sm"
+                                              user={memberUser}
+                                              name={
+                                                memberUser ? undefined : label
                                               }
-                                            >
-                                              <span className="min-w-0 truncate">
-                                                {m.displayName || m.id}
-                                              </span>
-                                              {isLeader && (
-                                                <>
-                                                  <Chip
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="primary"
-                                                    className="hidden sm:inline-flex h-5 px-2 text-[10px] shrink-0"
-                                                  >
-                                                    Leader
-                                                  </Chip>
-                                                  <span className="sm:hidden inline-flex items-center h-5 px-2 rounded-full bg-primary/10 text-primary text-[10px] font-medium shrink-0">
-                                                    Leader
-                                                  </span>
-                                                </>
-                                              )}
-                                            </li>
+                                              className={
+                                                isLeader
+                                                  ? "border border-default-200 ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                                  : "border border-default-200"
+                                              }
+                                              alt={label}
+                                            />
                                           );
                                         })}
-                                      </ul>
-                                      {showOpenSpots && (
-                                        <div className="mt-0.5 w-full text-left text-[11px] font-medium text-warning flex items-center gap-1">
-                                          <Icon
-                                            icon="lucide:alert-circle"
-                                            className="w-3.5 h-3.5"
-                                            aria-hidden="true"
-                                          />
-                                          {openSpots === 1
-                                            ? "1 Spot Open"
-                                            : `${openSpots} Spots Open`}
+                                        {showOpenSpots && (
+                                          <div
+                                            className="w-7 h-7 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-[10px] font-medium text-warning bg-warning/10"
+                                            aria-label={`${openSpots} open team spot${openSpots === 1 ? "" : "s"}`}
+                                            title={`${openSpots} open spot${openSpots === 1 ? "" : "s"}`}
+                                          >
+                                            +{openSpots}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                          <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium">
+                                            Team {originalIdx + 1}
+                                          </p>
+                                          {isWaitlisted ? (
+                                            <Chip
+                                              size="sm"
+                                              variant="flat"
+                                              color="warning"
+                                              className="h-5 px-2 text-[10px]"
+                                            >
+                                              Waitlist
+                                            </Chip>
+                                          ) : null}
                                         </div>
-                                      )}
+                                        <ul className="text-[13px] sm:text-sm font-medium leading-tight sm:leading-snug space-y-0">
+                                          {team.map((m, i) => {
+                                            const isLeader =
+                                              !!leaderId && m.id === leaderId;
+                                            return (
+                                              <li
+                                                key={i}
+                                                className={
+                                                  "min-w-0 flex items-center gap-1.5 " +
+                                                  (isLeader
+                                                    ? "text-primary"
+                                                    : "")
+                                                }
+                                              >
+                                                <span className="min-w-0 truncate">
+                                                  {m.displayName || m.id}
+                                                </span>
+                                                {isLeader && (
+                                                  <>
+                                                    <Chip
+                                                      size="sm"
+                                                      variant="flat"
+                                                      color="primary"
+                                                      className="hidden sm:inline-flex h-5 px-2 text-[10px] shrink-0"
+                                                    >
+                                                      Leader
+                                                    </Chip>
+                                                    <span className="sm:hidden inline-flex items-center h-5 px-2 rounded-full bg-primary/10 text-primary text-[10px] font-medium shrink-0">
+                                                      Leader
+                                                    </span>
+                                                  </>
+                                                )}
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                        {showOpenSpots && (
+                                          <div className="mt-0.5 w-full text-left text-[11px] font-medium text-warning flex items-center gap-1">
+                                            <Icon
+                                              icon="lucide:alert-circle"
+                                              className="w-3.5 h-3.5"
+                                              aria-hidden="true"
+                                            />
+                                            {openSpots === 1
+                                              ? "1 Spot Open"
+                                              : `${openSpots} Spots Open`}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-foreground-500 pt-0.5 sm:pt-1 border-t border-default-100">
-                                    <span className="flex items-center gap-1 min-w-0 flex-1">
-                                      <Icon
-                                        icon="lucide:calendar-clock"
-                                        className="w-3.5 h-3.5 shrink-0"
-                                      />
-                                      <span className="truncate">
-                                        {dateStr}
+                                    <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-foreground-500 pt-0.5 sm:pt-1 border-t border-default-100">
+                                      <span className="flex items-center gap-1 min-w-0 flex-1">
+                                        <Icon
+                                          icon="lucide:calendar-clock"
+                                          className="w-3.5 h-3.5 shrink-0"
+                                        />
+                                        <span className="truncate">
+                                          {dateStr}
+                                        </span>
                                       </span>
-                                    </span>
-                                    <span className="flex items-center gap-1 shrink-0">
-                                      <Icon
-                                        icon="lucide:users"
-                                        className="w-3.5 h-3.5"
-                                      />
-                                      {team.length}
-                                    </span>
-                                  </div>
-                                </div>
+                                      <span className="flex items-center gap-1 shrink-0">
+                                        <Icon
+                                          icon="lucide:users"
+                                          className="w-3.5 h-3.5"
+                                        />
+                                        {team.length}
+                                      </span>
+                                    </div>
+                                  </CardBody>
+                                </Card>
                               );
                             })}
                         </div>
@@ -1399,7 +1386,8 @@ const TournamentDetailPage: React.FC = () => {
                     </div>
 
                     <p className="text-xs text-foreground-500">
-                      Tip: use "View profile" to contact a team member or the leader.
+                      Tip: use "View profile" to contact a team member or the
+                      leader.
                     </p>
                   </div>
                 ) : (
