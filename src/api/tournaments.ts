@@ -27,7 +27,7 @@ import {
 export function onTournament(
   id: string,
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const ref = doc(db, "tournaments", id);
   return onSnapshot(ref, next, error);
@@ -37,7 +37,7 @@ export function onTournament(
 export function onTournamentRegistrations(
   tournamentId: string,
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const col = collection(db, "tournaments", tournamentId, "registrations");
   const q = query(col, orderBy("registeredAt", "asc"));
@@ -47,7 +47,7 @@ export function onTournamentRegistrations(
 // Real-time listener for all tournaments ordered by date.
 export function onAllTournaments(
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const col = collection(db, "tournaments");
   const q = query(col, orderBy("date", "asc"));
@@ -60,6 +60,24 @@ export async function deleteTournament(id: string) {
 }
 
 // Utility to transform raw Firestore snapshot doc to Tournament shape (lightweight, no import cycle).
+function parseDateValue(value: unknown) {
+  if (!value) return undefined;
+  if (value instanceof Date) return value;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in value &&
+    typeof (value as { toDate: () => Date }).toDate === "function"
+  ) {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+}
+
 export function mapTournamentDoc(d: any) {
   const data: any = d.data();
   const dateField =
@@ -68,8 +86,12 @@ export function mapTournamentDoc(d: any) {
       : data.date
         ? new Date(data.date)
         : new Date();
+  const registrationStart = parseDateValue(data.registrationStart);
+  const registrationEnd = parseDateValue(data.registrationEnd);
   const status: TournamentStatus = getStatus({
     status: data.status as TournamentStatus | undefined,
+    registrationStart,
+    registrationEnd,
   });
   return {
     firestoreId: d.id,
@@ -79,6 +101,8 @@ export function mapTournamentDoc(d: any) {
     detailsMarkdown: data.detailsMarkdown || data.details || "",
     players: data.players,
     status,
+    registrationStart,
+    registrationEnd,
     icon: data.icon,
     href: data.href,
     prizePool: data.prizePool || 0,
@@ -125,7 +149,7 @@ export interface RegistrationPayload {
 export async function upsertRegistration(
   tournamentId: string,
   registrationId: string | null,
-  payload: RegistrationPayload
+  payload: RegistrationPayload,
 ) {
   // When creating a new registration, stamp it with the server timestamp so
   // ordering by `registeredAt` reflects the original registration time.
@@ -137,7 +161,7 @@ export async function upsertRegistration(
       "tournaments",
       tournamentId,
       "registrations",
-      registrationId
+      registrationId,
     );
     // Merge the payload but intentionally omit `registeredAt` so the existing
     // value remains unchanged.
@@ -155,14 +179,14 @@ export async function upsertRegistration(
 
 export async function deleteRegistration(
   tournamentId: string,
-  registrationId: string
+  registrationId: string,
 ) {
   const ref = doc(
     db,
     "tournaments",
     tournamentId,
     "registrations",
-    registrationId
+    registrationId,
   );
   await deleteDoc(ref);
 }

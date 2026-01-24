@@ -25,14 +25,19 @@ import { UserAvatar } from "@/components/avatar";
 import BackButton from "@/components/back-button";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import {
+  getStatus,
+  getRegistrationWindowInfo,
+  RegistrationWindowInfo,
+  RegistrationWindowState,
+} from "@/utils/tournamentStatus";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeeBadge } from "@/components/tee-badge";
 const TournamentEditor = React.lazy(() =>
   import("@/components/tournament-editor").then((m) => ({
     default: m.TournamentEditor,
-  }))
+  })),
 );
 import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
@@ -41,6 +46,40 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
 import { getWeatherIcon } from "@/utils/weather";
+
+const formatLocalDateTime = (date?: Date) => {
+  if (!date) return undefined;
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+};
+
+const computeRegistrationWindowCopy = (windowInfo: RegistrationWindowInfo) => {
+  switch (windowInfo.state) {
+    case RegistrationWindowState.Upcoming:
+      if (windowInfo.start) {
+        return `Registration opens ${formatLocalDateTime(windowInfo.start)}.`;
+      }
+      return "Registration opens soon.";
+    case RegistrationWindowState.Closed:
+      if (windowInfo.end) {
+        return `Registration closed ${formatLocalDateTime(windowInfo.end)}.`;
+      }
+      return "Registration is currently closed.";
+    case RegistrationWindowState.Invalid:
+      return "Registration window is misconfigured.";
+    case RegistrationWindowState.Open:
+      return undefined;
+    case RegistrationWindowState.Unconfigured:
+    default:
+      return "Registration is currently closed.";
+  }
+};
 
 interface RegistrationDoc {
   id: string;
@@ -62,7 +101,7 @@ const TournamentDetailPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [regsLoading, setRegsLoading] = React.useState(true);
   const [registrations, setRegistrations] = React.useState<RegistrationDoc[]>(
-    []
+    [],
   );
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const [openTeamModal, setOpenTeamModal] = React.useState(false);
@@ -77,13 +116,24 @@ const TournamentDetailPage: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const userId = user?.uid;
+  const currentStatus = tournament
+    ? getStatus(tournament)
+    : TournamentStatus.Upcoming;
+  const registrationWindowInfo = React.useMemo(() => {
+    return getRegistrationWindowInfo(tournament ?? {});
+  }, [tournament]);
+  const registrationCopy = computeRegistrationWindowCopy(
+    registrationWindowInfo,
+  );
+  const registrationOpen =
+    registrationWindowInfo.state === RegistrationWindowState.Open;
 
   const isUserRegistered = React.useMemo(() => {
     if (!userId) return false;
     return registrations.some(
       (r) =>
         r.ownerId === userId ||
-        (Array.isArray(r.team) && r.team.some((m) => m.id === userId))
+        (Array.isArray(r.team) && r.team.some((m) => m.id === userId)),
     );
   }, [registrations, userId]);
 
@@ -123,7 +173,7 @@ const TournamentDetailPage: React.FC = () => {
           color: "danger",
         });
         setLoading(false);
-      }
+      },
     );
     return () => unsub();
   }, [firestoreId, navigate]);
@@ -152,7 +202,7 @@ const TournamentDetailPage: React.FC = () => {
       (err) => {
         console.error("Failed to load registrations", err);
         setRegsLoading(false);
-      }
+      },
     );
     return () => unsub();
   }, [firestoreId, userId]);
@@ -181,7 +231,7 @@ const TournamentDetailPage: React.FC = () => {
       (err: any) => {
         console.error("Failed to load previous tournament", err);
         setPreviousTournament(null);
-      }
+      },
     );
     return () => unsub();
   }, [tournament?.previousTournamentId]);
@@ -288,7 +338,7 @@ const TournamentDetailPage: React.FC = () => {
       return [date, ...memberNames];
     });
     const csvLines = [headers, ...rows].map((line) =>
-      line.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")
+      line.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","),
     );
     const csv = csvLines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -488,22 +538,22 @@ const TournamentDetailPage: React.FC = () => {
                   size="xs"
                   ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
                 />
-                {getStatus(tournament) === TournamentStatus.Open && (
+                {registrationOpen && (
                   <Chip color="warning" size="sm" variant="flat">
                     Registration Open
                   </Chip>
                 )}
-                {getStatus(tournament) === TournamentStatus.Completed && (
+                {currentStatus === TournamentStatus.Completed && (
                   <Chip color="default" size="sm" variant="flat">
                     Completed
                   </Chip>
                 )}
-                {getStatus(tournament) === TournamentStatus.InProgress && (
+                {currentStatus === TournamentStatus.InProgress && (
                   <Chip color="primary" size="sm" variant="flat">
                     In Progress
                   </Chip>
                 )}
-                {getStatus(tournament) === TournamentStatus.Canceled && (
+                {currentStatus === TournamentStatus.Canceled && (
                   <Chip color="danger" size="sm" variant="flat">
                     Canceled
                   </Chip>
@@ -613,20 +663,60 @@ const TournamentDetailPage: React.FC = () => {
                           <p className="font-medium">Status</p>
                           <p>
                             {(() => {
-                              const s = getStatus(tournament);
-                              return s === TournamentStatus.Canceled
-                                ? "Canceled"
-                                : s === TournamentStatus.Completed
-                                  ? "Completed"
-                                  : s === TournamentStatus.InProgress
-                                    ? "In Progress"
-                                    : s === TournamentStatus.Open
-                                      ? "Registration Open"
-                                      : "Scheduled";
+                              const s = currentStatus;
+                              if (s === TournamentStatus.Canceled) {
+                                return "Canceled";
+                              }
+                              if (s === TournamentStatus.Completed) {
+                                return "Completed";
+                              }
+                              if (s === TournamentStatus.InProgress) {
+                                return "In Progress";
+                              }
+                              if (registrationOpen) {
+                                return "Registration Open";
+                              }
+                              if (
+                                registrationWindowInfo.state ===
+                                RegistrationWindowState.Upcoming
+                              ) {
+                                return "Registration Opens Soon";
+                              }
+                              if (
+                                registrationWindowInfo.state ===
+                                RegistrationWindowState.Closed
+                              ) {
+                                return "Registration Closed";
+                              }
+                              return "Scheduled";
                             })()}
                           </p>
                         </div>
                       </div>
+                      {(tournament.registrationStart ||
+                        tournament.registrationEnd) && (
+                        <div className="flex items-start gap-2">
+                          <Icon
+                            icon="lucide:timer"
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <div>
+                            <p className="font-medium">Registration Window</p>
+                            <p>
+                              {tournament.registrationStart
+                                ? `Opens ${formatLocalDateTime(
+                                    tournament.registrationStart,
+                                  )}`
+                                : "Opens TBD"}
+                              {tournament.registrationEnd
+                                ? ` • Closes ${formatLocalDateTime(
+                                    tournament.registrationEnd,
+                                  )}`
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardBody>
                 </Card>
@@ -691,7 +781,7 @@ const TournamentDetailPage: React.FC = () => {
                   </CardHeader>
                   <Divider />
                   <CardBody className="pt-4 space-y-4">
-                    {getStatus(tournament) === TournamentStatus.Open ? (
+                    {registrationOpen ? (
                       <>
                         {isUserRegistered ? (
                           <>
@@ -717,7 +807,7 @@ const TournamentDetailPage: React.FC = () => {
                             <Button
                               fullWidth
                               size="sm"
-                              variant="ghost"
+                              variant="bordered"
                               onPress={handleRegister}
                               aria-label="View or edit your registration"
                             >
@@ -754,7 +844,8 @@ const TournamentDetailPage: React.FC = () => {
                       </>
                     ) : (
                       <p className="text-sm text-foreground-500">
-                        Registration is currently closed.
+                        {registrationCopy ||
+                          "Registration is currently closed."}
                       </p>
                     )}
                   </CardBody>
@@ -794,7 +885,7 @@ const TournamentDetailPage: React.FC = () => {
                             (c: { id: string; name: string }) => ({
                               userId: c.id,
                               displayName: c.name,
-                            })
+                            }),
                           )}
                           score={defendingChampions.score}
                           isChampion={true}
@@ -938,7 +1029,7 @@ const TournamentDetailPage: React.FC = () => {
                             })
                             .map((reg) => {
                               const originalIdx = registrations.findIndex(
-                                (r) => r.id === reg.id
+                                (r) => r.id === reg.id,
                               );
                               const maxTeams =
                                 typeof tournament.maxTeams === "number" &&
@@ -954,7 +1045,7 @@ const TournamentDetailPage: React.FC = () => {
                                 : [];
                               const dateStr = reg.registeredAt?.toDate
                                 ? new Date(
-                                    reg.registeredAt.toDate()
+                                    reg.registeredAt.toDate(),
                                   ).toLocaleDateString("en-US", {
                                     month: "short",
                                     day: "numeric",
@@ -965,7 +1056,7 @@ const TournamentDetailPage: React.FC = () => {
                                 tournament.players || team.length;
                               const openSpots = Math.max(
                                 maxPlayers - team.length,
-                                0
+                                0,
                               );
                               const showOpenSpots =
                                 reg.openSpotsOptIn === true && openSpots > 0;

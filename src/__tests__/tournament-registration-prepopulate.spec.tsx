@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import type { Tournament } from "@/types/tournament";
-import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 // Start with a clean module registry so we can control mocks for this test file
 vi.resetModules();
@@ -101,11 +101,11 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
     );
 
     const existing = {
+      ...openRegistrationWindow(),
       title: "Test",
       description: "desc",
       players: 2,
       prizePool: 0,
-      status: TournamentStatus.Open,
       winnerGroups: [],
       date: new Date(),
       tee: "Blue",
@@ -120,7 +120,7 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
           onSave={vi.fn()}
           onCancel={vi.fn()}
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     // Wait for the Add Registration button to appear (it requires isAdmin)

@@ -5,6 +5,7 @@ import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 // Mock hooks & Auth
 let authUserMock: { uid: string } | null = { uid: "user1" };
@@ -29,13 +30,13 @@ function emitDoc(path: string, data: any) {
         exists: () => !!data,
         id: path.split("/").pop(),
         data: () => data,
-      })
+      }),
     );
   });
 }
 function emitCollection(
   path: string,
-  docs: Array<{ id: string; data: () => any }>
+  docs: Array<{ id: string; data: () => any }>,
 ) {
   act(() => {
     (apiListeners[path] || []).forEach((cb) => cb({ docs }));
@@ -89,16 +90,16 @@ function renderWithRoute(id: string) {
           />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
 const baseTournament = {
+  ...openRegistrationWindow(),
   title: "Club Championship",
   date: new Date(),
   description: "Desc",
   players: 4,
-  status: TournamentStatus.Open,
   prizePool: 500,
   winnerGroups: [
     {
@@ -130,7 +131,7 @@ describe("TournamentDetailPage", () => {
     expect(screen.getByText(/Loading tournament/i)).toBeInTheDocument();
     emitDoc("tournaments/abc", baseTournament);
     await waitFor(() =>
-      expect(screen.getByText("Club Championship")).toBeInTheDocument()
+      expect(screen.getByText("Club Championship")).toBeInTheDocument(),
     );
   });
 
@@ -151,13 +152,12 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("open1");
     emitDoc("tournaments/open1", {
       ...baseTournament,
-      status: TournamentStatus.Open,
       winners: [],
     });
     await screen.findByText("Club Championship");
     expect(screen.getAllByText(/Registration Open/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /Register/i })
+      screen.getByRole("button", { name: /Register/i }),
     ).toBeInTheDocument();
   });
 
@@ -165,7 +165,6 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("reg1");
     emitDoc("tournaments/reg1", {
       ...baseTournament,
-      status: TournamentStatus.Open,
     });
     emitCollection("tournaments/reg1/registrations", []);
     emitCollection("tournaments/reg1/registrations", [
@@ -178,20 +177,23 @@ describe("TournamentDetailPage", () => {
       },
     ]);
     await waitFor(() =>
-      expect(screen.getByText(/You're registered/i)).toBeInTheDocument()
+      expect(screen.getByText(/You're registered/i)).toBeInTheDocument(),
     );
   });
 
   it("shows closed message when registration closed", async () => {
     renderWithRoute("closed1");
+    const pastWindow = {
+      registrationStart: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      registrationEnd: new Date(Date.now() - 60 * 60 * 1000),
+    };
     emitDoc("tournaments/closed1", {
       ...baseTournament,
+      ...pastWindow,
       status: TournamentStatus.Upcoming,
     });
     await screen.findByText("Club Championship");
-    expect(
-      screen.getByText(/Registration is currently closed/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/^Registration Closed$/i)).toBeInTheDocument();
   });
 
   it("does not load registered teams when logged out", async () => {
@@ -200,7 +202,7 @@ describe("TournamentDetailPage", () => {
     emitDoc("tournaments/loggedout1", baseTournament);
     await screen.findByText("Club Championship");
     expect(
-      screen.getByText(/You must be logged in to view registered teams/i)
+      screen.getByText(/You must be logged in to view registered teams/i),
     ).toBeInTheDocument();
   });
 
@@ -244,14 +246,14 @@ describe("TournamentDetailPage", () => {
     await waitFor(
       () =>
         expect(
-          screen.getAllByRole("button", { name: /Edit tournament/i })
-        ).toHaveLength(2) // One for mobile, one for desktop
+          screen.getAllByRole("button", { name: /Edit tournament/i }),
+        ).toHaveLength(2), // One for mobile, one for desktop
     );
     expect(
-      screen.getAllByRole("button", { name: /Delete tournament/i })
+      screen.getAllByRole("button", { name: /Delete tournament/i }),
     ).toHaveLength(2);
     expect(
-      screen.getAllByRole("button", { name: /Export registrations/i })
+      screen.getAllByRole("button", { name: /Export registrations/i }),
     ).toHaveLength(2);
   });
 
@@ -380,7 +382,7 @@ describe("TournamentDetailPage", () => {
     expect(
       within(dialog).getByRole("button", {
         name: /View profile for Leader One/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 

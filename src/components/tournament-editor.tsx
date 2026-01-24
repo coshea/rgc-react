@@ -40,6 +40,45 @@ interface TournamentEditorProps {
   onCancel: () => void;
 }
 
+const normalizeUnknownDate = (
+  value: Date | string | number | { toDate: () => Date } | undefined,
+): Date | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Date) return value;
+  if (typeof value === "object" && "toDate" in value) {
+    const maybeDate = value.toDate();
+    if (maybeDate instanceof Date) return maybeDate;
+  }
+  if (typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+};
+
+const formatForDateTimeInput = (value?: Date | string | number) => {
+  const date = normalizeUnknownDate(value);
+  if (!date) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const parseDateTimeInputValue = (value: string) => {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed;
+};
+
 export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   tournament,
   initialValues,
@@ -55,15 +94,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [title, setTitle] = React.useState(seed.title || "");
   const [description, setDescription] = React.useState(seed.description || "");
   const [detailsMarkdown, setDetailsMarkdown] = React.useState(
-    seed.detailsMarkdown || ""
+    seed.detailsMarkdown || "",
   );
   const [players, setPlayers] = React.useState(seed.players || 1);
   const [maxTeams, setMaxTeams] = React.useState<number | undefined>(
-    typeof seed.maxTeams === "number" ? seed.maxTeams : undefined
+    typeof seed.maxTeams === "number" ? seed.maxTeams : undefined,
   );
   const [completed, setCompleted] = React.useState(
     getStatus(seed) === TournamentStatus.Completed ||
-      getStatus(seed) === TournamentStatus.InProgress
+      getStatus(seed) === TournamentStatus.InProgress,
   );
   const [prizePool, setPrizePool] = React.useState(seed.prizePool || 0);
   const [winnerGroups, setWinnerGroups] = React.useState<
@@ -76,17 +115,23 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     return TEE_COLORS.includes(value);
   }
   const [tee, setTee] = React.useState<TeeColor>(
-    isTeeColor(seed.tee) ? seed.tee : "Mixed"
+    isTeeColor(seed.tee) ? seed.tee : "Mixed",
   );
   const [assignedTeeTimes, setAssignedTeeTimes] = React.useState<boolean>(
-    Boolean(seed.assignedTeeTimes)
+    Boolean(seed.assignedTeeTimes),
   );
   const [date, setDate] = React.useState<DateValue | null>(
-    seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null
+    seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null,
   );
   const [previousTournamentId, setPreviousTournamentId] = React.useState<
     string | undefined
   >(seed.previousTournamentId);
+  const [registrationStartInput, setRegistrationStartInput] = React.useState(
+    formatForDateTimeInput(seed.registrationStart),
+  );
+  const [registrationEndInput, setRegistrationEndInput] = React.useState(
+    formatForDateTimeInput(seed.registrationEnd),
+  );
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -129,6 +174,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       newErrors.maxTeams = "Must be at least 1 team";
     }
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
+    const parsedStart = parseDateTimeInputValue(registrationStartInput);
+    const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+    if (
+      parsedStart &&
+      parsedEnd &&
+      parsedStart.getTime() > parsedEnd.getTime()
+    ) {
+      newErrors.registrationWindow =
+        "Registration closing time must be after the opening time";
+    }
 
     // Grouped winners validation replaces legacy winners
     if (completed && winnerGroups.length > 0) {
@@ -138,8 +193,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       }
       const hasEmptyPlaces = winnerGroups.some((g) =>
         (g.winners || []).some(
-          (w) => !w.competitors || w.competitors.length === 0
-        )
+          (w) => !w.competitors || w.competitors.length === 0,
+        ),
       );
       if (hasEmptyPlaces) {
         newErrors.winners = "All winners must have competitors selected";
@@ -243,6 +298,21 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         assignedTeeTimes,
       };
 
+      const parsedStart = parseDateTimeInputValue(registrationStartInput);
+      const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+
+      if (parsedStart) {
+        tournamentData.registrationStart = parsedStart;
+      } else if (tournament && tournament.firestoreId) {
+        tournamentData.registrationStart = deleteField();
+      }
+
+      if (parsedEnd) {
+        tournamentData.registrationEnd = parsedEnd;
+      } else if (tournament && tournament.firestoreId) {
+        tournamentData.registrationEnd = deleteField();
+      }
+
       if (
         typeof maxTeams === "number" &&
         Number.isFinite(maxTeams) &&
@@ -290,6 +360,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         assignedTeeTimes,
         previousTournamentId: previousTournamentId || undefined,
         weather: weather || undefined,
+        registrationStart: parsedStart || undefined,
+        registrationEnd: parsedEnd || undefined,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -339,7 +411,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           db,
           "tournaments",
           tournament.firestoreId,
-          "registrations"
+          "registrations",
         );
         const qRegs = query(regsCol, orderBy("registeredAt", "asc"));
         unsubRegs = onSnapshot(
@@ -360,7 +432,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               color: "danger",
             });
             setRegsLoading(false);
-          }
+          },
         );
       } catch (e) {
         console.error("Realtime init failed", e);
@@ -429,7 +501,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         "tournaments",
         tournament.firestoreId,
         "registrations",
-        regId
+        regId,
       );
       await deleteDoc(regRef);
       setRegistrations((prev) => prev.filter((r) => r.id !== regId));
@@ -473,7 +545,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         db,
         "tournaments",
         tournament.firestoreId,
-        "registrations"
+        "registrations",
       );
       const docRef = await addDoc(colRef, {
         ownerId: "__admin__",
@@ -560,6 +632,41 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.date}
                 errorMessage={errors.date}
               />
+              <Card>
+                <CardBody className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">
+                      Registration Window
+                    </h3>
+                    <span className="text-xs text-foreground-500">
+                      Stored in UTC
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    <Input
+                      label="Opens"
+                      placeholder="Leave blank to open manually"
+                      type="datetime-local"
+                      value={registrationStartInput}
+                      onValueChange={setRegistrationStartInput}
+                      isInvalid={!!errors.registrationWindow}
+                      errorMessage={errors.registrationWindow}
+                    />
+                    <Input
+                      label="Closes"
+                      placeholder="Leave blank for open-ended window"
+                      type="datetime-local"
+                      value={registrationEndInput}
+                      onValueChange={setRegistrationEndInput}
+                      isInvalid={!!errors.registrationWindow}
+                    />
+                    <p className="text-xs text-foreground-500">
+                      Times are displayed in your local timezone and saved in
+                      UTC.
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
             </div>
             <div className="space-y-6">
               <NumberInput
@@ -582,7 +689,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       Number.isFinite(value) &&
                       value > 0
                       ? value
-                      : undefined
+                      : undefined,
                   );
                 }}
                 min={1}
@@ -699,7 +806,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 {allTournaments
                   .filter(
                     (t) =>
-                      t.firestoreId && t.firestoreId !== tournament?.firestoreId
+                      t.firestoreId &&
+                      t.firestoreId !== tournament?.firestoreId,
                   )
                   .map((t) => {
                     const year = t.date.getFullYear();
@@ -789,7 +897,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     // or Completed so editors can add results while the event is running.
                     setCompleted(
                       v === TournamentStatus.Completed ||
-                        v === TournamentStatus.InProgress
+                        v === TournamentStatus.InProgress,
                     );
                   }}
                 >
@@ -798,12 +906,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     textValue="Upcoming"
                   >
                     Upcoming (Registration Closed)
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.Open}
-                    textValue="Registration Open"
-                  >
-                    Registration Open
                   </SelectItem>
                   <SelectItem
                     key={TournamentStatus.InProgress}
@@ -900,11 +1002,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                         "tournaments",
                         tournament!.firestoreId!,
                         "registrations",
-                        regId
+                        regId,
                       );
                       await updateDoc(regRef, { team });
                       setRegistrations((prev) =>
-                        prev.map((r) => (r.id === regId ? { ...r, team } : r))
+                        prev.map((r) => (r.id === regId ? { ...r, team } : r)),
                       );
                       addToast({
                         title: "Saved",

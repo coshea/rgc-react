@@ -3,6 +3,24 @@ import type { Tournament } from "@/types/tournament";
 import { TournamentStatus } from "@/types/tournament";
 import { getStatus } from "@/utils/tournamentStatus";
 
+function parseDateValue(value: unknown): Date | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) return value;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "toDate" in value &&
+    typeof (value as { toDate: () => Date }).toDate === "function"
+  ) {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+}
+
 interface UseYearlyTournamentsOptions {
   year: number;
   enabled?: boolean;
@@ -33,14 +51,14 @@ export function useYearlyTournaments({
           colRef,
           where("date", ">=", start),
           where("date", "<", end),
-          orderBy("date", "asc")
+          orderBy("date", "asc"),
         );
         docsSnap = await getDocs(tournamentsQuery);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn(
           "Yearly tournaments date-range query failed; falling back to full scan:",
-          e
+          e,
         );
         docsSnap = await getDocs(colRef);
       }
@@ -50,9 +68,14 @@ export function useYearlyTournaments({
         if (!data) return;
         const rawDate = data.date?.toDate ? data.date.toDate() : data.date;
         const dateObj = rawDate instanceof Date ? rawDate : new Date(rawDate);
-        if (dateObj.getFullYear() !== year) return; // guard if fallback
+        if (dateObj.getUTCFullYear() !== year) return; // guard if fallback
+
+        const registrationStart = parseDateValue(data.registrationStart);
+        const registrationEnd = parseDateValue(data.registrationEnd);
         const status: TournamentStatus = getStatus({
           status: data.status as TournamentStatus | undefined,
+          registrationStart,
+          registrationEnd,
         });
         tournaments.push({
           firestoreId: docSnap.id,
@@ -66,6 +89,8 @@ export function useYearlyTournaments({
           winnerGroups: data.winnerGroups || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,
+          registrationStart,
+          registrationEnd,
         });
       });
       return tournaments;

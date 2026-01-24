@@ -28,6 +28,7 @@ Removed (do NOT reference unless intentionally added later): Axios, Styled-compo
 - Use `onPress` instead of `onClick` for HeroUI components. Do NOT attach `onPress` to native elements; if you need a pressable wrapper, use HeroUI `Button`/`Link` and place `onPress` there.
 - Normalize & format phone numbers consistently (see membership directory + `parseUsersCsv`).
 - Use dynamic imports for large Firestore interactions in admin/editor contexts (see `tournament-editor.tsx`).
+- Prefer enums/typed constants over “magic strings” for state-like values (e.g., use `RegistrationWindowState` instead of comparing to string literals).
 
 ## Don’t
 
@@ -65,6 +66,7 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 10. Validation & Feedback: Use local `errors` object and HeroUI `isInvalid` + `errorMessage`; surface results with `addToast`.
 11. Accessibility: Provide `aria-label` for icon-only buttons; ensure modals trap focus if expanded beyond current simple overlays.
 12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
+13. Avoid Magic Strings: Prefer enums/typed constants for state-like values; define once and reuse across call sites.
 
 ### UserAvatar Fallback Contract
 
@@ -121,4 +123,4 @@ Rationale: Ensures consistent accessibility behavior (Enter/Space support), prev
 
 ## Metadata
 
-Last updated: 2025-09-29 (aligned HeroUI v3 guidance: composition-first, onPress usage rules, UserAvatar wrapping guidance)
+Last updated: 2026-01-23 (avoid magic strings; prefer enums like `RegistrationWindowState`)

@@ -13,8 +13,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
-import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import { Tournament } from "@/types/tournament";
+import { isRegistrationOpen } from "@/utils/tournamentStatus";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
@@ -39,7 +39,7 @@ const TournamentRegister: React.FC = () => {
   const [submitting, setSubmitting] = React.useState(false);
   const { user } = useAuth();
   const [registrationId, setRegistrationId] = React.useState<string | null>(
-    null
+    null,
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -70,7 +70,7 @@ const TournamentRegister: React.FC = () => {
     async (
       members: { id: string; displayName: string }[],
       ownerId: string,
-      nextOpenSpotsOptIn: boolean
+      nextOpenSpotsOptIn: boolean,
     ) => {
       if (!tournament?.firestoreId) return;
       setSubmitting(true);
@@ -99,7 +99,7 @@ const TournamentRegister: React.FC = () => {
         setSubmitting(false);
       }
     },
-    [navigate, registrationId, tournament?.firestoreId]
+    [navigate, registrationId, tournament?.firestoreId],
   );
   // store registrations for conflict detection
   const [registrations, setRegistrations] = React.useState<any[]>([]);
@@ -196,7 +196,7 @@ const TournamentRegister: React.FC = () => {
             const ids = maybeTeam.map((m) =>
               typeof m === "object" && m !== null
                 ? (m as Record<string, unknown>).id
-                : ""
+                : "",
             );
             const cleaned = ids
               .map((id) => (typeof id === "string" ? id : ""))
@@ -229,7 +229,7 @@ const TournamentRegister: React.FC = () => {
   }, [tournament?.firestoreId, minTeamSize]);
 
   const selectedCount = teammates.filter(
-    (t) => t && t.trim().length > 0
+    (t) => t && t.trim().length > 0,
   ).length;
   const effectiveSelectedCount =
     selectedCount > 0
@@ -247,7 +247,7 @@ const TournamentRegister: React.FC = () => {
     const valid = new Set(selectableUsers.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
-      id && valid.has(id) ? id : id === "" ? "" : ""
+      id && valid.has(id) ? id : id === "" ? "" : "",
     );
     // If a non-empty id was removed due to being invalid, mark changed
     if (cleaned.some((id, i) => id !== teammates[i])) changed = true;
@@ -277,7 +277,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    if (getStatus(tournament) !== TournamentStatus.Open) {
+    if (!isRegistrationOpen(tournament)) {
       addToast({
         title: "Closed",
         description: "Registration for this tournament is closed.",
@@ -585,7 +585,7 @@ const TournamentRegister: React.FC = () => {
                           );
                         };
                         const teamMemberIds = Array.from(
-                          new Set(c.teamMembers)
+                          new Set(c.teamMembers),
                         );
                         const conflictPlayerResolved = resolveName(c.playerId);
                         return (
@@ -599,7 +599,7 @@ const TournamentRegister: React.FC = () => {
                                 <div className="flex -space-x-2">
                                   {teamMemberIds.map((mid) => {
                                     const memberUser = selectableUsers.find(
-                                      (u) => u.id === mid
+                                      (u) => u.id === mid,
                                     );
                                     const label = resolveName(mid);
                                     return (
@@ -673,8 +673,8 @@ const TournamentRegister: React.FC = () => {
                             finalizeRegistration(
                               pending.members,
                               pending.ownerId,
-                              pending.openSpotsOptIn
-                            )
+                              pending.openSpotsOptIn,
+                            ),
                           );
                         }
                       }}
