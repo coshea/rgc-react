@@ -27,7 +27,13 @@ const MANUAL_OVERRIDE_STATUSES = new Set<TournamentStatus>([
   TournamentStatus.InProgress,
 ]);
 
-const parseToDate = (value: RegistrationDateInput): Date | undefined => {
+const hasToDate = (value: unknown): value is { toDate: () => Date } => {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("toDate" in value)) return false;
+  return typeof (value as Record<string, unknown>).toDate === "function";
+};
+
+export const parseToDate = (value: unknown): Date | undefined => {
   if (!value) return undefined;
   if (value instanceof Date) return value;
   if (typeof value === "number") {
@@ -40,8 +46,8 @@ const parseToDate = (value: RegistrationDateInput): Date | undefined => {
     if (!Number.isNaN(parsed.getTime())) return parsed;
     return undefined;
   }
-  if (typeof value === "object" && value !== null && "toDate" in value) {
-    const maybeDate = (value as { toDate: () => Date }).toDate();
+  if (hasToDate(value)) {
+    const maybeDate = value.toDate();
     if (maybeDate instanceof Date) return maybeDate;
   }
   return undefined;

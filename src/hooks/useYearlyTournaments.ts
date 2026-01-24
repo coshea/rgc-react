@@ -1,25 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Tournament } from "@/types/tournament";
 import { TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
-
-function parseDateValue(value: unknown): Date | undefined {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "toDate" in value &&
-    typeof (value as { toDate: () => Date }).toDate === "function"
-  ) {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  if (typeof value === "string" || typeof value === "number") {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return undefined;
-}
+import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 
 interface UseYearlyTournamentsOptions {
   year: number;
@@ -70,8 +52,8 @@ export function useYearlyTournaments({
         const dateObj = rawDate instanceof Date ? rawDate : new Date(rawDate);
         if (dateObj.getUTCFullYear() !== year) return; // guard if fallback
 
-        const registrationStart = parseDateValue(data.registrationStart);
-        const registrationEnd = parseDateValue(data.registrationEnd);
+        const registrationStart = parseToDate(data.registrationStart);
+        const registrationEnd = parseToDate(data.registrationEnd);
         const status: TournamentStatus = getStatus({
           status: data.status as TournamentStatus | undefined,
           registrationStart,

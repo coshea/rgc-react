@@ -1,5 +1,5 @@
 import { TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 // Centralized tournament-related Firestore access.
 // Components and hooks should import ONLY from this module (or hooks built atop it),
 // not directly from '@/config/firebase' or 'firebase/firestore'. This enables
@@ -59,25 +59,6 @@ export async function deleteTournament(id: string) {
   await deleteDoc(doc(db, "tournaments", id));
 }
 
-// Utility to transform raw Firestore snapshot doc to Tournament shape (lightweight, no import cycle).
-function parseDateValue(value: unknown) {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "toDate" in value &&
-    typeof (value as { toDate: () => Date }).toDate === "function"
-  ) {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  if (typeof value === "string" || typeof value === "number") {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return undefined;
-}
-
 export function mapTournamentDoc(d: any) {
   const data: any = d.data();
   const dateField =
@@ -86,8 +67,8 @@ export function mapTournamentDoc(d: any) {
       : data.date
         ? new Date(data.date)
         : new Date();
-  const registrationStart = parseDateValue(data.registrationStart);
-  const registrationEnd = parseDateValue(data.registrationEnd);
+  const registrationStart = parseToDate(data.registrationStart);
+  const registrationEnd = parseToDate(data.registrationEnd);
   const status: TournamentStatus = getStatus({
     status: data.status as TournamentStatus | undefined,
     registrationStart,

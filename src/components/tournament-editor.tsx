@@ -16,7 +16,7 @@ import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
-import { getStatus } from "@/utils/tournamentStatus";
+import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
@@ -40,28 +40,8 @@ interface TournamentEditorProps {
   onCancel: () => void;
 }
 
-const normalizeUnknownDate = (
-  value: Date | string | number | { toDate: () => Date } | undefined,
-): Date | undefined => {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  if (typeof value === "object" && "toDate" in value) {
-    const maybeDate = value.toDate();
-    if (maybeDate instanceof Date) return maybeDate;
-  }
-  if (typeof value === "number") {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return undefined;
-};
-
-const formatForDateTimeInput = (value?: Date | string | number) => {
-  const date = normalizeUnknownDate(value);
+const formatForDateTimeInput = (value: unknown) => {
+  const date = parseToDate(value);
   if (!date) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   const year = date.getFullYear();
