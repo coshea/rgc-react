@@ -4,11 +4,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import { siteConfig } from "@/config/site";
 import { sendEmailVerification, ActionCodeSettings } from "firebase/auth";
 import { Icon } from "@iconify/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 const RESEND_DELAY_MS = 60000; // 60s cooldown
 
 export default function VerifyEmailPage() {
   const { user, loading } = useAuth();
+  usePageTracking("Verify Email", loading);
   const [cooldownEnds, setCooldownEnds] = useState<number>(0);
   const [resendLoading, setResendLoading] = useState(false);
   const [checking, setChecking] = useState(false);

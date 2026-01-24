@@ -18,6 +18,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
 import BackButton from "@/components/back-button";
 import { addToast } from "@/providers/toast";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export const PolicyPage: React.FC = () => {
   const { type } = useParams<{ type: string }>();
@@ -27,6 +28,11 @@ export const PolicyPage: React.FC = () => {
 
   const [policy, setPolicy] = React.useState<Policy | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  usePageTracking(
+    policy?.title || (type ? POLICY_LABELS[type as PolicyType] : "Policy"),
+    loading,
+  );
 
   // Load policy by type
   React.useEffect(() => {
@@ -58,7 +64,7 @@ export const PolicyPage: React.FC = () => {
           color: "danger",
         });
         setLoading(false);
-      }
+      },
     );
 
     return () => unsub();

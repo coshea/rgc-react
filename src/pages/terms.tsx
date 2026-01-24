@@ -1,7 +1,9 @@
 import { siteConfig } from "@/config/site";
 import { termsSections as sections } from "@/content/policies";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function TermsPage() {
+  usePageTracking("Terms of Use");
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
       <div>

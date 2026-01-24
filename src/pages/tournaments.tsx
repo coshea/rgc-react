@@ -1,10 +1,11 @@
 import React from "react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 const TournamentEditor = React.lazy(() =>
   import("@/components/tournament-editor").then((m) => ({
     default: m.TournamentEditor,
-  }))
+  })),
 );
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
@@ -27,6 +28,7 @@ import { Icon } from "@iconify/react";
 type TournamentsProps = Record<string, never>;
 
 const Tournaments: React.FC<TournamentsProps> = () => {
+  usePageTracking("Tournaments");
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
   const [editingTournament, setEditingTournament] =
     React.useState<Tournament | null>(null);
@@ -36,7 +38,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   // Create flow state
   const [createModeOpen, setCreateModeOpen] = React.useState(false);
   const [createMethod, setCreateMethod] = React.useState<"scratch" | "copy">(
-    "scratch"
+    "scratch",
   );
   const [templateId, setTemplateId] = React.useState<string | null>(null);
   const [initialValues, setInitialValues] = React.useState<
@@ -56,7 +58,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           (snap: any) => {
             try {
               const items: Tournament[] = snap.docs.map(
-                (d: any) => api.mapTournamentDoc(d) as Tournament
+                (d: any) => api.mapTournamentDoc(d) as Tournament,
               );
               setTournaments(items);
             } catch (err) {
@@ -73,7 +75,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               color: "danger",
             });
             setIsLoading(false);
-          }
+          },
         );
       } catch (e) {
         console.error("Failed to init tournaments listener", e);

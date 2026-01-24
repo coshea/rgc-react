@@ -9,8 +9,10 @@ import {
 } from "@/hooks/useChampionships";
 import { RequireAdmin } from "@/components/require-admin";
 import type { UnifiedChampionship } from "@/types/championship";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function ChampionshipAdmin() {
+  usePageTracking("Championship Admin");
   const { championships: allChampionships, refetch: refetchAll } =
     useAllChampionships();
   const { data: historicalOnly, refetch: refetchHistorical } =

@@ -10,6 +10,7 @@ import { addToast } from "@/providers/toast";
 import BackButton from "@/components/back-button";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import RequireAdmin from "@/components/require-admin";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export const PolicyEditorPage: React.FC = () => {
   const { type } = useParams<{ type: string }>();
@@ -22,6 +23,8 @@ export const PolicyEditorPage: React.FC = () => {
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  usePageTracking("Policy Editor", loading);
 
   // Load existing policy
   useEffect(() => {

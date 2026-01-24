@@ -18,8 +18,10 @@ import {
 import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
 import { useMembers } from "@/hooks/useMembers";
 import { Switch } from "@heroui/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function MembershipDirectoryPage() {
+  usePageTracking("Member Directory");
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useDocAdminFlag(user); // local check for early redirect logic unchanged

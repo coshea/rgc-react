@@ -11,8 +11,10 @@ import { useDocAdminFlag } from "@/components/membership/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function MembershipPage() {
+  usePageTracking("Membership");
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 

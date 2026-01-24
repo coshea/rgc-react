@@ -2,8 +2,10 @@ import { title } from "@/components/primitives";
 import { siteConfig } from "@/config/site";
 import { Button, Link, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function AboutPage() {
+  usePageTracking("About");
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-12">
       <div className="inline-block max-w-3xl text-center justify-center">

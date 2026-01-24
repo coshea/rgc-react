@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import {
   Card,
   CardHeader,
@@ -24,10 +25,11 @@ import FindAGamePostModal from "@/components/find-a-game/FindAGamePostModal";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 
 export default function FindAGamePage() {
+  usePageTracking("Find A Game");
   const { userLoggedIn } = useAuth();
   const [mode, setMode] = useState<Mode>("needPlayers");
   const [date, setDate] = useState<string>(() =>
-    toYMD(new Date(Date.now() + 24 * 60 * 60 * 1000))
+    toYMD(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   ); // default tomorrow
   const [time, setTime] = useState<string>("");
   const [openSpots, setOpenSpots] = useState<string>("1");

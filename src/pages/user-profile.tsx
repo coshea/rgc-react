@@ -30,6 +30,7 @@ import {
   useUserTournamentWins,
   useUserWinnings,
 } from "@/hooks/useUserTournaments";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
 import { toDate } from "@/api/users";
@@ -52,6 +53,8 @@ const UserProfilePage: React.FC = () => {
     useUserTournamentWins(userId);
   const { data: winnings, isLoading: winningsLoading } =
     useUserWinnings(userId);
+
+  usePageTracking(profileUser?.displayName || `User ${userId}`, userLoading);
 
   // Only wait for basic user profile data, let tournament data load lazily
   if (userLoading) {
@@ -622,8 +625,8 @@ const UserProfilePage: React.FC = () => {
                     groups[year].push(tournament);
                     return groups;
                   },
-                  {} as Record<number, typeof tournamentWins>
-                )
+                  {} as Record<number, typeof tournamentWins>,
+                ),
               )
                 .sort(([a], [b]) => Number(b) - Number(a)) // Sort years descending
                 .map(([year, tournaments]) => (

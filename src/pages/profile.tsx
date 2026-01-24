@@ -4,8 +4,10 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { siteConfig } from "@/config/site";
 import { Spinner } from "@heroui/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 const ProfilePage = () => {
+  usePageTracking("Profile");
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 

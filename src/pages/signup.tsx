@@ -21,8 +21,10 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { addToast } from "@/providers/toast";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function SignUpPage() {
+  usePageTracking("Sign Up");
   const [isVisible, setIsVisible] = React.useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);

@@ -17,6 +17,7 @@ import {
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { BlogPost, BlogPostStatus, BlogCategory } from "@/types/blog";
 import {
   onPublishedBlogPosts,
@@ -30,6 +31,8 @@ export const BlogListPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
+
+  usePageTracking("Club Announcements");
 
   const [posts, setPosts] = React.useState<BlogPost[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -58,7 +61,7 @@ export const BlogListPage: React.FC = () => {
       (err) => {
         console.error("Failed to load blog posts", err);
         setLoading(false);
-      }
+      },
     );
     return () => unsub();
   }, [isAdmin, showAllPosts]);
