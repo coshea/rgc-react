@@ -7,6 +7,7 @@ import {
   TableRow,
   TableCell,
   Chip,
+  Tooltip,
   Button,
   Card,
   CardBody,
@@ -15,7 +16,13 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus, statusText } from "@/utils/tournamentStatus";
+import {
+  getStatus,
+  statusText,
+  isRegistrationOpen,
+  getRegistrationWindowInfo,
+  RegistrationWindowState,
+} from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
 
@@ -42,7 +49,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
   const [yearFilter, setYearFilter] = React.useState<number>(() =>
-    new Date().getUTCFullYear()
+    new Date().getUTCFullYear(),
   );
 
   const availableYears = React.useMemo(() => {
@@ -114,7 +121,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         case "completed":
           return status === TournamentStatus.Completed;
         case "registration":
-          return status === TournamentStatus.Open;
+          return isRegistrationOpen(tournament);
         case "scheduled":
           return status === TournamentStatus.Upcoming;
         case "canceled":
@@ -139,7 +146,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       const status = getStatus(tournament);
       if (status === TournamentStatus.Canceled) counts.canceled++;
       else if (status === TournamentStatus.Completed) counts.completed++;
-      else if (status === TournamentStatus.Open) counts.registration++;
+      else if (isRegistrationOpen(tournament)) counts.registration++;
       else counts.scheduled++;
     });
 
@@ -215,8 +222,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   // New function to render status chips
   const renderStatusChips = (tournament: Tournament) => {
-    // Show exactly one status with priority: Canceled > Completed > In Progress > Registration Open > Scheduled
     const status = getStatus(tournament);
+    const windowInfo = getRegistrationWindowInfo(tournament);
     if (status === TournamentStatus.Canceled) {
       return (
         <Chip color="danger" size="sm" variant="flat">
@@ -241,10 +248,29 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       );
     }
 
-    if (status === TournamentStatus.Open) {
+    if (windowInfo.state === RegistrationWindowState.Open) {
       return (
         <Chip color="warning" size="sm" variant="flat">
-          {statusText(status)}
+          Registration Open
+        </Chip>
+      );
+    }
+
+    if (windowInfo.state === RegistrationWindowState.Upcoming) {
+      return (
+        <Chip color="default" size="sm" variant="flat">
+          Registration Opens Soon
+        </Chip>
+      );
+    }
+
+    if (
+      windowInfo.state === RegistrationWindowState.Closed ||
+      windowInfo.state === RegistrationWindowState.Invalid
+    ) {
+      return (
+        <Chip color="danger" size="sm" variant="bordered">
+          Registration Closed
         </Chip>
       );
     }
@@ -262,16 +288,28 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         navigate(`/tournaments/${tournament.firestoreId}`);
       }
     };
+
+    const stopPropagationIfPossible = (event: unknown) => {
+      if (
+        typeof event === "object" &&
+        event !== null &&
+        "stopPropagation" in event &&
+        typeof (event as { stopPropagation?: unknown }).stopPropagation ===
+          "function"
+      ) {
+        (event as { stopPropagation: () => void }).stopPropagation();
+      }
+    };
+
     return (
       <Card
         key={tournament.firestoreId}
         isPressable
-        className="mb-4 border border-default-200 cursor-pointer hover:bg-content2 transition-colors"
         onPress={goToDetails}
-        role="link"
         aria-label={`View details for ${tournament.title}`}
+        className="mb-4 border border-default-200 hover:bg-content2 transition-colors"
       >
-        <CardBody className="p-4" onClick={goToDetails}>
+        <CardBody className="p-4">
           <div className="flex justify-between items-start">
             <div>
               <p className="font-medium text-foreground mb-1 flex items-center gap-2">
@@ -311,8 +349,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     size="sm"
                     variant="light"
                     isIconOnly
-                    onPress={(e: any) => {
-                      e?.stopPropagation?.();
+                    onPress={(e: unknown) => {
+                      stopPropagationIfPossible(e);
                       onEdit(tournament);
                     }}
                     aria-label="Edit tournament"
@@ -324,8 +362,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     variant="light"
                     color="danger"
                     isIconOnly
-                    onPress={(e: any) => {
-                      e?.stopPropagation?.();
+                    onPress={(e: unknown) => {
+                      stopPropagationIfPossible(e);
                       openConfirm(tournament.firestoreId);
                     }}
                     aria-label="Delete tournament"
@@ -456,6 +494,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <TableHeader>
             <TableColumn>TOURNAMENT</TableColumn>
             <TableColumn>DATE</TableColumn>
+            <TableColumn>
+              <div className="flex items-center gap-1">
+                <Icon icon="lucide:clock" className="text-default-400" />
+                <span className="sr-only">TEE TIMES</span>
+              </div>
+            </TableColumn>
             <TableColumn>PLAYERS</TableColumn>
             <TableColumn>TEE</TableColumn>
             <TableColumn>PRIZE POOL</TableColumn>
@@ -471,15 +515,19 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   `hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ` +
                   `${(() => {
                     const s = getStatus(tournament);
-                    return s === TournamentStatus.Canceled
-                      ? "border-l-4 border-l-danger"
-                      : s === TournamentStatus.Completed
-                        ? "border-l-4 border-l-success"
-                        : s === TournamentStatus.InProgress
-                          ? "border-l-4 border-l-primary"
-                          : s === TournamentStatus.Open
-                            ? "border-l-4 border-l-warning"
-                            : "border-l-4 border-l-default-200";
+                    if (s === TournamentStatus.Canceled) {
+                      return "border-l-4 border-l-danger";
+                    }
+                    if (s === TournamentStatus.Completed) {
+                      return "border-l-4 border-l-success";
+                    }
+                    if (s === TournamentStatus.InProgress) {
+                      return "border-l-4 border-l-primary";
+                    }
+                    if (isRegistrationOpen(tournament)) {
+                      return "border-l-4 border-l-warning";
+                    }
+                    return "border-l-4 border-l-default-200";
                   })()}`
                 }
                 role="link"
@@ -517,6 +565,17 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     <Icon icon="lucide:calendar" className="text-default-400" />
                     <span>{formatDate(tournament.date)}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  {tournament.assignedTeeTimes ? (
+                    <Tooltip content="Assigned tee times">
+                      <div className="flex items-center">
+                        <Icon icon="lucide:clock" className="text-primary" />
+                      </div>
+                    </Tooltip>
+                  ) : (
+                    <span className="text-default-300">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

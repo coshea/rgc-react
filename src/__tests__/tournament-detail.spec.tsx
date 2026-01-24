@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 // Mock hooks & Auth
+let authUserMock: { uid: string } | null = { uid: "user1" };
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "user1" } }),
+  useAuth: () => ({ user: authUserMock }),
 }));
 vi.mock("@/hooks/useUserProfile", () => ({
   useUserProfile: () => ({ userProfile: {} }),
@@ -28,13 +30,13 @@ function emitDoc(path: string, data: any) {
         exists: () => !!data,
         id: path.split("/").pop(),
         data: () => data,
-      })
+      }),
     );
   });
 }
 function emitCollection(
   path: string,
-  docs: Array<{ id: string; data: () => any }>
+  docs: Array<{ id: string; data: () => any }>,
 ) {
   act(() => {
     (apiListeners[path] || []).forEach((cb) => cb({ docs }));
@@ -88,16 +90,16 @@ function renderWithRoute(id: string) {
           />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
 const baseTournament = {
+  ...openRegistrationWindow(),
   title: "Club Championship",
   date: new Date(),
   description: "Desc",
   players: 4,
-  status: TournamentStatus.Open,
   prizePool: 500,
   winnerGroups: [
     {
@@ -121,6 +123,7 @@ describe("TournamentDetailPage", () => {
   beforeEach(() => {
     Object.keys(apiListeners).forEach((k) => delete apiListeners[k]);
     isAdminMock = false;
+    authUserMock = { uid: "user1" };
   });
 
   it("renders loading then tournament title", async () => {
@@ -128,7 +131,7 @@ describe("TournamentDetailPage", () => {
     expect(screen.getByText(/Loading tournament/i)).toBeInTheDocument();
     emitDoc("tournaments/abc", baseTournament);
     await waitFor(() =>
-      expect(screen.getByText("Club Championship")).toBeInTheDocument()
+      expect(screen.getByText("Club Championship")).toBeInTheDocument(),
     );
   });
 
@@ -149,13 +152,12 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("open1");
     emitDoc("tournaments/open1", {
       ...baseTournament,
-      status: TournamentStatus.Open,
       winners: [],
     });
     await screen.findByText("Club Championship");
     expect(screen.getAllByText(/Registration Open/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("button", { name: /Register/i })
+      screen.getByRole("button", { name: /Register/i }),
     ).toBeInTheDocument();
   });
 
@@ -163,7 +165,6 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("reg1");
     emitDoc("tournaments/reg1", {
       ...baseTournament,
-      status: TournamentStatus.Open,
     });
     emitCollection("tournaments/reg1/registrations", []);
     emitCollection("tournaments/reg1/registrations", [
@@ -176,19 +177,32 @@ describe("TournamentDetailPage", () => {
       },
     ]);
     await waitFor(() =>
-      expect(screen.getByText(/You're registered/i)).toBeInTheDocument()
+      expect(screen.getByText(/You're registered/i)).toBeInTheDocument(),
     );
   });
 
   it("shows closed message when registration closed", async () => {
     renderWithRoute("closed1");
+    const pastWindow = {
+      registrationStart: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      registrationEnd: new Date(Date.now() - 60 * 60 * 1000),
+    };
     emitDoc("tournaments/closed1", {
       ...baseTournament,
+      ...pastWindow,
       status: TournamentStatus.Upcoming,
     });
     await screen.findByText("Club Championship");
+    expect(screen.getByText(/^Registration Closed$/i)).toBeInTheDocument();
+  });
+
+  it("does not load registered teams when logged out", async () => {
+    authUserMock = null;
+    renderWithRoute("loggedout1");
+    emitDoc("tournaments/loggedout1", baseTournament);
+    await screen.findByText("Club Championship");
     expect(
-      screen.getByText(/Registration is currently closed/i)
+      screen.getByText(/You must be logged in to view registered teams/i),
     ).toBeInTheDocument();
   });
 
@@ -232,14 +246,14 @@ describe("TournamentDetailPage", () => {
     await waitFor(
       () =>
         expect(
-          screen.getAllByRole("button", { name: /Edit tournament/i })
-        ).toHaveLength(2) // One for mobile, one for desktop
+          screen.getAllByRole("button", { name: /Edit tournament/i }),
+        ).toHaveLength(2), // One for mobile, one for desktop
     );
     expect(
-      screen.getAllByRole("button", { name: /Delete tournament/i })
+      screen.getAllByRole("button", { name: /Delete tournament/i }),
     ).toHaveLength(2);
     expect(
-      screen.getAllByRole("button", { name: /Export registrations/i })
+      screen.getAllByRole("button", { name: /Export registrations/i }),
     ).toHaveLength(2);
   });
 
@@ -251,6 +265,7 @@ describe("TournamentDetailPage", () => {
         id: "r1",
         data: () => ({
           ownerId: "other",
+          openSpotsOptIn: true,
           team: [
             { id: "u10", displayName: "Player A" },
             { id: "u11", displayName: "Player B" },
@@ -262,6 +277,28 @@ describe("TournamentDetailPage", () => {
     await screen.findByText("Club Championship");
     expect(screen.getByText(/2 Spots Open/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/2 open team spots?/i)).toBeInTheDocument();
+  });
+
+  it("does not advertise open spots unless opted in", async () => {
+    renderWithRoute("spots2");
+    emitDoc("tournaments/spots2", { ...baseTournament, players: 4 });
+    emitCollection("tournaments/spots2/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "other",
+          openSpotsOptIn: false,
+          team: [
+            { id: "u10", displayName: "Player A" },
+            { id: "u11", displayName: "Player B" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+    expect(screen.queryByText(/Spots Open/i)).toBeNull();
+    expect(screen.queryByLabelText(/open team spots?/i)).toBeNull();
   });
 
   it("filters to show only teams needing players when toggle active", async () => {
@@ -285,6 +322,7 @@ describe("TournamentDetailPage", () => {
         id: "open1",
         data: () => ({
           ownerId: "o2",
+          openSpotsOptIn: true,
           team: [
             { id: "e", displayName: "E" },
             { id: "f", displayName: "F" },
@@ -309,5 +347,79 @@ describe("TournamentDetailPage", () => {
       toggleBtn.click();
     });
     await screen.findByText(/Team 1/i);
+  });
+
+  it("opens the open-spot modal when clicked", async () => {
+    renderWithRoute("modal1");
+    emitDoc("tournaments/modal1", { ...baseTournament, players: 4 });
+    emitCollection("tournaments/modal1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "leader1",
+          openSpotsOptIn: true,
+          team: [
+            { id: "leader1", displayName: "Leader One" },
+            { id: "m2", displayName: "Member Two" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+
+    const teamCard = screen.getByRole("button", {
+      name: /open spot details for team 1/i,
+    });
+    await act(async () => {
+      teamCard.click();
+    });
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Team 1/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Leader One/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Member Two/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", {
+        name: /View profile for Leader One/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("marks teams beyond maxTeams as waitlisted", async () => {
+    renderWithRoute("wait1");
+    emitDoc("tournaments/wait1", { ...baseTournament, maxTeams: 2 });
+    emitCollection("tournaments/wait1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "o1",
+          team: [{ id: "a", displayName: "A" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "r2",
+        data: () => ({
+          ownerId: "o2",
+          team: [{ id: "b", displayName: "B" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "r3",
+        data: () => ({
+          ownerId: "o3",
+          team: [{ id: "c", displayName: "C" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+
+    await screen.findByText("Club Championship");
+    expect(screen.getByText(/Field Size/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 teams/i)).toBeInTheDocument();
+    expect(screen.getByText("3 / 2")).toBeInTheDocument();
+    expect(screen.getAllByText(/Waitlist/i).length).toBeGreaterThan(0);
   });
 });

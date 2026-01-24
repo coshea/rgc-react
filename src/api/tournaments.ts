@@ -1,5 +1,5 @@
 import { TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 // Centralized tournament-related Firestore access.
 // Components and hooks should import ONLY from this module (or hooks built atop it),
 // not directly from '@/config/firebase' or 'firebase/firestore'. This enables
@@ -27,7 +27,7 @@ import {
 export function onTournament(
   id: string,
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const ref = doc(db, "tournaments", id);
   return onSnapshot(ref, next, error);
@@ -37,7 +37,7 @@ export function onTournament(
 export function onTournamentRegistrations(
   tournamentId: string,
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const col = collection(db, "tournaments", tournamentId, "registrations");
   const q = query(col, orderBy("registeredAt", "asc"));
@@ -47,7 +47,7 @@ export function onTournamentRegistrations(
 // Real-time listener for all tournaments ordered by date.
 export function onAllTournaments(
   next: (snap: any) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   const col = collection(db, "tournaments");
   const q = query(col, orderBy("date", "asc"));
@@ -59,7 +59,6 @@ export async function deleteTournament(id: string) {
   await deleteDoc(doc(db, "tournaments", id));
 }
 
-// Utility to transform raw Firestore snapshot doc to Tournament shape (lightweight, no import cycle).
 export function mapTournamentDoc(d: any) {
   const data: any = d.data();
   const dateField =
@@ -68,8 +67,12 @@ export function mapTournamentDoc(d: any) {
       : data.date
         ? new Date(data.date)
         : new Date();
+  const registrationStart = parseToDate(data.registrationStart);
+  const registrationEnd = parseToDate(data.registrationEnd);
   const status: TournamentStatus = getStatus({
     status: data.status as TournamentStatus | undefined,
+    registrationStart,
+    registrationEnd,
   });
   return {
     firestoreId: d.id,
@@ -79,11 +82,15 @@ export function mapTournamentDoc(d: any) {
     detailsMarkdown: data.detailsMarkdown || data.details || "",
     players: data.players,
     status,
+    registrationStart,
+    registrationEnd,
     icon: data.icon,
     href: data.href,
     prizePool: data.prizePool || 0,
     winnerGroups: data.winnerGroups || [],
     tee: data.tee || "Mixed",
+    assignedTeeTimes: Boolean(data.assignedTeeTimes),
+    maxTeams: typeof data.maxTeams === "number" ? data.maxTeams : undefined,
     previousTournamentId: data.previousTournamentId,
     weather: data.weather,
   };
@@ -115,44 +122,52 @@ export interface RegistrationMember {
 export interface RegistrationPayload {
   team: RegistrationMember[];
   ownerId: string;
+  /** When true, the captain opts in to advertising open spots on the team. */
+  openSpotsOptIn?: boolean;
 }
 
 // Create or update a registration. If registrationId provided, merges; else adds.
 export async function upsertRegistration(
   tournamentId: string,
   registrationId: string | null,
-  payload: RegistrationPayload
+  payload: RegistrationPayload,
 ) {
-  const base = {
-    ...payload,
-    registeredAt: serverTimestamp(),
-  };
+  // When creating a new registration, stamp it with the server timestamp so
+  // ordering by `registeredAt` reflects the original registration time.
+  // When updating an existing registration, DO NOT modify `registeredAt` to
+  // preserve original ordering.
   if (registrationId) {
     const ref = doc(
       db,
       "tournaments",
       tournamentId,
       "registrations",
-      registrationId
+      registrationId,
     );
-    await setDoc(ref, base, { merge: true });
+    // Merge the payload but intentionally omit `registeredAt` so the existing
+    // value remains unchanged.
+    await setDoc(ref, { ...payload }, { merge: true });
     return registrationId;
   }
+
   const col = collection(db, "tournaments", tournamentId, "registrations");
-  const created = await addDoc(col, base);
+  const created = await addDoc(col, {
+    ...payload,
+    registeredAt: serverTimestamp(),
+  });
   return created.id;
 }
 
 export async function deleteRegistration(
   tournamentId: string,
-  registrationId: string
+  registrationId: string,
 ) {
   const ref = doc(
     db,
     "tournaments",
     tournamentId,
     "registrations",
-    registrationId
+    registrationId,
   );
   await deleteDoc(ref);
 }

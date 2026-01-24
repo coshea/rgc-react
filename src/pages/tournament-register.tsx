@@ -5,6 +5,7 @@ import {
   CardBody,
   Button,
   Divider,
+  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,
@@ -12,8 +13,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
-import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus } from "@/utils/tournamentStatus";
+import { Tournament } from "@/types/tournament";
+import { isRegistrationOpen } from "@/utils/tournamentStatus";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
@@ -38,7 +39,7 @@ const TournamentRegister: React.FC = () => {
   const [submitting, setSubmitting] = React.useState(false);
   const { user } = useAuth();
   const [registrationId, setRegistrationId] = React.useState<string | null>(
-    null
+    null,
   );
   const [deleting, setDeleting] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -59,16 +60,25 @@ const TournamentRegister: React.FC = () => {
   const pendingMembersRef = React.useRef<{
     members: { id: string; displayName: string }[];
     ownerId: string;
+    openSpotsOptIn: boolean;
   } | null>(null);
 
+  // Explicit opt-in: only advertise open spots when the user chooses to.
+  const [openSpotsOptIn, setOpenSpotsOptIn] = React.useState(false);
+
   const finalizeRegistration = React.useCallback(
-    async (members: { id: string; displayName: string }[], ownerId: string) => {
+    async (
+      members: { id: string; displayName: string }[],
+      ownerId: string,
+      nextOpenSpotsOptIn: boolean,
+    ) => {
       if (!tournament?.firestoreId) return;
       setSubmitting(true);
       try {
         await upsertRegistration(tournament.firestoreId, registrationId, {
           team: members,
           ownerId,
+          openSpotsOptIn: nextOpenSpotsOptIn,
         });
         addToast({
           title: "Registered",
@@ -89,7 +99,7 @@ const TournamentRegister: React.FC = () => {
         setSubmitting(false);
       }
     },
-    [navigate, registrationId, tournament?.firestoreId]
+    [navigate, registrationId, tournament?.firestoreId],
   );
   // store registrations for conflict detection
   const [registrations, setRegistrations] = React.useState<any[]>([]);
@@ -179,11 +189,14 @@ const TournamentRegister: React.FC = () => {
         if (existing) {
           setRegistrationId(existing.id);
           const maybeTeam = (existing as Record<string, unknown>).team;
+          const maybeOptIn = (existing as Record<string, unknown>)
+            .openSpotsOptIn;
+          setOpenSpotsOptIn(maybeOptIn === true);
           if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
             const ids = maybeTeam.map((m) =>
               typeof m === "object" && m !== null
                 ? (m as Record<string, unknown>).id
-                : ""
+                : "",
             );
             const cleaned = ids
               .map((id) => (typeof id === "string" ? id : ""))
@@ -216,7 +229,7 @@ const TournamentRegister: React.FC = () => {
   }, [tournament?.firestoreId, minTeamSize]);
 
   const selectedCount = teammates.filter(
-    (t) => t && t.trim().length > 0
+    (t) => t && t.trim().length > 0,
   ).length;
   const effectiveSelectedCount =
     selectedCount > 0
@@ -226,13 +239,15 @@ const TournamentRegister: React.FC = () => {
         : 0;
   const hasMinTeamSize = effectiveSelectedCount >= minTeamSize;
 
+  const openSlotsCount = Math.max(maxTeamSize - effectiveSelectedCount, 0);
+
   // Sanitize teammate IDs if users list changes (remove ids not present anymore)
   React.useEffect(() => {
     if (!users || users.length === 0) return;
     const valid = new Set(selectableUsers.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
-      id && valid.has(id) ? id : id === "" ? "" : ""
+      id && valid.has(id) ? id : id === "" ? "" : "",
     );
     // If a non-empty id was removed due to being invalid, mark changed
     if (cleaned.some((id, i) => id !== teammates[i])) changed = true;
@@ -262,7 +277,7 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
-    if (getStatus(tournament) !== TournamentStatus.Open) {
+    if (!isRegistrationOpen(tournament)) {
       addToast({
         title: "Closed",
         description: "Registration for this tournament is closed.",
@@ -350,7 +365,11 @@ const TournamentRegister: React.FC = () => {
     });
 
     if (foundConflicts.length > 0 && !conflictsAcknowledged) {
-      pendingMembersRef.current = { members, ownerId: user.uid };
+      pendingMembersRef.current = {
+        members,
+        ownerId: user.uid,
+        openSpotsOptIn,
+      };
       setConflicts(foundConflicts);
       setConflictModalOpen(true);
       return; // wait for user confirmation
@@ -359,8 +378,10 @@ const TournamentRegister: React.FC = () => {
     // Use stored members if we are completing after a conflict acknowledgement
     const finalMembers = pendingMembersRef.current?.members || members;
     const ownerId = pendingMembersRef.current?.ownerId || user.uid;
+    const finalOpenSpotsOptIn =
+      pendingMembersRef.current?.openSpotsOptIn ?? openSpotsOptIn;
 
-    await finalizeRegistration(finalMembers, ownerId);
+    await finalizeRegistration(finalMembers, ownerId, finalOpenSpotsOptIn);
   };
 
   const handleConfirmCancel = async () => {
@@ -376,6 +397,7 @@ const TournamentRegister: React.FC = () => {
       });
       setRegistrationId(null);
       setTeammates([""]);
+      setOpenSpotsOptIn(false);
       setConfirmOpen(false);
       // Navigate back to the tournament details page after successful cancellation
       navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
@@ -427,6 +449,15 @@ const TournamentRegister: React.FC = () => {
               labels={{ leader: "Team Leader / You" }}
               disabled={!user?.uid}
             />
+
+            {maxTeamSize > 1 && openSlotsCount > 0 ? (
+              <Checkbox
+                isSelected={openSpotsOptIn}
+                onValueChange={setOpenSpotsOptIn}
+              >
+                Let others contact me to fill open spots
+              </Checkbox>
+            ) : null}
 
             {minTeamSize > 1 && !hasMinTeamSize ? (
               <div className="text-sm text-danger">
@@ -554,7 +585,7 @@ const TournamentRegister: React.FC = () => {
                           );
                         };
                         const teamMemberIds = Array.from(
-                          new Set(c.teamMembers)
+                          new Set(c.teamMembers),
                         );
                         const conflictPlayerResolved = resolveName(c.playerId);
                         return (
@@ -568,7 +599,7 @@ const TournamentRegister: React.FC = () => {
                                 <div className="flex -space-x-2">
                                   {teamMemberIds.map((mid) => {
                                     const memberUser = selectableUsers.find(
-                                      (u) => u.id === mid
+                                      (u) => u.id === mid,
                                     );
                                     const label = resolveName(mid);
                                     return (
@@ -641,8 +672,9 @@ const TournamentRegister: React.FC = () => {
                           queueMicrotask(() =>
                             finalizeRegistration(
                               pending.members,
-                              pending.ownerId
-                            )
+                              pending.ownerId,
+                              pending.openSpotsOptIn,
+                            ),
                           );
                         }
                       }}

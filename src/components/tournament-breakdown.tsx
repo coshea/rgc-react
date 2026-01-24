@@ -19,7 +19,11 @@ import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
 import { getPlaceMeta } from "@/utils/placeMeta";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { getStatus, statusText } from "@/utils/tournamentStatus";
+import {
+  getStatus,
+  statusText,
+  isRegistrationOpen,
+} from "@/utils/tournamentStatus";
 import { TournamentStatus } from "@/types/tournament";
 import type { Tournament } from "@/types/tournament";
 import type { WinnerGroup } from "@/types/winner";
@@ -85,7 +89,7 @@ export function TournamentBreakdown({ year }: Props) {
           }
         >();
         const makeTeamKey = (
-          comps: Array<{ userId: string; displayName: string }>
+          comps: Array<{ userId: string; displayName: string }>,
         ) => {
           // Prefer stable by userId; fallback to display names
           const parts = comps.map((c) => c.userId || c.displayName).sort();
@@ -119,7 +123,7 @@ export function TournamentBreakdown({ year }: Props) {
                 const teamPrize = (w.prizeAmount || 0) * comps.length; // prizeAmount assumed per player share
                 const bestPosition = Math.min(
                   w.place,
-                  existing?.bestPosition ?? Number.POSITIVE_INFINITY
+                  existing?.bestPosition ?? Number.POSITIVE_INFINITY,
                 );
                 teamMap.set(teamKey, {
                   names: existing?.names || comps.map((c) => c.displayName),
@@ -141,7 +145,7 @@ export function TournamentBreakdown({ year }: Props) {
           positions.set(r.position, list);
         });
         const distinctPositions = Array.from(positions.keys()).sort(
-          (a, b) => a - b
+          (a, b) => a - b,
         );
         const podium: ResultRow[] = [];
         distinctPositions.slice(0, 3).forEach((pos) => {
@@ -318,7 +322,7 @@ export function TournamentBreakdown({ year }: Props) {
                 ? overall
                 : [
                     [...groups].sort(
-                      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)
+                      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0),
                     )[0],
                   ].filter(Boolean as unknown as <T>(x: T) => x is T);
 
@@ -367,7 +371,7 @@ export function TournamentBreakdown({ year }: Props) {
                 podiumGroups.push({
                   position: te.position,
                   players: te.players,
-                })
+                }),
               );
           } else {
             const seenPositions = new Set<number>();
@@ -433,6 +437,8 @@ export function TournamentBreakdown({ year }: Props) {
                         {(() => {
                           const s = getStatus(tournament);
                           const label = statusText(s);
+                          const registrationOpen =
+                            isRegistrationOpen(tournament);
                           if (s === TournamentStatus.Canceled) {
                             return (
                               <Chip
@@ -457,7 +463,7 @@ export function TournamentBreakdown({ year }: Props) {
                               </Chip>
                             );
                           }
-                          if (s === TournamentStatus.Open) {
+                          if (registrationOpen) {
                             return (
                               <Chip
                                 size="sm"
@@ -512,7 +518,7 @@ export function TournamentBreakdown({ year }: Props) {
                       }
                       const totalPrize = g.players.reduce(
                         (sum, p) => sum + p.prize,
-                        0
+                        0,
                       );
                       const perPlayer = totalPrize / g.players.length || 0;
                       const champion = g.position === 1;
@@ -689,7 +695,7 @@ export function TournamentBreakdown({ year }: Props) {
                               team as TournamentBundle["teamRows"][number];
                             const rank =
                               bundle.teamRows.findIndex(
-                                (t) => t.teamKey === row.teamKey
+                                (t) => t.teamKey === row.teamKey,
                               ) + 1;
                             const names: string[] = row.names;
                             const userIds: string[] = row.userIds;

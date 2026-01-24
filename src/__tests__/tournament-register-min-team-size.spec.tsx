@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
 import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));
@@ -24,12 +25,13 @@ vi.mock("@/hooks/useUsers", () => ({
 const { fetchTournamentMock, upsertRegistrationMock } = vi.hoisted(() => ({
   upsertRegistrationMock: vi.fn(async () => "reg1"),
   fetchTournamentMock: vi.fn(async (_id: string) => ({
+    ...openRegistrationWindow(),
     firestoreId: "t1",
     title: "Min Team Tournament",
     date: new Date(),
     description: "d",
     players: 2,
-    status: TournamentStatus.Open,
+    status: TournamentStatus.Upcoming,
     prizePool: 0,
     winners: [],
     tee: "Mixed",
@@ -72,19 +74,20 @@ function renderPage() {
           element={<TournamentRegister />}
         />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
 describe("TournamentRegister min team size", () => {
   it("requires at least 2 players when team size > 1", async () => {
     fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
       firestoreId: "t1",
       title: "Min Team Tournament",
       date: new Date(),
       description: "d",
       players: 2,
-      status: TournamentStatus.Open,
+      status: TournamentStatus.Upcoming,
       prizePool: 0,
       winners: [],
       tee: "Mixed",
@@ -98,19 +101,20 @@ describe("TournamentRegister min team size", () => {
     const submitBtn = screen.getByRole("button", { name: /^Register$/i });
     expect(submitBtn).toBeDisabled();
     expect(
-      screen.getByText(/add at least one teammate to register/i)
+      screen.getByText(/add at least one teammate to register/i),
     ).toBeInTheDocument();
     expect(upsertRegistrationMock).not.toHaveBeenCalled();
   });
 
   it("allows solo registration when team size is 1", async () => {
     fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
       firestoreId: "t1",
       title: "Solo Tournament",
       date: new Date(),
       description: "d",
       players: 1,
-      status: TournamentStatus.Open,
+      status: TournamentStatus.Upcoming,
       prizePool: 0,
       winners: [],
       tee: "Mixed",

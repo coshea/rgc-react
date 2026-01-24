@@ -20,19 +20,19 @@ vi.mock("@/hooks/useUsers", () => ({
 }));
 
 const upsertSpy = vi.fn(async (..._args: any[]) => {});
-import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 vi.mock("@/api/tournaments", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/api/tournaments")>();
   return {
     ...original,
     fetchTournament: vi.fn(async () => ({
+      ...openRegistrationWindow(),
       firestoreId: "abc123",
       title: "Fall Classic",
       date: new Date(),
       description: "Desc",
       players: 2,
-      status: TournamentStatus.Open,
       prizePool: 0,
       winners: [],
       tee: "Mixed",
@@ -101,7 +101,7 @@ describe("TournamentRegister redirect", () => {
         <MemoryRouter initialEntries={["/tournaments/abc123/register"]}>
           <TestWrapper />
         </MemoryRouter>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     // Wait for tournament title to render

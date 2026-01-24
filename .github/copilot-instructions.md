@@ -113,6 +113,12 @@ Last generated: 2025-09-29
   - ❌ `(user as any).createdAt.toDate()`
   - ❌ `data as any`
 
+## 14. Avoid Magic Strings (Prefer Enums)
+
+- Avoid hard-coded state strings (e.g. `"open"`, `"closed"`) when a typed enum/constant exists.
+- Prefer exporting an enum from a single utility/module and reusing it across UI and logic.
+- Example: registration window logic uses `RegistrationWindowState` from `src/utils/tournamentStatus.ts`.
+
 # Sentry Integration Guidelines
 
 These examples should be used as guidance when configuring Sentry functionality within a project.

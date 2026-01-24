@@ -9,6 +9,11 @@ export interface Tournament {
   detailsMarkdown?: string;
   players: number;
   /**
+   * Registration window boundaries stored in UTC. Clients should localize when displaying.
+   */
+  registrationStart?: Date;
+  registrationEnd?: Date;
+  /**
    * Unified status for the tournament. New code should prefer this over the legacy boolean flags.
    * For backward compatibility, the boolean flags are still present and kept in sync client-side.
    */
@@ -19,6 +24,10 @@ export interface Tournament {
   winnerGroups?: import("./winner").WinnerGroup[];
   // Tee selection for the tournament round
   tee?: TeeName;
+  // True when the event uses assigned tee times.
+  assignedTeeTimes?: boolean;
+  // Optional cap on number of registered teams. Sign-ups are not blocked; teams beyond this count are treated as waitlisted in the UI.
+  maxTeams?: number;
   // Link to previous year's tournament (Firestore ID) to display defending champion
   previousTournamentId?: string;
   // Weather data for the tournament day
@@ -35,7 +44,6 @@ export interface TournamentWeather {
 
 export enum TournamentStatus {
   Upcoming = "Upcoming",
-  Open = "Registration Open",
   InProgress = "In Progress",
   Completed = "Completed",
   Canceled = "Canceled",

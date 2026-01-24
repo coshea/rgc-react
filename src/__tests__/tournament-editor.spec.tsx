@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import TournamentEditor from "@/components/tournament-editor";
 import { Tournament, TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 // Mock Auth provider hook so component thinks a user (and optionally admin) exists
 vi.mock("@/providers/AuthProvider", () => ({
@@ -24,13 +25,13 @@ vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {
     ...mod,
-    DatePicker: ({ label, value, onChange }: any) => (
+    DatePicker: ({ label, value, onChange, granularity }: any) => (
       <div>
         <label>{label}</label>
         <input
           aria-label={label}
-          type="date"
-          value={value || ""}
+          type={granularity ? "datetime-local" : "date"}
+          value={value?.toString?.() ?? value ?? ""}
           onChange={(e) => onChange?.(e.target.value || null)}
         />
       </div>
@@ -110,7 +111,7 @@ describe("TournamentEditor - create mode", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
     await waitFor(() => expect(addDocMock).not.toHaveBeenCalled());
@@ -122,7 +123,7 @@ describe("TournamentEditor - create mode", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={onSave} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     fillRequiredFields();
     // set a date
@@ -148,10 +149,11 @@ describe("TournamentEditor - create mode", () => {
 describe("TournamentEditor - edit mode", () => {
   it("shows Edit Tournament header and updates via updateDoc", async () => {
     const existing: Tournament = {
+      ...openRegistrationWindow(),
       title: "Spring Open",
       description: "Fun event",
       players: 4,
-      status: TournamentStatus.Open,
+      status: TournamentStatus.Upcoming,
       prizePool: 100,
       winnerGroups: [],
       date: new Date(),
@@ -167,7 +169,7 @@ describe("TournamentEditor - edit mode", () => {
           onSave={onSave}
           onCancel={vi.fn()}
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     expect(screen.getByText(/Edit Tournament/i)).toBeTruthy();
 
@@ -217,7 +219,7 @@ describe("TournamentEditor - winners validation", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor tournament={t} onSave={vi.fn()} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     // Click update should trigger validation
     fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
@@ -234,7 +236,7 @@ describe("TournamentEditor - edge cases", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     // fill core fields
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
@@ -260,7 +262,7 @@ describe("TournamentEditor - edge cases", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Test Players" },
@@ -273,7 +275,7 @@ describe("TournamentEditor - edge cases", () => {
     });
     // players input: fallback to placeholder
     const playersInput = screen.getByPlaceholderText(
-      /Enter number of players/i
+      /Enter number of players/i,
     );
     fireEvent.change(playersInput, { target: { value: 0 } });
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
@@ -288,7 +290,7 @@ describe("TournamentEditor - edge cases", () => {
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={onSave} onCancel={vi.fn()} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Dual State" },

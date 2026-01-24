@@ -101,11 +101,38 @@ service cloud.firestore {
       // tournaments/{tournamentId}/registrations/{registrationId}
       // This keeps the server-side checks simpler and avoids arrayUnion/serverTimestamp issues.
       match /registrations/{registrationId} {
+        function registrationWindowConfigured(t) {
+          return (
+            (('registrationStart' in t) && t.registrationStart is timestamp)
+            || (('registrationEnd' in t) && t.registrationEnd is timestamp)
+          );
+        }
+
+        function registrationWindowAllows(t) {
+          return (
+            (('registrationStart' in t) && t.registrationStart is timestamp)
+              ? request.time >= t.registrationStart
+              : true
+          )
+          && (
+            (('registrationEnd' in t) && t.registrationEnd is timestamp)
+              ? request.time <= t.registrationEnd
+              : true
+          )
+          && !(
+            (('registrationStart' in t) && t.registrationStart is timestamp)
+            && (('registrationEnd' in t) && t.registrationEnd is timestamp)
+            && t.registrationStart > t.registrationEnd
+          );
+        }
+
         function tournamentAllowsRegistration(t) {
-          // Newer client logic relies on explicit status (see getStatus()).
-          // Keep legacy support for boolean registrationOpen.
-          return (('status' in t) && (t.status == 'Registration Open' || t.status == 'Open'))
-            || (('registrationOpen' in t) && t.registrationOpen == true);
+          // Newer client logic relies on the configured registration window.
+          // Legacy boolean flag still supported to ease migration.
+          return (
+            (registrationWindowConfigured(t) && registrationWindowAllows(t))
+            || (('registrationOpen' in t) && t.registrationOpen == true)
+          );
         }
 
         function teamSizeValid(team, t) {
@@ -147,9 +174,9 @@ service cloud.firestore {
           request.auth.uid == resource.data.ownerId || isAdmin()
         );
 
-  // Reading registrations: any authenticated user can read to view who is registered.
-  // This broadens visibility from just owner/admin to all signed-in members.
-  allow read: if request.auth != null;
+        // Reading registrations: any authenticated user can read to view who is registered.
+        // This broadens visibility from just owner/admin to all signed-in members.
+        allow read: if request.auth != null;
       }
     }
 

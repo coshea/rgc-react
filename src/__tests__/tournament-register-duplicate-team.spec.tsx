@@ -22,7 +22,7 @@ vi.mock("@/hooks/useUsers", () => ({
 
 // Mock tournaments API
 const upsertRegistrationMock = vi.fn(
-  async (_tournamentId?: string, _regId?: string | null, _payload?: any) => {}
+  async (_tournamentId?: string, _regId?: string | null, _payload?: any) => {},
 );
 const fetchAllRegistrationsMock = vi.fn(async (_?: any) => [
   {
@@ -34,16 +34,16 @@ const fetchAllRegistrationsMock = vi.fn(async (_?: any) => [
     ownerId: "someone",
   },
 ]);
-import { TournamentStatus } from "@/types/tournament";
+import { openRegistrationWindow } from "./tournament-utils";
 
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: vi.fn(async () => ({
+    ...openRegistrationWindow(),
     firestoreId: "t1",
     title: "Dup Test",
     date: new Date(),
     description: "d",
     players: 4,
-    status: TournamentStatus.Open,
     prizePool: 0,
     winners: [],
     tee: "Mixed",
@@ -53,7 +53,7 @@ vi.mock("@/api/tournaments", () => ({
   upsertRegistration: (
     tournamentId: string,
     regId: string | null,
-    payload: any
+    payload: any,
   ) => upsertRegistrationMock(tournamentId, regId, payload),
   deleteRegistration: vi.fn(async () => {}),
 }));
@@ -88,7 +88,7 @@ function renderPage() {
           element={<TournamentRegister />}
         />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -133,7 +133,7 @@ describe("TournamentRegister duplicate teammate detection", () => {
     // Ensure the rendered team names string includes Player Two
     const namesEls = screen.getAllByTestId("conflict-team-names");
     expect(namesEls.some((el) => /Player Two/.test(el.textContent || ""))).toBe(
-      true
+      true,
     );
     // Should not have attempted upsert yet
     expect(upsertRegistrationMock).not.toHaveBeenCalled();

@@ -2,13 +2,20 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Tooltip,
   Chip,
   Divider,
   CardFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import { getStatus, statusText } from "@/utils/tournamentStatus";
+import {
+  getStatus,
+  statusText,
+  isRegistrationOpen,
+  getRegistrationWindowInfo,
+  RegistrationWindowState,
+} from "@/utils/tournamentStatus";
 import { useNavigate, Link } from "react-router-dom";
 
 interface TournamentCardProps {
@@ -22,15 +29,18 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
     : undefined;
 
   const status = getStatus(tournament);
+  const registrationOpen = isRegistrationOpen(tournament);
+  const registrationWindowInfo = getRegistrationWindowInfo(tournament);
 
   // Define styling based on tournament status
   const getCardStyles = () => {
+    if (registrationOpen) {
+      return {
+        card: "border-2 border-warning-500 bg-warning-50/30 dark:bg-warning-950/20",
+        glow: "shadow-lg shadow-warning-500/20",
+      };
+    }
     switch (status) {
-      case TournamentStatus.Open:
-        return {
-          card: "border-2 border-warning-500 bg-warning-50/30 dark:bg-warning-950/20",
-          glow: "shadow-lg shadow-warning-500/20",
-        };
       case TournamentStatus.InProgress:
         return {
           card: "border-2 border-primary-500 bg-primary-50/30 dark:bg-primary-950/20",
@@ -86,6 +96,14 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                 day: "numeric",
                 timeZone: "UTC", // Add this line
               })}
+              {tournament.assignedTeeTimes ? (
+                <Tooltip content="Assigned tee times">
+                  <span className="inline-flex items-center gap-1 text-primary-600 dark:text-primary-300">
+                    <Icon icon="lucide:clock" className="w-4 h-4" />
+                    <span className="sr-only">Assigned tee times</span>
+                  </span>
+                </Tooltip>
+              ) : null}
             </div>
             {/* Right: Status Chip */}
             {(() => {
@@ -122,7 +140,9 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                   </Chip>
                 );
               }
-              if (s === TournamentStatus.Open) {
+              if (
+                registrationWindowInfo.state === RegistrationWindowState.Open
+              ) {
                 return (
                   <Chip
                     color="warning"
@@ -133,7 +153,45 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                     }
                     className="animate-pulse"
                   >
-                    {label}
+                    Registration Open
+                  </Chip>
+                );
+              }
+              if (
+                registrationWindowInfo.state ===
+                RegistrationWindowState.Upcoming
+              ) {
+                return (
+                  <Chip
+                    color="default"
+                    variant="flat"
+                    size="sm"
+                    startContent={
+                      <Icon
+                        icon="lucide:calendar-clock"
+                        className="w-3.5 h-3.5"
+                      />
+                    }
+                  >
+                    Registration Opens Soon
+                  </Chip>
+                );
+              }
+              if (
+                registrationWindowInfo.state ===
+                  RegistrationWindowState.Closed ||
+                registrationWindowInfo.state === RegistrationWindowState.Invalid
+              ) {
+                return (
+                  <Chip
+                    color="danger"
+                    variant="bordered"
+                    size="sm"
+                    startContent={
+                      <Icon icon="lucide:lock" className="w-3.5 h-3.5" />
+                    }
+                  >
+                    Registration Closed
                   </Chip>
                 );
               }
@@ -157,7 +215,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                   variant="flat"
                   size="sm"
                   startContent={
-                    <Icon icon="lucide:clock" className="w-3.5 h-3.5" />
+                    <Icon icon="lucide:calendar-days" className="w-3.5 h-3.5" />
                   }
                 >
                   {label}
