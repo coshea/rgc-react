@@ -1072,7 +1072,7 @@ const TournamentDetailPage: React.FC = () => {
                                 setOpenTeamModal(true);
                               };
 
-                              const cardClassName = `rounded-md border transition-colors p-3 flex flex-col h-full gap-2 relative group ${
+                              const cardClassName = `rounded-md border transition-colors p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group ${
                                 showOpenSpots
                                   ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
                                   : "border-default-200 bg-content2/60 hover:bg-content2"
@@ -1107,8 +1107,8 @@ const TournamentDetailPage: React.FC = () => {
                                       : undefined
                                   }
                                 >
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex -space-x-2">
+                                  <div className="flex items-start gap-2 sm:gap-3">
+                                    <div className="flex -space-x-2 shrink-0">
                                       {team.map((m, i) => {
                                         const memberUser = usersMap.get(m.id);
                                         const label = (
@@ -1161,7 +1161,7 @@ const TournamentDetailPage: React.FC = () => {
                                           </Chip>
                                         ) : null}
                                       </div>
-                                      <ul className="text-sm font-medium leading-snug space-y-0.5">
+                                      <ul className="text-[13px] sm:text-sm font-medium leading-tight sm:leading-snug space-y-0">
                                         {team.map((m, i) => {
                                           const isLeader =
                                             !!leaderId && m.id === leaderId;
@@ -1169,29 +1169,34 @@ const TournamentDetailPage: React.FC = () => {
                                             <li
                                               key={i}
                                               className={
-                                                "truncate flex items-center gap-2 " +
+                                                "min-w-0 flex items-center gap-1.5 " +
                                                 (isLeader ? "text-primary" : "")
                                               }
                                             >
-                                              <span className="truncate">
+                                              <span className="min-w-0 truncate">
                                                 {m.displayName || m.id}
                                               </span>
                                               {isLeader && (
-                                                <Chip
-                                                  size="sm"
-                                                  variant="flat"
-                                                  color="primary"
-                                                  className="h-5 px-2 text-[10px]"
-                                                >
-                                                  Leader
-                                                </Chip>
+                                                <>
+                                                  <Chip
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="primary"
+                                                    className="hidden sm:inline-flex h-5 px-2 text-[10px] shrink-0"
+                                                  >
+                                                    Leader
+                                                  </Chip>
+                                                  <span className="sm:hidden inline-flex items-center h-5 px-2 rounded-full bg-primary/10 text-primary text-[10px] font-medium shrink-0">
+                                                    Leader
+                                                  </span>
+                                                </>
                                               )}
                                             </li>
                                           );
                                         })}
                                       </ul>
                                       {showOpenSpots && (
-                                        <div className="mt-1 w-full text-left text-[11px] font-medium text-warning flex items-center gap-1">
+                                        <div className="mt-0.5 w-full text-left text-[11px] font-medium text-warning flex items-center gap-1">
                                           <Icon
                                             icon="lucide:alert-circle"
                                             className="w-3.5 h-3.5"
@@ -1204,15 +1209,17 @@ const TournamentDetailPage: React.FC = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <div className="mt-auto flex items-center justify-between text-[11px] text-foreground-500 pt-1 border-t border-default-100">
-                                    <span className="flex items-center gap-1">
+                                  <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-foreground-500 pt-0.5 sm:pt-1 border-t border-default-100">
+                                    <span className="flex items-center gap-1 min-w-0 flex-1">
                                       <Icon
                                         icon="lucide:calendar-clock"
-                                        className="w-3.5 h-3.5"
+                                        className="w-3.5 h-3.5 shrink-0"
                                       />
-                                      {dateStr}
+                                      <span className="truncate">
+                                        {dateStr}
+                                      </span>
                                     </span>
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-1 shrink-0">
                                       <Icon
                                         icon="lucide:users"
                                         className="w-3.5 h-3.5"
