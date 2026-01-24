@@ -22,7 +22,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
-import { parseDate, DateValue } from "@internationalized/date";
+import { parseDate, parseDateTime, DateValue } from "@internationalized/date";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
@@ -69,7 +69,8 @@ const formatForDateTimeInput = (value?: Date | string | number) => {
   const day = pad(date.getDate());
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const seconds = pad(date.getSeconds());
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
 const parseDateTimeInputValue = (value: string) => {
@@ -643,22 +644,33 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     </span>
                   </div>
                   <div className="space-y-3">
-                    <Input
+                    <DatePicker
                       label="Opens"
-                      placeholder="Leave blank to open manually"
-                      type="datetime-local"
-                      value={registrationStartInput}
-                      onValueChange={setRegistrationStartInput}
+                      value={
+                        registrationStartInput
+                          ? parseDateTime(registrationStartInput)
+                          : null
+                      }
+                      onChange={(v: DateValue | null) =>
+                        setRegistrationStartInput(v ? v.toString() : "")
+                      }
+                      granularity="minute"
                       isInvalid={!!errors.registrationWindow}
                       errorMessage={errors.registrationWindow}
                     />
-                    <Input
+                    <DatePicker
                       label="Closes"
-                      placeholder="Leave blank for open-ended window"
-                      type="datetime-local"
-                      value={registrationEndInput}
-                      onValueChange={setRegistrationEndInput}
+                      value={
+                        registrationEndInput
+                          ? parseDateTime(registrationEndInput)
+                          : null
+                      }
+                      onChange={(v: DateValue | null) =>
+                        setRegistrationEndInput(v ? v.toString() : "")
+                      }
+                      granularity="minute"
                       isInvalid={!!errors.registrationWindow}
+                      errorMessage={errors.registrationWindow}
                     />
                     <p className="text-xs text-foreground-500">
                       Times are displayed in your local timezone and saved in

@@ -25,13 +25,13 @@ vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {
     ...mod,
-    DatePicker: ({ label, value, onChange }: any) => (
+    DatePicker: ({ label, value, onChange, granularity }: any) => (
       <div>
         <label>{label}</label>
         <input
           aria-label={label}
-          type="date"
-          value={value || ""}
+          type={granularity ? "datetime-local" : "date"}
+          value={value?.toString?.() ?? value ?? ""}
           onChange={(e) => onChange?.(e.target.value || null)}
         />
       </div>
