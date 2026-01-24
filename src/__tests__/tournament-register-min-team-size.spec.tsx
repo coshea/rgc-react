@@ -63,7 +63,10 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: vi.fn(() => () => {}),
 }));
 
-vi.mock("@/config/firebase", () => ({ db: {} }));
+vi.mock("@/config/firebase", () => ({
+  db: {},
+  getAnalyticsInstance: () => null,
+}));
 
 function renderPage() {
   return render(

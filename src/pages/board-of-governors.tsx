@@ -4,6 +4,7 @@ import { Card, CardBody, CardHeader, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { useBoardMembers } from "@/hooks/useBoardMembers";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 // Assumptions about User type extension:
 // - user.role?: string (e.g., 'president', 'vice-president', 'secretary', etc.) or
@@ -14,6 +15,7 @@ import { useBoardMembers } from "@/hooks/useBoardMembers";
 // prettyRole replaced by formatBoardRoleLabel from roles.ts
 
 const BoardOfGovernorsPage: React.FC = () => {
+  usePageTracking("Board of Governors");
   const navigate = useNavigate();
   const { boardMembers, president, isLoading } = useBoardMembers();
 

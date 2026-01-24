@@ -12,6 +12,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
 import { isRegistrationOpen } from "@/utils/tournamentStatus";
@@ -103,6 +104,8 @@ const TournamentRegister: React.FC = () => {
   );
   // store registrations for conflict detection
   const [registrations, setRegistrations] = React.useState<any[]>([]);
+
+  usePageTracking(tournament?.title || "Tournament Registration", loading);
 
   React.useEffect(() => {
     const fetchTournament = async () => {

@@ -20,8 +20,10 @@ import { addToast } from "@/providers/toast";
 import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function LoginPage() {
+  usePageTracking("Sign In");
   const [isVisible, setIsVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
   const [loginMode, setLoginMode] = React.useState<"magic-link" | "password">(

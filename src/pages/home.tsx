@@ -3,9 +3,11 @@ import ContactPage from "./contact";
 import PastChampions from "./past-champions";
 import { RecentBlogPosts } from "@/components/recent-blog-posts";
 import { useEffect } from "react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { useLocation } from "react-router-dom";
 
 export default function HomePage() {
+  usePageTracking("Home");
   const location = useLocation();
 
   useEffect(() => {

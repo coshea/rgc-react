@@ -29,6 +29,7 @@ vi.mock("react-router-dom", () => ({
 vi.mock("@/config/firebase", () => ({
   db: {},
   auth: { currentUser: { uid: "fullUser" } },
+  getAnalyticsInstance: () => null,
 }));
 
 // Tournaments API mocks

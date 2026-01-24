@@ -1,8 +1,10 @@
 import { Button, Link } from "@heroui/react";
 import { title } from "@/components/primitives";
 import { useConsent } from "@/providers/ConsentProvider";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function CookiePolicyPage() {
+  usePageTracking("Cookie Policy");
   const { status, accept, reject } = useConsent();
   return (
     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 px-4">

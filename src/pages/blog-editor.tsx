@@ -34,6 +34,7 @@ import { onAllTournaments, mapTournamentDoc } from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export const BlogEditorPage: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
@@ -58,6 +59,11 @@ export const BlogEditorPage: React.FC = () => {
 
   const [selectedTournamentId, setSelectedTournamentId] =
     React.useState<string>("");
+
+  usePageTracking(
+    isEditing ? "Edit Announcement" : "New Announcement",
+    loading,
+  );
 
   // Load existing post if editing
   React.useEffect(() => {
@@ -89,7 +95,7 @@ export const BlogEditorPage: React.FC = () => {
           color: "danger",
         });
         setLoading(false);
-      }
+      },
     );
     return () => unsub();
   }, [id, navigate]);
@@ -102,11 +108,11 @@ export const BlogEditorPage: React.FC = () => {
           .map(mapTournamentDoc)
           .sort(
             (a: Tournament, b: Tournament) =>
-              b.date.getTime() - a.date.getTime()
+              b.date.getTime() - a.date.getTime(),
           );
         setTournaments(tourneys);
       },
-      (err) => console.error("Failed to load tournaments", err)
+      (err) => console.error("Failed to load tournaments", err),
     );
     return () => unsub();
   }, []);
@@ -168,7 +174,7 @@ export const BlogEditorPage: React.FC = () => {
         }
       } else {
         const newId = await createBlogPost(
-          postData as Omit<BlogPost, "id" | "createdAt" | "updatedAt">
+          postData as Omit<BlogPost, "id" | "createdAt" | "updatedAt">,
         );
         addToast({
           title: "Success",
@@ -200,7 +206,7 @@ export const BlogEditorPage: React.FC = () => {
       case BlogTemplateType.TournamentResults:
         if (selectedTournamentId) {
           const tournament = tournaments.find(
-            (t) => t.firestoreId === selectedTournamentId
+            (t) => t.firestoreId === selectedTournamentId,
           );
           if (tournament) {
             setFormData({
@@ -217,7 +223,7 @@ export const BlogEditorPage: React.FC = () => {
       case BlogTemplateType.TeeTimes:
         if (selectedTournamentId) {
           const tournament = tournaments.find(
-            (t) => t.firestoreId === selectedTournamentId
+            (t) => t.firestoreId === selectedTournamentId,
           );
           if (tournament) {
             setFormData({
@@ -232,7 +238,7 @@ export const BlogEditorPage: React.FC = () => {
                 `- **Date:** ${tournament.date instanceof Date ? tournament.date.toLocaleDateString() : "TBD"}`,
                 `- **Prize Pool:** $${tournament.prizePool.toLocaleString()}`,
                 "",
-                "Good luck to all participants!"
+                "Good luck to all participants!",
               ].join("\n"),
             });
           }
@@ -471,10 +477,12 @@ export const BlogEditorPage: React.FC = () => {
             <CardBody>
               {(() => {
                 const selectedTournament = tournaments.find(
-                  (t) => t.firestoreId === selectedTournamentId
+                  (t) => t.firestoreId === selectedTournamentId,
                 );
                 if (selectedTournament?.winnerGroups?.length) {
-                  return <GroupedWinners groups={selectedTournament.winnerGroups} />;
+                  return (
+                    <GroupedWinners groups={selectedTournament.winnerGroups} />
+                  );
                 }
                 return (
                   <p className="text-foreground-500">

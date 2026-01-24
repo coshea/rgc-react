@@ -20,6 +20,7 @@ vi.mock("firebase/auth", () => ({
 vi.mock("@/config/firebase", () => ({
   auth: {},
   db: {},
+  getAnalyticsInstance: () => null,
 }));
 
 // Mock API functions
@@ -184,10 +185,10 @@ describe("Championship Public Access Integration", () => {
     const profileButtons = await screen.findAllByRole(
       "button",
       {},
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
     const profileLinks = profileButtons.filter((button) =>
-      button.getAttribute("href")?.includes("/profile/")
+      button.getAttribute("href")?.includes("/profile/"),
     );
     expect(profileLinks.length).toBeGreaterThan(0);
   }, 15000);
@@ -207,7 +208,7 @@ describe("Championship Public Access Integration", () => {
 
     // Should not show error messages related to permissions
     expect(
-      screen.queryByText(/Missing or insufficient permissions/)
+      screen.queryByText(/Missing or insufficient permissions/),
     ).not.toBeInTheDocument();
   });
 
@@ -238,7 +239,7 @@ describe("Championship Public Access Integration", () => {
 
     const { result } = renderHook(
       () => useUsersMap({ publicNamesOnly: true }),
-      { wrapper }
+      { wrapper },
     );
 
     await waitFor(() => {

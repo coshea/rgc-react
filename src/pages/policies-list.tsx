@@ -4,9 +4,12 @@ import { Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { PolicyType, POLICY_LABELS } from "@/types/policy";
 import BackButton from "@/components/back-button";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export const PoliciesListPage: React.FC = () => {
   const navigate = useNavigate();
+
+  usePageTracking("Policies");
 
   const policies = [
     {

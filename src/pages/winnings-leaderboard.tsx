@@ -9,19 +9,21 @@ import {
   Divider,
   Skeleton,
 } from "@heroui/react";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
 // Lazy loaded breakdown component for code-splitting
 const YearlyWinningsBreakdown = lazy(() =>
   import("@/components/yearly-winnings-breakdown").then((m) => ({
     default: m.YearlyWinningsBreakdown,
-  }))
+  })),
 );
 
 const currentYear = new Date().getFullYear();
 const years = [currentYear, currentYear - 1, currentYear - 2];
 
 export default function WinningsLeaderboardPage() {
+  usePageTracking("Winnings Leaderboard");
   const { userLoggedIn, loading } = useAuth();
   const [year, setYear] = useState<number>(currentYear);
   const [tab, setTab] = useState<string>("standings");

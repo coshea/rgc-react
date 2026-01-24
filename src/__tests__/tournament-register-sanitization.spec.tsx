@@ -63,6 +63,7 @@ vi.mock("@/config/firebase", () => ({
       settings: {},
     },
   },
+  getAnalyticsInstance: () => null,
 }));
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "u1", membershipType: "full" } }),
@@ -95,7 +96,7 @@ describe("TournamentRegister teammate selection sanitization", () => {
             element={<TournamentRegister />}
           />
         </Routes>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // Wait for initial load

@@ -66,6 +66,7 @@ vi.mock("@/config/firebase", () => ({
       settings: {},
     },
   },
+  getAnalyticsInstance: () => null,
 }));
 
 // Toasts noop via centralized provider

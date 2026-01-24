@@ -9,6 +9,7 @@ import { useInfiniteChampionships } from "@/hooks/useChampionships";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import type { UnifiedChampionship } from "@/types/championship";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 interface PastChampionsProps {
   showAllYears?: boolean;
@@ -17,6 +18,7 @@ interface PastChampionsProps {
 export default function PastChampions({
   showAllYears = false,
 }: PastChampionsProps) {
+  usePageTracking("Past Champions");
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 

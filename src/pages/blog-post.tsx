@@ -15,6 +15,7 @@ import { BlogPost, BlogCategory } from "@/types/blog";
 import { getBlogPostBySlug } from "@/api/blog";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/utils/admin";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
 import { onTournament, mapTournamentDoc } from "@/api/tournaments";
@@ -31,6 +32,8 @@ export const BlogPostPage: React.FC = () => {
   const [post, setPost] = React.useState<BlogPost | null>(null);
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  usePageTracking(post?.title || "Announcement", loading);
 
   // Load blog post by slug
   React.useEffect(() => {
@@ -73,7 +76,7 @@ export const BlogPostPage: React.FC = () => {
           setTournament(mapTournamentDoc(snap));
         }
       },
-      (err) => console.error("Failed to load tournament", err)
+      (err) => console.error("Failed to load tournament", err),
     );
     return () => unsub();
   }, [post?.tournamentId]);

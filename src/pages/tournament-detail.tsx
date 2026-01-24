@@ -42,6 +42,7 @@ const TournamentEditor = React.lazy(() =>
 import GroupedWinners from "@/components/grouped-winners";
 // User types consumed indirectly; no direct import needed after hook migration
 import { useUsersMap } from "@/hooks/useUsers";
+import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
@@ -96,6 +97,7 @@ const TournamentDetailPage: React.FC = () => {
   const { isAdmin } = useDocAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
+  usePageTracking(tournament?.title, !tournament);
   const [previousTournament, setPreviousTournament] =
     React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);

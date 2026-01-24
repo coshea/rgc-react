@@ -5,8 +5,10 @@ import { useAuth } from "@/providers/AuthProvider";
 import { Spinner } from "@heroui/react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 const ProfileEditPage = () => {
+  usePageTracking("Edit Profile");
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 

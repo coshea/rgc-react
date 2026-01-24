@@ -5,11 +5,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 const currentYear = new Date().getFullYear();
 const years = [currentYear, currentYear - 1];
 
 export default function MoneyListPage() {
+  usePageTracking("Money List");
   const { userLoggedIn, loading } = useAuth();
   const [year, setYear] = useState<number>(currentYear);
   const [tab, setTab] = useState<string>("yearly");
