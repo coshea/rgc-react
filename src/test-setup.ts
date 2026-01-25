@@ -6,6 +6,12 @@ import { cleanup } from "@testing-library/react";
 // Polyfill CSS.escape used by @react-aria in jsdom
 vi.stubGlobal("CSS", { escape: (s: string) => s });
 
+// Mock reCAPTCHA to always succeed in tests by default
+vi.mock("@/utils/recaptcha", () => ({
+  executeRecaptcha: vi.fn().mockResolvedValue("mock-token"),
+  RECAPTCHA_SITE_KEY: "mock-key",
+}));
+
 // Mock @iconify/react with a lightweight functional component that does not schedule timers.
 vi.mock("@iconify/react", () => {
   type IconProps = { icon?: string; className?: string };

@@ -15,6 +15,7 @@ import {
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
+import { executeRecaptcha } from "@/utils/recaptcha";
 import { isRegistrationOpen } from "@/utils/tournamentStatus";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
@@ -76,6 +77,18 @@ const TournamentRegister: React.FC = () => {
       if (!tournament?.firestoreId) return;
       setSubmitting(true);
       try {
+        // Generate reCAPTCHA token before tournament registration
+        const token = await executeRecaptcha("tournament_registration");
+        if (!token) {
+          addToast({
+            title: "Security Check Failed",
+            description: "reCAPTCHA verification failed. Please try again.",
+            color: "danger",
+          });
+          setSubmitting(false);
+          return;
+        }
+
         await upsertRegistration(tournament.firestoreId, registrationId, {
           team: members,
           ownerId,

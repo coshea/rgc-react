@@ -13,6 +13,7 @@ import { Icon } from "@iconify/react";
 import emailjs from "@emailjs/browser";
 import { EMAILJS_CONFIG, isEmailJSConfigured } from "@/config/emailjs";
 import golfBallHoleImage from "@/assets/golf_ball_hole.jpg";
+import { executeRecaptcha } from "@/utils/recaptcha";
 
 export const ContactForm = () => {
   const [submitted, setSubmitted] = React.useState(false);
@@ -29,7 +30,7 @@ export const ContactForm = () => {
 
     if (!isEmailJSConfigured()) {
       setError(
-        "Email service is not configured. Please contact the administrator."
+        "Email service is not configured. Please contact the administrator.",
       );
       return;
     }
@@ -38,6 +39,15 @@ export const ContactForm = () => {
     setError(null);
 
     try {
+      // Generate reCAPTCHA token before submission
+      const token = await executeRecaptcha("contact_form");
+      if (!token) {
+        setError(
+          "Security check failed. Please refresh the page and try again.",
+        );
+        return;
+      }
+
       // Send email using EmailJS
       await emailjs.send(
         EMAILJS_CONFIG.serviceId,
@@ -49,7 +59,7 @@ export const ContactForm = () => {
           message: formData.message,
           to_name: "RGC Admin", // You can customize this
         },
-        EMAILJS_CONFIG.publicKey
+        EMAILJS_CONFIG.publicKey,
       );
 
       setSubmitted(true);
@@ -62,7 +72,7 @@ export const ContactForm = () => {
     } catch (err) {
       console.error("Failed to send email:", err);
       setError(
-        "Failed to send message. Please try again later or contact us directly."
+        "Failed to send message. Please try again later or contact us directly.",
       );
     } finally {
       setSending(false);
