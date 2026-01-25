@@ -56,7 +56,7 @@ export function NewMemberApplicationStep(props: {
   return (
     <Card className="w-full max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
+        <h2 className="text-lg font-semibold">Step 3: Application</h2>
         <Button variant="light" onPress={onBack}>
           Back
         </Button>
@@ -160,13 +160,18 @@ export function NewMemberApplicationStep(props: {
           ) : null}
         </div>
 
-        <div className="text-sm">
-          Annual Dues: <strong>{currency(membershipAmountDue)}</strong>
+        <div className="flex items-center justify-between border-t border-divider pt-2 font-bold">
+          <span>Amount due</span>
+          <span>{currency(membershipAmountDue)}</span>
         </div>
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handleSubmit}>
+        <Button
+          color="primary"
+          className="w-full font-bold uppercase tracking-wide"
+          onPress={handleSubmit}
+        >
           Submit Application &amp; Pay Dues
         </Button>
       </CardFooter>

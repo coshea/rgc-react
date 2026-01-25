@@ -8,7 +8,11 @@ import {
   Input,
 } from "@heroui/react";
 import { useState } from "react";
-import type { RenewLookupState } from "../types";
+
+type RenewLookupState = {
+  email: string;
+  lastName: string;
+};
 
 function isValidEmail(email: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
@@ -54,7 +58,9 @@ export function RenewLookupStep(props: {
         <Input
           label="Email Address"
           value={value.email}
-          onValueChange={(v) => setValue((s) => ({ ...s, email: v }))}
+          onValueChange={(v) =>
+            setValue((s: RenewLookupState) => ({ ...s, email: v }))
+          }
           isInvalid={!!localErrors.renewEmail}
           errorMessage={localErrors.renewEmail}
           variant="bordered"
@@ -65,7 +71,9 @@ export function RenewLookupStep(props: {
         <Input
           label="Last Name (optional)"
           value={value.lastName}
-          onValueChange={(v) => setValue((s) => ({ ...s, lastName: v }))}
+          onValueChange={(v) =>
+            setValue((s: RenewLookupState) => ({ ...s, lastName: v }))
+          }
           variant="bordered"
         />
       </CardBody>

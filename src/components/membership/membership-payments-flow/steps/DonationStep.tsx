@@ -60,12 +60,16 @@ export function DonationStep(props: {
         <Input
           label="Donation Amount ($)"
           value={value.amount}
-          onValueChange={(v) => setValue((s) => ({ ...s, amount: v }))}
+          onValueChange={(v) => {
+            if (v.trim().startsWith("-")) return;
+            setValue((s) => ({ ...s, amount: v }));
+          }}
           isInvalid={!!localErrors.donationAmount}
           errorMessage={localErrors.donationAmount}
           variant="bordered"
           type="number"
           min={0}
+          step={"0.01"}
           required
         />
 
@@ -88,7 +92,11 @@ export function DonationStep(props: {
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay}>
+        <Button
+          color="primary"
+          className="w-full font-bold uppercase tracking-wide"
+          onPress={handlePay}
+        >
           Make Donation
         </Button>
       </CardFooter>
