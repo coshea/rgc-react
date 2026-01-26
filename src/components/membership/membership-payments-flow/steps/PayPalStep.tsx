@@ -1,11 +1,5 @@
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
+import { Alert, Card, CardBody, CardHeader, Divider } from "@heroui/react";
+import BackButton from "@/components/back-button";
 import {
   PayPalButtons,
   PayPalScriptProvider,
@@ -45,9 +39,7 @@ export function PayPalStep(props: {
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 3: Payment</h2>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4 overflow-visible">

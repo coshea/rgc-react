@@ -34,6 +34,12 @@ export const siteConfig = {
       link: "/membership/member-directory",
       icon: "lucide:users",
     },
+    membershipDashboard: {
+      title: "Membership Dashboard",
+      description: "View membership payments and donations",
+      link: "/admin/membership/dashboard",
+      icon: "lucide:layout-dashboard",
+    },
     board: {
       title: "Board of Governors",
       description: "Club leadership team",

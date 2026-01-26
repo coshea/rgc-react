@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import { subscribeMembershipSettings } from "@/api/membership";
@@ -17,6 +18,7 @@ export default function MembershipPage() {
   usePageTracking("Membership");
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
+  const navigate = useNavigate();
 
   const [settings, setSettings] = useState<MembershipSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -38,7 +40,7 @@ export default function MembershipPage() {
         });
         setSettings(null);
         setLoadingSettings(false);
-      }
+      },
     );
     return () => unsubscribe();
   }, []);
@@ -61,7 +63,7 @@ export default function MembershipPage() {
         </p>
 
         {isAdmin ? (
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex justify-center gap-2">
             <Button
               color="primary"
               variant="flat"
@@ -72,6 +74,23 @@ export default function MembershipPage() {
               }
             >
               Settings
+            </Button>
+
+            <Button
+              variant="flat"
+              size="sm"
+              onPress={() =>
+                navigate(siteConfig.pages.membershipDashboard.link)
+              }
+              startContent={
+                <Icon
+                  icon={siteConfig.pages.membershipDashboard.icon}
+                  width={16}
+                  height={16}
+                />
+              }
+            >
+              Membership Dashboard
             </Button>
           </div>
         ) : null}

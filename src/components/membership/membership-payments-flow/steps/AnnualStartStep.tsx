@@ -6,6 +6,7 @@ import {
   CardHeader,
   Divider,
 } from "@heroui/react";
+import BackButton from "@/components/back-button";
 
 export function AnnualStartStep(props: {
   membershipAmountDue: number;
@@ -35,9 +36,7 @@ export function AnnualStartStep(props: {
             New members should choose the application option.
           </p>
         </div>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="grid grid-cols-1 gap-4 md:grid-cols-2">

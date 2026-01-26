@@ -8,6 +8,7 @@ import {
   Divider,
   Input,
 } from "@heroui/react";
+import BackButton from "@/components/back-button";
 import type { DonationState } from "../types";
 
 export function DonationStep(props: {
@@ -45,9 +46,7 @@ export function DonationStep(props: {
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4">
