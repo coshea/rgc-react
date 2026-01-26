@@ -1,4 +1,12 @@
-import { Alert, Card, CardBody, CardHeader, Divider } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Divider,
+  addToast,
+} from "@heroui/react";
 import BackButton from "@/components/back-button";
 import {
   PayPalButtons,
@@ -19,6 +27,7 @@ export function PayPalStep(props: {
   onApprove: PayPalButtonsComponentProps["onApprove"];
   onError: PayPalButtonsComponentProps["onError"];
   onBack: () => void;
+  onCheckSelected?: () => void;
 }) {
   const {
     paypalEnabled,
@@ -33,6 +42,7 @@ export function PayPalStep(props: {
     onApprove,
     onError,
     onBack,
+    onCheckSelected,
   } = props;
 
   return (
@@ -82,6 +92,46 @@ export function PayPalStep(props: {
             PayPal is not configured (missing `VITE_PAYPAL_CLIENT_ID`).
           </div>
         )}
+
+        {/* Pay by check option */}
+        <div className="mt-6 rounded-md border border-default-200 bg-content1/50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="font-semibold">Pay by check</div>
+              <p className="mt-2 text-sm text-default-600 whitespace-pre-line">
+                Please make your check payable to "RGC" and mail to:
+                {"\n"}
+                RGC
+                {"\n"}
+                PO Box 24,{"\n"}
+                Ridgefield, CT 06877
+                {"\n\n"}
+                Please include your full name and the membership year in the
+                memo so we can match it to your account.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <Button
+                variant="bordered"
+                onPress={() => {
+                  if (typeof onCheckSelected === "function") {
+                    onCheckSelected();
+                  } else {
+                    // Fallback: show a toast with instructions
+                    addToast({
+                      title: "Mail a check",
+                      description:
+                        "Please mail a check payable to RGC to PO Box 24, Ridgefield, CT 06877 and include your name and membership year in the memo.",
+                      color: "success",
+                    });
+                  }
+                }}
+              >
+                I mailed my check
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardBody>
     </Card>
   );

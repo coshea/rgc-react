@@ -561,6 +561,21 @@ export default function MembershipPaymentsFlow({
           onApprove={onPayPalApprove}
           onError={onPayPalError}
           onBack={goToSelect}
+          onCheckSelected={() => {
+            // Mark flow as done and show instructions when user indicates they mailed a check
+            addToast({
+              title: "Check option selected",
+              description:
+                "Please mail a check payable to RGC to PO Box 24, Ridgefield, CT 06877 and include your name and membership year in the memo.",
+              color: "success",
+            });
+            setStep({
+              kind: "done",
+              title: "Pending: Check Sent",
+              description:
+                "Please mail your check to:\nRGC\nPO Box 24,\nRidgefield, CT 06877 and include your full name and the membership year in the memo so we can match it to your account. We will record your payment once the check is received.",
+            });
+          }}
         />
       )}
 

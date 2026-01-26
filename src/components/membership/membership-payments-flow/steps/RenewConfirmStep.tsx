@@ -132,7 +132,7 @@ export function RenewConfirmStep(props: {
           onPress={() => onContinueToPay(donationValue)}
           isDisabled={isPaidForCurrentYear}
         >
-          {paypalEnabled ? "Continue to PayPal" : "Pay Annual Dues"}
+          {paypalEnabled ? "Continue to Payment" : "Pay Annual Dues"}
         </Button>
       </CardFooter>
     </Card>
