@@ -8,6 +8,7 @@ import {
   Divider,
   Input,
 } from "@heroui/react";
+import { parseCurrencyInput } from "@/utils/currency";
 
 export function RenewConfirmStep(props: {
   email: string;
@@ -40,11 +41,7 @@ export function RenewConfirmStep(props: {
     onContinueToPay,
   } = props;
 
-  const donationParsed = parseFloat(donationAmount);
-  const donationValue =
-    donationAmount.trim() && !Number.isNaN(donationParsed) && donationParsed > 0
-      ? donationParsed
-      : 0;
+  const donationValue = parseCurrencyInput(donationAmount);
   const total = membershipAmountDue + donationValue;
 
   return (

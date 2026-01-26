@@ -8,6 +8,7 @@ import {
   addToast,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
+import { siteConfig } from "@/config/site";
 import {
   PayPalButtons,
   PayPalScriptProvider,
@@ -99,15 +100,7 @@ export function PayPalStep(props: {
             <div>
               <div className="font-semibold">Pay by check</div>
               <p className="mt-2 text-sm text-default-600 whitespace-pre-line">
-                Please make your check payable to "RGC" and mail to:
-                {"\n"}
-                RGC
-                {"\n"}
-                PO Box 24,{"\n"}
-                Ridgefield, CT 06877
-                {"\n\n"}
-                Please include your full name and the membership year in the
-                memo so we can match it to your account.
+                {`Please make your check payable to "${siteConfig.contactAddress.name}" and mail to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street}\n${siteConfig.contactAddress.cityStateZip}\n\nPlease include your full name and the membership year in the memo so we can match it to your account.`}
               </p>
             </div>
             <div className="shrink-0">
@@ -120,8 +113,7 @@ export function PayPalStep(props: {
                     // Fallback: show a toast with instructions
                     addToast({
                       title: "Mail a check",
-                      description:
-                        "Please mail a check payable to RGC to PO Box 24, Ridgefield, CT 06877 and include your name and membership year in the memo.",
+                      description: `Please mail a check payable to ${siteConfig.contactAddress.name} to ${siteConfig.contactAddress.street}, ${siteConfig.contactAddress.cityStateZip} and include your name and membership year in the memo.`,
                       color: "success",
                     });
                   }

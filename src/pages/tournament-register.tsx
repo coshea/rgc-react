@@ -85,7 +85,6 @@ const TournamentRegister: React.FC = () => {
             description: "reCAPTCHA verification failed. Please try again.",
             color: "danger",
           });
-          setSubmitting(false);
           return;
         }
 

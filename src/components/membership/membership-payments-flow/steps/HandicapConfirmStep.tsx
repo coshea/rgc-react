@@ -8,6 +8,7 @@ import {
   Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
+import { parseCurrencyInput } from "@/utils/currency";
 
 import type { HandicapState } from "../types";
 
@@ -30,11 +31,7 @@ export function HandicapConfirmStep(props: {
     onContinueToPay,
   } = props;
 
-  const donationParsed = parseFloat(donationAmount);
-  const donationValue =
-    donationAmount.trim() && !Number.isNaN(donationParsed) && donationParsed > 0
-      ? donationParsed
-      : 0;
+  const donationValue = parseCurrencyInput(donationAmount);
 
   const total = handicapFee + donationValue;
 

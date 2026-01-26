@@ -75,7 +75,7 @@ export function NewMemberApplicationStep(props: {
   return (
     <Card className="w-full max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 3: Application</h2>
+        <h2 className="text-lg font-semibold">Step 2: Application</h2>
         <Button variant="light" onPress={onBack}>
           Back
         </Button>

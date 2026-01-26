@@ -144,7 +144,7 @@ export default function MembershipDashboardPage() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
           <Card shadow="sm">
             <CardBody className="p-6">
-              <div className="text-sm text-default-500">Total Paid</div>
+              <div className="text-sm text-default-500">Payments</div>
               <div className="mt-2 text-2xl font-bold">{stats.total}</div>
             </CardBody>
           </Card>
