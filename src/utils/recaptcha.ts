@@ -4,7 +4,7 @@ declare global {
   }
 }
 
-export const RECAPTCHA_SITE_KEY = "6Ld-1VUsAAAAAOeWpM9qCoercvE5EENZE8e_lSjU";
+export const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
 
 /**
  * Executes reCAPTCHA Enterprise and returns a token.
