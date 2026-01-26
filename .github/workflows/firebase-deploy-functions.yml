@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  deploy-functions:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,7 +46,8 @@ jobs:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}"
           projectId: "ridgefield-golf-club"
-          entryPoint: "./functions"
+          entryPoint: "."
         env:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+          PAYPAL_ENVIRONMENT: ${{ secrets.PAYPAL_ENVIRONMENT }}

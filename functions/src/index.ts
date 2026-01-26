@@ -8,7 +8,7 @@ import { verifyAndRecordMembershipPayment } from "./verifyAndRecordMembershipPay
 
 const PAYPAL_CLIENT_ID = defineString("PAYPAL_CLIENT_ID");
 const PAYPAL_CLIENT_SECRET = defineSecret("PAYPAL_CLIENT_SECRET");
-const PAYPAL_ENV = defineString("PAYPAL_ENV");
+const PAYPAL_ENV = defineString("PAYPAL_ENVIRONMENT");
 
 admin.initializeApp();
 
@@ -70,7 +70,7 @@ function mockPayPalFetchFromEnv(): typeof fetch | null {
             },
           ],
         }),
-        { status: 200, headers: { "content-type": "application/json" } }
+        { status: 200, headers: { "content-type": "application/json" } },
       );
     }
     return new Response("not found", { status: 404 });
@@ -95,7 +95,7 @@ export const verify_and_record_membership_payment = onRequest(
 
       try {
         const token = getBearerToken(
-          req as unknown as { headers: Record<string, unknown> }
+          req as unknown as { headers: Record<string, unknown> },
         );
         if (!token) {
           res
@@ -168,9 +168,12 @@ export const verify_and_record_membership_payment = onRequest(
         const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
         const clientSecret = required(
           "PAYPAL_CLIENT_SECRET",
-          PAYPAL_CLIENT_SECRET.value()
+          PAYPAL_CLIENT_SECRET.value(),
         );
-        const envRaw = required("PAYPAL_ENV", PAYPAL_ENV.value()).toUpperCase();
+        const envRaw = required(
+          "PAYPAL_ENVIRONMENT",
+          PAYPAL_ENV.value(),
+        ).toUpperCase();
         const env = envRaw === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
 
         const fetchImpl = mockPayPalFetchFromEnv() ?? undefined;
@@ -208,5 +211,5 @@ export const verify_and_record_membership_payment = onRequest(
         res.status(500).json({ ok: false, error: message });
       }
     });
-  }
+  },
 );
