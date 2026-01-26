@@ -6,7 +6,9 @@ import {
   CardFooter,
   CardHeader,
   Divider,
+  Input,
 } from "@heroui/react";
+import { parseCurrencyInput } from "@/utils/currency";
 
 export function RenewConfirmStep(props: {
   email: string;
@@ -15,11 +17,13 @@ export function RenewConfirmStep(props: {
   currentYear: number;
   membershipFoundName: string;
   membershipAmountDue: number;
+  donationAmount: string;
   currency: (amount: number) => string;
   paypalEnabled: boolean;
   onBack: () => void;
   onDonation: () => void;
-  onContinueToPay: () => void;
+  onDonationAmountChange: (next: string) => void;
+  onContinueToPay: (donationAmount: number) => void;
 }) {
   const {
     email,
@@ -28,12 +32,17 @@ export function RenewConfirmStep(props: {
     currentYear,
     membershipFoundName,
     membershipAmountDue,
+    donationAmount,
     currency,
     paypalEnabled,
     onBack,
     onDonation,
+    onDonationAmountChange,
     onContinueToPay,
   } = props;
+
+  const donationValue = parseCurrencyInput(donationAmount);
+  const total = membershipAmountDue + donationValue;
 
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
@@ -77,19 +86,50 @@ export function RenewConfirmStep(props: {
         <div className="text-sm text-default-600">Membership</div>
         <div className="text-base">Annual Club Membership</div>
 
-        <div className="text-sm text-default-600">Amount Due</div>
-        <div className="text-base font-semibold">
-          {currency(membershipAmountDue)}
+        <div className="space-y-4">
+          <div>
+            <div className="text-sm text-default-600">Annual dues</div>
+            <div className="text-base font-semibold">
+              {currency(membershipAmountDue)}
+            </div>
+          </div>
+
+          <div className="w-full max-w-sm">
+            <div className="text-sm text-default-600">Optional donation</div>
+            <Input
+              aria-label="Optional donation"
+              value={donationAmount}
+              onValueChange={(v) => {
+                if (v.trim().startsWith("-")) return;
+                onDonationAmountChange(v);
+              }}
+              variant="bordered"
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="$0"
+              isDisabled={isPaidForCurrentYear}
+            />
+            <div className="mt-1 text-xs text-default-500">
+              Add an optional donation to support the club.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-divider pt-2 font-bold">
+          <span>Amount due</span>
+          <span>{currency(total)}</span>
         </div>
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
         <Button
           color="primary"
-          onPress={onContinueToPay}
+          className="w-full font-bold uppercase tracking-wide"
+          onPress={() => onContinueToPay(donationValue)}
           isDisabled={isPaidForCurrentYear}
         >
-          {paypalEnabled ? "Continue to PayPal" : "Pay Annual Dues"}
+          {paypalEnabled ? "Continue to Payment" : "Pay Annual Dues"}
         </Button>
       </CardFooter>
     </Card>

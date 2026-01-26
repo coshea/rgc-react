@@ -21,19 +21,27 @@ export const usePageTracking = (pageTitle?: string, skip?: boolean) => {
     // may not provide `getAnalyticsInstance` as a named export.
     (async () => {
       try {
-        const firebaseModule = await import("@/config/firebase");
-        const getAnalyticsInstance = (firebaseModule as any)
-          .getAnalyticsInstance;
-        if (typeof getAnalyticsInstance === "function") {
-          const analytics = getAnalyticsInstance();
-          if (analytics) {
-            logEvent(analytics, "page_view", {
-              page_title: title,
-              page_path: pagePath,
-            });
+        const firebaseModule: unknown = await import("@/config/firebase");
+        if (typeof firebaseModule === "object" && firebaseModule !== null) {
+          const maybe = firebaseModule as {
+            getAnalyticsInstance?: () => unknown;
+          };
+          const getAnalyticsInstance = maybe.getAnalyticsInstance;
+          if (typeof getAnalyticsInstance === "function") {
+            const analytics = getAnalyticsInstance();
+            if (analytics) {
+              logEvent(
+                analytics as Parameters<typeof logEvent>[0],
+                "page_view",
+                {
+                  page_title: title,
+                  page_path: pagePath,
+                },
+              );
+            }
           }
         }
-      } catch (e) {
+      } catch {
         // ignore analytics errors in tests or environments without analytics
       }
     })();

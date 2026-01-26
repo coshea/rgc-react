@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { addToast } from "@/providers/toast";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { executeRecaptcha } from "@/utils/recaptcha";
 
 export default function SignUpPage() {
   usePageTracking("Sign Up");
@@ -34,6 +35,7 @@ export default function SignUpPage() {
   const [linkSent, setLinkSent] = React.useState(false);
   const [isTermsOpen, setIsTermsOpen] = React.useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const {
     userLoggedIn,
@@ -56,58 +58,92 @@ export default function SignUpPage() {
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) return;
+
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
     setInlineError(null);
+    setIsSubmitting(true);
 
-    if (signupMode === "magic-link") {
-      if (email) {
+    try {
+      // Execute reCAPTCHA for sign up
+      const token = await executeRecaptcha("signup");
+      if (!token) {
+        setInlineError(
+          "Security check failed. Please refresh the page and try again.",
+        );
+        addToast({
+          title: "Sign up failed",
+          description: "reCAPTCHA verification failed.",
+          color: "danger",
+        });
+        return;
+      }
+
+      if (signupMode === "magic-link") {
+        if (email) {
+          try {
+            await sendLoginLink(email);
+            setLinkSent(true);
+            addToast({
+              title: "Link sent!",
+              description: "Check your email for the sign-up link.",
+              color: "success",
+            });
+          } catch (error: unknown) {
+            console.error("Send Link failed:", error);
+            const msg = getFirebaseSignupErrorMessage(error);
+            setInlineError(msg);
+            addToast({
+              title: "Unable to send link",
+              description: msg,
+              color: "danger",
+            });
+          }
+        }
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        // Handle password mismatch error - you might want to set a local error state for this
+        console.error("Passwords do not match");
+        setInlineError("Passwords do not match");
+        return;
+      }
+
+      if (email && password) {
         try {
-          await sendLoginLink(email);
-          setLinkSent(true);
-          addToast({
-            title: "Link sent!",
-            description: "Check your email for the sign-up link.",
-            color: "success",
-          });
+          await signupEmailAndPassword(email, password);
+          navigate(siteConfig.pages.verifyEmail.link);
         } catch (error: unknown) {
-          console.error("Send Link failed:", error);
+          console.error("Signup failed:", error);
           const msg = getFirebaseSignupErrorMessage(error);
           setInlineError(msg);
           addToast({
-            title: "Unable to send link",
+            title: "Signup failed",
             description: msg,
             color: "danger",
           });
         }
       }
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      // Handle password mismatch error - you might want to set a local error state for this
-      console.error("Passwords do not match");
-      setInlineError("Passwords do not match");
-      return;
-    }
-
-    if (email && password) {
-      try {
-        await signupEmailAndPassword(email, password);
-        navigate(siteConfig.pages.verifyEmail.link);
-      } catch (error: unknown) {
-        const msg = getFirebaseSignupErrorMessage(error);
-        setInlineError(msg);
-        console.error("Email/Password Sign-Up failed:", error);
-      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
     try {
+      setIsSubmitting(true);
+      // Execute reCAPTCHA for Google signup
+      const token = await executeRecaptcha("google_signup");
+      if (!token) {
+        setInlineError("Security check failed. Please try again.");
+        return;
+      }
+
       const result = await signInWithGoogle();
       // If a redirect fallback was used the function may return void.
       if (!result) return;
@@ -123,6 +159,8 @@ export default function SignUpPage() {
       const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);
       console.error("Google Sign-Up failed:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -385,8 +423,13 @@ export default function SignUpPage() {
                 Privacy Policy
               </Link>
             </Checkbox>
-            <Button color="primary" type="submit" isDisabled={authLoading}>
-              {authLoading
+            <Button
+              color="primary"
+              type="submit"
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
+            >
+              {authLoading || isSubmitting
                 ? "Processing..."
                 : signupMode === "magic-link"
                   ? "Send Sign-Up Link"
@@ -418,12 +461,19 @@ export default function SignUpPage() {
           </div>
           <div className="flex flex-col gap-2">
             <Button
-              startContent={<Icon icon="flat-color-icons:google" width={24} />}
+              startContent={
+                !isSubmitting && (
+                  <Icon icon="flat-color-icons:google" width={24} />
+                )
+              }
               variant="bordered"
               onPress={handleGoogleSignUp}
-              isDisabled={authLoading}
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
             >
-              {authLoading ? "Processing..." : "Sign Up with Google"}
+              {authLoading || isSubmitting
+                ? "Processing..."
+                : "Sign Up with Google"}
             </Button>
           </div>
           <p className="text-center text-small">

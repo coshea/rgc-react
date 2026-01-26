@@ -77,4 +77,22 @@ if (enabled) {
     // Enable logs to be sent to Sentry
     enableLogs: import.meta.env.VITE_SENTRY_ENABLE_LOGS !== "false",
   });
+
+  // Emit a short runtime status to help verify Sentry is initialized in prod
+  try {
+    const maybeGet = (Sentry as unknown as Record<string, unknown>)[
+      "getCurrentHub"
+    ];
+    const sentryClient =
+      typeof maybeGet === "function"
+        ? (maybeGet as () => { getClient?: () => unknown })()?.getClient?.()
+        : undefined;
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Sentry] initialized: enabled=${enabled}, client=${sentryClient ? "present" : "missing"}, environment=${import.meta.env.MODE}`,
+    );
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log("[Sentry] initialization check failed:", err);
+  }
 }

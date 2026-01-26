@@ -8,6 +8,7 @@ import {
   Divider,
   Input,
 } from "@heroui/react";
+import BackButton from "@/components/back-button";
 import type { DonationState } from "../types";
 
 export function DonationStep(props: {
@@ -45,9 +46,7 @@ export function DonationStep(props: {
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4">
@@ -60,12 +59,16 @@ export function DonationStep(props: {
         <Input
           label="Donation Amount ($)"
           value={value.amount}
-          onValueChange={(v) => setValue((s) => ({ ...s, amount: v }))}
+          onValueChange={(v) => {
+            if (v.trim().startsWith("-")) return;
+            setValue((s) => ({ ...s, amount: v }));
+          }}
           isInvalid={!!localErrors.donationAmount}
           errorMessage={localErrors.donationAmount}
           variant="bordered"
           type="number"
           min={0}
+          step={"0.01"}
           required
         />
 
@@ -88,7 +91,11 @@ export function DonationStep(props: {
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay}>
+        <Button
+          color="primary"
+          className="w-full font-bold uppercase tracking-wide"
+          onPress={handlePay}
+        >
           Make Donation
         </Button>
       </CardFooter>

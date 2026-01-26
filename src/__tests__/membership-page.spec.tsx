@@ -59,7 +59,7 @@ function renderMembershipPage() {
       <MemoryRouter>
         <MembershipPage />
       </MemoryRouter>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -76,7 +76,7 @@ describe("MembershipPage - registration closed gating", () => {
     expect(screen.getByText(/Registration Closed/i)).toBeInTheDocument();
     expect(screen.getByText(/Closed for testing/i)).toBeInTheDocument();
     expect(
-      screen.queryByText(/Step 1: Select option/i)
+      screen.queryByText(/Step 1: Select option/i),
     ).not.toBeInTheDocument();
   });
 });
@@ -84,12 +84,18 @@ describe("MembershipPage - registration closed gating", () => {
 describe("MembershipPage - new member flow", () => {
   it("shows errors when submitting empty new member application", async () => {
     renderMembershipPage();
+    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
+
+    // Step 2
     fireEvent.click(
-      screen.getByRole("button", { name: /New Member Application/i })
+      await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
+    // Step 3
     fireEvent.click(
-      screen.getByRole("button", { name: /Submit Application & Pay Dues/i })
+      await screen.findByRole("button", {
+        name: /Submit Application & Pay Dues/i,
+      }),
     );
 
     await waitFor(() => {
@@ -97,15 +103,15 @@ describe("MembershipPage - new member flow", () => {
       expect(screen.getByText(/Email is required/i)).toBeInTheDocument();
       expect(screen.getByText(/Phone number is required/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/Street address is required/i)
+        screen.getByText(/Street address is required/i),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/City, State, ZIP is required/i)
+        screen.getByText(/City, State, ZIP is required/i),
       ).toBeInTheDocument();
       expect(
         screen.getByText(
-          /Please confirm you understand this is an application/i
-        )
+          /Please confirm you understand this is an application/i,
+        ),
       ).toBeInTheDocument();
     });
 
@@ -115,11 +121,12 @@ describe("MembershipPage - new member flow", () => {
   it("submits successfully with valid application", async () => {
     renderMembershipPage();
 
+    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
     fireEvent.click(
-      screen.getByRole("button", { name: /New Member Application/i })
+      await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
-    fireEvent.change(screen.getByLabelText(/Full Name/i), {
+    fireEvent.change(await screen.findByLabelText(/Full Name/i), {
       target: { value: "Jane Golfer" },
     });
     fireEvent.change(screen.getByLabelText(/Email Address/i), {
@@ -137,18 +144,18 @@ describe("MembershipPage - new member flow", () => {
 
     fireEvent.click(
       screen.getByText(
-        /I understand that this is an application for membership/i
-      )
+        /I understand that this is an application for membership/i,
+      ),
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Submit Application & Pay Dues/i })
+      screen.getByRole("button", { name: /Submit Application & Pay Dues/i }),
     );
 
     await waitFor(() => {
       expect(addToastMock).toHaveBeenCalled();
       expect(addToastMock.mock.calls[0][0].title).toMatch(
-        /Application Submitted/i
+        /Application Submitted/i,
       );
     });
   });
@@ -157,12 +164,12 @@ describe("MembershipPage - new member flow", () => {
 describe("MembershipPage - donation", () => {
   it("requires donation amount", async () => {
     renderMembershipPage();
-    fireEvent.click(screen.getByRole("button", { name: /Make a Donation/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Donate/i }));
     fireEvent.click(screen.getByRole("button", { name: /Make Donation/i }));
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Donation amount is required/i)
+        screen.getByText(/Donation amount is required/i),
       ).toBeInTheDocument();
     });
     expect(addToastMock).not.toHaveBeenCalled();
@@ -172,9 +179,12 @@ describe("MembershipPage - donation", () => {
 describe("MembershipPage - renew", () => {
   it("records a renewal payment", async () => {
     renderMembershipPage();
-    fireEvent.click(screen.getByRole("button", { name: /Renew Membership/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Continue$/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Pay Annual Dues/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Pay Annual Dues/i }),
+    );
 
     await waitFor(() => {
       expect(addToastMock).toHaveBeenCalled();

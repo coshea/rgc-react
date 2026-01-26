@@ -26,7 +26,6 @@ export function HandicapStep(props: {
 
     if (!value.fullName?.trim())
       nextErrors.handicapFullName = "Name is required";
-    if (!value.ghin.trim()) nextErrors.handicapGhin = "GHIN is required";
 
     if (value.email && value.email.trim()) {
       // basic sanity check
@@ -44,13 +43,19 @@ export function HandicapStep(props: {
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Handicap Lookup</h2>
+        <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
         <Button variant="light" onPress={onBack}>
           Back
         </Button>
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4">
+        <h3 className="text-base font-semibold">Handicap Membership</h3>
+        <p className="text-sm text-default-600">
+          Provide your details below. If you don’t know your GHIN yet, you can
+          leave it blank.
+        </p>
+
         <Input
           label="Full name"
           value={value.fullName}
@@ -72,13 +77,10 @@ export function HandicapStep(props: {
         />
 
         <Input
-          label="GHIN"
+          label="GHIN (optional)"
           value={value.ghin}
           onValueChange={(v) => setValue((s) => ({ ...s, ghin: v }))}
-          isInvalid={!!localErrors.handicapGhin}
-          errorMessage={localErrors.handicapGhin}
           variant="bordered"
-          required
         />
         <div className="text-sm">
           Fee: <strong>{currency(handicapFee)}</strong>
@@ -87,7 +89,7 @@ export function HandicapStep(props: {
       <Divider />
       <CardFooter className="flex justify-end">
         <Button color="primary" onPress={handlePay}>
-          Lookup and Continue
+          Continue
         </Button>
       </CardFooter>
     </Card>

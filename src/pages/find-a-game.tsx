@@ -11,6 +11,7 @@ import {
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
+import { executeRecaptcha } from "@/utils/recaptcha";
 import {
   CreatePostInput,
   FindAGamePost,
@@ -86,6 +87,18 @@ export default function FindAGamePage() {
     }
     try {
       setCreating(true);
+
+      // Execute reCAPTCHA for post creation
+      const token = await executeRecaptcha("find_a_game_create");
+      if (!token) {
+        addToast({
+          title: "Security check failed",
+          description: "reCAPTCHA verification failed. Please try again.",
+          color: "danger",
+        });
+        return;
+      }
+
       const payload: CreatePostInput = {
         type: mode,
         date,
@@ -132,6 +145,18 @@ export default function FindAGamePage() {
     if (!editId) return;
     try {
       setSavingEdit(true);
+
+      // Execute reCAPTCHA for post update
+      const token = await executeRecaptcha("find_a_game_update");
+      if (!token) {
+        addToast({
+          title: "Security check failed",
+          description: "reCAPTCHA verification failed. Please try again.",
+          color: "danger",
+        });
+        return;
+      }
+
       await updatePartnerPost(editId, {
         type: editMode,
         date: editDate,

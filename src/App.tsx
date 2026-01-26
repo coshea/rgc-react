@@ -21,6 +21,7 @@ import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
 import MembershipPage from "@/pages/membership";
+import MembershipDashboardPage from "@/pages/membership-dashboard";
 import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
@@ -92,6 +93,14 @@ function App() {
           <Route
             element={<MembershipDirectoryPage />}
             path="/membership/member-directory"
+          />
+          <Route
+            element={
+              <RequireAdmin>
+                <MembershipDashboardPage />
+              </RequireAdmin>
+            }
+            path={siteConfig.pages.membershipDashboard.link}
           />
           <Route
             element={

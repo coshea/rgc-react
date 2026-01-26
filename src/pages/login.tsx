@@ -21,6 +21,7 @@ import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { executeRecaptcha } from "@/utils/recaptcha";
 
 export default function LoginPage() {
   usePageTracking("Sign In");
@@ -59,6 +60,7 @@ export default function LoginPage() {
     string | null
   >(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -160,64 +162,92 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) return;
 
     setInlineError(null);
+    setIsSubmitting(true);
 
-    if (loginMode === "magic-link") {
-      if (email) {
-        try {
-          await sendLoginLink(email);
-          setLinkSent(true);
-          addToast({
-            title: "Link sent!",
-            description: "Check your email for the sign-in link.",
-            color: "success",
-          });
-        } catch (error: unknown) {
-          console.error("Send Link failed:", error);
-          const msg = getFirebaseAuthErrorMessage(error);
+    try {
+      // Execute reCAPTCHA for login
+      const token = await executeRecaptcha("login");
+      if (!token) {
+        setInlineError(
+          "Security check failed. Please refresh the page and try again.",
+        );
+        addToast({
+          title: "Login failed",
+          description: "reCAPTCHA verification failed.",
+          color: "danger",
+        });
+        return;
+      }
+
+      if (loginMode === "magic-link") {
+        if (email) {
           try {
+            await sendLoginLink(email);
+            setLinkSent(true);
             addToast({
-              title: "Magic link sign-in failed",
-              description: msg,
-              color: "danger",
+              title: "Link sent!",
+              description: "Check your email for the sign-in link.",
+              color: "success",
             });
-          } catch (toastError: unknown) {
-            // if toast fails for some reason, still set inline error
-            console.warn("Toast failed:", toastError);
+          } catch (error: unknown) {
+            console.error("Send Link failed:", error);
+            const msg = getFirebaseAuthErrorMessage(error);
+            try {
+              addToast({
+                title: "Magic link sign-in failed",
+                description: msg,
+                color: "danger",
+              });
+            } catch (toastError: unknown) {
+              // if toast fails for some reason, still set inline error
+              console.warn("Toast failed:", toastError);
+            }
+            setInlineError(msg);
           }
-          setInlineError(msg);
+        }
+      } else {
+        if (email && password) {
+          try {
+            await loginEmailAndPassword(email, password);
+            // Navigate to original destination if provided, otherwise home
+            const dest = state?.from || siteConfig.pages.home.link;
+            navigate(dest);
+          } catch (error: unknown) {
+            console.error("Email/Password Sign-In failed on LoginPage:", error);
+            const msg = getFirebaseAuthErrorMessage(error);
+            // show toast and set inline fallback
+            try {
+              addToast({
+                title: "Sign in failed",
+                description: msg,
+                color: "danger",
+              });
+            } catch (toastError: unknown) {
+              // if toast fails for some reason, still set inline error
+              console.warn("Toast failed:", toastError);
+            }
+            setInlineError(msg);
+          }
         }
       }
-    } else {
-      if (email && password) {
-        try {
-          await loginEmailAndPassword(email, password);
-          // Navigate to original destination if provided, otherwise home
-          const dest = state?.from || siteConfig.pages.home.link;
-          navigate(dest);
-        } catch (error: unknown) {
-          console.error("Email/Password Sign-In failed on LoginPage:", error);
-          const msg = getFirebaseAuthErrorMessage(error);
-          // show toast and set inline fallback
-          try {
-            addToast({
-              title: "Sign in failed",
-              description: msg,
-              color: "danger",
-            });
-          } catch (toastError: unknown) {
-            // if toast fails for some reason, still set inline error
-            console.warn("Toast failed:", toastError);
-          }
-          setInlineError(msg);
-        }
-      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsSubmitting(true);
+      // Execute reCAPTCHA for Google login
+      const token = await executeRecaptcha("google_login");
+      if (!token) {
+        setInlineError("Security check failed. Please try again.");
+        return;
+      }
+
       const result = await signInWithGoogle();
       // If redirect fallback was used the function may return void.
       if (!result) return;
@@ -242,6 +272,8 @@ export default function LoginPage() {
         console.warn("Toast failed:", toastError);
       }
       setInlineError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -448,9 +480,10 @@ export default function LoginPage() {
               className="w-full"
               color="primary"
               type="submit"
-              isDisabled={authLoading}
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
             >
-              {authLoading
+              {authLoading || isSubmitting
                 ? "Processing..."
                 : loginMode === "magic-link"
                   ? "Send Sign-In Link"
@@ -486,12 +519,19 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2">
             {/* Google Sign-In Button */}
             <Button
-              startContent={<Icon icon="flat-color-icons:google" width={24} />}
+              startContent={
+                !isSubmitting && (
+                  <Icon icon="flat-color-icons:google" width={24} />
+                )
+              }
               variant="bordered"
               onPress={handleGoogleSignIn}
-              isDisabled={authLoading}
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
             >
-              {authLoading ? "Signing in..." : "Continue with Google"}
+              {authLoading || isSubmitting
+                ? "Signing in..."
+                : "Continue with Google"}
             </Button>
           </div>
           <p className="text-center text-small">

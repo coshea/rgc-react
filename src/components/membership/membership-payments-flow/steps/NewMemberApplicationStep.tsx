@@ -10,6 +10,7 @@ import {
 } from "@heroui/react";
 import { useState } from "react";
 import type { NewMemberState } from "../types";
+import { executeRecaptcha } from "@/utils/recaptcha";
 
 export function NewMemberApplicationStep(props: {
   initialValue: NewMemberState;
@@ -22,12 +23,15 @@ export function NewMemberApplicationStep(props: {
     props;
   const [value, setValue] = useState<NewMemberState>(initialValue);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   function isValidEmail(email: string) {
     return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (submitting) return;
+
     const nextErrors: Record<string, string> = {};
     if (!value.fullName.trim())
       nextErrors.newFullName = "Full name is required";
@@ -46,17 +50,32 @@ export function NewMemberApplicationStep(props: {
     setLocalErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    onSubmit({
-      ...value,
-      fullName: value.fullName.trim(),
-      email: value.email.trim(),
-    });
+    setSubmitting(true);
+    try {
+      // Generate reCAPTCHA token before submission
+      const token = await executeRecaptcha("membership_application");
+      if (!token) {
+        setLocalErrors((prev) => ({
+          ...prev,
+          recaptcha: "Security check failed. Please refresh and try again.",
+        }));
+        return;
+      }
+
+      onSubmit({
+        ...value,
+        fullName: value.fullName.trim(),
+        email: value.email.trim(),
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <Card className="w-full max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
+        <h2 className="text-lg font-semibold">Step 2: Application</h2>
         <Button variant="light" onPress={onBack}>
           Back
         </Button>
@@ -158,15 +177,26 @@ export function NewMemberApplicationStep(props: {
               {localErrors.newAcknowledged}
             </div>
           ) : null}
+          {localErrors.recaptcha ? (
+            <div className="text-danger text-sm font-semibold">
+              {localErrors.recaptcha}
+            </div>
+          ) : null}
         </div>
 
-        <div className="text-sm">
-          Annual Dues: <strong>{currency(membershipAmountDue)}</strong>
+        <div className="flex items-center justify-between border-t border-divider pt-2 font-bold">
+          <span>Amount due</span>
+          <span>{currency(membershipAmountDue)}</span>
         </div>
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handleSubmit}>
+        <Button
+          color="primary"
+          className="w-full font-bold uppercase tracking-wide"
+          onPress={handleSubmit}
+          isLoading={submitting}
+        >
           Submit Application &amp; Pay Dues
         </Button>
       </CardFooter>

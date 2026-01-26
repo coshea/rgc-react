@@ -14,17 +14,17 @@ import type {
   HandicapState,
   MembershipOption,
   NewMemberState,
-  RenewLookupState,
   Step,
 } from "./membership-payments-flow/types";
 import { AlreadyPaidNotice } from "./membership-payments-flow/steps/AlreadyPaidNotice";
+import { AnnualStartStep } from "./membership-payments-flow/steps/AnnualStartStep";
 import { DonationStep } from "./membership-payments-flow/steps/DonationStep";
 import { DoneStep } from "./membership-payments-flow/steps/DoneStep";
 import { HandicapStep } from "./membership-payments-flow/steps/HandicapStep";
+import { HandicapConfirmStep } from "./membership-payments-flow/steps/HandicapConfirmStep";
 import { NewMemberApplicationStep } from "./membership-payments-flow/steps/NewMemberApplicationStep";
 import { PayPalStep } from "./membership-payments-flow/steps/PayPalStep";
 import { RenewConfirmStep } from "./membership-payments-flow/steps/RenewConfirmStep";
-import { RenewLookupStep } from "./membership-payments-flow/steps/RenewLookupStep";
 import { SelectOptionStep } from "./membership-payments-flow/steps/SelectOptionStep";
 
 export interface MembershipPaymentsFlowProps {
@@ -74,10 +74,9 @@ export default function MembershipPaymentsFlow({
 
   const [step, setStep] = useState<Step>({ kind: "select" });
 
-  const [renewLookup, setRenewLookup] = useState<RenewLookupState>({
-    email: "",
-    lastName: "",
-  });
+  const [annualDonationAmount, setAnnualDonationAmount] = useState<string>("");
+  const [handicapDonationAmount, setHandicapDonationAmount] =
+    useState<string>("");
 
   const [newMember, setNewMember] = useState<NewMemberState>({
     fullName: "",
@@ -107,11 +106,12 @@ export default function MembershipPaymentsFlow({
   const stepsCount = 4;
   const currentStepIndex = useMemo(() => {
     if (step.kind === "select") return 0;
-    if (step.kind === "renew_lookup") return 1;
+    if (step.kind === "annual_start") return 1;
     if (step.kind === "new_apply") return 1;
     if (step.kind === "handicap") return 1;
     if (step.kind === "donation") return 1;
     if (step.kind === "renew_confirm") return 2;
+    if (step.kind === "handicap_confirm") return 2;
     if (step.kind === "paypal") return 2;
     if (step.kind === "done") return 3;
     return 0;
@@ -119,7 +119,7 @@ export default function MembershipPaymentsFlow({
 
   const stepTitles = useMemo(
     () => ["Select option", "Confirm details", "Payment", "Complete"],
-    []
+    [],
   );
 
   const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
@@ -138,7 +138,18 @@ export default function MembershipPaymentsFlow({
     // Step 2 means “confirm details”; we can only return to renew lookup from renew_confirm.
     if (next === 1) {
       if (step.kind === "renew_confirm") {
-        setStep({ kind: "renew_lookup" });
+        setStep({ kind: "annual_start" });
+      }
+
+      if (step.kind === "handicap_confirm") {
+        setStep({ kind: "handicap" });
+      }
+
+      if (step.kind === "paypal") {
+        if (step.purpose === "renew") setStep({ kind: "annual_start" });
+        if (step.purpose === "new") setStep({ kind: "new_apply" });
+        if (step.purpose === "handicap") setStep({ kind: "handicap" });
+        if (step.purpose === "donation") setStep({ kind: "donation" });
       }
       return;
     }
@@ -159,7 +170,7 @@ export default function MembershipPaymentsFlow({
 
   const createPayPalOrder: PayPalButtonsComponentProps["createOrder"] = (
     _data,
-    actions
+    actions,
   ) => {
     if (step.kind !== "paypal") {
       return actions.order.create({
@@ -202,7 +213,7 @@ export default function MembershipPaymentsFlow({
 
   const onPayPalApprove: PayPalButtonsComponentProps["onApprove"] = async (
     data,
-    actions
+    actions,
   ) => {
     if (!actions.order) {
       console.error("PayPal order actions were unavailable", { step, user });
@@ -324,44 +335,47 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
-    if (option === "renew") {
-      if (!user) {
-        addToast({
-          title: "Login required",
-          description:
-            "Please log in to renew. We'll use your account details automatically.",
-          color: "warning",
-        });
-        navigate(siteConfig.pages.login.link, {
-          state: { from: loginFromPath },
-        });
-        return;
-      }
-
-      const email = user.email || userProfile?.email || "";
-      if (!email) {
-        addToast({
-          title: "Cannot renew",
-          description:
-            "Your account doesn't have an email address on file. Please contact the club.",
-          color: "danger",
-        });
-        return;
-      }
-
-      setStep({
-        kind: "renew_confirm",
-        email,
-        lastName: userProfile?.lastName,
-      });
+    if (option === "renew" || option === "new") {
+      setStep({ kind: "annual_start" });
       return;
     }
-    if (option === "new") setStep({ kind: "new_apply" });
     if (option === "handicap") setStep({ kind: "handicap" });
     if (option === "donation") setStep({ kind: "donation" });
   }
 
-  function onPayRenew() {
+  function onContinueRenewFromAnnualStart() {
+    if (!user) {
+      addToast({
+        title: "Login required",
+        description:
+          "Please log in to renew so we can record your payment to your account.",
+        color: "warning",
+      });
+      navigate(siteConfig.pages.login.link, {
+        state: { from: loginFromPath },
+      });
+      return;
+    }
+
+    const email = user.email || userProfile?.email || "";
+    if (!email) {
+      addToast({
+        title: "Cannot renew",
+        description:
+          "Your account doesn't have an email address on file. Please contact the club.",
+        color: "danger",
+      });
+      return;
+    }
+
+    setStep({
+      kind: "renew_confirm",
+      email,
+      lastName: userProfile?.lastName,
+    });
+  }
+
+  function onPayRenew(donationAmount: number) {
     if (isPaidForCurrentYear) {
       addToast({
         title: "Already paid",
@@ -371,19 +385,23 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
+    const donation =
+      Number.isFinite(donationAmount) && donationAmount > 0
+        ? donationAmount
+        : 0;
+    const totalAmount = membershipAmountDue + donation;
+    const donationText =
+      donation > 0 ? ` plus donation of ${currency(donation)}` : "";
+
     handlePaymentDecision({
       purpose: "renew",
       title: "Annual Club Membership",
       description: "Annual dues payment",
-      amount: membershipAmountDue,
+      amount: totalAmount,
       demoTitle: "Payment Recorded",
-      demoDescription: `Annual dues payment of ${currency(
-        membershipAmountDue
-      )} recorded (demo).`,
+      demoDescription: `Annual dues payment of ${currency(membershipAmountDue)}${donationText} recorded (demo).`,
       doneTitle: "Payment complete",
-      doneDescription: `Annual dues payment of ${currency(
-        membershipAmountDue
-      )} recorded (demo).`,
+      doneDescription: `Annual dues payment of ${currency(membershipAmountDue)}${donationText} recorded (demo).`,
     });
   }
 
@@ -488,22 +506,26 @@ export default function MembershipPaymentsFlow({
         <SelectOptionStep
           membershipOptionsDisabled={membershipOptionsDisabled}
           currentYear={currentYear}
+          membershipAmountDue={membershipAmountDue}
+          handicapFee={handicapFee}
+          currency={currency}
           onSelectOption={selectOption}
         />
       )}
 
-      {step.kind === "renew_lookup" && (
-        <RenewLookupStep
-          initialValue={renewLookup}
+      {step.kind === "annual_start" && (
+        <AnnualStartStep
+          membershipAmountDue={membershipAmountDue}
+          currency={currency}
+          isLoggedIn={!!user}
           onBack={goToSelect}
-          onSubmit={(data) => {
-            setRenewLookup(data);
-            setStep({
-              kind: "renew_confirm",
-              email: data.email.trim(),
-              lastName: data.lastName.trim() || undefined,
-            });
-          }}
+          onLoginToRenew={() =>
+            navigate(siteConfig.pages.login.link, {
+              state: { from: loginFromPath },
+            })
+          }
+          onContinueRenew={onContinueRenewFromAnnualStart}
+          onApplyNewMember={() => setStep({ kind: "new_apply" })}
         />
       )}
 
@@ -515,10 +537,12 @@ export default function MembershipPaymentsFlow({
           currentYear={currentYear}
           membershipFoundName={membershipFoundName ?? ""}
           membershipAmountDue={membershipAmountDue}
+          donationAmount={annualDonationAmount}
           currency={currency}
           paypalEnabled={paypalEnabled}
-          onBack={goToSelect}
+          onBack={() => setStep({ kind: "annual_start" })}
           onDonation={() => setStep({ kind: "donation" })}
+          onDonationAmountChange={setAnnualDonationAmount}
           onContinueToPay={onPayRenew}
         />
       )}
@@ -537,6 +561,19 @@ export default function MembershipPaymentsFlow({
           onApprove={onPayPalApprove}
           onError={onPayPalError}
           onBack={goToSelect}
+          onCheckSelected={() => {
+            // Mark flow as done and show instructions when user indicates they mailed a check
+            addToast({
+              title: "Check option selected",
+              description: `Please mail a check payable to ${siteConfig.contactAddress.name} to ${siteConfig.contactAddress.street}, ${siteConfig.contactAddress.cityStateZip} and include your name and membership year in the memo.`,
+              color: "success",
+            });
+            setStep({
+              kind: "done",
+              title: "Pending: Check Sent",
+              description: `Please mail your check to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street},\n${siteConfig.contactAddress.cityStateZip} and include your full name and the membership year in the memo so we can match it to your account. We will record your payment once the check is received.`,
+            });
+          }}
         />
       )}
 
@@ -555,11 +592,11 @@ export default function MembershipPaymentsFlow({
               amount: membershipAmountDue,
               demoTitle: "Application Submitted",
               demoDescription: `Application submitted and dues of ${currency(
-                membershipAmountDue
+                membershipAmountDue,
               )} recorded (demo).`,
               doneTitle: "Application submitted",
               doneDescription: `Application submitted and dues of ${currency(
-                membershipAmountDue
+                membershipAmountDue,
               )} recorded (demo).`,
             });
           }}
@@ -574,15 +611,37 @@ export default function MembershipPaymentsFlow({
           onBack={goToSelect}
           onPay={(data) => {
             setHandicap(data);
+            setStep({ kind: "handicap_confirm" });
+          }}
+        />
+      )}
+
+      {step.kind === "handicap_confirm" && (
+        <HandicapConfirmStep
+          handicap={handicap}
+          handicapFee={handicapFee}
+          donationAmount={handicapDonationAmount}
+          currency={currency}
+          onBack={() => setStep({ kind: "handicap" })}
+          onDonationAmountChange={setHandicapDonationAmount}
+          onContinueToPay={(donationAmount) => {
+            const donation =
+              Number.isFinite(donationAmount) && donationAmount > 0
+                ? donationAmount
+                : 0;
+            const totalAmount = handicapFee + donation;
+            const donationText =
+              donation > 0 ? ` plus donation of ${currency(donation)}` : "";
+
             handlePaymentDecision({
               purpose: "handicap",
               title: "Handicap Membership",
               description: "Handicap membership fee",
-              amount: handicapFee,
+              amount: totalAmount,
               demoTitle: "Payment Recorded",
-              demoDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+              demoDescription: `Handicap fee of ${currency(handicapFee)}${donationText} recorded (demo).`,
               doneTitle: "Payment complete",
-              doneDescription: `Handicap fee of ${currency(handicapFee)} recorded (demo).`,
+              doneDescription: `Handicap fee of ${currency(handicapFee)}${donationText} recorded (demo).`,
             });
           }}
         />
