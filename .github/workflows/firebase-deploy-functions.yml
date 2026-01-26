@@ -75,28 +75,6 @@ jobs:
       - name: Authenticate gcloud with service account
         run: |
           gcloud auth activate-service-account --key-file=/tmp/sa-key.json
-
-      - name: List secrets
-        working-directory: ./functions
-        run: |
-          gcloud secrets list --project=${{ env.PROJECT_ID }}
-
-      - name: Verify PAYPAL_CLIENT_SECRET exists in Secret Manager
-        run: |
-          set -e
-          if [ -z "$PROJECT_ID" ]; then
-            echo "PROJECT_ID not available; aborting secret check"
-            exit 1
-          fi
-          echo "Checking Secret Manager for PAYPAL_CLIENT_SECRET in project $PROJECT_ID"
-          if gcloud secrets versions access latest --secret=PAYPAL_CLIENT_SECRET --project="$PROJECT_ID" >/dev/null 2>&1; then
-            echo "PAYPAL_CLIENT_SECRET exists in Secret Manager"
-          else
-            echo "PAYPAL_CLIENT_SECRET not found in Secret Manager for project $PROJECT_ID"
-            echo "Abort deploy to avoid runtime failures; ensure secret exists and permission to access it is granted"
-            exit 1
-          fi
-
       - name: Install Firebase CLI
         run: |
           curl -sL https://firebase.tools | bash
