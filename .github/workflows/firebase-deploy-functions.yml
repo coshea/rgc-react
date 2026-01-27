@@ -47,6 +47,7 @@ jobs:
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}"
           projectId: "ridgefield-golf-club"
           entryPoint: "."
+          channelId: live
         env:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
