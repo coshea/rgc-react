@@ -22,6 +22,42 @@ function parseCsv(value: string | undefined): string[] {
     .filter((v) => v.length > 0);
 }
 
+function getSentryClient(): unknown {
+  const sentry = Sentry as unknown as Record<string, unknown>;
+
+  const getClient = sentry["getClient"];
+  if (typeof getClient === "function") {
+    return (getClient as () => unknown)();
+  }
+
+  const getCurrentScope = sentry["getCurrentScope"];
+  if (typeof getCurrentScope === "function") {
+    const scope = (getCurrentScope as () => unknown)();
+    if (scope && typeof scope === "object") {
+      const scopeRecord = scope as Record<string, unknown>;
+      const scopeGetClient = scopeRecord["getClient"];
+      if (typeof scopeGetClient === "function") {
+        return (scopeGetClient as () => unknown)();
+      }
+    }
+  }
+
+  // Back-compat for older Sentry APIs.
+  const getCurrentHub = sentry["getCurrentHub"];
+  if (typeof getCurrentHub === "function") {
+    const hub = (getCurrentHub as () => unknown)();
+    if (hub && typeof hub === "object") {
+      const hubRecord = hub as Record<string, unknown>;
+      const hubGetClient = hubRecord["getClient"];
+      if (typeof hubGetClient === "function") {
+        return (hubGetClient as () => unknown)();
+      }
+    }
+  }
+
+  return undefined;
+}
+
 if (enabled) {
   const tracesSampleRate = Number(
     import.meta.env.DEV
@@ -80,17 +116,27 @@ if (enabled) {
 
   // Emit a short runtime status to help verify Sentry is initialized in prod
   try {
-    const maybeGet = (Sentry as unknown as Record<string, unknown>)[
-      "getCurrentHub"
-    ];
-    const sentryClient =
-      typeof maybeGet === "function"
-        ? (maybeGet as () => { getClient?: () => unknown })()?.getClient?.()
-        : undefined;
+    const sentryClient = getSentryClient();
+    const hasClient = !!sentryClient;
+    const dsnSource = import.meta.env.VITE_SENTRY_DSN ? "env" : "fallback";
+
     // eslint-disable-next-line no-console
     console.log(
-      `[Sentry] initialized: enabled=${enabled}, client=${sentryClient ? "present" : "missing"}, environment=${import.meta.env.MODE}`,
+      `[Sentry] initialized: enabled=${enabled}, client=${hasClient ? "present" : "missing"}, environment=${import.meta.env.MODE}, dsn=${dsnSource}`,
     );
+
+    // Optional, opt-in smoke test: add `?sentryTest=1` to the URL.
+    if (
+      hasClient &&
+      new URLSearchParams(window.location.search).has("sentryTest")
+    ) {
+      const eventId = Sentry.captureMessage("Sentry smoke test", {
+        level: "info",
+        tags: { smokeTest: "true" },
+      });
+      // eslint-disable-next-line no-console
+      console.log(`[Sentry] smoke test sent: eventId=${eventId}`);
+    }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.log("[Sentry] initialization check failed:", err);
