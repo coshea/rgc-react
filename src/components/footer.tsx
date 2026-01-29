@@ -83,9 +83,31 @@ export default function SiteFooter() {
           {/* Social links removed per request */}
 
           {/* Bottom row: copyright + back to top */}
-          <div className="mt-2 sm:mt-4 w-full flex items-center justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-foreground-500">
-            <p>© {year} Ridgefield Golf Club. All rights reserved.</p>
-            <div className="hidden sm:flex" />
+          <div className="mt-2 sm:mt-4 w-full flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-foreground-500">
+            <div className="flex flex-col gap-1 items-center text-center sm:items-start sm:text-left">
+              <p>© {year} Ridgefield Golf Club. All rights reserved.</p>
+              <p>
+                This site is protected by reCAPTCHA and the Google{" "}
+                <Link
+                  href="https://policies.google.com/privacy"
+                  isExternal
+                  color="foreground"
+                  className="underline underline-offset-2"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="https://policies.google.com/terms"
+                  isExternal
+                  color="foreground"
+                  className="underline underline-offset-2"
+                >
+                  Terms of Service
+                </Link>{" "}
+                apply.
+              </p>
+            </div>
             <div className="flex sm:justify-end justify-center w-full sm:w-auto">
               <Button
                 size="sm"

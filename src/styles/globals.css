@@ -68,4 +68,13 @@
   .dark .prose blockquote {
     @apply border-default-600;
   }
+
+  /*
+    reCAPTCHA badge
+    If you hide the badge, Google requires a visible disclosure with links to
+    the Privacy Policy and Terms of Service (added in the site footer).
+  */
+  .grecaptcha-badge {
+    visibility: hidden !important;
+  }
 }
