@@ -1,10 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, Input, Button, Spinner, Chip } from "@heroui/react";
+import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { PiGolf } from "react-icons/pi";
-import { saveUserProfile } from "@/api/users";
+import { saveUserProfile, type UserProfilePayload } from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -57,6 +59,7 @@ export function ProfileForm({
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
@@ -146,7 +149,18 @@ export function ProfileForm({
 
   const handleInputChange = (field: keyof FormData) => (value: string) => {
     setFormData((prev) => {
-      const next = { ...prev, [field]: value } as FormData;
+      const next = { ...prev };
+      if (field === "phone") {
+        next.phone = formatPhone(value);
+      } else if (
+        field === "firstName" ||
+        field === "lastName" ||
+        field === "email" ||
+        field === "ghinNumber"
+      ) {
+        next[field] = value;
+      }
+
       next.displayName = [next.firstName, next.lastName]
         .filter(Boolean)
         .join(" ")
@@ -196,7 +210,7 @@ export function ProfileForm({
       // Debug logging removed to satisfy lint rules and avoid require() in ESM
 
       // Prepare data to save (do not include File objects)
-      const payload = {
+      const payload: UserProfilePayload = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         displayName: formData.displayName, // server will recompute anyway
@@ -205,7 +219,7 @@ export function ProfileForm({
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
         // Only include governance fields if current user is admin editing self (admin property on profile)
-      } as Record<string, any>;
+      };
 
       // Use the hook's save method (this handles uploading the file if present)
       if (save) {
@@ -415,7 +429,7 @@ export function ProfileForm({
                 <Button
                   type="button"
                   className="w-1/3 h-10 text-sm py-1"
-                  onClick={() => window.history.back()}
+                  onClick={() => navigate(-1)}
                   disabled={isSubmitting}
                 >
                   Cancel

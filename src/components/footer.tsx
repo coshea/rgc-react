@@ -12,7 +12,7 @@ export default function SiteFooter() {
     }
   };
   return (
-    <footer className="mt-12 border-t border-default-200/60 dark:border-default-100/10 bg-gradient-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
+    <footer className="mt-12 border-t border-default-200/60 dark:border-default-100/10 bg-linear-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
           {/* Brand centered */}
