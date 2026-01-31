@@ -29,6 +29,8 @@ interface FormErrors {
 type ProfileFormProps = {
   // Hide the internal Cancel/Save action row (useful when embedding in a modal with its own footer)
   hideActions?: boolean;
+  // Hide the Cancel button when the user has no existing profile document
+  hideCancelWhenNew?: boolean;
   // Provide a stable form id so external buttons (e.g., modal footer) can submit this form
   formId?: string;
   // Optional callback invoked after a successful save (e.g., close modal)
@@ -37,6 +39,7 @@ type ProfileFormProps = {
 
 export function ProfileForm({
   hideActions = false,
+  hideCancelWhenNew = false,
   formId,
   onSaved,
 }: ProfileFormProps) {
@@ -125,7 +128,7 @@ export function ProfileForm({
     if (
       formData.phone &&
       !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(
-        formData.phone
+        formData.phone,
       )
     ) {
       newErrors.phone = "Please enter a valid phone number";
@@ -408,14 +411,16 @@ export function ProfileForm({
         {!hideActions && (
           <div className="pt-2">
             <div className="flex items-center justify-between gap-2">
-              <Button
-                type="button"
-                className="w-1/3 h-10 text-sm py-1"
-                onClick={() => window.history.back()}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              {!(hideCancelWhenNew && userProfile === null) && (
+                <Button
+                  type="button"
+                  className="w-1/3 h-10 text-sm py-1"
+                  onClick={() => window.history.back()}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+              )}
 
               <Button
                 type="submit"

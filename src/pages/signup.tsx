@@ -23,6 +23,12 @@ import { addToast } from "@/providers/toast";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
+import { saveUserProfile } from "@/api/users";
+import { auth } from "@/config/firebase";
+import {
+  storePendingSignupProfile,
+  clearPendingSignupProfile,
+} from "@/utils/pendingSignupProfile";
 
 export default function SignUpPage() {
   usePageTracking("Sign Up");
@@ -62,6 +68,8 @@ export default function SignUpPage() {
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
+    const firstName = (formData.get("firstName") as string) || "";
+    const lastName = (formData.get("lastName") as string) || "";
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
@@ -83,9 +91,25 @@ export default function SignUpPage() {
         return;
       }
 
+      if (!firstName.trim() || !lastName.trim()) {
+        setInlineError("First and last name are required.");
+        addToast({
+          title: "Missing name",
+          description: "Please enter both first and last name.",
+          color: "warning",
+        });
+        return;
+      }
+
       if (signupMode === "magic-link") {
         if (email) {
           try {
+            storePendingSignupProfile({
+              email: email.trim(),
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              createdAt: Date.now(),
+            });
             await sendLoginLink(email);
             setLinkSent(true);
             addToast({
@@ -94,6 +118,7 @@ export default function SignUpPage() {
               color: "success",
             });
           } catch (error: unknown) {
+            clearPendingSignupProfile();
             console.error("Send Link failed:", error);
             const msg = getFirebaseSignupErrorMessage(error);
             setInlineError(msg);
@@ -117,6 +142,27 @@ export default function SignUpPage() {
       if (email && password) {
         try {
           await signupEmailAndPassword(email, password);
+          const uid = auth.currentUser?.uid;
+          if (uid) {
+            try {
+              await saveUserProfile(uid, {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.trim(),
+              });
+            } catch (profileError: unknown) {
+              console.error(
+                "Failed to save profile after signup",
+                profileError,
+              );
+              addToast({
+                title: "Profile not saved",
+                description:
+                  "Your account was created, but we couldn't save your profile yet. Please complete it after verification.",
+                color: "warning",
+              });
+            }
+          }
           navigate(siteConfig.pages.verifyEmail.link);
         } catch (error: unknown) {
           console.error("Signup failed:", error);
@@ -150,6 +196,24 @@ export default function SignUpPage() {
       if (result.user) {
         const additionalUserInfo = getAdditionalUserInfo(result);
         if (additionalUserInfo?.isNewUser) {
+          const displayName = result.user.displayName || "";
+          const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+          if (nameParts.length >= 2) {
+            const [first, ...rest] = nameParts;
+            const last = rest.join(" ");
+            try {
+              await saveUserProfile(result.user.uid, {
+                firstName: first,
+                lastName: last,
+                email: result.user.email || undefined,
+              });
+            } catch (profileError: unknown) {
+              console.error(
+                "Failed to save profile after Google signup",
+                profileError,
+              );
+            }
+          }
           navigate(siteConfig.pages.profile.link);
         } else {
           navigate(siteConfig.pages.home.link);
@@ -301,6 +365,32 @@ export default function SignUpPage() {
           )}
           <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
             <div className="flex flex-col">
+              <Input
+                isRequired
+                classNames={{
+                  base: "-mb-[2px]",
+                  inputWrapper:
+                    "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
+                }}
+                label="First Name"
+                name="firstName"
+                placeholder="Enter your first name"
+                type="text"
+                variant="bordered"
+              />
+              <Input
+                isRequired
+                classNames={{
+                  base: "-mb-[2px]",
+                  inputWrapper:
+                    "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
+                }}
+                label="Last Name"
+                name="lastName"
+                placeholder="Enter your last name"
+                type="text"
+                variant="bordered"
+              />
               <Input
                 isRequired
                 classNames={{

@@ -22,6 +22,8 @@ import { auth } from "@/config/firebase";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
+import { saveUserProfile } from "@/api/users";
+import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 
 export default function LoginPage() {
   usePageTracking("Sign In");
@@ -81,6 +83,21 @@ export default function LoginPage() {
         const result = await signInWithLink(emailAddress, link);
         const additionalUserInfo = getAdditionalUserInfo(result);
         if (additionalUserInfo?.isNewUser) {
+          const pendingProfile = consumePendingSignupProfile(emailAddress);
+          if (pendingProfile) {
+            try {
+              await saveUserProfile(result.user.uid, {
+                firstName: pendingProfile.firstName,
+                lastName: pendingProfile.lastName,
+                email: pendingProfile.email,
+              });
+            } catch (profileError: unknown) {
+              console.error(
+                "Failed to save profile after magic-link signup",
+                profileError,
+              );
+            }
+          }
           navigate(siteConfig.pages.profile.link);
         } else {
           const dest = state?.from || siteConfig.pages.home.link;
