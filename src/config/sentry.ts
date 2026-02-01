@@ -14,6 +14,63 @@ const SENTRY_DSN =
 const enabled =
   import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLE_IN_DEV === "true";
 
+// Custom logger to match project guidelines
+export const logger = {
+  fmt: (strings: TemplateStringsArray, ...values: any[]) => {
+    return strings.reduce((acc, str, i) => {
+      const val = values[i];
+      const formattedVal = typeof val === "object" ? JSON.stringify(val) : val;
+      return acc + str + (i < values.length ? formattedVal : "");
+    }, "");
+  },
+  trace: (msg: any, data?: any) => {
+    Sentry.addBreadcrumb({
+      category: "log",
+      level: "debug",
+      message: String(msg),
+      data,
+    });
+  },
+  debug: (msg: any, data?: any) => {
+    Sentry.addBreadcrumb({
+      category: "log",
+      level: "debug",
+      message: String(msg),
+      data,
+    });
+  },
+  info: (msg: any, data?: any) => {
+    Sentry.captureMessage(String(msg), { level: "info", extra: data });
+  },
+  warn: (msg: any, data?: any) => {
+    Sentry.captureMessage(String(msg), { level: "warning", extra: data });
+  },
+  error: (msg: any, data?: any) => {
+    Sentry.captureMessage(String(msg), { level: "error", extra: data });
+  },
+  fatal: (msg: any, data?: any) => {
+    Sentry.captureMessage(String(msg), { level: "fatal", extra: data });
+  },
+  // Metrics
+  count: (name: string, value: number = 1, data?: Record<string, unknown>) => {
+    Sentry.metrics.count(name, value, data ? { attributes: data } : undefined);
+  },
+  gauge: (name: string, value: number, data?: Record<string, unknown>) => {
+    Sentry.metrics.gauge(name, value, data ? { attributes: data } : undefined);
+  },
+  distribution: (
+    name: string,
+    value: number,
+    data?: Record<string, unknown>,
+  ) => {
+    Sentry.metrics.distribution(
+      name,
+      value,
+      data ? { attributes: data } : undefined,
+    );
+  },
+};
+
 function parseCsv(value: string | undefined): string[] {
   if (!value) return [];
   return value
@@ -30,27 +87,17 @@ function getSentryClient(): unknown {
     return (getClient as () => unknown)();
   }
 
-  const getCurrentScope = sentry["getCurrentScope"];
-  if (typeof getCurrentScope === "function") {
-    const scope = (getCurrentScope as () => unknown)();
-    if (scope && typeof scope === "object") {
-      const scopeRecord = scope as Record<string, unknown>;
-      const scopeGetClient = scopeRecord["getClient"];
-      if (typeof scopeGetClient === "function") {
-        return (scopeGetClient as () => unknown)();
-      }
-    }
-  }
-
-  // Back-compat for older Sentry APIs.
-  const getCurrentHub = sentry["getCurrentHub"];
-  if (typeof getCurrentHub === "function") {
-    const hub = (getCurrentHub as () => unknown)();
-    if (hub && typeof hub === "object") {
-      const hubRecord = hub as Record<string, unknown>;
-      const hubGetClient = hubRecord["getClient"];
-      if (typeof hubGetClient === "function") {
-        return (hubGetClient as () => unknown)();
+  // Check getCurrentScope (v7+) or getCurrentHub (legacy)
+  for (const methodName of ["getCurrentScope", "getCurrentHub"]) {
+    const getMethod = sentry[methodName];
+    if (typeof getMethod === "function") {
+      const result = (getMethod as () => unknown)();
+      if (result && typeof result === "object") {
+        const resultRecord = result as Record<string, unknown>;
+        const resultGetClient = resultRecord["getClient"];
+        if (typeof resultGetClient === "function") {
+          return (resultGetClient as () => unknown)();
+        }
       }
     }
   }
@@ -59,17 +106,25 @@ function getSentryClient(): unknown {
 }
 
 if (enabled) {
-  const tracesSampleRate = Number(
-    import.meta.env.DEV
-      ? "1.0"
-      : (import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? "0.2"),
+  const isSmokeTest = new URLSearchParams(window.location.search).has(
+    "sentryTest",
   );
 
-  const replaysSessionSampleRate = Number(
-    import.meta.env.DEV
-      ? "1.0"
-      : (import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? "0.1"),
-  );
+  const tracesSampleRate = isSmokeTest
+    ? 1.0
+    : Number(
+        import.meta.env.DEV
+          ? "1.0"
+          : (import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? "0.2"),
+      );
+
+  const replaysSessionSampleRate = isSmokeTest
+    ? 1.0
+    : Number(
+        import.meta.env.DEV
+          ? "1.0"
+          : (import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? "0.1"),
+      );
 
   const replaysOnErrorSampleRate = Number(
     import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE ?? "1.0",
@@ -91,6 +146,9 @@ if (enabled) {
         matchRoutes,
       }),
       Sentry.replayIntegration(),
+      Sentry.consoleLoggingIntegration({
+        levels: ["error", "warn", "log"],
+      }),
     ],
 
     // Tracing
@@ -112,6 +170,11 @@ if (enabled) {
 
     // Enable logs to be sent to Sentry
     enableLogs: import.meta.env.VITE_SENTRY_ENABLE_LOGS !== "false",
+
+    // Metrics (experimental)
+    _experiments: {
+      enableMetrics: true,
+    },
   });
 
   // Emit a short runtime status to help verify Sentry is initialized in prod
@@ -126,16 +189,34 @@ if (enabled) {
     );
 
     // Optional, opt-in smoke test: add `?sentryTest=1` to the URL.
-    if (
-      hasClient &&
-      new URLSearchParams(window.location.search).has("sentryTest")
-    ) {
+    if (hasClient && isSmokeTest) {
       const eventId = Sentry.captureMessage("Sentry smoke test", {
         level: "info",
         tags: { smokeTest: "true" },
       });
       // eslint-disable-next-line no-console
       console.log(`[Sentry] smoke test sent: eventId=${eventId}`);
+
+      // Also try an error
+      try {
+        throw new Error("Sentry test error");
+      } catch (e) {
+        Sentry.captureException(e);
+      }
+
+      // Test Metrics
+      Sentry.metrics.count("button_click", 1, {
+        attributes: { test: "true" },
+      });
+      Sentry.metrics.gauge("page_load_time", 150, {
+        attributes: { test: "true" },
+      });
+      Sentry.metrics.distribution("response_time", 200, {
+        attributes: { test: "true" },
+      });
+
+      // eslint-disable-next-line no-console
+      console.log("[Sentry] smoke test metrics sent");
     }
   } catch (err) {
     // eslint-disable-next-line no-console
