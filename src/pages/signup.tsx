@@ -43,6 +43,12 @@ export default function SignUpPage() {
   const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const stackedInputClassNames = {
+    base: "-mb-[2px]",
+    inputWrapper:
+      "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
+  };
+
   const {
     userLoggedIn,
     signupEmailAndPassword,
@@ -367,11 +373,7 @@ export default function SignUpPage() {
             <div className="flex flex-col">
               <Input
                 isRequired
-                classNames={{
-                  base: "-mb-[2px]",
-                  inputWrapper:
-                    "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-                }}
+                classNames={stackedInputClassNames}
                 label="First Name"
                 name="firstName"
                 placeholder="Enter your first name"
@@ -380,11 +382,7 @@ export default function SignUpPage() {
               />
               <Input
                 isRequired
-                classNames={{
-                  base: "-mb-[2px]",
-                  inputWrapper:
-                    "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-                }}
+                classNames={stackedInputClassNames}
                 label="Last Name"
                 name="lastName"
                 placeholder="Enter your last name"
@@ -393,11 +391,7 @@ export default function SignUpPage() {
               />
               <Input
                 isRequired
-                classNames={{
-                  base: "-mb-[2px]",
-                  inputWrapper:
-                    "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-                }}
+                classNames={stackedInputClassNames}
                 label="Email Address"
                 name="email"
                 placeholder="Enter your email"
