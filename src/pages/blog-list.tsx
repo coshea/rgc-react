@@ -233,7 +233,7 @@ export const BlogListPage: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Featured Image */}
                 {post.featuredImage && (
-                  <div className="md:w-48 md:flex-shrink-0">
+                  <div className="md:w-48 md:shrink-0">
                     <img
                       src={post.featuredImage}
                       alt={post.title}
@@ -312,7 +312,7 @@ export const BlogListPage: React.FC = () => {
 
                     {/* Admin Actions */}
                     {isAdmin && (
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
                           variant="flat"

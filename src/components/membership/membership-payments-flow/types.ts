@@ -33,8 +33,6 @@ export interface NewMemberState {
 }
 
 export interface HandicapState {
-  fullName: string;
-  email: string;
   ghin: string;
 }
 

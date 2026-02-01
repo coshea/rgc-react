@@ -13,32 +13,38 @@ import type { HandicapState } from "../types";
 
 export function HandicapStep(props: {
   initialValue: HandicapState;
+  profileName: string;
+  profileEmail: string;
+  profileGhin?: string | null;
   handicapFee: number;
   currency: (n: number) => string;
   onBack: () => void;
-  onPay: (data: HandicapState) => void;
+  onPay: (data: HandicapState) => Promise<void> | void;
 }) {
-  const { initialValue, handicapFee, currency, onBack, onPay } = props;
+  const {
+    initialValue,
+    profileName,
+    profileEmail,
+    handicapFee,
+    currency,
+    onBack,
+    onPay,
+  } = props;
   const [value, setValue] = useState<HandicapState>(initialValue);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
-  function handlePay() {
-    const nextErrors: Record<string, string> = {};
+  async function handlePay() {
+    if (submitting) return;
 
-    if (!value.fullName?.trim())
-      nextErrors.handicapFullName = "Name is required";
+    setLocalErrors({});
 
-    if (value.email && value.email.trim()) {
-      // basic sanity check
-      const re = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-      if (!re.test(value.email.trim()))
-        nextErrors.handicapEmail = "Enter a valid email";
+    setSubmitting(true);
+    try {
+      await onPay({ ...value, ghin: value.ghin.trim() });
+    } finally {
+      setSubmitting(false);
     }
-
-    setLocalErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
-    onPay({ ...value });
   }
 
   return (
@@ -55,39 +61,37 @@ export function HandicapStep(props: {
           leave it blank.
         </p>
 
-        <Input
-          label="Full name"
-          value={value.fullName}
-          onValueChange={(v) => setValue((s) => ({ ...s, fullName: v }))}
-          isInvalid={!!localErrors.handicapFullName}
-          errorMessage={localErrors.handicapFullName}
-          variant="bordered"
-          required
-        />
-
-        <Input
-          label="Email (optional)"
-          value={value.email}
-          onValueChange={(v) => setValue((s) => ({ ...s, email: v }))}
-          isInvalid={!!localErrors.handicapEmail}
-          errorMessage={localErrors.handicapEmail}
-          variant="bordered"
-          type="email"
-        />
+        <div className="space-y-1 text-sm">
+          <div>
+            <span className="text-default-600">Name:</span> {profileName}
+          </div>
+          <div>
+            <span className="text-default-600">Email:</span> {profileEmail}
+          </div>
+        </div>
 
         <Input
           label="GHIN (optional)"
           value={value.ghin}
-          onValueChange={(v) => setValue((s) => ({ ...s, ghin: v }))}
+          onValueChange={(v) =>
+            setValue((s) => ({ ...s, ghin: v.replace(/\D+/g, "") }))
+          }
+          isInvalid={!!localErrors.handicapGhin}
+          errorMessage={localErrors.handicapGhin}
           variant="bordered"
+          inputMode="numeric"
+          pattern="[0-9]*"
         />
+        <div className="text-xs text-default-500">
+          We’ll save this GHIN to your profile for future renewals.
+        </div>
         <div className="text-sm">
           Fee: <strong>{currency(handicapFee)}</strong>
         </div>
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay}>
+        <Button color="primary" onPress={handlePay} isLoading={submitting}>
           Continue
         </Button>
       </CardFooter>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
 import { Spacer, addToast } from "@heroui/react";
@@ -8,6 +8,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
 import MinimalRowSteps from "@/components/minimal-row-steps";
 import { verifyAndRecordPayPalMembershipPayment } from "@/api/paypal";
+import { saveUserProfile } from "@/api/users";
 
 import type {
   DonationState,
@@ -90,8 +91,6 @@ export default function MembershipPaymentsFlow({
   });
 
   const [handicap, setHandicap] = useState<HandicapState>({
-    fullName: "",
-    email: "",
     ghin: "",
   });
 
@@ -339,7 +338,22 @@ export default function MembershipPaymentsFlow({
       setStep({ kind: "annual_start" });
       return;
     }
-    if (option === "handicap") setStep({ kind: "handicap" });
+    if (option === "handicap") {
+      if (!user) {
+        addToast({
+          title: "Login required",
+          description:
+            "Please log in to purchase a handicap-only membership so we can attach it to your profile.",
+          color: "warning",
+        });
+        navigate(siteConfig.pages.login.link, {
+          state: { from: loginFromPath },
+        });
+        return;
+      }
+      setStep({ kind: "handicap" });
+      return;
+    }
     if (option === "donation") setStep({ kind: "donation" });
   }
 
@@ -482,6 +496,25 @@ export default function MembershipPaymentsFlow({
     userProfile?.lastName,
   ]);
 
+  const handicapProfileName =
+    userProfile?.displayName?.trim() ||
+    [userProfile?.firstName?.trim(), userProfile?.lastName?.trim()]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    user?.displayName?.trim() ||
+    user?.email ||
+    "Member";
+
+  const handicapProfileEmail = user?.email || userProfile?.email || "";
+  const handicapProfileGhin = userProfile?.ghinNumber?.trim() || "";
+
+  useEffect(() => {
+    if (handicapProfileGhin && !handicap.ghin) {
+      setHandicap((prev) => ({ ...prev, ghin: handicapProfileGhin }));
+    }
+  }, [handicapProfileGhin, handicap.ghin]);
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
       <div className="w-full max-w-4xl">
@@ -505,6 +538,7 @@ export default function MembershipPaymentsFlow({
       {step.kind === "select" && (
         <SelectOptionStep
           membershipOptionsDisabled={membershipOptionsDisabled}
+          isLoggedIn={!!user}
           currentYear={currentYear}
           membershipAmountDue={membershipAmountDue}
           handicapFee={handicapFee}
@@ -606,11 +640,31 @@ export default function MembershipPaymentsFlow({
       {step.kind === "handicap" && (
         <HandicapStep
           initialValue={handicap}
+          profileName={handicapProfileName}
+          profileEmail={handicapProfileEmail}
+          profileGhin={handicapProfileGhin}
           handicapFee={handicapFee}
           currency={currency}
           onBack={goToSelect}
-          onPay={(data) => {
+          onPay={async (data) => {
             setHandicap(data);
+            const nextGhin = data.ghin.trim();
+            if (user && nextGhin && nextGhin !== handicapProfileGhin) {
+              try {
+                await saveUserProfile(user.uid, {
+                  ghinNumber: nextGhin,
+                });
+                await refetchUserProfile();
+              } catch (err) {
+                const message =
+                  err instanceof Error ? err.message : "Failed to save GHIN";
+                addToast({
+                  title: "GHIN not saved",
+                  description: message,
+                  color: "warning",
+                });
+              }
+            }
             setStep({ kind: "handicap_confirm" });
           }}
         />
@@ -619,6 +673,8 @@ export default function MembershipPaymentsFlow({
       {step.kind === "handicap_confirm" && (
         <HandicapConfirmStep
           handicap={handicap}
+          profileName={handicapProfileName}
+          profileEmail={handicapProfileEmail}
           handicapFee={handicapFee}
           donationAmount={handicapDonationAmount}
           currency={currency}
