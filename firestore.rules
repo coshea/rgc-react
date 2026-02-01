@@ -146,7 +146,7 @@ service cloud.firestore {
 
         // Create:
         // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
-        // - Admins: may create regardless of registrationOpen; ownerId can be "__admin__" or their own uid.
+        // - Admins: may create regardless of registrationOpen; ownerId can be set to a team member.
         allow create: if request.auth != null
           && request.resource.data.ownerId is string
           && teamSizeValid(
@@ -160,11 +160,7 @@ service cloud.firestore {
                 get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
               )
             )
-            || (
-              isAdmin() && (
-                request.resource.data.ownerId == "__admin__" || request.resource.data.ownerId == request.auth.uid
-              )
-            )
+            || isAdmin()
           );
 
         // Owner or admin can update or delete the registration. Use isAdmin()

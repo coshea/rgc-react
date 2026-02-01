@@ -1,5 +1,12 @@
 import React from "react";
-import { Card, CardBody, AvatarGroup, Button, Tooltip } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  AvatarGroup,
+  Button,
+  Checkbox,
+  Tooltip,
+} from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
@@ -9,6 +16,7 @@ type Registration = {
   id: string;
   ownerId?: string;
   team?: Array<{ id: string; displayName?: string }>;
+  openSpotsOptIn?: boolean;
 };
 
 interface Props {
@@ -18,7 +26,7 @@ interface Props {
   editingId: string | null;
   onStartEdit: (reg: Registration) => void;
   onCancelEdit: () => void;
-  onSave: (regId: string, ids: string[]) => void;
+  onSave: (regId: string, ids: string[], openSpotsOptIn: boolean) => void;
   onDelete: (regId: string) => void;
 }
 
@@ -35,8 +43,11 @@ export const RegistrationsList: React.FC<Props> = ({
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [localTeams, setLocalTeams] = React.useState<Record<string, string[]>>(
-    {}
+    {},
   );
+  const [localOpenSpots, setLocalOpenSpots] = React.useState<
+    Record<string, boolean>
+  >({});
 
   const selectedRegistration = React.useMemo(() => {
     return registrations.find((r) => r.id === deletingId) || null;
@@ -61,11 +72,19 @@ export const RegistrationsList: React.FC<Props> = ({
       ? reg.team.map((m) => m.id || "")
       : [""];
     setLocalTeams((s) => ({ ...s, [reg.id]: ids }));
+    setLocalOpenSpots((s) => ({
+      ...s,
+      [reg.id]: reg.openSpotsOptIn === true,
+    }));
     onStartEdit(reg);
   };
 
   const updateLocal = (regId: string, ids: string[]) => {
     setLocalTeams((s) => ({ ...s, [regId]: ids }));
+  };
+
+  const updateOpenSpots = (regId: string, value: boolean) => {
+    setLocalOpenSpots((s) => ({ ...s, [regId]: value }));
   };
 
   return (
@@ -76,6 +95,8 @@ export const RegistrationsList: React.FC<Props> = ({
         const local = (localTeams[reg.id] ?? team.map((m) => m.id || "")) || [
           "",
         ];
+        const openSpotsValue =
+          localOpenSpots[reg.id] ?? reg.openSpotsOptIn === true;
 
         return (
           <Card key={reg.id} className="p-3">
@@ -178,7 +199,8 @@ export const RegistrationsList: React.FC<Props> = ({
                           onPress={() =>
                             onSave(
                               reg.id,
-                              (localTeams[reg.id] || []).filter(Boolean)
+                              (localTeams[reg.id] || []).filter(Boolean),
+                              openSpotsValue,
                             )
                           }
                           startContent={
@@ -264,6 +286,16 @@ export const RegistrationsList: React.FC<Props> = ({
                     users={users}
                     maxSize={players}
                   />
+                  {players > 1 ? (
+                    <div className="mt-3">
+                      <Checkbox
+                        isSelected={openSpotsValue}
+                        onValueChange={(v) => updateOpenSpots(reg.id, v)}
+                      >
+                        Let others contact this team to fill open spots
+                      </Checkbox>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </CardBody>

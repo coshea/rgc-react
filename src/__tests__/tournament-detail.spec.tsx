@@ -264,7 +264,7 @@ describe("TournamentDetailPage", () => {
       {
         id: "r1",
         data: () => ({
-          ownerId: "other",
+          ownerId: "u10",
           openSpotsOptIn: true,
           team: [
             { id: "u10", displayName: "Player A" },
@@ -321,7 +321,7 @@ describe("TournamentDetailPage", () => {
       {
         id: "open1",
         data: () => ({
-          ownerId: "o2",
+          ownerId: "e",
           openSpotsOptIn: true,
           team: [
             { id: "e", displayName: "E" },
