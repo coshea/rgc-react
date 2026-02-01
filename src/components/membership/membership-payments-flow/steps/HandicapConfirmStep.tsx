@@ -108,11 +108,7 @@ export function HandicapConfirmStep(props: {
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button
-          color="primary"
-          className="w-full font-bold uppercase tracking-wide"
-          onPress={() => onContinueToPay(donationValue)}
-        >
+        <Button color="primary" onPress={() => onContinueToPay(donationValue)}>
           Pay Handicap Fee
         </Button>
       </CardFooter>

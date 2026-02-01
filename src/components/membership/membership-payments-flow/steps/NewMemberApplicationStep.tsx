@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import type { NewMemberState } from "../types";
 import { executeRecaptcha } from "@/utils/recaptcha";
+import BackButton from "@/components/back-button";
 
 export function NewMemberApplicationStep(props: {
   initialValue: NewMemberState;
@@ -76,9 +77,7 @@ export function NewMemberApplicationStep(props: {
     <Card className="w-full max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Application</h2>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-6">
@@ -191,12 +190,7 @@ export function NewMemberApplicationStep(props: {
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button
-          color="primary"
-          className="w-full font-bold uppercase tracking-wide"
-          onPress={handleSubmit}
-          isLoading={submitting}
-        >
+        <Button color="primary" onPress={handleSubmit} isLoading={submitting}>
           Submit Application &amp; Pay Dues
         </Button>
       </CardFooter>
