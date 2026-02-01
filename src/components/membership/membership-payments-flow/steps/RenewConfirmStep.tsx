@@ -8,6 +8,7 @@ import {
   Divider,
   Input,
 } from "@heroui/react";
+import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
 
 export function RenewConfirmStep(props: {
@@ -48,9 +49,7 @@ export function RenewConfirmStep(props: {
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 3: Payment</h2>
-        <Button variant="light" onPress={onBack}>
-          Back
-        </Button>
+        <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-3">
@@ -125,7 +124,6 @@ export function RenewConfirmStep(props: {
       <CardFooter className="flex justify-end">
         <Button
           color="primary"
-          className="w-full font-bold uppercase tracking-wide"
           onPress={() => onContinueToPay(donationValue)}
           isDisabled={isPaidForCurrentYear}
         >

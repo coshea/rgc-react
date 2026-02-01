@@ -43,3 +43,8 @@ export interface DonationState {
   name: string;
   email: string;
 }
+
+export interface RenewLookupState {
+  email: string;
+  lastName: string;
+}

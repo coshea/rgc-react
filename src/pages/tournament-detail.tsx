@@ -1164,21 +1164,23 @@ const TournamentDetailPage: React.FC = () => {
                                                 <span className="min-w-0 truncate">
                                                   {m.displayName || m.id}
                                                 </span>
-                                                {isLeader && (
-                                                  <>
-                                                    <Chip
-                                                      size="sm"
-                                                      variant="flat"
-                                                      color="primary"
-                                                      className="hidden sm:inline-flex h-5 px-2 text-[10px] shrink-0"
-                                                    >
-                                                      Leader
-                                                    </Chip>
-                                                    <span className="sm:hidden inline-flex items-center h-5 px-2 rounded-full bg-primary/10 text-primary text-[10px] font-medium shrink-0">
-                                                      Leader
-                                                    </span>
-                                                  </>
-                                                )}
+                                                {isLeader &&
+                                                  (tournament?.players ?? 1) >
+                                                    1 && (
+                                                    <>
+                                                      <Chip
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="primary"
+                                                        className="hidden sm:inline-flex h-5 px-2 text-[10px] shrink-0"
+                                                      >
+                                                        Leader
+                                                      </Chip>
+                                                      <span className="sm:hidden inline-flex items-center h-5 px-2 rounded-full bg-primary/10 text-primary text-[10px] font-medium shrink-0">
+                                                        Leader
+                                                      </span>
+                                                    </>
+                                                  )}
                                               </li>
                                             );
                                           })}
@@ -1353,7 +1355,8 @@ const TournamentDetailPage: React.FC = () => {
                                   <span className="text-sm font-medium truncate">
                                     {name}
                                   </span>
-                                  {isLeader ? (
+                                  {isLeader &&
+                                  (tournament?.players ?? 1) > 1 ? (
                                     <Chip
                                       size="sm"
                                       variant="flat"

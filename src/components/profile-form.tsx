@@ -1,10 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, Input, Button, Spinner, Chip } from "@heroui/react";
+import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { PiGolf } from "react-icons/pi";
-import { saveUserProfile } from "@/api/users";
+import { saveUserProfile, type UserProfilePayload } from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -29,6 +31,8 @@ interface FormErrors {
 type ProfileFormProps = {
   // Hide the internal Cancel/Save action row (useful when embedding in a modal with its own footer)
   hideActions?: boolean;
+  // Hide the Cancel button when the user has no existing profile document
+  hideCancelWhenNew?: boolean;
   // Provide a stable form id so external buttons (e.g., modal footer) can submit this form
   formId?: string;
   // Optional callback invoked after a successful save (e.g., close modal)
@@ -37,6 +41,7 @@ type ProfileFormProps = {
 
 export function ProfileForm({
   hideActions = false,
+  hideCancelWhenNew = false,
   formId,
   onSaved,
 }: ProfileFormProps) {
@@ -54,6 +59,7 @@ export function ProfileForm({
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
@@ -125,7 +131,7 @@ export function ProfileForm({
     if (
       formData.phone &&
       !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(
-        formData.phone
+        formData.phone,
       )
     ) {
       newErrors.phone = "Please enter a valid phone number";
@@ -143,7 +149,18 @@ export function ProfileForm({
 
   const handleInputChange = (field: keyof FormData) => (value: string) => {
     setFormData((prev) => {
-      const next = { ...prev, [field]: value } as FormData;
+      const next = { ...prev };
+      if (field === "phone") {
+        next.phone = formatPhone(value);
+      } else if (
+        field === "firstName" ||
+        field === "lastName" ||
+        field === "email" ||
+        field === "ghinNumber"
+      ) {
+        next[field] = value;
+      }
+
       next.displayName = [next.firstName, next.lastName]
         .filter(Boolean)
         .join(" ")
@@ -193,7 +210,7 @@ export function ProfileForm({
       // Debug logging removed to satisfy lint rules and avoid require() in ESM
 
       // Prepare data to save (do not include File objects)
-      const payload = {
+      const payload: UserProfilePayload = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         displayName: formData.displayName, // server will recompute anyway
@@ -202,7 +219,7 @@ export function ProfileForm({
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
         // Only include governance fields if current user is admin editing self (admin property on profile)
-      } as Record<string, any>;
+      };
 
       // Use the hook's save method (this handles uploading the file if present)
       if (save) {
@@ -408,14 +425,16 @@ export function ProfileForm({
         {!hideActions && (
           <div className="pt-2">
             <div className="flex items-center justify-between gap-2">
-              <Button
-                type="button"
-                className="w-1/3 h-10 text-sm py-1"
-                onClick={() => window.history.back()}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              {!(hideCancelWhenNew && userProfile === null) && (
+                <Button
+                  type="button"
+                  className="w-1/3 h-10 text-sm py-1"
+                  onClick={() => navigate(-1)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+              )}
 
               <Button
                 type="submit"

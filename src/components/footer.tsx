@@ -12,7 +12,7 @@ export default function SiteFooter() {
     }
   };
   return (
-    <footer className="mt-12 border-t border-default-200/60 dark:border-default-100/10 bg-gradient-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
+    <footer className="mt-12 border-t border-default-200/60 dark:border-default-100/10 bg-linear-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
           {/* Brand centered */}
@@ -83,9 +83,31 @@ export default function SiteFooter() {
           {/* Social links removed per request */}
 
           {/* Bottom row: copyright + back to top */}
-          <div className="mt-2 sm:mt-4 w-full flex items-center justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-foreground-500">
-            <p>© {year} Ridgefield Golf Club. All rights reserved.</p>
-            <div className="hidden sm:flex" />
+          <div className="mt-2 sm:mt-4 w-full flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-foreground-500">
+            <div className="flex flex-col gap-1 items-center text-center sm:items-start sm:text-left">
+              <p>© {year} Ridgefield Golf Club. All rights reserved.</p>
+              <p>
+                This site is protected by reCAPTCHA and the Google{" "}
+                <Link
+                  href="https://policies.google.com/privacy"
+                  isExternal
+                  color="foreground"
+                  className="underline underline-offset-2"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="https://policies.google.com/terms"
+                  isExternal
+                  color="foreground"
+                  className="underline underline-offset-2"
+                >
+                  Terms of Service
+                </Link>{" "}
+                apply.
+              </p>
+            </div>
             <div className="flex sm:justify-end justify-center w-full sm:w-auto">
               <Button
                 size="sm"

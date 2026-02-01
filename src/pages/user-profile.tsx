@@ -34,6 +34,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
 import { toDate } from "@/api/users";
+import { formatPhone } from "@/utils/phone";
 
 const UserProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -391,7 +392,7 @@ const UserProfilePage: React.FC = () => {
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-default-700">
-                      {profileUser.phone}
+                      {formatPhone(profileUser.phone)}
                     </span>
                   </div>
                 )}

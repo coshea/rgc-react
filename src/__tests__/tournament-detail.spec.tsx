@@ -386,6 +386,26 @@ describe("TournamentDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not show leader chip for single-player tournaments", async () => {
+    renderWithRoute("solo1");
+    emitDoc("tournaments/solo1", { ...baseTournament, players: 1 });
+    emitCollection("tournaments/solo1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "s1",
+          team: [{ id: "s1", displayName: "Solo Player" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+
+    // 'Leader' label should not be present for single-player events
+    expect(screen.queryByText(/Leader/i)).toBeNull();
+    expect(screen.getByText(/Solo Player/i)).toBeInTheDocument();
+  });
+
   it("marks teams beyond maxTeams as waitlisted", async () => {
     renderWithRoute("wait1");
     emitDoc("tournaments/wait1", { ...baseTournament, maxTeams: 2 });

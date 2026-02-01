@@ -34,127 +34,133 @@ import { PolicyEditorPage } from "@/pages/policy-editor";
 import { PoliciesListPage } from "@/pages/policies-list";
 import RequireAuth from "@/components/require-auth";
 import RequireAdmin from "@/components/require-admin";
+import ProfileCompletionGate from "@/components/profile-completion-gate";
 
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1">
         <Routes>
-          <Route element={<HomePage />} path={siteConfig.pages.home.link} />
-          <Route element={<AboutPage />} path={siteConfig.pages.about.link} />
-          <Route
-            element={<ContactPage />}
-            path={siteConfig.pages.contact.link}
-          />
-          <Route element={<TermsPage />} path={siteConfig.pages.terms.link} />
-          <Route
-            element={<PrivacyPage />}
-            path={siteConfig.pages.privacy.link}
-          />
-          <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
-          <Route element={<SignUpPage />} path={siteConfig.pages.signup.link} />
-          <Route
-            element={<CookiePolicyPage />}
-            path={siteConfig.pages.cookies.link}
-          />
-          <Route
-            element={<PastChampions showAllYears={true} />}
-            path={siteConfig.pages.pastchampions.link}
-          />
-          <Route
-            element={<ProfilePage />}
-            path={siteConfig.pages.profile.link}
-          />
-          <Route element={<ProfileEditPage />} path="/profile/edit" />
-          <Route
-            element={
-              <RequireAuth>
-                <UserProfilePage />
-              </RequireAuth>
-            }
-            path="/profile/:userId"
-          />
-          <Route element={<TournamentsPage />} path="/tournaments" />
-          <Route
-            element={<TournamentDetailPage />}
-            path="/tournaments/:firestoreId"
-          />
-          <Route
-            element={<MoneyListPage />}
-            path={siteConfig.pages.moneyList.link}
-          />
-          {/* Legacy redirect from /winnings if previously shared */}
-          <Route element={<MoneyListPage />} path="/winnings" />
-          <Route
-            element={<TournamentRegister />}
-            path="/tournaments/:firestoreId/register"
-          />
-          <Route element={<MembershipPage />} path="/membership" />
-          <Route
-            element={<MembershipDirectoryPage />}
-            path="/membership/member-directory"
-          />
-          <Route
-            element={
-              <RequireAdmin>
-                <MembershipDashboardPage />
-              </RequireAdmin>
-            }
-            path={siteConfig.pages.membershipDashboard.link}
-          />
-          <Route
-            element={
-              <RequireAuth>
-                <BoardOfGovernorsPage />
-              </RequireAuth>
-            }
-            path="/board"
-          />
-          <Route
-            element={<VerifyEmailPage />}
-            path={siteConfig.pages.verifyEmail.link}
-          />
-          <Route
-            element={
-              <RequireAuth>
-                <FindAGamePage />
-              </RequireAuth>
-            }
-            path={siteConfig.pages.findGame.link}
-          />
-          {/* Blog Routes */}
-          <Route element={<BlogListPage />} path="/announcements" />
-          <Route element={<BlogPostPage />} path="/announcements/:slug" />
-          <Route
-            element={
-              <RequireAdmin>
-                <BlogEditorPage />
-              </RequireAdmin>
-            }
-            path="/announcements/new"
-          />
-          <Route
-            element={
-              <RequireAdmin>
-                <BlogEditorPage />
-              </RequireAdmin>
-            }
-            path="/announcements/edit/:id"
-          />
+          <Route element={<ProfileCompletionGate />}>
+            <Route element={<HomePage />} path={siteConfig.pages.home.link} />
+            <Route element={<AboutPage />} path={siteConfig.pages.about.link} />
+            <Route
+              element={<ContactPage />}
+              path={siteConfig.pages.contact.link}
+            />
+            <Route element={<TermsPage />} path={siteConfig.pages.terms.link} />
+            <Route
+              element={<PrivacyPage />}
+              path={siteConfig.pages.privacy.link}
+            />
+            <Route element={<LoginPage />} path={siteConfig.pages.login.link} />
+            <Route
+              element={<SignUpPage />}
+              path={siteConfig.pages.signup.link}
+            />
+            <Route
+              element={<CookiePolicyPage />}
+              path={siteConfig.pages.cookies.link}
+            />
+            <Route
+              element={<PastChampions showAllYears={true} />}
+              path={siteConfig.pages.pastchampions.link}
+            />
+            <Route
+              element={<ProfilePage />}
+              path={siteConfig.pages.profile.link}
+            />
+            <Route element={<ProfileEditPage />} path="/profile/edit" />
+            <Route
+              element={
+                <RequireAuth>
+                  <UserProfilePage />
+                </RequireAuth>
+              }
+              path="/profile/:userId"
+            />
+            <Route element={<TournamentsPage />} path="/tournaments" />
+            <Route
+              element={<TournamentDetailPage />}
+              path="/tournaments/:firestoreId"
+            />
+            <Route
+              element={<MoneyListPage />}
+              path={siteConfig.pages.moneyList.link}
+            />
+            {/* Legacy redirect from /winnings if previously shared */}
+            <Route element={<MoneyListPage />} path="/winnings" />
+            <Route
+              element={<TournamentRegister />}
+              path="/tournaments/:firestoreId/register"
+            />
+            <Route element={<MembershipPage />} path="/membership" />
+            <Route
+              element={<MembershipDirectoryPage />}
+              path="/membership/member-directory"
+            />
+            <Route
+              element={
+                <RequireAdmin>
+                  <MembershipDashboardPage />
+                </RequireAdmin>
+              }
+              path={siteConfig.pages.membershipDashboard.link}
+            />
+            <Route
+              element={
+                <RequireAuth>
+                  <BoardOfGovernorsPage />
+                </RequireAuth>
+              }
+              path="/board"
+            />
+            <Route
+              element={<VerifyEmailPage />}
+              path={siteConfig.pages.verifyEmail.link}
+            />
+            <Route
+              element={
+                <RequireAuth>
+                  <FindAGamePage />
+                </RequireAuth>
+              }
+              path={siteConfig.pages.findGame.link}
+            />
+            {/* Blog Routes */}
+            <Route element={<BlogListPage />} path="/announcements" />
+            <Route element={<BlogPostPage />} path="/announcements/:slug" />
+            <Route
+              element={
+                <RequireAdmin>
+                  <BlogEditorPage />
+                </RequireAdmin>
+              }
+              path="/announcements/new"
+            />
+            <Route
+              element={
+                <RequireAdmin>
+                  <BlogEditorPage />
+                </RequireAdmin>
+              }
+              path="/announcements/edit/:id"
+            />
 
-          {/* Policy Routes */}
-          <Route element={<PoliciesListPage />} path="/policies" />
-          <Route element={<PolicyPage />} path="/policies/:type" />
-          <Route
-            element={
-              <RequireAdmin>
-                <PolicyEditorPage />
-              </RequireAdmin>
-            }
-            path="/admin/policies/:type/edit"
-          />
+            {/* Policy Routes */}
+            <Route element={<PoliciesListPage />} path="/policies" />
+            <Route element={<PolicyPage />} path="/policies/:type" />
+            <Route
+              element={
+                <RequireAdmin>
+                  <PolicyEditorPage />
+                </RequireAdmin>
+              }
+              path="/admin/policies/:type/edit"
+            />
 
-          <Route element={<NotFoundPage />} path="*" />
+            <Route element={<NotFoundPage />} path="*" />
+          </Route>
         </Routes>
       </div>
       <SiteFooter />
