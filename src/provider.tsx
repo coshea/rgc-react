@@ -21,7 +21,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <HeroUIProvider navigate={navigate} useHref={useHref}>
           {/* Global toast provider so addToast calls render */}
-          <div className="z-9999 relative">
+          <div className="z-[9999] relative">
             <ToastProvider placement="bottom-center" />
           </div>
           {/* Cookie consent banner (fixed) */}
