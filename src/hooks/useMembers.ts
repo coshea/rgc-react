@@ -9,8 +9,8 @@ import { useAuth } from "@/providers/AuthProvider";
  * useMembers
  * Unified hook for member data.
  * - Subscribes to all users when authenticated.
- * - Fetches active member payment records for current year.
- * - If user is NOT an admin: returns only active members (confirmed payment this year).
+ * - Uses users.lastPaidYear to determine active status.
+ * - If user is NOT an admin: returns only active members (paid within the last 2 years).
  * - If admin: returns full list plus activeSet to allow UI toggling.
  * Returned shape keeps parity with prior inline logic while standardizing filtering.
  */
@@ -23,19 +23,25 @@ export function useMembers(year = new Date().getFullYear()) {
 
   const cutoffYear = year - 1;
 
-  const activeSet = useMemo(
-    () =>
-      new Set(
-        members
-          .filter(
-            (m) =>
-              typeof m.lastPaidYear === "number" &&
-              m.lastPaidYear >= cutoffYear,
-          )
-          .map((m) => m.id),
-      ),
-    [members, cutoffYear],
-  );
+  const activeSet = useMemo(() => {
+    const toYear = (value: unknown) => {
+      if (typeof value === "number") return value;
+      if (typeof value === "string") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    };
+
+    return new Set(
+      members
+        .filter((m) => {
+          const lastPaidYear = toYear(m.lastPaidYear);
+          return typeof lastPaidYear === "number" && lastPaidYear >= cutoffYear;
+        })
+        .map((m) => m.id),
+    );
+  }, [members, cutoffYear]);
 
   const filteredMembers = useMemo(() => {
     if (isAdmin) return members; // admins get full list; UI can decide to filter
