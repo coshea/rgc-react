@@ -12,6 +12,7 @@
     "lint": "eslint -c .eslintrc.json ./src/**/**/*.{ts,tsx} --fix",
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
+    "functions": "npm run build && firebase deploy --only functions",
     "emulators": "firebase emulators:start --only auth,firestore,functions",
     "emulators:functions": "firebase emulators:start --only functions",
     "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs",

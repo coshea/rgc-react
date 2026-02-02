@@ -261,10 +261,30 @@ service cloud.firestore {
         request.resource.data.userId is string &&
         request.resource.data.year is int &&
         request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
-        request.resource.data.membershipType in ['full', 'handicap'];
+        request.resource.data.purpose in ['dues', 'donation'] &&
+        (
+          (request.resource.data.purpose == 'donation' &&
+            (!('membershipType' in request.resource.data)
+              || request.resource.data.membershipType in ['full', 'handicap']))
+          ||
+          (request.resource.data.purpose == 'dues'
+            && request.resource.data.membershipType in ['full', 'handicap'])
+        );
       allow update: if isAdmin() &&
         request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
-        request.resource.data.membershipType in ['full', 'handicap'];
+        (!('purpose' in request.resource.data)
+          || request.resource.data.purpose in ['dues', 'donation']) &&
+        (
+          (!('purpose' in request.resource.data)
+            && request.resource.data.membershipType in ['full', 'handicap'])
+          ||
+          (request.resource.data.purpose == 'donation'
+            && (!('membershipType' in request.resource.data)
+              || request.resource.data.membershipType in ['full', 'handicap']))
+          ||
+          (request.resource.data.purpose == 'dues'
+            && request.resource.data.membershipType in ['full', 'handicap'])
+        );
       allow delete: if isAdmin();
     }
 

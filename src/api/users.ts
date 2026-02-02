@@ -13,6 +13,7 @@ import {
   deleteDoc,
   Timestamp,
 } from "firebase/firestore";
+import type { MembershipType } from "@/types/membership";
 
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
 export type FirestoreTimestamp = Timestamp | Date;
@@ -64,7 +65,7 @@ export type UserProfilePayload = {
   photoURL?: string | null;
   boardMember?: boolean;
   role?: string;
-  membershipType?: "full" | "handicap";
+  membershipType?: MembershipType;
   lastPaidYear?: number;
   isMigrated?: boolean;
 };
@@ -105,7 +106,7 @@ export async function createUser(data: UserProfilePayload) {
  * Collapses internal whitespace and trims.
  */
 export function computeDisplayName(
-  data: Pick<UserProfilePayload, "firstName" | "lastName" | "displayName">
+  data: Pick<UserProfilePayload, "firstName" | "lastName" | "displayName">,
 ): string {
   const first = (data.firstName || "").trim();
   const last = (data.lastName || "").trim();
@@ -138,13 +139,13 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   const currentUid = auth.currentUser?.uid ?? null;
   if (!currentUid) {
     throw new Error(
-      "Cannot save user profile: no authenticated user found (auth.currentUser is null)."
+      "Cannot save user profile: no authenticated user found (auth.currentUser is null).",
     );
   }
 
   if (currentUid !== uid) {
     throw new Error(
-      `Cannot save user profile: authenticated UID (${currentUid}) does not match requested UID (${uid}).`
+      `Cannot save user profile: authenticated UID (${currentUid}) does not match requested UID (${uid}).`,
     );
   }
 
@@ -170,7 +171,7 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
 }
 
 export async function getUserProfile(
-  uid: string
+  uid: string,
 ): Promise<UserProfilePayload | null> {
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
@@ -192,7 +193,7 @@ export async function getUsers(): Promise<User[]> {
         ({
           id: docSnap.id,
           ...docSnap.data(),
-        }) as User
+        }) as User,
     )
     .filter((user) => !user.isMigrated);
   // Some users may have blank/missing displayName; apply stable secondary sort by email
@@ -211,7 +212,7 @@ export async function getUsers(): Promise<User[]> {
  */
 export async function updateUser(
   uid: string,
-  data: Partial<UserProfilePayload>
+  data: Partial<UserProfilePayload>,
 ) {
   const ref = doc(db, "users", uid);
   // If caller passed first/last (or legacy displayName), recompute.
@@ -246,7 +247,7 @@ export async function deleteUser(uid: string) {
  */
 export async function bulkCreateUsers(
   rows: UserProfilePayload[],
-  opts?: { onProgress?: (processed: number, total: number) => void }
+  opts?: { onProgress?: (processed: number, total: number) => void },
 ): Promise<number> {
   if (!rows.length) return 0;
 

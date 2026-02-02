@@ -3,7 +3,6 @@ import {
   useMembersSubscription,
   useDocAdminFlag,
 } from "@/components/membership/hooks";
-import { useActiveMembers } from "@/hooks/useActiveMembers";
 import { useAuth } from "@/providers/AuthProvider";
 
 /**
@@ -19,14 +18,23 @@ export function useMembers(year = new Date().getFullYear()) {
   const { user, userLoggedIn, loading: authLoading } = useAuth();
   const { isAdmin, loadingAdmin } = useDocAdminFlag(user);
   const { members, loadingMembers, error } = useMembersSubscription(
-    !!user && userLoggedIn
+    !!user && userLoggedIn,
   );
-  const { data: activeRecords, isLoading: loadingActive } =
-    useActiveMembers(year);
+
+  const cutoffYear = year - 1;
 
   const activeSet = useMemo(
-    () => new Set(activeRecords?.map((r) => r.userId) || []),
-    [activeRecords]
+    () =>
+      new Set(
+        members
+          .filter(
+            (m) =>
+              typeof m.lastPaidYear === "number" &&
+              m.lastPaidYear >= cutoffYear,
+          )
+          .map((m) => m.id),
+      ),
+    [members, cutoffYear],
   );
 
   const filteredMembers = useMemo(() => {
@@ -36,7 +44,7 @@ export function useMembers(year = new Date().getFullYear()) {
 
   return {
     isAdmin,
-    loading: authLoading || loadingAdmin || loadingMembers || loadingActive,
+    loading: authLoading || loadingAdmin || loadingMembers,
     members: filteredMembers,
     allMembers: members, // for admin toggles if needed
     activeSet,

@@ -7,8 +7,13 @@ import { siteConfig } from "@/config/site";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
 import MinimalRowSteps from "@/components/minimal-row-steps";
-import { verifyAndRecordPayPalMembershipPayment } from "@/api/paypal";
+import {
+  verifyAndRecordPayPalDonationPayment,
+  verifyAndRecordPayPalMembershipPayment,
+} from "@/api/paypal";
+import { requestCheckMembershipPayment } from "@/api/membership";
 import { saveUserProfile } from "@/api/users";
+import { MEMBERSHIP_TYPES } from "@/types/membership";
 
 import type {
   DonationState,
@@ -70,6 +75,7 @@ export default function MembershipPaymentsFlow({
 
   const isPaidForCurrentYear =
     !!user && (userProfile?.lastPaidYear ?? 0) >= currentYear;
+  const hasPriorMembership = (userProfile?.lastPaidYear ?? 0) > 0;
 
   const membershipOptionsDisabled = user ? isPaidForCurrentYear : false;
 
@@ -193,7 +199,7 @@ export default function MembershipPaymentsFlow({
     const customId =
       user &&
       (step.purpose === "renew" || step.purpose === "handicap") &&
-      `${user.uid}:${currentYear}:${step.purpose === "renew" ? "full" : "handicap"}:${step.purpose}`;
+      `${user.uid}:${currentYear}:${step.purpose === "renew" ? MEMBERSHIP_TYPES.FULL : MEMBERSHIP_TYPES.HANDICAP}:${step.purpose}`;
 
     return actions.order.create({
       intent: "CAPTURE",
@@ -265,30 +271,41 @@ export default function MembershipPaymentsFlow({
       color: "success",
     });
 
-    // Record dues payments (renew/handicap) after a successful PayPal capture.
-    // This uses a callable Cloud Function that verifies the PayPal order server-side
-    // and then writes memberPayments/users with admin privileges.
-    if (
-      user &&
-      (step.purpose === "renew" || step.purpose === "handicap") &&
-      data.orderID
-    ) {
+    // Record dues or donation payments after a successful PayPal capture.
+    // This uses callable Cloud Functions that verify the PayPal order server-side
+    // and then write memberPayments/users with admin privileges.
+    if (user && data.orderID) {
       try {
-        const membershipType = step.purpose === "renew" ? "full" : "handicap";
-        await verifyAndRecordPayPalMembershipPayment({
-          user,
-          request: {
-            orderId: data.orderID,
-            year: currentYear,
-            membershipType,
-            purpose: step.purpose,
-          },
-        });
-        await refetchUserProfile();
+        if (step.purpose === "renew" || step.purpose === "handicap") {
+          const membershipType =
+            step.purpose === "renew"
+              ? MEMBERSHIP_TYPES.FULL
+              : MEMBERSHIP_TYPES.HANDICAP;
+          await verifyAndRecordPayPalMembershipPayment({
+            user,
+            request: {
+              orderId: data.orderID,
+              year: currentYear,
+              membershipType,
+              purpose: step.purpose,
+            },
+          });
+          await refetchUserProfile();
+        }
+
+        if (step.purpose === "donation") {
+          await verifyAndRecordPayPalDonationPayment({
+            user,
+            request: {
+              orderId: data.orderID,
+              year: currentYear,
+            },
+          });
+        }
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Unknown recording error";
-        console.error("verifyAndRecordPayPalMembershipPayment failed", {
+        console.error("verifyAndRecordPayPal payment failed", {
           error: e,
           uid: user?.uid,
           orderId: data?.orderID,
@@ -354,7 +371,21 @@ export default function MembershipPaymentsFlow({
       setStep({ kind: "handicap" });
       return;
     }
-    if (option === "donation") setStep({ kind: "donation" });
+    if (option === "donation") {
+      if (!user) {
+        addToast({
+          title: "Login required",
+          description:
+            "Please log in to make a donation so we can record it to your account.",
+          color: "warning",
+        });
+        navigate(siteConfig.pages.login.link, {
+          state: { from: loginFromPath },
+        });
+        return;
+      }
+      setStep({ kind: "donation" });
+    }
   }
 
   function onContinueRenewFromAnnualStart() {
@@ -552,6 +583,7 @@ export default function MembershipPaymentsFlow({
           membershipAmountDue={membershipAmountDue}
           currency={currency}
           isLoggedIn={!!user}
+          hasPriorMembership={hasPriorMembership}
           onBack={goToSelect}
           onLoginToRenew={() =>
             navigate(siteConfig.pages.login.link, {
@@ -559,7 +591,18 @@ export default function MembershipPaymentsFlow({
             })
           }
           onContinueRenew={onContinueRenewFromAnnualStart}
-          onApplyNewMember={() => setStep({ kind: "new_apply" })}
+          onApplyNewMember={() => {
+            if (hasPriorMembership) {
+              addToast({
+                title: "Already a member",
+                description:
+                  "Your profile already has a recorded membership year. Please renew instead.",
+                color: "warning",
+              });
+              return;
+            }
+            setStep({ kind: "new_apply" });
+          }}
         />
       )}
 
@@ -595,18 +638,81 @@ export default function MembershipPaymentsFlow({
           onApprove={onPayPalApprove}
           onError={onPayPalError}
           onBack={goToSelect}
-          onCheckSelected={() => {
-            // Mark flow as done and show instructions when user indicates they mailed a check
-            addToast({
-              title: "Check option selected",
-              description: `Please mail a check payable to ${siteConfig.contactAddress.name} to ${siteConfig.contactAddress.street}, ${siteConfig.contactAddress.cityStateZip} and include your name and membership year in the memo.`,
-              color: "success",
-            });
-            setStep({
-              kind: "done",
-              title: "Pending: Check Sent",
-              description: `Please mail your check to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street},\n${siteConfig.contactAddress.cityStateZip} and include your full name and the membership year in the memo so we can match it to your account. We will record your payment once the check is received.`,
-            });
+          onCheckSelected={async () => {
+            if (!user) {
+              addToast({
+                title: "Login required",
+                description:
+                  "Please log in so we can attach the check payment to your account.",
+                color: "warning",
+              });
+              navigate(siteConfig.pages.login.link, {
+                state: { from: loginFromPath },
+              });
+              return;
+            }
+
+            if (step.purpose !== "renew" && step.purpose !== "handicap") {
+              addToast({
+                title: "Check payments unavailable",
+                description:
+                  "Pay-by-check is only available for membership dues. Please use PayPal for this option.",
+                color: "warning",
+              });
+              return;
+            }
+
+            const membershipType =
+              step.purpose === "renew"
+                ? MEMBERSHIP_TYPES.FULL
+                : MEMBERSHIP_TYPES.HANDICAP;
+            const donationRaw =
+              step.purpose === "renew"
+                ? annualDonationAmount
+                : handicapDonationAmount;
+            const donationParsed = Number(donationRaw);
+            const donationAmount =
+              Number.isFinite(donationParsed) && donationParsed > 0
+                ? donationParsed
+                : 0;
+
+            const requestId =
+              typeof crypto !== "undefined" &&
+              "randomUUID" in crypto &&
+              typeof crypto.randomUUID === "function"
+                ? crypto.randomUUID()
+                : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+            try {
+              await requestCheckMembershipPayment({
+                user,
+                request: {
+                  year: currentYear,
+                  membershipType,
+                  donationAmount,
+                  requestId,
+                },
+              });
+
+              addToast({
+                title: "Check option selected",
+                description: `Please mail a check payable to ${siteConfig.contactAddress.name} to ${siteConfig.contactAddress.street}, ${siteConfig.contactAddress.cityStateZip} and include your name and membership year in the memo.`,
+                color: "success",
+              });
+              setStep({
+                kind: "done",
+                title: "Pending: Check Sent",
+                description: `Please mail your check to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street},\n${siteConfig.contactAddress.cityStateZip} and include your full name and the membership year in the memo so we can match it to your account. We will record your payment once the check is received.`,
+              });
+            } catch (err) {
+              const message =
+                err instanceof Error ? err.message : "Check request failed";
+              addToast({
+                title: "Check request failed",
+                description: message,
+                color: "danger",
+              });
+            }
           }}
         />
       )}

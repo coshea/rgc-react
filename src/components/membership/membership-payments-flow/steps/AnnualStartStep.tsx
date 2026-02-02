@@ -12,6 +12,7 @@ export function AnnualStartStep(props: {
   membershipAmountDue: number;
   currency: (amount: number) => string;
   isLoggedIn: boolean;
+  hasPriorMembership: boolean;
   onBack: () => void;
   onLoginToRenew: () => void;
   onContinueRenew: () => void;
@@ -21,6 +22,7 @@ export function AnnualStartStep(props: {
     membershipAmountDue,
     currency,
     isLoggedIn,
+    hasPriorMembership,
     onBack,
     onLoginToRenew,
     onContinueRenew,
@@ -80,12 +82,22 @@ export function AnnualStartStep(props: {
               First time joining? Choose this option. You’ll fill out a short
               application and then pay your dues.
             </p>
+            {hasPriorMembership ? (
+              <p className="text-warning">
+                Looks like you’ve been a member before. Please use the renewal
+                option instead.
+              </p>
+            ) : null}
             <div>
               Annual Dues: <strong>{currency(membershipAmountDue)}</strong>
             </div>
           </CardBody>
           <CardFooter className="justify-end">
-            <Button color="primary" onPress={onApplyNewMember}>
+            <Button
+              color="primary"
+              onPress={onApplyNewMember}
+              isDisabled={hasPriorMembership}
+            >
               Apply &amp; Pay Dues
             </Button>
           </CardFooter>

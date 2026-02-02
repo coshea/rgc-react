@@ -12,20 +12,26 @@ vi.mock("@/components/membership/hooks", () => ({
   useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
   useMembersSubscription: () => ({
     members: [
-      { id: "u1", displayName: "Alice", email: "a@test.local" },
-      { id: "u2", displayName: "Bob", email: "b@test.local" },
-      { id: "u3", displayName: "Charlie", email: "c@test.local" },
+      {
+        id: "u1",
+        displayName: "Alice",
+        email: "a@test.local",
+        lastPaidYear: 2097,
+      },
+      {
+        id: "u2",
+        displayName: "Bob",
+        email: "b@test.local",
+        lastPaidYear: 2099,
+      },
+      {
+        id: "u3",
+        displayName: "Charlie",
+        email: "c@test.local",
+      },
     ],
     loadingMembers: false,
     error: null,
-  }),
-}));
-vi.mock("@/hooks/useActiveMembers", () => ({
-  useActiveMembers: () => ({
-    data: [
-      { userId: "u2", year: 2099, membershipType: "full", status: "confirmed" },
-    ],
-    isLoading: false,
   }),
 }));
 
