@@ -195,16 +195,32 @@ export default function PastChampions({
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <h1 className="text-2xl font-bold">Past Champions</h1>
-          {isAdmin && (
-            <Button
-              color="primary"
-              onPress={handleAddNew}
-              startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-              className="self-start sm:self-auto"
-            >
-              Add Championship
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {!showAllYears && (
+              <Button
+                as={Link}
+                href="/past-champions"
+                size="sm"
+                variant="flat"
+                endContent={
+                  <Icon icon="lucide:arrow-right" className="w-3 h-3" />
+                }
+                className="self-start sm:self-auto"
+              >
+                View All
+              </Button>
+            )}
+            {isAdmin && showAllYears && (
+              <Button
+                color="primary"
+                onPress={handleAddNew}
+                startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                className="self-start sm:self-auto"
+              >
+                Add Championship
+              </Button>
+            )}
+          </div>
         </div>
         <p className="text-sm text-default-600 mb-3">
           Celebrating our distinguished champions and runners-up across all
@@ -231,21 +247,6 @@ export default function PastChampions({
             : `No championships found for ${latestYear}`
         }
       />
-
-      {!showAllYears && (
-        <div className="mt-6 flex justify-center">
-          <Button
-            as={Link}
-            href="/past-champions"
-            color="primary"
-            variant="flat"
-            size="sm"
-            endContent={<Icon icon="lucide:arrow-right" className="w-4 h-4" />}
-          >
-            View All Past Champions
-          </Button>
-        </div>
-      )}
 
       {/* Load More button for pagination */}
       {shouldShowLoadMore && (
