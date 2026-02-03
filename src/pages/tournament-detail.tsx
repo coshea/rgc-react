@@ -400,9 +400,7 @@ const TournamentDetailPage: React.FC = () => {
               <div className="md:hidden space-y-2">
                 {/* Mobile First row: Back button and Share button */}
                 <div className="flex items-center justify-between">
-                  <BackButton
-                    onPress={() => navigate("/tournaments", { replace: false })}
-                  />
+                  <BackButton />
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"
@@ -459,9 +457,7 @@ const TournamentDetailPage: React.FC = () => {
 
               {/* Desktop: Single row with all buttons */}
               <div className="hidden md:flex items-center justify-between">
-                <BackButton
-                  onPress={() => navigate("/tournaments", { replace: false })}
-                />
+                <BackButton />
                 <div className="flex items-center gap-3">
                   <Tooltip content="Share tournament">
                     <Button

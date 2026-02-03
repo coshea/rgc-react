@@ -273,7 +273,7 @@ export const BlogEditorPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto pt-4 pb-10 px-4">
       <div className="mb-4 flex items-center justify-between">
-        <BackButton onPress={() => navigate("/announcements")} />
+        <BackButton />
         <div className="flex gap-2">
           <Button
             size="sm"

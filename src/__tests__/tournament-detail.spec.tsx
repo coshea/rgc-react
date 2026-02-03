@@ -77,11 +77,18 @@ vi.mock("@/components/tournament-editor", () => ({
   TournamentEditor: () => <div data-testid="editor">Editor</div>,
 }));
 
-function renderWithRoute(id: string) {
+function renderWithRoute(
+  id: string,
+  entries?: string[],
+  initialIndex?: number,
+) {
   const qc = new QueryClient();
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[`/t/${id}`]}>
+      <MemoryRouter
+        initialEntries={entries ?? [`/t/${id}`]}
+        initialIndex={initialIndex}
+      >
         <Routes>
           <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
           <Route
@@ -136,7 +143,7 @@ describe("TournamentDetailPage", () => {
   });
 
   it("back button always navigates to tournaments list", async () => {
-    renderWithRoute("back1");
+    renderWithRoute("back1", ["/tournaments", "/t/back1"], 1);
     emitDoc("tournaments/back1", baseTournament);
     await screen.findByText("Club Championship");
     const backBtns = screen.getAllByRole("button", {
