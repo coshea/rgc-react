@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
+import { toDate } from "@/api/users";
 import {
   findDuplicates,
   suggestPrimaryUser,
@@ -23,8 +24,7 @@ import {
 } from "@/utils/duplicateDetection";
 import { mergeUserIds } from "@/api/mergeUsers";
 import { addToast } from "@/providers/toast";
-import { auth, db } from "@/config/firebase";
-import { doc, writeBatch } from "firebase/firestore";
+import { auth } from "@/config/firebase";
 import { UserAvatar } from "@/components/avatar";
 import { UserSelect } from "@/components/UserSelect";
 
@@ -42,10 +42,10 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
   onMergeComplete,
 }) => {
   const [step, setStep] = useState<"scan" | "review" | "confirm" | "merging">(
-    "scan"
+    "scan",
   );
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(
-    null
+    null,
   );
   const [primaryUserId, setPrimaryUserId] = useState<string>("");
   const [merging, setMerging] = useState(false);
@@ -151,7 +151,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
     if (!selectedGroup || !primaryUserId) return;
 
     const usersToMerge = selectedGroup.users.filter(
-      (u) => u.id !== primaryUserId
+      (u) => u.id !== primaryUserId,
     );
 
     setStep("merging");
@@ -167,25 +167,15 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
       let totalTournaments = 0;
 
       // Merge each duplicate user into the primary user.
-      // Important: we only mark users as migrated after ALL merges succeed,
-      // to avoid leaving the UI in a partially-migrated state if a merge fails midway.
-      const mergedUserIds: string[] = [];
       for (const userToMerge of usersToMerge) {
         const result = await mergeUserIds(
           primaryUserId,
           userToMerge.id,
-          idToken
+          idToken,
         );
         totalChampionships += result.championshipsUpdated;
         totalTournaments += result.tournamentsUpdated;
-        mergedUserIds.push(userToMerge.id);
       }
-
-      const batch = writeBatch(db);
-      mergedUserIds.forEach((uid) => {
-        batch.update(doc(db, "users", uid), { isMigrated: true });
-      });
-      await batch.commit();
 
       addToast({
         title: "Merge Complete",
@@ -266,8 +256,9 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   <div className="flex items-center gap-2">
                     <Icon icon="lucide:clock" className="w-4 h-4 shrink-0" />
                     <span>
-                      Created: toDate(user.createdAt)?.toLocaleDateString() ??
-                      "Unknown"
+                      Created:{" "}
+                      {toDate(user.createdAt)?.toLocaleDateString() ??
+                        "Unknown"}
                     </span>
                   </div>
                 )}
@@ -544,7 +535,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     </h4>
                     {renderUserCard(
                       selectedGroup.users.find((u) => u.id === primaryUserId)!,
-                      false
+                      false,
                     )}
                   </div>
 

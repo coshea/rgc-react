@@ -54,6 +54,7 @@ export function toDate(timestamp: FirestoreTimestamp | undefined): Date | null {
  * - membershipType: Current membership classification. 'full' grants full tournament privileges; 'handicap' limited scope.
  * - lastPaidYear: Highest year (e.g. 2025) for which a confirmed (paid) membership payment record exists; used for active season gating.
  * - isMigrated: Boolean flag indicating this user has been merged into another user and should be hidden from all queries (soft delete).
+ * - migrationEligible: Boolean flag indicating this user can be considered for migration/merge workflows.
  */
 export type UserProfilePayload = {
   firstName?: string;
@@ -68,6 +69,7 @@ export type UserProfilePayload = {
   membershipType?: MembershipType;
   lastPaidYear?: number;
   isMigrated?: boolean;
+  migrationEligible?: boolean;
 };
 
 export type User = UserProfilePayload & {
@@ -94,6 +96,7 @@ export async function createUser(data: UserProfilePayload) {
     photoURL: data.photoURL ?? null,
     boardMember: !!data.boardMember,
     role: data.boardMember ? data.role || null : null,
+    migrationEligible: data.migrationEligible ?? false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
