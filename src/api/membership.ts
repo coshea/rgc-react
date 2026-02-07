@@ -57,6 +57,9 @@ export async function recordMembershipPayment(params: {
     paymentId,
   } = params;
   const status = params.status ?? "confirmed";
+  const resolvedPurpose = purpose ?? "dues";
+  const isConfirmed = status === "confirmed";
+  const isDues = resolvedPurpose === "dues";
   const ref = paymentId
     ? doc(db, "memberPayments", paymentId)
     : doc(collection(db, "memberPayments"));
@@ -66,20 +69,20 @@ export async function recordMembershipPayment(params: {
       userId,
       year,
       createdAt: serverTimestamp(),
-      paidAt: serverTimestamp(),
+      paidAt: isConfirmed ? serverTimestamp() : null,
       amount: amount ?? null,
       method: method ?? null,
       membershipType,
       recordedBy: auth.currentUser?.uid ?? null,
       status,
-      purpose: purpose ?? "dues",
+      purpose: resolvedPurpose,
       groupId: groupId ?? null,
     });
-    // denormalized update on user doc
+    // denormalized update on user doc (lastPaidYear only for confirmed dues)
     await setDoc(
       doc(db, "users", userId),
       {
-        lastPaidYear: year,
+        ...(isConfirmed && isDues ? { lastPaidYear: year } : {}),
         membershipType,
         updatedAt: serverTimestamp(),
       },

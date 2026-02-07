@@ -145,6 +145,12 @@ service cloud.firestore {
             && ( !(t.players is number) || t.players <= 1 || team.size() >= 2 );
         }
 
+        // Ensure ownerId matches one of the registered team members.
+        function ownerOnTeam(team, ownerId) {
+          return team is list
+            && team.map(member => member.id).hasAny([ownerId]);
+        }
+
         // Create:
         // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
         // - Admins: may create regardless of registrationOpen; ownerId can be set to a team member.
@@ -153,6 +159,10 @@ service cloud.firestore {
           && teamSizeValid(
             request.resource.data.team,
             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
+          )
+          && ownerOnTeam(
+            request.resource.data.team,
+            request.resource.data.ownerId
           )
           && (
             (

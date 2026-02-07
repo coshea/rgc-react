@@ -9,12 +9,12 @@ import {
   Divider,
   Input,
   Spinner,
-  addToast,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import BackButton from "@/components/back-button";
+import { addToast } from "@/providers/toast";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
 import {
