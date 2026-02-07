@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
-import { Button, Input, Switch, Textarea } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Switch,
+  Textarea,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
   updateMembershipSettings,
   subscribeMembershipSettings,
 } from "@/api/membership";
+import { listPublicDocs } from "@/api/storage";
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { addToast } from "@/providers/toast";
 
@@ -26,6 +34,11 @@ export default function MembershipAdminModal({
   const [fullPrice, setFullPrice] = useState("100");
   const [socialPrice, setSocialPrice] = useState("50");
   const [closedMessage, setClosedMessage] = useState("");
+  const [membershipLetterUrl, setMembershipLetterUrl] = useState("");
+  const [publicDocs, setPublicDocs] = useState<
+    Array<{ name: string; url: string }>
+  >([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Subscribe to membership settings
@@ -39,6 +52,7 @@ export default function MembershipAdminModal({
         setFullPrice(newSettings.fullMembershipPrice.toString());
         setSocialPrice(newSettings.handicapMembershipPrice.toString());
         setClosedMessage(newSettings.closedMessage || "");
+        setMembershipLetterUrl(newSettings.membershipLetterUrl || "");
         setLoading(false);
       },
       (error) => {
@@ -50,10 +64,41 @@ export default function MembershipAdminModal({
           color: "danger",
         });
         setLoading(false);
-      }
+      },
     );
 
     return unsubscribe;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    setLoadingDocs(true);
+
+    listPublicDocs()
+      .then((docs) => {
+        if (!isMounted) return;
+        setPublicDocs(docs);
+      })
+      .catch((error) => {
+        console.error("Failed to load public documents:", error);
+        addToast({
+          title: "Documents unavailable",
+          description:
+            "Unable to load public documents from storage. Try again later.",
+          color: "warning",
+        });
+        if (!isMounted) return;
+        setPublicDocs([]);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setLoadingDocs(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen]);
 
   const validateForm = () => {
@@ -73,6 +118,10 @@ export default function MembershipAdminModal({
       newErrors.closedMessage = "Required when registration is closed";
     }
 
+    if (publicDocs.length > 0 && !membershipLetterUrl.trim()) {
+      newErrors.membershipLetterUrl = "Select a membership letter document";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,6 +136,7 @@ export default function MembershipAdminModal({
         fullMembershipPrice: parseFloat(fullPrice),
         handicapMembershipPrice: parseFloat(socialPrice),
         closedMessage: closedMessage.trim() || undefined,
+        membershipLetterUrl: membershipLetterUrl.trim() || undefined,
       });
 
       addToast({
@@ -114,6 +164,7 @@ export default function MembershipAdminModal({
       setFullPrice(settings.fullMembershipPrice.toString());
       setSocialPrice(settings.handicapMembershipPrice.toString());
       setClosedMessage(settings.closedMessage || "");
+      setMembershipLetterUrl(settings.membershipLetterUrl || "");
       setErrors({});
     }
     onClose();
@@ -126,7 +177,17 @@ export default function MembershipAdminModal({
     (registrationOpen !== settings.registrationOpen ||
       parseFloat(fullPrice) !== settings.fullMembershipPrice ||
       parseFloat(socialPrice) !== settings.handicapMembershipPrice ||
-      closedMessage !== (settings.closedMessage || ""));
+      closedMessage !== (settings.closedMessage || "") ||
+      membershipLetterUrl !== (settings.membershipLetterUrl || ""));
+
+  const membershipLetterOptions =
+    membershipLetterUrl &&
+    !publicDocs.some((doc) => doc.url === membershipLetterUrl)
+      ? [
+          { name: "Current selection (external)", url: membershipLetterUrl },
+          ...publicDocs,
+        ]
+      : publicDocs;
 
   return (
     <div
@@ -257,6 +318,50 @@ export default function MembershipAdminModal({
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Membership Letter</h3>
+                <p className="text-sm text-foreground-500">
+                  Choose the PDF shown to members. Documents are loaded from the
+                  storage folder{" "}
+                  <span className="font-medium">public-docs</span>.
+                </p>
+                <Select
+                  label="Membership letter document"
+                  selectedKeys={
+                    membershipLetterUrl ? [membershipLetterUrl] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string | undefined;
+                    setMembershipLetterUrl(value || "");
+                    if (errors.membershipLetterUrl) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        membershipLetterUrl: "",
+                      }));
+                    }
+                  }}
+                  isDisabled={loadingDocs}
+                  isInvalid={!!errors.membershipLetterUrl}
+                  errorMessage={errors.membershipLetterUrl}
+                  placeholder={
+                    loadingDocs
+                      ? "Loading documents..."
+                      : "Select a membership letter"
+                  }
+                >
+                  {membershipLetterOptions.map((doc) => (
+                    <SelectItem key={doc.url} textValue={doc.name}>
+                      {doc.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Input
+                  label="Selected URL"
+                  value={membershipLetterUrl}
+                  isReadOnly
+                />
+              </div>
+
               {/* Closed Message */}
               {!registrationOpen && (
                 <div className="space-y-2">
@@ -292,7 +397,7 @@ export default function MembershipAdminModal({
                       typeof settings.updatedAt === "object" &&
                       "toDate" in settings.updatedAt
                         ? settings.updatedAt.toDate()
-                        : settings.updatedAt
+                        : settings.updatedAt,
                     ).toLocaleString()}
                   </p>
                 </div>

@@ -13,14 +13,14 @@ import { storage, auth } from "@/config/firebase";
  */
 export async function uploadProfilePicture(
   uid: string,
-  file: File
+  file: File,
 ): Promise<string> {
   // Runtime sanity checks & debug logging to help diagnose permission issues.
   try {
     // eslint-disable-next-line no-console
     console.debug(
       "uploadProfilePicture: current auth uid=",
-      auth.currentUser?.uid
+      auth.currentUser?.uid,
     );
   } catch {
     // ignore
@@ -28,13 +28,13 @@ export async function uploadProfilePicture(
 
   if (!auth.currentUser) {
     throw new Error(
-      "Cannot upload avatar: no authenticated user (auth.currentUser is null)."
+      "Cannot upload avatar: no authenticated user (auth.currentUser is null).",
     );
   }
 
   if (auth.currentUser.uid !== uid) {
     throw new Error(
-      `Cannot upload avatar: authenticated UID (${auth.currentUser.uid}) does not match target uid (${uid}).`
+      `Cannot upload avatar: authenticated UID (${auth.currentUser.uid}) does not match target uid (${uid}).`,
     );
   }
 
@@ -64,11 +64,11 @@ export async function uploadProfilePicture(
  */
 export async function uploadBlogImage(
   file: File,
-  customFilename?: string
+  customFilename?: string,
 ): Promise<string> {
   if (!auth.currentUser) {
     throw new Error(
-      "Cannot upload blog image: no authenticated user (auth.currentUser is null)."
+      "Cannot upload blog image: no authenticated user (auth.currentUser is null).",
     );
   }
 
@@ -138,9 +138,36 @@ export async function listBlogImages(): Promise<
         url,
         uploadedAt,
       };
-    })
+    }),
   );
 
   // Sort by upload date, newest first
   return images.sort((a, b) => b.uploadedAt - a.uploadedAt);
+}
+
+/**
+ * Lists documents available in storage under `public-docs`.
+ * Returns an array of objects containing the doc name and download URL.
+ */
+export async function listPublicDocs(): Promise<
+  Array<{ name: string; url: string }>
+> {
+  if (!auth.currentUser) {
+    return [];
+  }
+
+  const docsRef = ref(storage, "public-docs");
+  const result = await listAll(docsRef);
+
+  const docs = await Promise.all(
+    result.items.map(async (itemRef: StorageReference) => {
+      const url = await getDownloadURL(itemRef);
+      return {
+        name: itemRef.name,
+        url,
+      };
+    }),
+  );
+
+  return docs.sort((a, b) => a.name.localeCompare(b.name));
 }
