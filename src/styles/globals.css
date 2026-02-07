@@ -41,6 +41,12 @@
   .prose p {
     @apply leading-relaxed my-3;
   }
+  .prose a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .prose a:hover {
+    @apply text-primary-600;
+  }
   .prose ul {
     @apply list-disc ml-6 my-3;
   }
