@@ -53,6 +53,7 @@ service cloud.firestore {
           'Treasurer',
           'Handicap Chairman',
           'Tournament Chairman',
+          'Tournament Co-Chairman',
           'Webmaster',
           'Board Member'
         ];
