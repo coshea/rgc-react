@@ -68,6 +68,7 @@ describe("firestoreMembership", () => {
       fullMembershipPrice: 85,
       handicapMembershipPrice: 50,
     });
+    db.__store.set("users/user1", { displayName: "User One" });
 
     const resp = await recordPayPalMembershipPayment({
       db: db as unknown as import("firebase-admin").firestore.Firestore,
@@ -92,6 +93,7 @@ describe("firestoreMembership", () => {
 
     expect(dues).toMatchObject({
       userId: "user1",
+      displayName: "User One",
       year: 2026,
       amount: 85,
       method: "paypal",
@@ -102,6 +104,7 @@ describe("firestoreMembership", () => {
     });
     expect(donation).toMatchObject({
       userId: "user1",
+      displayName: "User One",
       year: 2026,
       amount: 15,
       method: "paypal",
@@ -172,6 +175,7 @@ describe("firestoreMembership", () => {
 
   it("records PayPal donation as a standalone memberPayments entry", async () => {
     const db = createFakeDb();
+    db.__store.set("users/user3", { displayName: "User Three" });
 
     const resp = await recordPayPalDonationPayment({
       db: db as unknown as import("firebase-admin").firestore.Firestore,
@@ -193,6 +197,7 @@ describe("firestoreMembership", () => {
 
     expect(donation).toMatchObject({
       userId: "user3",
+      displayName: "User Three",
       year: 2026,
       amount: 25,
       method: "paypal",

@@ -34,6 +34,28 @@ export type RecordPayPalDonationParams = {
 const DEFAULT_FULL_MEMBERSHIP_FEE = 85;
 const DEFAULT_HANDICAP_FEE = 50;
 
+function resolveUserDisplayName(
+  data: Record<string, unknown> | undefined,
+): string | null {
+  if (!data) return null;
+
+  const displayName =
+    typeof data.displayName === "string" ? data.displayName.trim() : "";
+  if (displayName) return displayName;
+
+  const firstName =
+    typeof data.firstName === "string" ? data.firstName.trim() : "";
+  const lastName =
+    typeof data.lastName === "string" ? data.lastName.trim() : "";
+  const combined = [firstName, lastName]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return combined || null;
+}
+
 async function resolveMembershipFee(
   db: AdminFirestore.Firestore,
   membershipType: MembershipType,
@@ -95,12 +117,23 @@ export async function recordPayPalMembershipPayment(params: {
 
   const reused = await db.runTransaction(async (tx) => {
     // Read first (all reads before any writes per Firestore transaction rules)
-    const [existingOrder, existingMemberDues, existingMemberDonation] =
-      await Promise.all([
-        tx.get(paypalOrderRef),
-        tx.get(memberDuesRef),
-        tx.get(memberDonationRef),
-      ]);
+    const [
+      existingOrder,
+      existingMemberDues,
+      existingMemberDonation,
+      userSnap,
+    ] = await Promise.all([
+      tx.get(paypalOrderRef),
+      tx.get(memberDuesRef),
+      tx.get(memberDonationRef),
+      tx.get(userRef),
+    ]);
+
+    const userDisplayName = resolveUserDisplayName(
+      userSnap.exists
+        ? (userSnap.data() as Record<string, unknown>)
+        : undefined,
+    );
 
     if (!existingOrder.exists) {
       tx.set(paypalOrderRef, {
@@ -120,6 +153,7 @@ export async function recordPayPalMembershipPayment(params: {
     if (!existingMemberDues.exists) {
       tx.set(memberDuesRef, {
         userId: payment.uid,
+        displayName: userDisplayName,
         year: payment.year,
         createdAt: now,
         paidAt: now,
@@ -136,6 +170,7 @@ export async function recordPayPalMembershipPayment(params: {
     if (donationAmount > 0 && !existingMemberDonation.exists) {
       tx.set(memberDonationRef, {
         userId: payment.uid,
+        displayName: userDisplayName,
         year: payment.year,
         createdAt: now,
         paidAt: now,
@@ -254,10 +289,17 @@ export async function recordPayPalDonationPayment(params: {
   }
 
   const reused = await db.runTransaction(async (tx) => {
-    const [existingOrder, existingDonation] = await Promise.all([
+    const [existingOrder, existingDonation, userSnap] = await Promise.all([
       tx.get(paypalOrderRef),
       tx.get(memberDonationRef),
+      tx.get(userRef),
     ]);
+
+    const userDisplayName = resolveUserDisplayName(
+      userSnap.exists
+        ? (userSnap.data() as Record<string, unknown>)
+        : undefined,
+    );
 
     if (!existingOrder.exists) {
       tx.set(paypalOrderRef, {
@@ -275,6 +317,7 @@ export async function recordPayPalDonationPayment(params: {
     if (!existingDonation.exists) {
       tx.set(memberDonationRef, {
         userId: payment.uid,
+        displayName: userDisplayName,
         year: payment.year,
         createdAt: now,
         paidAt: now,
