@@ -224,17 +224,26 @@ export async function recordCheckMembershipPayment(params: {
   const memberDonationRef = db
     .collection("memberPayments")
     .doc(donationPaymentId);
+  const userRef = db.collection("users").doc(payment.uid);
 
   const reused = await db.runTransaction(async (tx) => {
-    const [existingDues, existingDonation] = await Promise.all([
+    const [existingDues, existingDonation, userSnap] = await Promise.all([
       tx.get(memberDuesRef),
       tx.get(memberDonationRef),
+      tx.get(userRef),
     ]);
+
+    const userDisplayName = resolveUserDisplayName(
+      userSnap.exists
+        ? (userSnap.data() as Record<string, unknown>)
+        : undefined,
+    );
 
     if (existingDues.exists) return true;
 
     tx.set(memberDuesRef, {
       userId: payment.uid,
+      displayName: userDisplayName,
       year: payment.year,
       createdAt: now,
       paidAt: null,
@@ -250,6 +259,7 @@ export async function recordCheckMembershipPayment(params: {
     if (donationAmount > 0 && !existingDonation.exists) {
       tx.set(memberDonationRef, {
         userId: payment.uid,
+        displayName: userDisplayName,
         year: payment.year,
         createdAt: now,
         paidAt: null,
