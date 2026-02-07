@@ -616,6 +616,7 @@ export default function MembershipPaymentsFlow({
           currentYear={currentYear}
           membershipFoundName={membershipFoundName ?? ""}
           membershipAmountDue={membershipAmountDue}
+          membershipApplicationUrl={membershipApplicationUrl}
           donationAmount={annualDonationAmount}
           currency={currency}
           paypalEnabled={paypalEnabled}

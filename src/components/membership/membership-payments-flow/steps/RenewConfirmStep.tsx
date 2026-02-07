@@ -18,6 +18,7 @@ export function RenewConfirmStep(props: {
   currentYear: number;
   membershipFoundName: string;
   membershipAmountDue: number;
+  membershipApplicationUrl?: string;
   donationAmount: string;
   currency: (amount: number) => string;
   paypalEnabled: boolean;
@@ -33,6 +34,7 @@ export function RenewConfirmStep(props: {
     currentYear,
     membershipFoundName,
     membershipAmountDue,
+    membershipApplicationUrl,
     donationAmount,
     currency,
     paypalEnabled,
@@ -44,6 +46,7 @@ export function RenewConfirmStep(props: {
 
   const donationValue = parseCurrencyInput(donationAmount);
   const total = membershipAmountDue + donationValue;
+  const hasApplicationUrl = Boolean(membershipApplicationUrl);
 
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
@@ -84,6 +87,40 @@ export function RenewConfirmStep(props: {
 
         <div className="text-sm text-default-600">Membership</div>
         <div className="text-base">Annual Club Membership</div>
+
+        <Alert color="primary">
+          <div className="space-y-2">
+            <div className="font-semibold">Referral program</div>
+            <p className="text-sm text-foreground-600">
+              If you are doing the referral for a new member, they will need to
+              complete the application before we can apply the referral. To
+              receive the discount, choose the "Pay by check (mail)" option on
+              the next screen and include the referring member&apos;s name in
+              the memo.
+            </p>
+            <div>
+              <Button
+                as={hasApplicationUrl ? "a" : "button"}
+                href={hasApplicationUrl ? membershipApplicationUrl : undefined}
+                target={hasApplicationUrl ? "_blank" : undefined}
+                rel={hasApplicationUrl ? "noreferrer" : undefined}
+                size="sm"
+                variant="flat"
+                isDisabled={!hasApplicationUrl}
+              >
+                {hasApplicationUrl
+                  ? "Download Application PDF"
+                  : "PDF unavailable"}
+              </Button>
+            </div>
+            {!hasApplicationUrl ? (
+              <p className="text-xs text-warning">
+                The application PDF has not been configured yet. Please check
+                back soon.
+              </p>
+            ) : null}
+          </div>
+        </Alert>
 
         <div className="space-y-4">
           <div>
