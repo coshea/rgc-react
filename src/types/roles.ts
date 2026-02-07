@@ -4,6 +4,7 @@ export const ALLOWED_BOARD_ROLES = [
   "Treasurer",
   "Handicap Chairman",
   "Tournament Chairman",
+  "Tournament Co-Chairman",
   "Webmaster",
   "Board Member",
 ] as const;
@@ -40,23 +41,29 @@ export const BOARD_ROLE_META: Record<
     label: "Tournament Chairman",
     priority: 4,
   },
+  "Tournament Co-Chairman": {
+    icon: "lucide:calendar-range",
+    color: "primary",
+    label: "Tournament Co-Chairman",
+    priority: 5,
+  },
   Webmaster: {
     icon: "lucide:globe",
     color: "danger",
     label: "Webmaster",
-    priority: 5,
+    priority: 6,
   },
   "Board Member": {
     icon: "lucide:users",
     color: "default",
     label: "Board Member",
-    priority: 6,
+    priority: 7,
   },
 };
 
 /** Attempt to coerce an arbitrary raw role string to a normalized BoardRole */
 export function coerceBoardRole(
-  raw: string | null | undefined
+  raw: string | null | undefined,
 ): BoardRole | null {
   if (!raw) return null;
   const trimmed = raw.trim();
@@ -87,13 +94,13 @@ export function formatBoardRoleLabel(role: string | null | undefined): string {
 }
 
 export function isAllowedBoardRole(
-  role: string | null | undefined
+  role: string | null | undefined,
 ): role is BoardRole {
   return !!role && (ALLOWED_BOARD_ROLES as readonly string[]).includes(role);
 }
 
 export function normalizeRole(
-  role: string | null | undefined
+  role: string | null | undefined,
 ): BoardRole | null {
   if (!role) return null;
   return isAllowedBoardRole(role) ? role : null;

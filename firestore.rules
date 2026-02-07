@@ -53,6 +53,7 @@ service cloud.firestore {
           'Treasurer',
           'Handicap Chairman',
           'Tournament Chairman',
+          'Tournament Co-Chairman',
           'Webmaster',
           'Board Member'
         ];
@@ -144,14 +145,24 @@ service cloud.firestore {
             && ( !(t.players is number) || t.players <= 1 || team.size() >= 2 );
         }
 
+        // Ensure ownerId matches one of the registered team members.
+        function ownerOnTeam(team, ownerId) {
+          return team is list
+            && team.map(member => member.id).hasAny([ownerId]);
+        }
+
         // Create:
         // - Normal users: must be owner (ownerId == auth.uid) AND registrationOpen == true.
-        // - Admins: may create regardless of registrationOpen; ownerId can be "__admin__" or their own uid.
+        // - Admins: may create regardless of registrationOpen; ownerId can be set to a team member.
         allow create: if request.auth != null
           && request.resource.data.ownerId is string
           && teamSizeValid(
             request.resource.data.team,
             get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
+          )
+          && ownerOnTeam(
+            request.resource.data.team,
+            request.resource.data.ownerId
           )
           && (
             (
@@ -160,11 +171,7 @@ service cloud.firestore {
                 get(/databases/$(database)/documents/tournaments/$(tournamentId)).data
               )
             )
-            || (
-              isAdmin() && (
-                request.resource.data.ownerId == "__admin__" || request.resource.data.ownerId == request.auth.uid
-              )
-            )
+            || isAdmin()
           );
 
         // Owner or admin can update or delete the registration. Use isAdmin()
@@ -261,14 +268,40 @@ service cloud.firestore {
     // - Update/Delete: admins only. Normal flow should rarely update except to correct status or refund.
     match /memberPayments/{paymentId} {
       allow read: if request.auth != null;
-      allow create: if isAdmin() && request.auth != null &&
-        request.resource.data.userId is string &&
-        request.resource.data.year is int &&
-        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
-        request.resource.data.membershipType in ['full', 'handicap'];
-      allow update: if isAdmin() &&
-        request.resource.data.status in ['confirmed', 'pending', 'refunded'] &&
-        request.resource.data.membershipType in ['full', 'handicap'];
+      function paymentStatusValid(data) {
+        return data.status in ['confirmed', 'pending', 'refunded'];
+      }
+
+      function paymentPurposeValid(data) {
+        return data.purpose in ['dues', 'donation'];
+      }
+
+      function membershipTypeValid(data) {
+        return data.membershipType in ['full', 'handicap'];
+      }
+
+      function duesTypeValid(data) {
+        return data.purpose == 'dues' && membershipTypeValid(data);
+      }
+
+      function donationTypeValid(data) {
+        return data.purpose == 'donation'
+          && (!('membershipType' in data) || membershipTypeValid(data));
+      }
+
+      allow create: if isAdmin() && request.auth != null
+        && request.resource.data.userId is string
+        && request.resource.data.year is int
+        && paymentStatusValid(request.resource.data)
+        && paymentPurposeValid(request.resource.data)
+        && (duesTypeValid(request.resource.data)
+          || donationTypeValid(request.resource.data));
+
+      allow update: if isAdmin()
+        && paymentStatusValid(request.resource.data)
+        && paymentPurposeValid(request.resource.data)
+        && (duesTypeValid(request.resource.data)
+          || donationTypeValid(request.resource.data));
       allow delete: if isAdmin();
     }
 

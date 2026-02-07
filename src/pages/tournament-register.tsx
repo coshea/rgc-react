@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
+  Alert,
   Card,
   CardBody,
   Button,
@@ -116,6 +117,29 @@ const TournamentRegister: React.FC = () => {
   );
   // store registrations for conflict detection
   const [registrations, setRegistrations] = React.useState<any[]>([]);
+
+  const memberRegistration = React.useMemo(() => {
+    if (!user?.uid) return null;
+    return registrations.find((reg) => {
+      if (!Array.isArray(reg.team)) return false;
+      return reg.team.some((m: { id?: string }) => m?.id === user.uid);
+    });
+  }, [registrations, user?.uid]);
+
+  const isTeamMemberNonLeader = Boolean(
+    memberRegistration?.ownerId && memberRegistration.ownerId !== user?.uid,
+  );
+
+  const memberTeam = Array.isArray(memberRegistration?.team)
+    ? memberRegistration.team
+    : [];
+
+  const leaderName = memberRegistration?.ownerId
+    ? memberTeam.find(
+        (m: { id?: string; displayName?: string }) =>
+          m?.id === memberRegistration.ownerId,
+      )?.displayName || "team leader"
+    : "team leader";
 
   usePageTracking(tournament?.title || "Tournament Registration", loading);
 
@@ -310,6 +334,16 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
+    if (isTeamMemberNonLeader) {
+      addToast({
+        title: "Already registered",
+        description:
+          "You're already registered on a team. Please contact your team leader to make changes.",
+        color: "warning",
+      });
+      return;
+    }
+
     // validate teammates - ensure no empty selections
     let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
     // Fallback: if nothing selected yet but the current user is in our users list,
@@ -328,6 +362,15 @@ const TournamentRegister: React.FC = () => {
           minTeamSize === 1
             ? "Please select at least one player."
             : "Teams must have at least 2 players for this tournament.",
+        color: "danger",
+      });
+      return;
+    }
+
+    if (user.uid && !selectedIds.includes(user.uid)) {
+      addToast({
+        title: "Team leader required",
+        description: "You must be included on your own team to register.",
         color: "danger",
       });
       return;
@@ -392,7 +435,7 @@ const TournamentRegister: React.FC = () => {
 
     // Use stored members if we are completing after a conflict acknowledgement
     const finalMembers = pendingMembersRef.current?.members || members;
-    const ownerId = pendingMembersRef.current?.ownerId || user.uid;
+    const ownerId = user.uid;
     const finalOpenSpotsOptIn =
       pendingMembersRef.current?.openSpotsOptIn ?? openSpotsOptIn;
 
@@ -456,29 +499,56 @@ const TournamentRegister: React.FC = () => {
           <Divider className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <RegistrationEditor
-              value={teammates}
-              onChange={setTeammates}
-              users={selectableUsers}
-              maxSize={maxTeamSize}
-              labels={{ leader: "Team Leader / You" }}
-              disabled={!user?.uid}
-            />
-
-            {maxTeamSize > 1 && openSlotsCount > 0 ? (
-              <Checkbox
-                isSelected={openSpotsOptIn}
-                onValueChange={setOpenSpotsOptIn}
-              >
-                Let others contact me to fill open spots
-              </Checkbox>
-            ) : null}
-
-            {minTeamSize > 1 && !hasMinTeamSize ? (
-              <div className="text-sm text-danger">
-                Add at least one teammate to register.
+            {isTeamMemberNonLeader ? (
+              <div className="space-y-3">
+                <Alert color="warning">
+                  You&apos;re already registered with a team led by {leaderName}
+                  . You can&apos;t create a new team. Contact your team leader
+                  to make changes.
+                </Alert>
+                <div className="rounded-md border border-default-200 bg-content1/50 p-4">
+                  <div className="text-sm text-default-600">Your team</div>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {memberTeam.map(
+                      (member: { id?: string; displayName?: string }) => (
+                        <li key={member.id ?? member.displayName}>
+                          {member.displayName || member.id}
+                          {member.id === memberRegistration?.ownerId
+                            ? " (Leader)"
+                            : ""}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
               </div>
-            ) : null}
+            ) : (
+              <>
+                <RegistrationEditor
+                  value={teammates}
+                  onChange={setTeammates}
+                  users={selectableUsers}
+                  maxSize={maxTeamSize}
+                  labels={{ leader: "Team Leader / You" }}
+                  disabled={!user?.uid}
+                />
+
+                {maxTeamSize > 1 && openSlotsCount > 0 ? (
+                  <Checkbox
+                    isSelected={openSpotsOptIn}
+                    onValueChange={setOpenSpotsOptIn}
+                  >
+                    Let others contact me to fill open spots
+                  </Checkbox>
+                ) : null}
+
+                {minTeamSize > 1 && !hasMinTeamSize ? (
+                  <div className="text-sm text-danger">
+                    Add at least one teammate to register.
+                  </div>
+                ) : null}
+              </>
+            )}
 
             {/* no free-text inputs: teammates are selected by user id via Select */}
 
@@ -513,26 +583,28 @@ const TournamentRegister: React.FC = () => {
                   </Button>
                 </div>
 
-                <div className="w-full sm:w-auto">
-                  <Button
-                    className="w-full"
-                    type="submit"
-                    color="primary"
-                    isDisabled={
-                      submitting ||
-                      !user?.uid ||
-                      (minTeamSize > 1 && !hasMinTeamSize)
-                    }
-                  >
-                    {submitting
-                      ? registrationId
-                        ? "Updating..."
-                        : "Registering..."
-                      : registrationId
-                        ? "Update registration"
-                        : "Register"}
-                  </Button>
-                </div>
+                {!isTeamMemberNonLeader ? (
+                  <div className="w-full sm:w-auto">
+                    <Button
+                      className="w-full"
+                      type="submit"
+                      color="primary"
+                      isDisabled={
+                        submitting ||
+                        !user?.uid ||
+                        (minTeamSize > 1 && !hasMinTeamSize)
+                      }
+                    >
+                      {submitting
+                        ? registrationId
+                          ? "Updating..."
+                          : "Registering..."
+                        : registrationId
+                          ? "Update registration"
+                          : "Register"}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
 

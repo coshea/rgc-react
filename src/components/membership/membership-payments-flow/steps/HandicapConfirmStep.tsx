@@ -14,6 +14,8 @@ import type { HandicapState } from "../types";
 
 export function HandicapConfirmStep(props: {
   handicap: HandicapState;
+  profileName: string;
+  profileEmail: string;
   handicapFee: number;
   donationAmount: string;
   currency: (amount: number) => string;
@@ -23,6 +25,8 @@ export function HandicapConfirmStep(props: {
 }) {
   const {
     handicap,
+    profileName,
+    profileEmail,
     handicapFee,
     donationAmount,
     currency,
@@ -52,15 +56,11 @@ export function HandicapConfirmStep(props: {
           <div className="text-sm text-default-600">Details</div>
           <div className="text-sm">
             <div>
-              <span className="text-default-600">Name:</span>{" "}
-              {handicap.fullName}
+              <span className="text-default-600">Name:</span> {profileName}
             </div>
-            {handicap.email?.trim() ? (
-              <div>
-                <span className="text-default-600">Email:</span>{" "}
-                {handicap.email}
-              </div>
-            ) : null}
+            <div>
+              <span className="text-default-600">Email:</span> {profileEmail}
+            </div>
             {handicap.ghin?.trim() ? (
               <div>
                 <span className="text-default-600">GHIN:</span> {handicap.ghin}

@@ -12,7 +12,10 @@ export function useMembershipPayments(year = new Date().getFullYear()) {
         where("year", "==", year),
       );
       const snap = await getDocs(q);
-      return snap.docs.map((d) => d.data() as MembershipPayment);
+      return snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as MembershipPayment),
+      }));
     },
     staleTime: 60_000,
   });

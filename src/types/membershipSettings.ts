@@ -17,6 +17,12 @@ export interface MembershipSettings {
   /** Message to display when registration is closed */
   closedMessage?: string;
 
+  /** URL to the yearly membership letter PDF */
+  membershipLetterUrl?: string;
+
+  /** URL to the new member application PDF */
+  membershipApplicationUrl?: string;
+
   /** Last updated timestamp */
   updatedAt?: Date | { toDate(): Date };
 
@@ -33,4 +39,6 @@ export const DEFAULT_MEMBERSHIP_SETTINGS: MembershipSettings = {
   handicapMembershipPrice: 50,
   closedMessage:
     "Membership registration is currently closed. Please check back later for communication on when registration will open for the year.",
+  membershipLetterUrl:
+    "https://firebasestorage.googleapis.com/v0/b/ridgefield-golf-club.firebasestorage.app/o/public-docs%2FRGC-Score-Posting.pdf?alt=media&token=dd353749-d644-4edd-a94c-2f9aa55bd0c6",
 };

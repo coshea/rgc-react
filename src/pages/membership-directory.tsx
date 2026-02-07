@@ -141,6 +141,7 @@ export default function MembershipDirectoryPage() {
           phone: phoneToSave || "",
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
+          migrationEligible: true,
         });
         const newUserId = docRef.id;
         console.log("[Directory] User added", { id: newUserId, ...form });

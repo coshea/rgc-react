@@ -123,6 +123,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [allTournaments, setAllTournaments] = React.useState<Tournament[]>([]);
   const [addOpen, setAddOpen] = React.useState(false);
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
+  const [newOpenSpotsOptIn, setNewOpenSpotsOptIn] = React.useState(false);
   const [adding, setAdding] = React.useState(false);
   const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
   const [weather, setWeather] = React.useState<
@@ -519,6 +520,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     }
     setAdding(true);
     try {
+      const minTeamSize = players > 1 ? 2 : 1;
+      if (cleaned.length < minTeamSize) {
+        addToast({
+          title: "Team too small",
+          description:
+            minTeamSize === 1
+              ? "Please add at least one player."
+              : "Teams must have at least 2 players for this tournament.",
+          color: "danger",
+        });
+        return;
+      }
+
       const { db } = await import("@/config/firebase");
       const { collection, addDoc, serverTimestamp } = await import(
         "firebase/firestore"
@@ -533,14 +547,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         tournament.firestoreId,
         "registrations",
       );
+      const ownerId = cleaned[0] || "__admin__";
       const docRef = await addDoc(colRef, {
-        ownerId: "__admin__",
+        ownerId,
         team,
+        openSpotsOptIn: newOpenSpotsOptIn,
         registeredAt: serverTimestamp(),
       });
       setRegistrations((prev) => [
         ...prev,
-        { id: docRef.id, ownerId: "__admin__", team },
+        { id: docRef.id, ownerId, team, openSpotsOptIn: newOpenSpotsOptIn },
       ]);
       addToast({
         title: "Added",
@@ -549,6 +565,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       });
       setAddOpen(false);
       setNewMembers([""]); // reset
+      setNewOpenSpotsOptIn(false);
     } catch (err) {
       console.error("Failed to add registration", err);
       addToast({
@@ -981,7 +998,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   editingId={editingRegId}
                   onStartEdit={(reg) => startEdit(reg)}
                   onCancelEdit={() => cancelEdit()}
-                  onSave={async (regId, ids) => {
+                  onSave={async (regId, ids, openSpotsOptIn) => {
                     const team = ids.map((id) => {
                       const u = allUsers.find((x) => x.id === id);
                       return {
@@ -1001,9 +1018,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                         "registrations",
                         regId,
                       );
-                      await updateDoc(regRef, { team });
+                      await updateDoc(regRef, { team, openSpotsOptIn });
                       setRegistrations((prev) =>
-                        prev.map((r) => (r.id === regId ? { ...r, team } : r)),
+                        prev.map((r) =>
+                          r.id === regId ? { ...r, team, openSpotsOptIn } : r,
+                        ),
                       );
                       addToast({
                         title: "Saved",
@@ -1061,6 +1080,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 maxSize={players}
                 disableAutoSelect={true}
               />
+              {players > 1 ? (
+                <Checkbox
+                  isSelected={newOpenSpotsOptIn}
+                  onValueChange={setNewOpenSpotsOptIn}
+                >
+                  Let others contact this team to fill open spots
+                </Checkbox>
+              ) : null}
               <div className="h-4" />
               <div className="flex justify-end gap-2">
                 <Button
@@ -1069,6 +1096,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     if (!adding) {
                       setAddOpen(false);
                       setNewMembers([""]);
+                      setNewOpenSpotsOptIn(false);
                     }
                   }}
                 >

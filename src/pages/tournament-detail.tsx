@@ -400,9 +400,7 @@ const TournamentDetailPage: React.FC = () => {
               <div className="md:hidden space-y-2">
                 {/* Mobile First row: Back button and Share button */}
                 <div className="flex items-center justify-between">
-                  <BackButton
-                    onPress={() => navigate("/tournaments", { replace: false })}
-                  />
+                  <BackButton />
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"
@@ -459,9 +457,7 @@ const TournamentDetailPage: React.FC = () => {
 
               {/* Desktop: Single row with all buttons */}
               <div className="hidden md:flex items-center justify-between">
-                <BackButton
-                  onPress={() => navigate("/tournaments", { replace: false })}
-                />
+                <BackButton />
                 <div className="flex items-center gap-3">
                   <Tooltip content="Share tournament">
                     <Button
@@ -1053,19 +1049,32 @@ const TournamentDetailPage: React.FC = () => {
                                 : "";
                               const maxPlayers =
                                 tournament.players || team.length;
+                              const leaderId = reg.ownerId || team[0]?.id;
+                              const displayTeam =
+                                leaderId && !team.some((m) => m.id === leaderId)
+                                  ? [
+                                      {
+                                        id: leaderId,
+                                        displayName:
+                                          usersMap.get(leaderId)?.displayName ||
+                                          usersMap.get(leaderId)?.email ||
+                                          "Team Leader",
+                                      },
+                                      ...team,
+                                    ]
+                                  : team;
                               const openSpots = Math.max(
-                                maxPlayers - team.length,
+                                maxPlayers - displayTeam.length,
                                 0,
                               );
                               const showOpenSpots =
                                 reg.openSpotsOptIn === true && openSpots > 0;
-                              const leaderId = reg.ownerId || team[0]?.id;
 
                               const openTeamModalForTeam = () => {
                                 setOpenTeamModalData({
                                   teamNumber: originalIdx + 1,
                                   leaderId,
-                                  team,
+                                  team: displayTeam,
                                   openSpots,
                                 });
                                 setOpenTeamModal(true);
@@ -1095,7 +1104,7 @@ const TournamentDetailPage: React.FC = () => {
                                   <CardBody className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
                                     <div className="flex items-start gap-2 sm:gap-3">
                                       <div className="flex -space-x-2 shrink-0">
-                                        {team.map((m, i) => {
+                                        {displayTeam.map((m, i) => {
                                           const memberUser = usersMap.get(m.id);
                                           const label = (
                                             m.displayName ||
@@ -1148,7 +1157,7 @@ const TournamentDetailPage: React.FC = () => {
                                           ) : null}
                                         </div>
                                         <ul className="text-[13px] sm:text-sm font-medium leading-tight sm:leading-snug space-y-0">
-                                          {team.map((m, i) => {
+                                          {displayTeam.map((m, i) => {
                                             const isLeader =
                                               !!leaderId && m.id === leaderId;
                                             return (

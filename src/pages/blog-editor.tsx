@@ -16,6 +16,7 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { BlogImagePicker } from "@/components/blog-image-picker";
 import { useAuth } from "@/providers/AuthProvider";
 import { addToast } from "@/providers/toast";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   BlogPost,
   BlogPostStatus,
@@ -40,6 +41,7 @@ export const BlogEditorPage: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { userProfile } = useUserProfile();
   const isEditing = !!id;
 
   const [loading, setLoading] = React.useState(isEditing);
@@ -155,11 +157,15 @@ export const BlogEditorPage: React.FC = () => {
         slug,
         excerpt,
         authorId: user.uid,
-        authorName: user.displayName || user.email || "Anonymous",
-        authorPhotoURL: user.photoURL || undefined,
+        authorName:
+          userProfile?.displayName ||
+          user.displayName ||
+          user.email ||
+          "Anonymous",
+        authorPhotoURL: userProfile?.photoURL ?? user.photoURL ?? undefined,
         status: publish ? BlogPostStatus.Published : formData.status,
         publishedAt: publish ? new Date() : formData.publishedAt,
-        tournamentId: selectedTournamentId || undefined,
+        ...(selectedTournamentId && { tournamentId: selectedTournamentId }),
       };
 
       if (isEditing && id) {
@@ -273,7 +279,7 @@ export const BlogEditorPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto pt-4 pb-10 px-4">
       <div className="mb-4 flex items-center justify-between">
-        <BackButton onPress={() => navigate("/announcements")} />
+        <BackButton />
         <div className="flex gap-2">
           <Button
             size="sm"

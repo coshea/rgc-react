@@ -10,65 +10,83 @@ import {
   where,
   onSnapshot,
   Unsubscribe,
+  writeBatch,
 } from "firebase/firestore";
+import type { User } from "firebase/auth";
+import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
 import { logFsStart, logFsSuccess, logFsError } from "@/utils/firestoreLogger";
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
+import type { MembershipType } from "@/types/membership";
 
 export type MembershipPayment = {
+  id?: string;
   userId: string;
   year: number;
+  createdAt?: any; // Firestore Timestamp
   paidAt: any; // Firestore Timestamp
   amount?: number | null;
   method?: string | null; // 'stripe' | 'cash' | 'check' | 'comp'
-  membershipType: "full" | "handicap";
+  membershipType?: MembershipType | null;
   recordedBy?: string | null;
   status: "confirmed" | "pending" | "refunded";
+  purpose?: "dues" | "donation";
+  groupId?: string | null;
 };
 
-function paymentDocId(userId: string, year: number) {
-  return `${userId}_${year}`;
-}
-
-/** Idempotent creation of a membership payment record plus denormalized user update */
+/** Create a membership payment record plus denormalized user update */
 export async function recordMembershipPayment(params: {
   userId: string;
   year: number;
-  membershipType: "full" | "handicap";
+  membershipType: MembershipType;
   amount?: number;
   method?: string;
   status?: "confirmed" | "pending";
+  purpose?: "dues" | "donation";
+  groupId?: string;
+  paymentId?: string;
 }) {
-  const { userId, year, membershipType, amount, method } = params;
+  const {
+    userId,
+    year,
+    membershipType,
+    amount,
+    method,
+    purpose,
+    groupId,
+    paymentId,
+  } = params;
   const status = params.status ?? "confirmed";
-  const id = paymentDocId(userId, year);
-  const ref = doc(db, "memberPayments", id);
+  const resolvedPurpose = purpose ?? "dues";
+  const isConfirmed = status === "confirmed";
+  const isDues = resolvedPurpose === "dues";
+  const ref = paymentId
+    ? doc(db, "memberPayments", paymentId)
+    : doc(collection(db, "memberPayments"));
   logFsStart("recordMembershipPayment", { userId, year, membershipType });
-  const existing = await getDoc(ref);
-  if (existing.exists()) {
-    logFsSuccess("recordMembershipPayment", { userId, year, reused: true });
-    return; // idempotent
-  }
   try {
     await setDoc(ref, {
       userId,
       year,
-      paidAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      paidAt: isConfirmed ? serverTimestamp() : null,
       amount: amount ?? null,
       method: method ?? null,
       membershipType,
       recordedBy: auth.currentUser?.uid ?? null,
       status,
+      purpose: resolvedPurpose,
+      groupId: groupId ?? null,
     });
-    // denormalized update on user doc
+    // denormalized update on user doc (lastPaidYear only for confirmed dues)
     await setDoc(
       doc(db, "users", userId),
       {
-        lastPaidYear: year,
+        ...(isConfirmed && isDues ? { lastPaidYear: year } : {}),
         membershipType,
         updatedAt: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
     logFsSuccess("recordMembershipPayment", { userId, year });
   } catch (error) {
@@ -79,25 +97,25 @@ export async function recordMembershipPayment(params: {
 
 /** Fetch all payment docs for a given year and return Set of userIds */
 export async function getActiveMemberIdsForYear(
-  year: number
+  year: number,
 ): Promise<Set<string>> {
   const q = query(
     collection(db, "memberPayments"),
     where("year", "==", year),
-    where("status", "==", "confirmed")
+    where("status", "==", "confirmed"),
   );
   const snap = await getDocs(q);
   const ids = new Set<string>();
   snap.forEach((d) => {
     const data = d.data() as MembershipPayment;
-    if (data.userId) ids.add(data.userId);
+    if (data.userId && data.purpose !== "donation") ids.add(data.userId);
   });
   return ids;
 }
 
 /** Return all membership payment history for a user (descending by year) */
 export async function getMembershipHistory(
-  userId: string
+  userId: string,
 ): Promise<MembershipPayment[]> {
   const paymentsCol = collection(db, "memberPayments");
   const q = query(paymentsCol, where("userId", "==", userId));
@@ -113,13 +131,39 @@ export async function getMembershipHistory(
 /** Get payment doc for a user for a specific year (if exists) */
 export async function getMembershipPayment(
   userId: string,
-  year: number
+  year: number,
 ): Promise<MembershipPayment | null> {
-  const id = paymentDocId(userId, year);
-  const ref = doc(db, "memberPayments", id);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  return snap.data() as MembershipPayment;
+  const q = query(
+    collection(db, "memberPayments"),
+    where("userId", "==", userId),
+    where("year", "==", year),
+    where("purpose", "==", "dues"),
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  let latest: MembershipPayment | null = null;
+  snap.docs.forEach((docSnap) => {
+    const data = docSnap.data() as MembershipPayment;
+    const paidAt = data.paidAt as { toMillis?: () => number } | undefined;
+    const createdAt = data.createdAt as { toMillis?: () => number } | undefined;
+    const nextTime =
+      (paidAt?.toMillis && paidAt.toMillis()) ||
+      (createdAt?.toMillis && createdAt.toMillis()) ||
+      0;
+    const currentTime = latest
+      ? ((
+          latest.paidAt as { toMillis?: () => number } | undefined
+        )?.toMillis?.() ??
+        (
+          latest.createdAt as { toMillis?: () => number } | undefined
+        )?.toMillis?.() ??
+        0)
+      : -1;
+    if (!latest || nextTime >= currentTime) {
+      latest = { id: docSnap.id, ...data };
+    }
+  });
+  return latest;
 }
 
 /** Update membership payment fields (admin). */
@@ -131,11 +175,43 @@ export async function updateMembershipPayment(params: {
   >;
 }): Promise<{ created?: boolean; confirmed?: boolean }> {
   const { userId, year, updates } = params;
-  const id = paymentDocId(userId, year);
-  const ref = doc(db, "memberPayments", id);
+  const paymentQuery = query(
+    collection(db, "memberPayments"),
+    where("userId", "==", userId),
+    where("year", "==", year),
+    where("purpose", "==", "dues"),
+  );
   logFsStart("updateMembershipPayment", { userId, year });
-  const existing = await getDoc(ref);
-  if (!existing.exists()) {
+  const existingSnap = await getDocs(paymentQuery);
+  let existing = existingSnap.docs[0];
+  if (existingSnap.docs.length > 1) {
+    existingSnap.docs.forEach((docSnap) => {
+      const data = docSnap.data() as MembershipPayment;
+      const paidAt = data.paidAt as { toMillis?: () => number } | undefined;
+      const createdAt = data.createdAt as
+        | { toMillis?: () => number }
+        | undefined;
+      const nextTime =
+        (paidAt?.toMillis && paidAt.toMillis()) ||
+        (createdAt?.toMillis && createdAt.toMillis()) ||
+        0;
+      const existingData = existing?.data() as MembershipPayment | undefined;
+      const existingPaidAt = existingData?.paidAt as
+        | { toMillis?: () => number }
+        | undefined;
+      const existingCreatedAt = existingData?.createdAt as
+        | { toMillis?: () => number }
+        | undefined;
+      const currentTime =
+        (existingPaidAt?.toMillis && existingPaidAt.toMillis()) ||
+        (existingCreatedAt?.toMillis && existingCreatedAt.toMillis()) ||
+        0;
+      if (!existing || nextTime >= currentTime) {
+        existing = docSnap;
+      }
+    });
+  }
+  if (!existing) {
     // CREATE path: permit creating either confirmed OR pending record when membershipType provided.
     if (updates.membershipType) {
       const status: MembershipPayment["status"] =
@@ -153,7 +229,9 @@ export async function updateMembershipPayment(params: {
         userId,
         year,
         membershipType: updates.membershipType,
+        purpose: "dues",
         status,
+        createdAt: serverTimestamp(),
         paidAt: confirmedCreate ? serverTimestamp() : null,
         amount: updates.amount == null ? null : updates.amount,
         method:
@@ -162,6 +240,7 @@ export async function updateMembershipPayment(params: {
             : updates.method,
         recordedBy: auth.currentUser?.uid ?? null,
       };
+      const ref = doc(collection(db, "memberPayments"));
       await setDoc(ref, payload);
       // denormalize membershipType always; lastPaidYear only when confirmed
       await setDoc(
@@ -171,7 +250,7 @@ export async function updateMembershipPayment(params: {
           ...(confirmedCreate ? { lastPaidYear: year } : {}),
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
       logFsSuccess("updateMembershipPayment", {
         userId,
@@ -182,7 +261,7 @@ export async function updateMembershipPayment(params: {
       return { created: true, confirmed: confirmedCreate };
     }
     throw new Error(
-      "Membership payment record does not exist and no membershipType provided to create"
+      "Membership payment record does not exist and no membershipType provided to create",
     );
   }
   try {
@@ -193,7 +272,7 @@ export async function updateMembershipPayment(params: {
       payload.method = null;
     if (payload.membershipType === undefined) delete payload.membershipType;
     if (payload.status === undefined) delete payload.status;
-    await setDoc(ref, payload, { merge: true });
+    await setDoc(existing.ref, payload, { merge: true });
     if (updates.membershipType || updates.status === "confirmed") {
       await setDoc(
         doc(db, "users", userId),
@@ -204,7 +283,7 @@ export async function updateMembershipPayment(params: {
           ...(updates.status === "confirmed" ? { lastPaidYear: year } : {}),
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
     }
     const confirmed = updates.status === "confirmed";
@@ -214,6 +293,114 @@ export async function updateMembershipPayment(params: {
     logFsError("updateMembershipPayment", e, { userId, year });
     throw e;
   }
+}
+
+export async function requestCheckMembershipPayment(params: {
+  user: User;
+  request: {
+    year: number;
+    membershipType: MembershipType;
+    donationAmount?: number;
+    requestId: string;
+  };
+}): Promise<{ ok: boolean; groupId: string; reused?: boolean }> {
+  const { user, request } = params;
+
+  if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
+    throw new Error(
+      "User must be authenticated with a valid UID to request check payment.",
+    );
+  }
+
+  const token = await user.getIdToken();
+  const baseUrl = getFirebaseFunctionsBaseUrl();
+
+  const resp = await fetch(`${baseUrl}/request_check_membership_payment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Check request failed: ${resp.status} ${text}`.trim());
+  }
+
+  return (await resp.json()) as {
+    ok: boolean;
+    groupId: string;
+    reused?: boolean;
+  };
+}
+
+export async function confirmMembershipPaymentGroup(params: {
+  groupId?: string;
+  paymentId?: string;
+}): Promise<{ updated: number }> {
+  const { groupId, paymentId } = params;
+  if (!groupId && !paymentId) {
+    throw new Error("groupId or paymentId is required");
+  }
+
+  const paymentsCol = collection(db, "memberPayments");
+  let snap;
+
+  if (groupId) {
+    snap = await getDocs(query(paymentsCol, where("groupId", "==", groupId)));
+  } else {
+    const docSnap = await getDoc(doc(db, "memberPayments", paymentId!));
+    if (!docSnap.exists()) throw new Error("Payment record not found");
+    snap = { docs: [docSnap] } as { docs: (typeof docSnap)[] };
+  }
+
+  if (snap.docs.length === 0) {
+    throw new Error("Payment record not found");
+  }
+
+  const batch = writeBatch(db);
+  let duesUserId: string | null = null;
+  let duesYear: number | null = null;
+  let duesMembershipType: MembershipType | null = null;
+  let updatedCount = 0;
+
+  snap.docs.forEach((docSnap) => {
+    const data = docSnap.data() as MembershipPayment;
+    if (data.status !== "confirmed") {
+      batch.set(
+        docSnap.ref,
+        { status: "confirmed", paidAt: serverTimestamp() },
+        { merge: true },
+      );
+      updatedCount += 1;
+    }
+    const purpose = data.purpose ?? "dues";
+    if (purpose === "dues" && data.membershipType) {
+      duesUserId = data.userId;
+      duesYear = data.year;
+      duesMembershipType = data.membershipType;
+    }
+  });
+
+  if (updatedCount > 0) {
+    await batch.commit();
+  }
+
+  if (duesUserId && duesYear !== null && duesMembershipType !== null) {
+    await setDoc(
+      doc(db, "users", duesUserId),
+      {
+        lastPaidYear: duesYear,
+        membershipType: duesMembershipType,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }
+
+  return { updated: updatedCount };
 }
 
 // ============================================================================
@@ -260,7 +447,7 @@ export async function getMembershipSettings(): Promise<MembershipSettings> {
  */
 export function subscribeMembershipSettings(
   callback: (settings: MembershipSettings) => void,
-  onError?: (error: unknown) => void
+  onError?: (error: unknown) => void,
 ): Unsubscribe {
   const ref = doc(db, "config", "membershipSettings");
   return onSnapshot(
@@ -299,7 +486,7 @@ export function subscribeMembershipSettings(
 
       callback(DEFAULT_MEMBERSHIP_SETTINGS);
       logFsError("subscribeMembershipSettings", error);
-    }
+    },
   );
 }
 
@@ -308,7 +495,7 @@ export function subscribeMembershipSettings(
  * @throws Error if user is not authenticated
  */
 export async function updateMembershipSettings(
-  settings: Partial<Omit<MembershipSettings, "updatedAt" | "updatedBy">>
+  settings: Partial<Omit<MembershipSettings, "updatedAt" | "updatedBy">>,
 ): Promise<void> {
   const user = auth.currentUser;
   if (!user) {
@@ -326,7 +513,7 @@ export async function updateMembershipSettings(
         updatedAt: serverTimestamp(),
         updatedBy: user.uid,
       },
-      { merge: true }
+      { merge: true },
     );
     logFsSuccess("updateMembershipSettings");
   } catch (e) {

@@ -141,7 +141,7 @@ export const PolicyEditorPage: React.FC = () => {
             <div className="flex items-center gap-3 w-full">
               <Icon
                 icon="lucide:pencil"
-                className="w-8 h-8 text-primary flex-shrink-0"
+                className="w-8 h-8 text-primary shrink-0"
               />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {policy ? "Edit Policy" : "Create Policy"}

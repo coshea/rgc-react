@@ -18,10 +18,13 @@ import { useAdminFlag } from "@/utils/admin";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
+import { UserAvatar } from "@/components/avatar";
 import { onTournament, mapTournamentDoc } from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
 import { addToast } from "@/providers/toast";
 import { getWeatherIcon } from "@/utils/weather";
+import { getUserProfile } from "@/api/users";
+import type { UserProfilePayload } from "@/api/users";
 
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -31,6 +34,8 @@ export const BlogPostPage: React.FC = () => {
 
   const [post, setPost] = React.useState<BlogPost | null>(null);
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
+  const [authorProfile, setAuthorProfile] =
+    React.useState<UserProfilePayload | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   usePageTracking(post?.title || "Announcement", loading);
@@ -80,6 +85,27 @@ export const BlogPostPage: React.FC = () => {
     );
     return () => unsub();
   }, [post?.tournamentId]);
+
+  React.useEffect(() => {
+    let active = true;
+
+    if (!post?.authorId || post.authorPhotoURL) {
+      setAuthorProfile(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    void getUserProfile(post.authorId)
+      .then((profile) => {
+        if (active) setAuthorProfile(profile);
+      })
+      .catch((err) => console.error("Failed to load author profile", err));
+
+    return () => {
+      active = false;
+    };
+  }, [post?.authorId, post?.authorPhotoURL]);
 
   const formatDate = (date: any) => {
     if (!date) return "";
@@ -158,11 +184,20 @@ export const BlogPostPage: React.FC = () => {
     return null;
   }
 
+  const authorAvatarUser = {
+    displayName:
+      post.authorName || authorProfile?.displayName || authorProfile?.email,
+    email: authorProfile?.email,
+    photoURL: authorProfile?.photoURL ?? null,
+  };
+
+  const authorName = authorAvatarUser.displayName || "Anonymous";
+
   return (
     <div className="max-w-4xl mx-auto pt-4 pb-10 px-4">
       {/* Navigation */}
       <div className="mb-6 flex items-center justify-between">
-        <BackButton onPress={() => navigate("/announcements")} />
+        <BackButton />
         {isAdmin && (
           <Button
             size="sm"
@@ -215,17 +250,12 @@ export const BlogPostPage: React.FC = () => {
 
         <div className="flex items-center gap-4 text-sm text-foreground-500">
           <div className="flex items-center gap-2">
-            {post.authorPhotoURL && (
-              <img
-                src={post.authorPhotoURL}
-                alt={post.authorName}
-                className="w-8 h-8 rounded-full"
-              />
-            )}
-            <span className="flex items-center gap-1">
-              <Icon icon="lucide:user" className="w-4 h-4" />
-              {post.authorName}
-            </span>
+            <UserAvatar
+              src={post.authorPhotoURL || undefined}
+              user={authorAvatarUser}
+              size="sm"
+            />
+            <span>{authorName}</span>
           </div>
           <span className="flex items-center gap-1">
             <Icon icon="lucide:calendar" className="w-4 h-4" />

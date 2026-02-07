@@ -4,6 +4,7 @@ import type { MembershipOption } from "../types";
 
 export function SelectOptionStep(props: {
   membershipOptionsDisabled: boolean;
+  isLoggedIn: boolean;
   currentYear: number;
   membershipAmountDue: number;
   handicapFee: number;
@@ -12,6 +13,7 @@ export function SelectOptionStep(props: {
 }) {
   const {
     membershipOptionsDisabled,
+    isLoggedIn,
     currentYear,
     membershipAmountDue,
     handicapFee,
@@ -73,12 +75,14 @@ export function SelectOptionStep(props: {
               size="lg"
               color="primary"
               variant="flat"
-              isDisabled={membershipOptionsDisabled}
+              isDisabled={membershipOptionsDisabled || !isLoggedIn}
               onPress={() => onSelectOption("handicap")}
             >
               {membershipOptionsDisabled
                 ? `Already paid for ${currentYear}`
-                : "Join Handicap Only"}
+                : !isLoggedIn
+                  ? "Log in to join"
+                  : "Join Handicap Only"}
             </Button>
           </CardFooter>
         </Card>

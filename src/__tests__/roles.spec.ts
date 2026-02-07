@@ -8,6 +8,7 @@ describe("Board Roles", () => {
       "Treasurer",
       "Handicap Chairman",
       "Tournament Chairman",
+      "Tournament Co-Chairman",
       "Webmaster",
       "Board Member",
     ]);

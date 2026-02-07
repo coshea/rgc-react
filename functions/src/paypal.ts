@@ -43,7 +43,7 @@ export async function fetchPayPalAccessToken(params: {
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     throw new Error(
-      `PayPal token request failed: ${resp.status} ${text}`.trim()
+      `PayPal token request failed: ${resp.status} ${text}`.trim(),
     );
   }
 
@@ -53,7 +53,7 @@ export async function fetchPayPalAccessToken(params: {
 }
 
 export function parsePayPalOrderSummary(
-  orderJson: unknown
+  orderJson: unknown,
 ): PayPalOrderSummary {
   if (typeof orderJson !== "object" || orderJson === null) {
     throw new Error("Invalid PayPal order JSON");
@@ -78,6 +78,26 @@ export function parsePayPalOrderSummary(
         if (Number.isFinite(n)) amount = n;
       }
       if (typeof curr === "string") currency = curr;
+    }
+
+    if (amount === undefined) {
+      const payments = pu0.payments as Record<string, unknown> | undefined;
+      const captures = payments?.captures as unknown;
+      if (Array.isArray(captures) && captures.length > 0) {
+        const capture0 = captures[0] as Record<string, unknown>;
+        const captureAmount = capture0.amount as
+          | Record<string, unknown>
+          | undefined;
+        if (captureAmount && typeof captureAmount === "object") {
+          const value = captureAmount.value;
+          const curr = captureAmount.currency_code;
+          if (typeof value === "string") {
+            const n = Number(value);
+            if (Number.isFinite(n)) amount = n;
+          }
+          if (typeof curr === "string") currency = curr;
+        }
+      }
     }
   }
 

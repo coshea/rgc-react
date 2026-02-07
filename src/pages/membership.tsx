@@ -47,6 +47,12 @@ export default function MembershipPage() {
 
   const membershipAmountDue = settings?.fullMembershipPrice ?? MEMBERSHIP_FEE;
   const handicapFee = settings?.handicapMembershipPrice ?? HANDICAP_FEE;
+  const membershipLetterUrl =
+    settings?.membershipLetterUrl ??
+    DEFAULT_MEMBERSHIP_SETTINGS.membershipLetterUrl;
+  const membershipApplicationUrl =
+    settings?.membershipApplicationUrl ??
+    DEFAULT_MEMBERSHIP_SETTINGS.membershipApplicationUrl;
 
   const showClosedMessage =
     !loadingSettings && settings && !settings.registrationOpen;
@@ -96,6 +102,47 @@ export default function MembershipPage() {
         ) : null}
       </header>
 
+      <section className="mt-8 w-full max-w-3xl">
+        <Card className="border border-content3 bg-content1">
+          <CardBody className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
+              <Icon
+                icon="lucide:mail-open"
+                width={24}
+                height={24}
+                className="text-primary mt-1 shrink-0"
+              />
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-foreground mb-2">
+                  Welcome! Read Our 2025 Membership Letter
+                </h2>
+                <p className="text-sm text-foreground-600 leading-relaxed">
+                  Before you join or renew, please take a moment to review our
+                  annual membership letter from the Board of Governors. It
+                  includes important details about tournament schedules, club
+                  rules, membership benefits, dues information, and everything
+                  you need to know for the upcoming season.
+                </p>
+              </div>
+            </div>
+            <Button
+              as="a"
+              href={membershipLetterUrl}
+              target="_blank"
+              rel="noreferrer"
+              color="primary"
+              variant="flat"
+              className="shrink-0 sm:mt-1"
+              startContent={
+                <Icon icon="lucide:file-text" width={16} height={16} />
+              }
+            >
+              Read Letter
+            </Button>
+          </CardBody>
+        </Card>
+      </section>
+
       <MembershipAdminModal
         isOpen={showAdminModal}
         onClose={() => setShowAdminModal(false)}
@@ -131,6 +178,7 @@ export default function MembershipPage() {
         <MembershipPaymentsFlow
           membershipAmountDue={membershipAmountDue}
           handicapFee={handicapFee}
+          membershipApplicationUrl={membershipApplicationUrl}
           loginFromPath={siteConfig.pages.membership.link}
         />
       ) : null}

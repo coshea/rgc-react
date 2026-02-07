@@ -81,7 +81,7 @@ export default function PastChampions({
         {} as Record<
           number,
           { types: Set<string>; championships: UnifiedChampionship[] }
-        >
+        >,
       );
 
       const years = Object.keys(yearData)
@@ -102,7 +102,7 @@ export default function PastChampions({
       const completeYearsSet = new Set(completeYearsList);
 
       const filtered = championships.filter((c) =>
-        completeYearsSet.has(c.year)
+        completeYearsSet.has(c.year),
       );
 
       return {
@@ -162,7 +162,7 @@ export default function PastChampions({
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
         <div className="text-center mb-4">
           <h1 className="text-2xl font-bold mb-2">Past Champions</h1>
           <p className="text-sm text-default-600 max-w-2xl mx-auto">
@@ -176,7 +176,7 @@ export default function PastChampions({
 
   if (isError) {
     return (
-      <div className="max-w-7xl mx-auto p-6 overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
         <div className="text-center mb-4">
           <h1 className="text-2xl font-bold mb-2">Past Champions</h1>
           <p className="text-danger">
@@ -191,33 +191,41 @@ export default function PastChampions({
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 overflow-x-hidden">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <h1 className="text-2xl font-bold">Past Champions</h1>
-          {isAdmin && (
-            <Button
-              color="primary"
-              onPress={handleAddNew}
-              startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-              className="self-start sm:self-auto"
-            >
-              Add Championship
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {!showAllYears && (
+              <Button
+                as={Link}
+                href="/past-champions"
+                size="sm"
+                variant="flat"
+                endContent={
+                  <Icon icon="lucide:arrow-right" className="w-3 h-3" />
+                }
+                className="self-start sm:self-auto"
+              >
+                View All
+              </Button>
+            )}
+            {isAdmin && showAllYears && (
+              <Button
+                color="primary"
+                onPress={handleAddNew}
+                startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
+                className="self-start sm:self-auto"
+              >
+                Add Championship
+              </Button>
+            )}
+          </div>
         </div>
         <p className="text-sm text-default-600 mb-3">
           Celebrating our distinguished champions and runners-up across all
           major tournaments.
         </p>
-
-        {!showAllYears && (
-          <div className="text-center">
-            <Link href="/past-champions" color="success">
-              View All Past Champions
-            </Link>
-          </div>
-        )}
       </div>
 
       {showAllYears && (

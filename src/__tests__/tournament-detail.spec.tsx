@@ -77,11 +77,18 @@ vi.mock("@/components/tournament-editor", () => ({
   TournamentEditor: () => <div data-testid="editor">Editor</div>,
 }));
 
-function renderWithRoute(id: string) {
+function renderWithRoute(
+  id: string,
+  entries?: string[],
+  initialIndex?: number,
+) {
   const qc = new QueryClient();
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[`/t/${id}`]}>
+      <MemoryRouter
+        initialEntries={entries ?? [`/t/${id}`]}
+        initialIndex={initialIndex}
+      >
         <Routes>
           <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
           <Route
@@ -136,7 +143,7 @@ describe("TournamentDetailPage", () => {
   });
 
   it("back button always navigates to tournaments list", async () => {
-    renderWithRoute("back1");
+    renderWithRoute("back1", ["/tournaments", "/t/back1"], 1);
     emitDoc("tournaments/back1", baseTournament);
     await screen.findByText("Club Championship");
     const backBtns = screen.getAllByRole("button", {
@@ -264,7 +271,7 @@ describe("TournamentDetailPage", () => {
       {
         id: "r1",
         data: () => ({
-          ownerId: "other",
+          ownerId: "u10",
           openSpotsOptIn: true,
           team: [
             { id: "u10", displayName: "Player A" },
@@ -321,7 +328,7 @@ describe("TournamentDetailPage", () => {
       {
         id: "open1",
         data: () => ({
-          ownerId: "o2",
+          ownerId: "e",
           openSpotsOptIn: true,
           team: [
             { id: "e", displayName: "E" },

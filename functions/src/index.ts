@@ -3,8 +3,14 @@ import cors from "cors";
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret, defineString } from "firebase-functions/params";
 
-import { parseVerifyRequest } from "./validate";
+import {
+  parseCheckPaymentRequest,
+  parseDonationVerifyRequest,
+  parseVerifyRequest,
+} from "./validate";
 import { verifyAndRecordMembershipPayment } from "./verifyAndRecordMembershipPayment";
+import { recordCheckMembershipPayment } from "./firestoreMembership";
+import { verifyAndRecordDonationPayment } from "./verifyAndRecordDonationPayment";
 
 const PAYPAL_CLIENT_ID = defineString("PAYPAL_CLIENT_ID");
 const PAYPAL_CLIENT_SECRET = defineSecret("PAYPAL_CLIENT_SECRET");
@@ -18,6 +24,15 @@ const corsMiddleware = cors({
   allowedHeaders: ["content-type", "authorization"],
 });
 
+class AuthError extends Error {
+  status: number;
+
+  constructor(message: string, status = 401) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function required(name: string, value: string | undefined): string {
   if (!value || !value.trim()) throw new Error(`Missing ${name}`);
   return value.trim();
@@ -30,6 +45,71 @@ function getBearerToken(req: {
   if (typeof raw !== "string") return null;
   const match = raw.match(/^Bearer\s+(.+)$/i);
   return match?.[1] ?? null;
+}
+
+type JwtPayload = {
+  uid?: string;
+  user_id?: string;
+  sub?: string;
+  [key: string]: unknown;
+};
+
+function decodeBase64Url(value: string): string {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padLength = (4 - (normalized.length % 4)) % 4;
+  const padded = normalized + "=".repeat(padLength);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+function decodeJwtNoVerify(token: string): unknown | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const payload = parts[1];
+    const json = decodeBase64Url(payload);
+    return JSON.parse(json) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function isJwtPayload(value: unknown): value is JwtPayload {
+  if (typeof value !== "object" || value === null) return false;
+  const rec = value as Record<string, unknown>;
+  const uid = rec["uid"];
+  const userId = rec["user_id"];
+  const sub = rec["sub"];
+  return (
+    (typeof uid === "string" && uid.length > 0) ||
+    (typeof userId === "string" && userId.length > 0) ||
+    (typeof sub === "string" && sub.length > 0)
+  );
+}
+
+async function getUidFromRequest(req: {
+  headers: Record<string, unknown>;
+}): Promise<string> {
+  const token = getBearerToken(req);
+  if (!token) {
+    throw new AuthError("Missing Authorization token");
+  }
+
+  if (isFunctionsEmulator()) {
+    const payload = decodeJwtNoVerify(token);
+    if (!isJwtPayload(payload)) {
+      throw new AuthError("Invalid emulator token payload");
+    }
+
+    const uid = payload.uid ?? payload.user_id ?? payload.sub ?? "";
+    if (!uid) {
+      throw new AuthError("Invalid emulator token payload");
+    }
+
+    return uid;
+  }
+
+  const decoded = await admin.auth().verifyIdToken(token);
+  return decoded.uid;
 }
 
 function isFunctionsEmulator(): boolean {
@@ -94,74 +174,9 @@ export const verify_and_record_membership_payment = onRequest(
       }
 
       try {
-        const token = getBearerToken(
+        const uid = await getUidFromRequest(
           req as unknown as { headers: Record<string, unknown> },
         );
-        if (!token) {
-          res
-            .status(401)
-            .json({ ok: false, error: "Missing Authorization token" });
-          return;
-        }
-
-        // In emulator mode the Auth emulator issues unsigned or test tokens
-        // which the Admin SDK cannot verify via signature checks. For local
-        // development we decode the JWT payload without verification to
-        // extract the `uid`. This is safe for emulator-only runs because
-        // the functions are not exposed to real clients.
-        function decodeJwtNoVerify(t: string): unknown | null {
-          try {
-            const parts = t.split(".");
-            if (parts.length < 2) return null;
-            const payload = parts[1];
-            const json = Buffer.from(payload, "base64").toString("utf8");
-            return JSON.parse(json) as unknown;
-          } catch {
-            return null;
-          }
-        }
-
-        type JwtPayload = {
-          uid?: string;
-          user_id?: string;
-          sub?: string;
-          [key: string]: unknown;
-        };
-
-        function isJwtPayload(value: unknown): value is JwtPayload {
-          if (typeof value !== "object" || value === null) return false;
-          const rec = value as Record<string, unknown>;
-          const uid = rec["uid"];
-          const userId = rec["user_id"];
-          const sub = rec["sub"];
-          return (
-            (typeof uid === "string" && uid.length > 0) ||
-            (typeof userId === "string" && userId.length > 0) ||
-            (typeof sub === "string" && sub.length > 0)
-          );
-        }
-
-        let uid: string;
-        if (isFunctionsEmulator()) {
-          const payload = decodeJwtNoVerify(token);
-          if (!isJwtPayload(payload)) {
-            res
-              .status(401)
-              .json({ ok: false, error: "Invalid emulator token payload" });
-            return;
-          }
-
-          uid = payload.uid ?? payload.user_id ?? payload.sub ?? "";
-          if (!uid) {
-            res
-              .status(401)
-              .json({ ok: false, error: "Invalid emulator token payload" });
-            return;
-          }
-        } else {
-          const decoded = await admin.auth().verifyIdToken(token);
-          uid = decoded.uid;
-        }
 
         const request = parseVerifyRequest(req.body);
 
@@ -207,6 +222,125 @@ export const verify_and_record_membership_payment = onRequest(
 
         res.status(200).json(resp);
       } catch (e) {
+        if (e instanceof AuthError) {
+          res.status(e.status).json({ ok: false, error: e.message });
+          return;
+        }
+        const message = e instanceof Error ? e.message : "Unknown error";
+        res.status(500).json({ ok: false, error: message });
+      }
+    });
+  },
+);
+
+export const request_check_membership_payment = onRequest(async (req, res) => {
+  corsMiddleware(req, res, async () => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "Method not allowed" });
+      return;
+    }
+
+    try {
+      const uid = await getUidFromRequest(
+        req as unknown as { headers: Record<string, unknown> },
+      );
+
+      const request = parseCheckPaymentRequest(req.body);
+
+      const serverNow =
+        typeof admin.firestore.FieldValue?.serverTimestamp === "function"
+          ? admin.firestore.FieldValue.serverTimestamp()
+          : admin.firestore.Timestamp.now();
+
+      const { groupId, reused } = await recordCheckMembershipPayment({
+        db: admin.firestore(),
+        now: serverNow,
+        payment: {
+          uid,
+          year: request.year,
+          membershipType: request.membershipType,
+          donationAmount: request.donationAmount,
+          requestId: request.requestId,
+        },
+      });
+
+      res.status(200).json({ ok: true, groupId, reused });
+    } catch (e) {
+      if (e instanceof AuthError) {
+        res.status(e.status).json({ ok: false, error: e.message });
+        return;
+      }
+      const message = e instanceof Error ? e.message : "Unknown error";
+      res.status(500).json({ ok: false, error: message });
+    }
+  });
+});
+
+export const verify_and_record_donation_payment = onRequest(
+  { secrets: [PAYPAL_CLIENT_SECRET] },
+  async (req, res) => {
+    corsMiddleware(req, res, async () => {
+      if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
+      }
+
+      if (req.method !== "POST") {
+        res.status(405).json({ ok: false, error: "Method not allowed" });
+        return;
+      }
+
+      try {
+        const uid = await getUidFromRequest(
+          req as unknown as { headers: Record<string, unknown> },
+        );
+
+        const request = parseDonationVerifyRequest(req.body);
+
+        const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
+        const clientSecret = required(
+          "PAYPAL_CLIENT_SECRET",
+          PAYPAL_CLIENT_SECRET.value(),
+        );
+        const envRaw = required(
+          "PAYPAL_ENVIRONMENT",
+          PAYPAL_ENV.value(),
+        ).toUpperCase();
+        const env = envRaw === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
+
+        const fetchImpl = mockPayPalFetchFromEnv() ?? undefined;
+
+        const serverNow =
+          typeof admin.firestore.FieldValue?.serverTimestamp === "function"
+            ? admin.firestore.FieldValue.serverTimestamp()
+            : admin.firestore.Timestamp.now();
+
+        const resp = await verifyAndRecordDonationPayment({
+          uid,
+          request,
+          deps: {
+            db: admin.firestore(),
+            now: serverNow,
+            paypal: {
+              env,
+              clientId,
+              clientSecret,
+              ...(fetchImpl ? { fetchImpl } : {}),
+            },
+          },
+        });
+
+        res.status(200).json(resp);
+      } catch (e) {
+        if (e instanceof AuthError) {
+          res.status(e.status).json({ ok: false, error: e.message });
+          return;
+        }
         const message = e instanceof Error ? e.message : "Unknown error";
         res.status(500).json({ ok: false, error: message });
       }

@@ -1,14 +1,17 @@
 import { TournamentCard } from "./tournament-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { Link } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
 
 /*
  * Tournament section on the home page displaying a 
 list of tournaments in card view
  */
 export function TournamentSection() {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
   const { data: latestYear, isLoading: latestYearLoading } = useQuery<
@@ -23,7 +26,7 @@ export function TournamentSection() {
 
       const colRef = collection(db, "tournaments");
       const snap = await getDocs(
-        query(colRef, orderBy("date", "desc"), limit(1))
+        query(colRef, orderBy("date", "desc"), limit(1)),
       );
       if (snap.empty) return null;
 
@@ -71,19 +74,28 @@ export function TournamentSection() {
   };
 
   const displayTournaments = getDisplayTournaments();
-  const showViewAllLink =
-    isMobile && tournaments.length > displayTournaments.length;
 
   return (
     <section className="py-8 bg-background overflow-x-hidden" id="tournaments">
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">
-            {yearToShow} Featured Tournaments
-          </h2>
-          <p className="text-sm text-default-600">
-            Click on a tournament to view details and register
-          </p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">
+              {yearToShow} Featured Tournaments
+            </h2>
+            <p className="text-sm text-default-600">
+              Click on a tournament to view details and register
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => navigate("/tournaments")}
+            endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
+            className="self-start sm:self-auto"
+          >
+            View All
+          </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {latestYearLoading || tournamentsLoading ? (
@@ -125,13 +137,6 @@ export function TournamentSection() {
             ))
           )}
         </div>
-        {showViewAllLink && (
-          <div className="text-center mt-8">
-            <Link href="/tournaments" color="success" className="text-lg">
-              View All {yearToShow} Tournaments
-            </Link>
-          </div>
-        )}
       </div>
     </section>
   );

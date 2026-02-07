@@ -50,7 +50,7 @@ export function EditMemberModal({
         .then((p) => {
           if (p) {
             setPayment({
-              membershipType: p.membershipType,
+              membershipType: p.membershipType ?? "",
               amount: p.amount != null ? String(p.amount) : "",
               method: p.method || "",
               status: p.status,
@@ -137,7 +137,7 @@ export function EditMemberModal({
       } catch (paymentError) {
         console.error(
           "[EditMemberModal] membership payment save error",
-          paymentError
+          paymentError,
         );
         addToast({
           title: "Payment save failed",
