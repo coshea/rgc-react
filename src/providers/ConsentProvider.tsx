@@ -18,7 +18,7 @@ type ConsentContextValue = {
 };
 
 const ConsentContext = createContext<ConsentContextValue | undefined>(
-  undefined
+  undefined,
 );
 
 const STORAGE_KEY = "rgc.cookieConsent";
@@ -43,7 +43,9 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   // If accepted, enable analytics lazily
   useEffect(() => {
     if (status === "accepted") {
-      void enableAnalytics();
+      void enableAnalytics().catch(() => {
+        // ignore analytics initialization errors
+      });
     }
   }, [status]);
 
@@ -67,7 +69,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<ConsentContextValue>(
     () => ({ status, loading, accept, reject }),
-    [status, loading, accept, reject]
+    [status, loading, accept, reject],
   );
 
   return (
