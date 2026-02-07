@@ -36,12 +36,14 @@ import { SelectOptionStep } from "./membership-payments-flow/steps/SelectOptionS
 export interface MembershipPaymentsFlowProps {
   membershipAmountDue: number;
   handicapFee: number;
+  membershipApplicationUrl?: string;
   loginFromPath?: string;
 }
 
 export default function MembershipPaymentsFlow({
   membershipAmountDue,
   handicapFee,
+  membershipApplicationUrl,
   loginFromPath = siteConfig.pages.membership.link,
 }: MembershipPaymentsFlowProps) {
   const currency = formatUSD;
@@ -86,13 +88,6 @@ export default function MembershipPaymentsFlow({
     useState<string>("");
 
   const [newMember, setNewMember] = useState<NewMemberState>({
-    fullName: "",
-    email: "",
-    phone: "",
-    streetAddress: "",
-    cityStateZip: "",
-    ghin: "",
-    homeCourse: "",
     acknowledged: false,
   });
 
@@ -169,6 +164,7 @@ export default function MembershipPaymentsFlow({
     title: string;
     description: string;
     amount: number;
+    returnTo: Step;
   }) {
     setStep({ kind: "paypal", ...params });
   }
@@ -246,21 +242,21 @@ export default function MembershipPaymentsFlow({
     const paid = currency(step.amount);
     const titleByPurpose: Record<MembershipOption, string> = {
       renew: "Payment Recorded",
-      new: "Application Submitted",
+      new: "Payment Recorded",
       handicap: "Payment Recorded",
       donation: "Thank You",
     };
 
     const doneTitleByPurpose: Record<MembershipOption, string> = {
       renew: "Payment complete",
-      new: "Application submitted",
+      new: "Payment complete",
       handicap: "Payment complete",
       donation: "Thank you",
     };
 
     const descriptionByPurpose: Record<MembershipOption, string> = {
       renew: `Annual dues payment of ${paid} captured successfully.`,
-      new: `Application submitted and dues of ${paid} captured successfully.`,
+      new: `Dues payment of ${paid} captured successfully. Please mail your completed application to the club.`,
       handicap: `Handicap fee of ${paid} captured successfully.`,
       donation: `Donation of ${paid} captured successfully.`,
     };
@@ -438,11 +434,15 @@ export default function MembershipPaymentsFlow({
     const donationText =
       donation > 0 ? ` plus donation of ${currency(donation)}` : "";
 
+    const returnTo =
+      step.kind === "renew_confirm" ? step : { kind: "annual_start" as const };
+
     handlePaymentDecision({
       purpose: "renew",
       title: "Annual Club Membership",
       description: "Annual dues payment",
       amount: totalAmount,
+      returnTo,
       demoTitle: "Payment Recorded",
       demoDescription: `Annual dues payment of ${currency(membershipAmountDue)}${donationText} recorded (demo).`,
       doneTitle: "Payment complete",
@@ -455,6 +455,7 @@ export default function MembershipPaymentsFlow({
     title: string;
     description: string;
     amount: number;
+    returnTo: Step;
     demoTitle: string;
     demoDescription: string;
     doneTitle: string;
@@ -465,6 +466,7 @@ export default function MembershipPaymentsFlow({
       title,
       description,
       amount,
+      returnTo,
       demoTitle,
       demoDescription,
       doneTitle,
@@ -472,7 +474,7 @@ export default function MembershipPaymentsFlow({
     } = params;
 
     if (paypalEnabled) {
-      goToPayPalPayment({ purpose, title, description, amount });
+      goToPayPalPayment({ purpose, title, description, amount, returnTo });
       return;
     }
 
@@ -483,7 +485,7 @@ export default function MembershipPaymentsFlow({
           "PayPal is not configured for this environment (missing VITE_PAYPAL_CLIENT_ID).",
         color: "warning",
       });
-      goToPayPalPayment({ purpose, title, description, amount });
+      goToPayPalPayment({ purpose, title, description, amount, returnTo });
       return;
     }
 
@@ -637,7 +639,7 @@ export default function MembershipPaymentsFlow({
           createOrder={createPayPalOrder}
           onApprove={onPayPalApprove}
           onError={onPayPalError}
-          onBack={goToSelect}
+          onBack={() => setStep(step.returnTo)}
           onCheckSelected={async () => {
             if (!user) {
               addToast({
@@ -720,24 +722,27 @@ export default function MembershipPaymentsFlow({
       {step.kind === "new_apply" && (
         <NewMemberApplicationStep
           initialValue={newMember}
+          membershipApplicationUrl={membershipApplicationUrl}
+          contactAddress={siteConfig.contactAddress}
           membershipAmountDue={membershipAmountDue}
           currency={currency}
-          onBack={goToSelect}
+          onBack={() => setStep({ kind: "annual_start" })}
           onSubmit={(data) => {
             setNewMember(data);
             handlePaymentDecision({
               purpose: "new",
               title: "Annual Club Membership",
-              description: "New member application dues",
+              description: "New member dues payment",
               amount: membershipAmountDue,
-              demoTitle: "Application Submitted",
-              demoDescription: `Application submitted and dues of ${currency(
+              returnTo: { kind: "new_apply" },
+              demoTitle: "Payment Recorded",
+              demoDescription: `Dues of ${currency(
                 membershipAmountDue,
-              )} recorded (demo).`,
-              doneTitle: "Application submitted",
-              doneDescription: `Application submitted and dues of ${currency(
+              )} recorded (demo). Please mail your completed application.`,
+              doneTitle: "Payment complete",
+              doneDescription: `Dues of ${currency(
                 membershipAmountDue,
-              )} recorded (demo).`,
+              )} recorded (demo). Please mail your completed application.`,
             });
           }}
         />
@@ -800,6 +805,7 @@ export default function MembershipPaymentsFlow({
               title: "Handicap Membership",
               description: "Handicap membership fee",
               amount: totalAmount,
+              returnTo: { kind: "handicap_confirm" },
               demoTitle: "Payment Recorded",
               demoDescription: `Handicap fee of ${currency(handicapFee)}${donationText} recorded (demo).`,
               doneTitle: "Payment complete",
@@ -821,6 +827,7 @@ export default function MembershipPaymentsFlow({
               title: "Donation",
               description: "Club donation",
               amount,
+              returnTo: { kind: "donation" },
               demoTitle: "Thank You",
               demoDescription: `Donation of ${currency(amount)} recorded (demo).`,
               doneTitle: "Thank you",

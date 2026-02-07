@@ -84,7 +84,9 @@ describe("MembershipPage - registration closed gating", () => {
 describe("MembershipPage - new member flow", () => {
   it("shows errors when submitting empty new member application", async () => {
     renderMembershipPage();
-    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Join for 2026$/i }),
+    );
 
     // Step 2
     fireEvent.click(
@@ -94,69 +96,49 @@ describe("MembershipPage - new member flow", () => {
     // Step 3
     fireEvent.click(
       await screen.findByRole("button", {
-        name: /Submit Application & Pay Dues/i,
+        name: /Continue to Payment/i,
       }),
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Full name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/Email is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/Phone number is required/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/Street address is required/i),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/City, State, ZIP is required/i),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          /Please confirm you understand this is an application/i,
-        ),
+        screen.getByText(/The application PDF has not been configured yet/i),
       ).toBeInTheDocument();
     });
+
+    const continueButton = screen.getByRole("button", {
+      name: /Continue to Payment/i,
+    });
+    expect(continueButton).toBeDisabled();
 
     expect(addToastMock).not.toHaveBeenCalled();
   });
 
   it("submits successfully with valid application", async () => {
+    mockedSettings = {
+      ...DEFAULT_MEMBERSHIP_SETTINGS,
+      membershipApplicationUrl: "https://storage.test/public-docs/app.pdf",
+    };
     renderMembershipPage();
 
-    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Join for 2026$/i }),
+    );
     fireEvent.click(
       await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
-    fireEvent.change(await screen.findByLabelText(/Full Name/i), {
-      target: { value: "Jane Golfer" },
-    });
-    fireEvent.change(screen.getByLabelText(/Email Address/i), {
-      target: { value: "jane@example.com" },
-    });
-    fireEvent.change(screen.getByLabelText(/Phone Number/i), {
-      target: { value: "(555) 555-5555" },
-    });
-    fireEvent.change(screen.getByLabelText(/Street Address/i), {
-      target: { value: "123 Main St" },
-    });
-    fireEvent.change(screen.getByLabelText(/City, State, ZIP/i), {
-      target: { value: "Ridgefield, CT 06877" },
-    });
-
     fireEvent.click(
-      screen.getByText(
-        /I understand that this is an application for membership/i,
-      ),
+      screen.getByText(/I understand I must mail the completed application/i),
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Submit Application & Pay Dues/i }),
+      screen.getByRole("button", { name: /Continue to Payment/i }),
     );
 
     await waitFor(() => {
       expect(addToastMock).toHaveBeenCalled();
-      expect(addToastMock.mock.calls[0][0].title).toMatch(
-        /Application Submitted/i,
-      );
+      expect(addToastMock.mock.calls[0][0].title).toMatch(/Payment Recorded/i);
     });
   });
 });
@@ -179,7 +161,9 @@ describe("MembershipPage - donation", () => {
 describe("MembershipPage - renew", () => {
   it("records a renewal payment", async () => {
     renderMembershipPage();
-    fireEvent.click(screen.getByRole("button", { name: /^Join for 2026$/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Join for 2026$/i }),
+    );
     fireEvent.click(await screen.findByRole("button", { name: /^Continue$/i }));
 
     fireEvent.click(

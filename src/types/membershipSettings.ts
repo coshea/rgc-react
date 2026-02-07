@@ -20,6 +20,9 @@ export interface MembershipSettings {
   /** URL to the yearly membership letter PDF */
   membershipLetterUrl?: string;
 
+  /** URL to the new member application PDF */
+  membershipApplicationUrl?: string;
+
   /** Last updated timestamp */
   updatedAt?: Date | { toDate(): Date };
 

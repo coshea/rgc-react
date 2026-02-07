@@ -50,6 +50,9 @@ export default function MembershipPage() {
   const membershipLetterUrl =
     settings?.membershipLetterUrl ??
     DEFAULT_MEMBERSHIP_SETTINGS.membershipLetterUrl;
+  const membershipApplicationUrl =
+    settings?.membershipApplicationUrl ??
+    DEFAULT_MEMBERSHIP_SETTINGS.membershipApplicationUrl;
 
   const showClosedMessage =
     !loadingSettings && settings && !settings.registrationOpen;
@@ -175,6 +178,7 @@ export default function MembershipPage() {
         <MembershipPaymentsFlow
           membershipAmountDue={membershipAmountDue}
           handicapFee={handicapFee}
+          membershipApplicationUrl={membershipApplicationUrl}
           loginFromPath={siteConfig.pages.membership.link}
         />
       ) : null}

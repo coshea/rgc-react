@@ -14,6 +14,7 @@ export type Step =
       title: string;
       description: string;
       amount: number;
+      returnTo: Step;
     }
   | {
       kind: "done";
@@ -22,13 +23,6 @@ export type Step =
     };
 
 export interface NewMemberState {
-  fullName: string;
-  email: string;
-  phone: string;
-  streetAddress: string;
-  cityStateZip: string;
-  ghin: string;
-  homeCourse: string;
   acknowledged: boolean;
 }
 

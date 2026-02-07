@@ -35,6 +35,7 @@ export default function MembershipAdminModal({
   const [socialPrice, setSocialPrice] = useState("50");
   const [closedMessage, setClosedMessage] = useState("");
   const [membershipLetterUrl, setMembershipLetterUrl] = useState("");
+  const [membershipApplicationUrl, setMembershipApplicationUrl] = useState("");
   const [publicDocs, setPublicDocs] = useState<
     Array<{ name: string; url: string }>
   >([]);
@@ -53,6 +54,7 @@ export default function MembershipAdminModal({
         setSocialPrice(newSettings.handicapMembershipPrice.toString());
         setClosedMessage(newSettings.closedMessage || "");
         setMembershipLetterUrl(newSettings.membershipLetterUrl || "");
+        setMembershipApplicationUrl(newSettings.membershipApplicationUrl || "");
         setLoading(false);
       },
       (error) => {
@@ -122,6 +124,11 @@ export default function MembershipAdminModal({
       newErrors.membershipLetterUrl = "Select a membership letter document";
     }
 
+    if (publicDocs.length > 0 && !membershipApplicationUrl.trim()) {
+      newErrors.membershipApplicationUrl =
+        "Select a membership application document";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -137,6 +144,7 @@ export default function MembershipAdminModal({
         handicapMembershipPrice: parseFloat(socialPrice),
         closedMessage: closedMessage.trim() || undefined,
         membershipLetterUrl: membershipLetterUrl.trim() || undefined,
+        membershipApplicationUrl: membershipApplicationUrl.trim() || undefined,
       });
 
       addToast({
@@ -165,6 +173,7 @@ export default function MembershipAdminModal({
       setSocialPrice(settings.handicapMembershipPrice.toString());
       setClosedMessage(settings.closedMessage || "");
       setMembershipLetterUrl(settings.membershipLetterUrl || "");
+      setMembershipApplicationUrl(settings.membershipApplicationUrl || "");
       setErrors({});
     }
     onClose();
@@ -178,13 +187,26 @@ export default function MembershipAdminModal({
       parseFloat(fullPrice) !== settings.fullMembershipPrice ||
       parseFloat(socialPrice) !== settings.handicapMembershipPrice ||
       closedMessage !== (settings.closedMessage || "") ||
-      membershipLetterUrl !== (settings.membershipLetterUrl || ""));
+      membershipLetterUrl !== (settings.membershipLetterUrl || "") ||
+      membershipApplicationUrl !== (settings.membershipApplicationUrl || ""));
 
   const membershipLetterOptions =
     membershipLetterUrl &&
     !publicDocs.some((doc) => doc.url === membershipLetterUrl)
       ? [
           { name: "Current selection (external)", url: membershipLetterUrl },
+          ...publicDocs,
+        ]
+      : publicDocs;
+
+  const membershipApplicationOptions =
+    membershipApplicationUrl &&
+    !publicDocs.some((doc) => doc.url === membershipApplicationUrl)
+      ? [
+          {
+            name: "Current selection (external)",
+            url: membershipApplicationUrl,
+          },
           ...publicDocs,
         ]
       : publicDocs;
@@ -358,6 +380,52 @@ export default function MembershipAdminModal({
                 <Input
                   label="Selected URL"
                   value={membershipLetterUrl}
+                  isReadOnly
+                />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">
+                  New Member Application PDF
+                </h3>
+                <p className="text-sm text-foreground-500">
+                  Choose the PDF new applicants must download and mail in.
+                  Documents are loaded from the storage folder{" "}
+                  <span className="font-medium">public-docs</span>.
+                </p>
+                <Select
+                  label="Application document"
+                  selectedKeys={
+                    membershipApplicationUrl ? [membershipApplicationUrl] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string | undefined;
+                    setMembershipApplicationUrl(value || "");
+                    if (errors.membershipApplicationUrl) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        membershipApplicationUrl: "",
+                      }));
+                    }
+                  }}
+                  isDisabled={loadingDocs}
+                  isInvalid={!!errors.membershipApplicationUrl}
+                  errorMessage={errors.membershipApplicationUrl}
+                  placeholder={
+                    loadingDocs
+                      ? "Loading documents..."
+                      : "Select an application PDF"
+                  }
+                >
+                  {membershipApplicationOptions.map((doc) => (
+                    <SelectItem key={doc.url} textValue={doc.name}>
+                      {doc.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <Input
+                  label="Selected URL"
+                  value={membershipApplicationUrl}
                   isReadOnly
                 />
               </div>
