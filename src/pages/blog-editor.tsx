@@ -159,7 +159,7 @@ export const BlogEditorPage: React.FC = () => {
         authorPhotoURL: user.photoURL || undefined,
         status: publish ? BlogPostStatus.Published : formData.status,
         publishedAt: publish ? new Date() : formData.publishedAt,
-        tournamentId: selectedTournamentId || undefined,
+        ...(selectedTournamentId && { tournamentId: selectedTournamentId }),
       };
 
       if (isEditing && id) {
