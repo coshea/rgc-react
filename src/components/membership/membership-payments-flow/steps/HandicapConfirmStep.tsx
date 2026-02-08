@@ -40,9 +40,9 @@ export function HandicapConfirmStep(props: {
   const total = handicapFee + donationValue;
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
+    <Card className="w-full min-w-[320px] max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 3: Payment</h2>
+        <h2 className="text-lg font-semibold">Step 3: Review &amp; confirm</h2>
         <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />

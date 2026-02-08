@@ -52,7 +52,7 @@ export function PayPalStep(props: {
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 3: Payment</h2>
+        <h2 className="text-lg font-semibold">Step 4: Submit payment</h2>
         <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />

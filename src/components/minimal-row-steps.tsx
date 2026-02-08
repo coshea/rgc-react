@@ -26,7 +26,7 @@ export default function MinimalRowSteps({
         <div className="mb-3 text-center text-sm text-default-500">{label}</div>
       ) : null}
 
-      <div className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-2xl items-center gap-2">
         {Array.from({ length: safeStepsCount }).map((_, index) => {
           const isComplete = index < safeCurrent;
           const isCurrent = index === safeCurrent;
