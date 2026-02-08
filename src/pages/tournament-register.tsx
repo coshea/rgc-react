@@ -433,6 +433,12 @@ const TournamentRegister: React.FC = () => {
       return; // wait for user confirmation
     }
 
+    // Clear any stale pending members if conflicts are resolved
+    if (foundConflicts.length === 0) {
+      pendingMembersRef.current = null;
+      setConflictsAcknowledged(false);
+    }
+
     // Use stored members if we are completing after a conflict acknowledgement
     const finalMembers = pendingMembersRef.current?.members || members;
     const ownerId = user.uid;
@@ -526,7 +532,11 @@ const TournamentRegister: React.FC = () => {
               <>
                 <RegistrationEditor
                   value={teammates}
-                  onChange={setTeammates}
+                  onChange={(next) => {
+                    setTeammates(next);
+                    pendingMembersRef.current = null;
+                    setConflictsAcknowledged(false);
+                  }}
                   users={selectableUsers}
                   maxSize={maxTeamSize}
                   labels={{ leader: "Team Leader / You" }}

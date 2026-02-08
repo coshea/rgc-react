@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 
@@ -96,6 +96,12 @@ function renderPage() {
 }
 
 describe("TournamentRegister duplicate teammate detection", () => {
+  beforeEach(() => {
+    upsertRegistrationMock.mockClear();
+    fetchAllRegistrationsMock.mockClear();
+    addToastMock.mockClear();
+  });
+
   it("shows conflict modal with display names and proceeds only after confirmation", async () => {
     renderPage();
 
@@ -148,5 +154,67 @@ describe("TournamentRegister duplicate teammate detection", () => {
     await waitFor(() => {
       expect(upsertRegistrationMock).toHaveBeenCalled();
     });
+  }, 20000);
+
+  it("does not submit removed conflicted teammate after going back", async () => {
+    renderPage();
+
+    expect(await screen.findByText(/Register for\s+Dup Test/i)).toBeTruthy();
+
+    await waitFor(() => {
+      expect(fetchAllRegistrationsMock).toHaveBeenCalled();
+    });
+
+    const teammate2Input = await screen.findByRole("combobox", {
+      name: /teammate 2/i,
+    });
+    fireEvent.change(teammate2Input, { target: { value: "Player Two" } });
+    fireEvent.keyDown(teammate2Input, { key: "ArrowDown" });
+    const p2Option = await screen.findByRole("option", { name: "Player Two" });
+    fireEvent.click(p2Option);
+
+    await new Promise((res) => setTimeout(res, 0));
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    const modal = await screen.findByTestId("conflict-modal");
+    expect(modal).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /go back/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("conflict-modal")).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /remove teammate 2/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /add teammate/i }));
+
+    const teammate2InputAgain = await screen.findByRole("combobox", {
+      name: /teammate 2/i,
+    });
+    fireEvent.change(teammate2InputAgain, {
+      target: { value: "Player Three" },
+    });
+    fireEvent.keyDown(teammate2InputAgain, { key: "ArrowDown" });
+    const p3Option = await screen.findByRole("option", {
+      name: "Player Three",
+    });
+    fireEvent.click(p3Option);
+
+    await new Promise((res) => setTimeout(res, 0));
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    await waitFor(() => {
+      expect(upsertRegistrationMock).toHaveBeenCalled();
+    });
+
+    const lastCall = upsertRegistrationMock.mock.calls.at(-1);
+    const payload = lastCall?.[2];
+    const teamIds = (payload?.team || []).map((m: { id: string }) => m.id);
+    expect(teamIds).toContain("leader");
+    expect(teamIds).toContain("p3");
+    expect(teamIds).not.toContain("p2");
   }, 20000);
 });
