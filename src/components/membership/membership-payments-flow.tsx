@@ -803,8 +803,8 @@ export default function MembershipPaymentsFlow({
 
             handlePaymentDecision({
               purpose: "handicap",
-              title: "Handicap Membership",
-              description: "Handicap membership fee",
+              title: "Handicap Only",
+              description: "GHIN Handicap fee",
               amount: totalAmount,
               returnTo: { kind: "handicap_confirm" },
               demoTitle: "Payment Recorded",

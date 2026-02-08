@@ -34,7 +34,7 @@ function typeLabel(type?: MembershipType | string | null) {
     case MEMBERSHIP_TYPES.FULL:
       return "Yearly Membership";
     case MEMBERSHIP_TYPES.HANDICAP:
-      return "Handicap Membership";
+      return "Handicap Only";
     default:
       return type ?? "—";
   }

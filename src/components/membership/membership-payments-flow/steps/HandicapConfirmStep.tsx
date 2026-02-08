@@ -49,7 +49,7 @@ export function HandicapConfirmStep(props: {
       <CardBody className="space-y-4">
         <div className="space-y-1">
           <div className="text-sm text-default-600">Membership</div>
-          <div className="text-base font-semibold">Handicap Membership</div>
+          <div className="text-base font-semibold">Handicap Only</div>
         </div>
 
         <div className="space-y-1">

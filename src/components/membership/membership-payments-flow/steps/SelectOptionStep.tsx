@@ -38,7 +38,7 @@ export function SelectOptionStep(props: {
           className="relative rounded-2xl border border-default-200"
         >
           <CardHeader className="flex flex-col items-start gap-1">
-            <h3 className="text-xl font-semibold">Handicap Membership</h3>
+            <h3 className="text-xl font-semibold">Handicap Only</h3>
             <p className="text-sm text-default-600">
               Players looking only for a GHIN Handicap Index.
             </p>
