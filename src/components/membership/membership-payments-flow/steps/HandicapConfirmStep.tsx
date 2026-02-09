@@ -5,10 +5,10 @@ import {
   CardFooter,
   CardHeader,
   Divider,
-  Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
+import { DonationAmountInput } from "../DonationAmountInput";
 
 import type { HandicapState } from "../types";
 
@@ -81,23 +81,13 @@ export function HandicapConfirmStep(props: {
             <span className="font-semibold">{currency(handicapFee)}</span>
           </div>
           <div className="mb-2">
-            <Input
+            <DonationAmountInput
               label="Optional donation"
               labelPlacement="inside"
               value={donationAmount}
-              onValueChange={(v) => {
-                if (v.trim().startsWith("-")) return;
-                onDonationAmountChange(v);
-              }}
-              variant="bordered"
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="$0"
+              onValueChange={onDonationAmountChange}
+              description="Add an optional donation to support the course through the Ridgefield Golf Club Improvement Fund (RGCIF)."
             />
-            <div className="mt-1 text-xs text-default-500">
-              Add an optional donation to support the club.
-            </div>
           </div>
         </div>
 
