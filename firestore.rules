@@ -147,8 +147,15 @@ service cloud.firestore {
 
         // Ensure ownerId matches one of the registered team members.
         function ownerOnTeam(team, ownerId) {
-          return team is list
-            && team.map(member => member.id).hasAny([ownerId]);
+          // Firestore Rules don't support map()/lambdas, so we unroll the loop.
+          // Support up to 5 team members (standard golf team is 4).
+          return team is list && (
+            (team.size() > 0 && team[0].id == ownerId) ||
+            (team.size() > 1 && team[1].id == ownerId) ||
+            (team.size() > 2 && team[2].id == ownerId) ||
+            (team.size() > 3 && team[3].id == ownerId) ||
+            (team.size() > 4 && team[4].id == ownerId)
+          );
         }
 
         // Create:
