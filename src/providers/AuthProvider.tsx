@@ -20,7 +20,13 @@ import {
   sendPasswordResetEmail,
   UserCredential,
 } from "firebase/auth";
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, {
+  useEffect,
+  useState,
+  createContext,
+  useContext,
+  useCallback,
+} from "react";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
 
@@ -40,6 +46,8 @@ interface AuthContextType {
   userLoggedIn: boolean;
   loading: boolean;
   error: Error | null;
+  redirectResult: UserCredential | null;
+  clearRedirectResult: () => void;
   loginEmailAndPassword: (
     email: string,
     password: string,
@@ -75,6 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [redirectResult, setRedirectResult] = useState<UserCredential | null>(
+    null,
+  );
+  const clearRedirectResult = useCallback(() => setRedirectResult(null), []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -95,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (result) {
           console.log("AuthProvider: Redirect Result Found!", result.user.uid);
+          setRedirectResult(result);
           // setUser will happen via onAuthStateChanged
         } else {
           console.log("AuthProvider: No redirect result found.");
@@ -187,15 +200,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" });
 
-      if (import.meta.env.DEV) {
-        console.log("AuthProvider: Starting Google Popup Flow (Dev)...");
-        await signInWithPopup(auth, provider);
-      } else {
-        console.log("AuthProvider: Starting Google Redirect Flow (Prod)...");
-        // Ensure persistence is set to LOCAL so the session survives the redirect
-        await setPersistence(auth, browserLocalPersistence);
-        await signInWithRedirect(auth, provider);
-      }
+      console.log("AuthProvider: Starting Google Redirect Flow...");
+      // Ensure persistence is set to LOCAL so the session survives the redirect
+      await setPersistence(auth, browserLocalPersistence);
+      await signInWithRedirect(auth, provider);
       return;
     } catch (err) {
       console.error("AuthProvider: signInWithGoogle Error:", err);
@@ -278,6 +286,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userLoggedIn,
     loading,
     error,
+    redirectResult,
+    clearRedirectResult,
     loginEmailAndPassword,
     signupEmailAndPassword,
     sendLoginLink,

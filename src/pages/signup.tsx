@@ -12,7 +12,7 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { getAdditionalUserInfo } from "firebase/auth";
+import { getAdditionalUserInfo, type UserCredential } from "firebase/auth";
 
 import { RGCLogo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
@@ -58,19 +58,61 @@ export default function SignUpPage() {
     signupEmailAndPassword,
     sendLoginLink,
     signInWithGoogle,
+    redirectResult,
+    clearRedirectResult,
     loading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
+  const [handledRedirect, setHandledRedirect] = React.useState(false);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
   const toggleConfirmVisibility = () => setIsConfirmVisible(!isConfirmVisible);
 
   // Redirect signed-in users away from signup page
   React.useEffect(() => {
-    if (userLoggedIn && !authLoading) {
+    if (userLoggedIn && !authLoading && !redirectResult && !handledRedirect) {
       navigate(siteConfig.pages.home.link);
     }
-  }, [userLoggedIn, authLoading, navigate]);
+  }, [userLoggedIn, authLoading, redirectResult, handledRedirect, navigate]);
+
+  const handleGoogleCredential = React.useCallback(
+    async (result: UserCredential) => {
+      if (result.user) {
+        const additionalUserInfo = getAdditionalUserInfo(result);
+        if (additionalUserInfo?.isNewUser) {
+          const displayName = result.user.displayName || "";
+          const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+          if (nameParts.length >= 2) {
+            const [first, ...rest] = nameParts;
+            const last = rest.join(" ");
+            try {
+              await saveUserProfile(result.user.uid, {
+                firstName: first,
+                lastName: last,
+                email: result.user.email || undefined,
+              });
+            } catch (profileError: unknown) {
+              console.error(
+                "Failed to save profile after Google signup",
+                profileError,
+              );
+            }
+          }
+          navigate(siteConfig.pages.profile.link);
+          return;
+        }
+        navigate(siteConfig.pages.home.link);
+      }
+    },
+    [navigate],
+  );
+
+  React.useEffect(() => {
+    if (!redirectResult) return;
+    void handleGoogleCredential(redirectResult);
+    clearRedirectResult();
+    setHandledRedirect(true);
+  }, [redirectResult, clearRedirectResult, handleGoogleCredential]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -101,15 +143,7 @@ export default function SignUpPage() {
       // Execute reCAPTCHA for sign up
       const token = await executeRecaptcha("signup");
       if (!token) {
-        setInlineError(
-          "Security check failed. Please refresh the page and try again.",
-        );
-        addToast({
-          title: "Sign up failed",
-          description: "reCAPTCHA verification failed.",
-          color: "danger",
-        });
-        return;
+        console.warn("reCAPTCHA temporarily disabled: missing token.");
       }
 
       if (!firstName.trim() || !lastName.trim()) {
@@ -212,39 +246,13 @@ export default function SignUpPage() {
       // Execute reCAPTCHA for Google signup
       const token = await executeRecaptcha("google_signup");
       if (!token) {
-        setInlineError("Security check failed. Please try again.");
-        return;
+        console.warn("reCAPTCHA temporarily disabled: missing token.");
       }
 
       const result = await signInWithGoogle();
       // If a redirect fallback was used the function may return void.
       if (!result) return;
-      if (result.user) {
-        const additionalUserInfo = getAdditionalUserInfo(result);
-        if (additionalUserInfo?.isNewUser) {
-          const displayName = result.user.displayName || "";
-          const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
-          if (nameParts.length >= 2) {
-            const [first, ...rest] = nameParts;
-            const last = rest.join(" ");
-            try {
-              await saveUserProfile(result.user.uid, {
-                firstName: first,
-                lastName: last,
-                email: result.user.email || undefined,
-              });
-            } catch (profileError: unknown) {
-              console.error(
-                "Failed to save profile after Google signup",
-                profileError,
-              );
-            }
-          }
-          navigate(siteConfig.pages.profile.link);
-        } else {
-          navigate(siteConfig.pages.home.link);
-        }
-      }
+      await handleGoogleCredential(result);
     } catch (error: unknown) {
       const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);

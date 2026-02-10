@@ -17,7 +17,11 @@ import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
 import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
 import { addToast } from "@/providers/toast";
-import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
+import {
+  isSignInWithEmailLink,
+  getAdditionalUserInfo,
+  type UserCredential,
+} from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -46,6 +50,8 @@ export default function LoginPage() {
     signInWithLink,
     signInWithGoogle,
     resetPassword,
+    redirectResult,
+    clearRedirectResult,
     loading: authLoading,
   } = useAuth(); // Get auth functions and state
 
@@ -67,6 +73,7 @@ export default function LoginPage() {
   >(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [handledRedirect, setHandledRedirect] = React.useState(false);
 
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -151,12 +158,39 @@ export default function LoginPage() {
   );
 
   useEffect(() => {
-    if (userLoggedIn && !authLoading) {
+    if (userLoggedIn && !authLoading && !redirectResult && !handledRedirect) {
       // Check if user is logged in and auth is not loading
       const dest = state?.from || siteConfig.pages.home.link;
       navigate(dest);
     }
-  }, [userLoggedIn, authLoading, navigate, state?.from]);
+  }, [
+    userLoggedIn,
+    authLoading,
+    redirectResult,
+    handledRedirect,
+    navigate,
+    state?.from,
+  ]);
+
+  const handleGoogleCredential = React.useCallback(
+    (result: UserCredential) => {
+      const additionalUserInfo = getAdditionalUserInfo(result);
+      if (additionalUserInfo?.isNewUser) {
+        navigate(siteConfig.pages.profile.link);
+      } else {
+        const dest = state?.from || siteConfig.pages.home.link;
+        navigate(dest);
+      }
+    },
+    [navigate, state?.from],
+  );
+
+  useEffect(() => {
+    if (!redirectResult) return;
+    handleGoogleCredential(redirectResult);
+    clearRedirectResult();
+    setHandledRedirect(true);
+  }, [redirectResult, clearRedirectResult, handleGoogleCredential]);
 
   // Check for incoming magic link
   useEffect(() => {
@@ -290,14 +324,7 @@ export default function LoginPage() {
       const result = await signInWithGoogle();
       // If redirect fallback was used the function may return void.
       if (!result) return;
-      // Navigation or further actions on successful Google sign-in
-      const additionalUserInfo = getAdditionalUserInfo(result);
-      if (additionalUserInfo?.isNewUser) {
-        navigate(siteConfig.pages.profile.link);
-      } else {
-        const dest = state?.from || siteConfig.pages.home.link;
-        navigate(dest);
-      }
+      handleGoogleCredential(result);
     } catch (error: unknown) {
       console.error("Google Sign-In failed on LoginPage:", error);
       const msg = getFirebaseAuthErrorMessage(error);
