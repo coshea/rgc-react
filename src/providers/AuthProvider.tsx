@@ -6,8 +6,11 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithRedirect,
+  signInWithPopup,
+  getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
   signOut,
   User as FirebaseUser,
   ActionCodeSettings,
@@ -74,8 +77,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, initializeUser);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log("Auth state changed:", firebaseUser?.uid || "null");
+      initializeUser(firebaseUser);
+    });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Check for redirect result on mount.
+    // We remove the useRef guard to ensure we definitely call it.
+    // Firebase SDK handles multiple calls safely (idempotent-ish relative to consuming the token).
+    const checkRedirect = async () => {
+      try {
+        console.log("AuthProvider: Checking getRedirectResult...");
+        const result = await getRedirectResult(auth);
+
+        if (result) {
+          console.log("AuthProvider: Redirect Result Found!", result.user.uid);
+          // setUser will happen via onAuthStateChanged
+        } else {
+          console.log("AuthProvider: No redirect result found.");
+        }
+      } catch (err: any) {
+        if (err.code === "auth/popup-closed-by-user") {
+          // ignore
+        } else if (err.code === "auth/null-user") {
+          // ignore
+        } else {
+          console.error("AuthProvider: Redirect Error:", err);
+          setError(err as Error);
+        }
+      }
+    };
+
+    // Only verify if we are not already logged in
+    if (!auth.currentUser) {
+      checkRedirect();
+    } else {
+      console.log("AuthProvider: User already active:", auth.currentUser.uid);
+    }
   }, []);
 
   // initializeUser is not async itself, but it's called by onAuthStateChanged
@@ -144,45 +185,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       provider.addScope("profile");
       provider.addScope("email");
-      provider.setCustomParameters({ prompt: "select_account" }); // Ensure explicit account selection
-      // If the page is running in a cross-origin isolated context (COOP/COEP),
-      // accessing `window.closed` from the popup can be blocked causing the
-      // popup-based flow to fail with console errors. Detect that and use the
-      // redirect flow proactively to avoid the popup error noise.
-      // Avoid using `as any` by declaring a local typed Window variant.
-      type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
-      if (
-        typeof window !== "undefined" &&
-        (window as WindowWithCOI).crossOriginIsolated
-      ) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
+      provider.setCustomParameters({ prompt: "select_account" });
 
-      try {
-        const result = await signInWithPopup(auth, provider);
-        return result;
-      } catch (popupErr) {
-        // Some hosting setups (Cross-Origin-Opener-Policy) block reading
-        // `window.closed` from the popup which causes the firebase popup
-        // flow to throw. Fall back to redirect-based sign-in in that case.
-        const message = (popupErr as Error)?.message || "";
-        if (
-          message.includes("Cross-Origin-Opener-Policy") ||
-          message.includes("blocked the window.closed call") ||
-          message.includes("Unable to use window.closed")
-        ) {
-          // Use redirect as a fallback; this will navigate away.
-          await signInWithRedirect(auth, provider);
-          return; // caller should handle void result (redirect occurred)
-        }
-        throw popupErr;
+      if (import.meta.env.DEV) {
+        console.log("AuthProvider: Starting Google Popup Flow (Dev)...");
+        await signInWithPopup(auth, provider);
+      } else {
+        console.log("AuthProvider: Starting Google Redirect Flow (Prod)...");
+        // Ensure persistence is set to LOCAL so the session survives the redirect
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithRedirect(auth, provider);
       }
-      // onAuthStateChanged will handle setting user and userLoggedIn
-      // and creating a new user if one doesn't exist.
+      return;
     } catch (err) {
+      console.error("AuthProvider: signInWithGoogle Error:", err);
       setError(err as Error);
-      throw err; // Re-throw the error for the calling component
+      throw err;
     } finally {
       setLoading(false);
     }
