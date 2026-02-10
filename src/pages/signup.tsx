@@ -30,6 +30,9 @@ import {
   clearPendingSignupProfile,
 } from "@/utils/pendingSignupProfile";
 
+const MAGIC_LINK_SENT_KEY = "magicLinkSent:signup";
+const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:signup";
+
 export default function SignUpPage() {
   usePageTracking("Sign Up");
   const [isVisible, setIsVisible] = React.useState(false);
@@ -39,6 +42,7 @@ export default function SignUpPage() {
     "magic-link",
   );
   const [linkSent, setLinkSent] = React.useState(false);
+  const [linkSentEmail, setLinkSentEmail] = React.useState("");
   const [isTermsOpen, setIsTermsOpen] = React.useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -67,6 +71,17 @@ export default function SignUpPage() {
       navigate(siteConfig.pages.home.link);
     }
   }, [userLoggedIn, authLoading, navigate]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedSent = window.sessionStorage.getItem(MAGIC_LINK_SENT_KEY);
+    if (storedSent === "1") {
+      const storedEmail =
+        window.sessionStorage.getItem(MAGIC_LINK_EMAIL_KEY) || "";
+      setLinkSent(true);
+      setLinkSentEmail(storedEmail);
+    }
+  }, []);
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -118,6 +133,11 @@ export default function SignUpPage() {
             });
             await sendLoginLink(email);
             setLinkSent(true);
+            setLinkSentEmail(email.trim());
+            if (typeof window !== "undefined") {
+              window.sessionStorage.setItem(MAGIC_LINK_SENT_KEY, "1");
+              window.sessionStorage.setItem(MAGIC_LINK_EMAIL_KEY, email.trim());
+            }
             addToast({
               title: "Link sent!",
               description: "Check your email for the sign-up link.",
@@ -326,31 +346,6 @@ export default function SignUpPage() {
 
   if (userLoggedIn && !authLoading) {
     return null; // prevent UI flash while navigation happens
-  }
-
-  if (linkSent) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small text-center">
-          <Icon
-            icon="solar:letter-linear"
-            className="mx-auto text-6xl text-primary"
-          />
-          <h1 className="text-large font-medium">Check your email</h1>
-          <p className="text-small text-default-500">
-            We sent a sign-up link to your email address. Click the link to
-            create your account.
-          </p>
-          <Button
-            variant="light"
-            onPress={() => setLinkSent(false)}
-            className="mt-2"
-          >
-            Back to Sign Up
-          </Button>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -568,6 +563,47 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
+      <Modal isOpen={linkSent} isDismissable={false}>
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Check your email
+              </ModalHeader>
+              <ModalBody className="space-y-3">
+                <p className="text-small text-default-600">
+                  We sent a sign-up link
+                  {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
+                  finish creating your account.
+                </p>
+                <p className="text-small text-default-600">
+                  If you don't see it, check your spam folder and look for an
+                  email from{" "}
+                  <span className="font-mono text-xs">
+                    noreply@ridgefield-golf-club.firebaseapp.com
+                  </span>
+                  .
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={() => {
+                    setLinkSent(false);
+                    setLinkSentEmail("");
+                    if (typeof window !== "undefined") {
+                      window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
+                      window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
+                    }
+                  }}
+                >
+                  Close
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
       <PolicyModal
         title="Terms of Use"
         sections={termsSections}
