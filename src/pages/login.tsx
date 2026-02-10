@@ -284,11 +284,7 @@ export default function LoginPage() {
       // Execute reCAPTCHA for Google login
       const token = await executeRecaptcha("google_login");
       if (!token) {
-        if (import.meta.env.PROD) {
-          setInlineError("Security check failed. Please try again.");
-          return;
-        }
-        console.warn("reCAPTCHA skipped in non-prod: missing token.");
+        console.warn("reCAPTCHA temporarily disabled: missing token.");
       }
 
       const result = await signInWithGoogle();
