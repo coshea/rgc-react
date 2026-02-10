@@ -1,17 +1,106 @@
 # Ridgefield Golf Club — React App
 
-Modern React + Firebase app for Ridgefield Golf Club. It powers public pages (home, news, past champions) and member features like tournaments, registrations, membership directory, and Find a Game.
+**Production:** [https://ridgefieldgolfclub.org/](https://ridgefieldgolfclub.org/)
+
+A comprehensive, production-grade web application serving the Ridgefield Golf Club community. Built with modern React architecture and Firebase backend, this platform handles everything from public content delivery to secure member-only features including tournament management, real-time registrations, payment processing, and social coordination.
+
+## Overview
+
+This is a full-featured club management system that serves both public visitors and authenticated members. The application demonstrates enterprise-level patterns including:
+
+- **Authentication & Authorization**: Firebase Auth with granular role-based access control (admin/member tiers)
+- **Payment Processing**: Integrated PayPal payment flows for memberships and donations
+- **Real-time Data**: Firestore subscriptions for live tournament registrations and member updates
+- **Content Management**: Admin panels for tournaments, blog posts, championships, and policy documents
+- **Social Features**: Member directory, Find a Game coordination system
+- **Type Safety**: Strict TypeScript throughout with comprehensive domain models
+- **Testing**: Unit and integration tests using Vitest and React Testing Library
+
+## Key Features
+
+### Public Features
+
+- Responsive marketing pages with modern UI/UX
+- Blog and news system with markdown support
+- Historical championship records and money list
+- Tournament schedule with weather integration
+- Contact forms with EmailJS integration
+
+### Member Features
+
+- **Tournament System**: Browse upcoming events, view real-time registration status, register teams (with validation for team size, duplicate prevention, and registration windows)
+- **Find a Game**: Post availability to coordinate golf rounds with other members
+- **Membership Directory**: Searchable directory with role filtering and active member status
+- **Profile Management**: Edit profile, upload avatar to Firebase Storage, manage GHIN handicap info
+- **Payment Portal**: Self-service membership renewal and donation flows with PayPal integration
+
+### Admin Features
+
+- **Tournament Editor**: Create/edit tournaments with markdown details, registration windows, prize pools, tee selection
+- **Winner Management**: Record winners with grouping support (gross/net, flights)
+- **Registration Management**: View, edit, delete team registrations with owner integrity checks
+- **Blog Editor**: Rich markdown editor with preview and SEO metadata
+- **Championship Manager**: Maintain historical and modern championship records
+- **Member Admin**: Manage member payments, board roles, and active status
+- **Policy Editor**: Edit legal documents and club policies in markdown format
 
 ## Tech Stack
 
-- React 18 + TypeScript
-- Vite + Vitest + React Testing Library
-- HeroUI (component library) + Tailwind CSS v4
-- React Router v6
-- TanStack Query (React Query)
-- Firebase: Auth, Firestore, Storage
+### Frontend
+
+- **React 18** with TypeScript for type-safe component development
+- **Vite** for fast builds and HMR in development
+- **HeroUI v3** (modern React component library) + **Tailwind CSS v4** for styling
+- **React Router v6** for client-side routing with protected routes
+- **TanStack Query** (React Query) for server state management, caching, and optimistic updates
+- **PayPal SDK** for payment processing
+- **EmailJS** for contact form submissions
+
+### Backend & Infrastructure
+
+- **Firebase Authentication** for secure user management
+- **Cloud Firestore** for real-time NoSQL database with security rules
+- **Firebase Storage** for avatar and asset uploads
+- **Firebase Cloud Functions** (Node.js) for payment verification and webhook handling
+- **Firebase Hosting** for CDN-backed static site delivery
+- **Sentry** for error tracking and performance monitoring
+
+### Testing & Quality
+
+- **Vitest** for fast unit testing
+- **React Testing Library** for component testing
+- **TypeScript strict mode** for compile-time safety
 
 Path alias: `@` resolves to `src/` in Vite and Vitest configs.
+
+## Architecture Highlights
+
+### Security
+
+- **Firestore Security Rules**: Comprehensive rules enforce data access patterns, preventing unauthorized reads/writes
+- **Admin Detection**: Real-time admin status via dedicated Firestore collection (`admin/{uid}`) for instant permission revocation
+- **Payment Verification**: Server-side PayPal order verification in Cloud Functions prevents client-side tampering
+- **UID Integrity**: All writes enforce that `ownerId` matches authenticated user (except admin overrides)
+
+### Performance
+
+- **Code Splitting**: Dynamic imports for admin-heavy features to reduce initial bundle size
+- **Optimistic Updates**: React Query mutations with rollback for snappy UI
+- **Firebase SDK Tree-shaking**: Modular imports keep bundle lean
+- **Image Optimization**: Lazy loading and responsive images throughout
+
+### State Management
+
+- **Auth State**: Centralized in `AuthProvider` with single Firebase listener (no duplicate subscriptions)
+- **Server State**: TanStack Query handles all Firestore data with intelligent caching
+- **Local State**: React hooks for component-specific UI state
+
+### Code Quality
+
+- **No `any` Types**: Strict policy against type assertions; proper type guards and utility functions instead
+- **Domain Models**: Strongly-typed interfaces for all Firebase documents
+- **Shared Components**: Reusable components like `DonationAmountInput` for consistency
+- **Error Boundaries**: Graceful error handling throughout
 
 ## Getting Started
 
@@ -119,6 +208,40 @@ Feature for members to post they need players or need a group for a given date.
 - Do not duplicate Firebase init; import from `src/config/firebase.ts`.
 - For new Firestore interactions, guard for auth and clean up subscriptions on unmount.
 - Prefer dynamic Firestore imports in heavy admin-only features for performance.
+
+## Production Deployment
+
+The application is deployed to Firebase Hosting with CI/CD automation:
+
+- **URL**: [https://ridgefieldgolfclub.org/](https://ridgefieldgolfclub.org/)
+- **Deployment**: GitHub Actions workflow builds and deploys on merge to main
+- **Environment**: Production Firebase project with live PayPal integration
+- **Monitoring**: Sentry integration for real-time error tracking
+
+## Project Structure
+
+```
+src/
+├── api/              # Firebase service wrappers (tournaments, users, payments)
+├── components/       # Reusable React components
+├── config/           # Firebase init, site config, pricing
+├── hooks/            # Custom React hooks (useUserProfile, useAuth)
+├── pages/            # Route components
+├── providers/        # Context providers (Auth, HeroUI)
+├── types/            # TypeScript type definitions
+├── utils/            # Helper functions (admin checks, currency, roles)
+└── __tests__/        # Vitest test suites
+
+functions/            # Firebase Cloud Functions (Node.js + TypeScript)
+```
+
+## Development Practices
+
+- **Git Workflow**: Feature branches with PR reviews before merging to main
+- **Type Safety**: No type assertions (`as any`); proper type guards and narrowing
+- **Testing**: Unit tests for critical logic (admin checks, registration validation, payment flows)
+- **Documentation**: Inline JSDoc comments for complex functions; comprehensive README
+- **Code Formatting**: Consistent style enforced by formatter
 
 ## License
 

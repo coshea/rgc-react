@@ -18,7 +18,7 @@ export function DoneStep(props: {
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 4: Complete</h2>
+        <h2 className="text-lg font-semibold">Step 5: Complete</h2>
         <Button variant="light" onPress={onStartOver}>
           Start over
         </Button>

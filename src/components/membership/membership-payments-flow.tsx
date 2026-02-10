@@ -103,7 +103,7 @@ export default function MembershipPaymentsFlow({
 
   // Per-step validation is now handled within individual step components.
 
-  const stepsCount = 4;
+  const stepsCount = 5;
   const currentStepIndex = useMemo(() => {
     if (step.kind === "select") return 0;
     if (step.kind === "annual_start") return 1;
@@ -112,13 +112,19 @@ export default function MembershipPaymentsFlow({
     if (step.kind === "donation") return 1;
     if (step.kind === "renew_confirm") return 2;
     if (step.kind === "handicap_confirm") return 2;
-    if (step.kind === "paypal") return 2;
-    if (step.kind === "done") return 3;
+    if (step.kind === "paypal") return 3;
+    if (step.kind === "done") return 4;
     return 0;
   }, [step.kind]);
 
   const stepTitles = useMemo(
-    () => ["Select option", "Confirm details", "Payment", "Complete"],
+    () => [
+      "Select option",
+      "Confirm details",
+      "Review & confirm",
+      "Submit payment",
+      "Complete",
+    ],
     [],
   );
 
@@ -803,8 +809,8 @@ export default function MembershipPaymentsFlow({
 
             handlePaymentDecision({
               purpose: "handicap",
-              title: "Handicap Membership",
-              description: "Handicap membership fee",
+              title: "Handicap Only",
+              description: "GHIN Handicap fee",
               amount: totalAmount,
               returnTo: { kind: "handicap_confirm" },
               demoTitle: "Payment Recorded",

@@ -88,6 +88,8 @@ export function YearlyWinningsStandings({ year }: Props) {
                 (() => {
                   const u = usersMap.get(topThree[1].userId);
                   const display = u?.displayName || topThree[1].displayName;
+                  const firstName = u?.firstName?.trim() || display;
+                  const lastName = u?.lastName?.trim() || "";
                   return (
                     <>
                       <UserAvatar
@@ -108,9 +110,12 @@ export function YearlyWinningsStandings({ year }: Props) {
                           </div>
                         );
                       })()}
-                      <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                        {display}
-                      </p>
+                      <div className="mt-1 max-w-[85px] text-center text-[11px] font-medium leading-tight">
+                        <div className="grid grid-rows-2">
+                          <span>{firstName}</span>
+                          <span>{lastName}</span>
+                        </div>
+                      </div>
                       <p className="text-[11px] font-semibold text-success-600 mt-0.5">
                         ${topThree[1].total.toLocaleString("en-US")}
                       </p>
@@ -124,6 +129,8 @@ export function YearlyWinningsStandings({ year }: Props) {
                 (() => {
                   const u = usersMap.get(topThree[0].userId);
                   const display = u?.displayName || topThree[0].displayName;
+                  const firstName = u?.firstName?.trim() || display;
+                  const lastName = u?.lastName?.trim() || "";
                   return (
                     <>
                       <UserAvatar
@@ -144,9 +151,12 @@ export function YearlyWinningsStandings({ year }: Props) {
                           </div>
                         );
                       })()}
-                      <p className="text-[12px] mt-1 font-semibold text-center truncate max-w-[100px]">
-                        {display}
-                      </p>
+                      <div className="mt-1 max-w-[100px] text-center text-[12px] font-semibold leading-tight">
+                        <div className="grid grid-rows-2">
+                          <span>{firstName}</span>
+                          <span>{lastName}</span>
+                        </div>
+                      </div>
                       <p className="text-[12px] font-bold text-success-700 mt-0.5">
                         ${topThree[0].total.toLocaleString("en-US")}
                       </p>
@@ -160,6 +170,8 @@ export function YearlyWinningsStandings({ year }: Props) {
                 (() => {
                   const u = usersMap.get(topThree[2].userId);
                   const display = u?.displayName || topThree[2].displayName;
+                  const firstName = u?.firstName?.trim() || display;
+                  const lastName = u?.lastName?.trim() || "";
                   return (
                     <>
                       <UserAvatar
@@ -180,9 +192,12 @@ export function YearlyWinningsStandings({ year }: Props) {
                           </div>
                         );
                       })()}
-                      <p className="text-[11px] mt-1 font-medium text-center truncate max-w-[85px]">
-                        {display}
-                      </p>
+                      <div className="mt-1 max-w-[85px] text-center text-[11px] font-medium leading-tight">
+                        <div className="grid grid-rows-2">
+                          <span>{firstName}</span>
+                          <span>{lastName}</span>
+                        </div>
+                      </div>
                       <p className="text-[11px] font-semibold text-success-600 mt-0.5">
                         ${topThree[2].total.toLocaleString("en-US")}
                       </p>
@@ -325,7 +340,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                           onClick={(e) => {
                             if (
                               (e.target as HTMLElement).closest(
-                                "button[data-expander]"
+                                "button[data-expander]",
                               )
                             )
                               return;
@@ -428,7 +443,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                       <ul className="space-y-1.5 overflow-x-hidden">
                                         {row.breakdown.map((b, i) => {
                                           const dateLabel = new Date(
-                                            b.date
+                                            b.date,
                                           ).toLocaleDateString("en-US", {
                                             month: "short",
                                             day: "numeric",
@@ -453,7 +468,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                   </span>
                                                   {(() => {
                                                     const meta = getPlaceMeta(
-                                                      b.place
+                                                      b.place,
                                                     );
                                                     return (
                                                       <span
@@ -462,7 +477,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                           meta.badgeBg,
                                                         ].join(" ")}
                                                         aria-label={formatPlaceLabel(
-                                                          b.place
+                                                          b.place,
                                                         )}
                                                       >
                                                         <Icon
@@ -476,7 +491,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                         />
                                                         <span>
                                                           {formatPlaceLabel(
-                                                            b.place
+                                                            b.place,
                                                           )}
                                                         </span>
                                                       </span>
@@ -490,7 +505,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                       "en-US",
                                                       {
                                                         minimumFractionDigits: 0,
-                                                      }
+                                                      },
                                                     )}
                                                   </span>
                                                   <span className="text-default-400 hidden sm:inline">

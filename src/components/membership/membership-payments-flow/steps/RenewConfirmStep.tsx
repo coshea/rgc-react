@@ -6,10 +6,10 @@ import {
   CardFooter,
   CardHeader,
   Divider,
-  Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
+import { DonationAmountInput } from "../DonationAmountInput";
 
 export function RenewConfirmStep(props: {
   email: string;
@@ -51,7 +51,7 @@ export function RenewConfirmStep(props: {
   return (
     <Card className="w-full max-w-3xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 3: Payment</h2>
+        <h2 className="text-lg font-semibold">Step 3: Review &amp; confirm</h2>
         <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
@@ -68,12 +68,7 @@ export function RenewConfirmStep(props: {
                 Your annual dues are already recorded for {currentYear}. You
                 don&apos;t need to pay again.
               </div>
-              <Button
-                size="sm"
-                color="primary"
-                variant="flat"
-                onPress={onDonation}
-              >
+              <Button size="sm" color="primary" onPress={onDonation}>
                 Make a donation
               </Button>
             </div>
@@ -131,24 +126,14 @@ export function RenewConfirmStep(props: {
           </div>
 
           <div className="w-full max-w-sm">
-            <div className="text-sm text-default-600">Optional donation</div>
-            <Input
-              aria-label="Optional donation"
+            <DonationAmountInput
+              ariaLabel="Optional donation"
+              label="Optional donation"
               value={donationAmount}
-              onValueChange={(v) => {
-                if (v.trim().startsWith("-")) return;
-                onDonationAmountChange(v);
-              }}
-              variant="bordered"
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="$0"
+              onValueChange={onDonationAmountChange}
               isDisabled={isPaidForCurrentYear}
+              description="Add an optional donation to support the course through the Ridgefield Golf Club Improvement Fund (RGCIF)."
             />
-            <div className="mt-1 text-xs text-default-500">
-              Add an optional donation to support the club.
-            </div>
           </div>
         </div>
 

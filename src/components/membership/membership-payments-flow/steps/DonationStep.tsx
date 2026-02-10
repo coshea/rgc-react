@@ -6,9 +6,9 @@ import {
   CardFooter,
   CardHeader,
   Divider,
-  Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
+import { DonationAmountInput } from "../DonationAmountInput";
 import type { DonationState } from "../types";
 
 export function DonationStep(props: {
@@ -20,10 +20,6 @@ export function DonationStep(props: {
   const [value, setValue] = useState<DonationState>(initialValue);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
 
-  function isValidEmail(email: string) {
-    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
-  }
-
   function handlePay() {
     const nextErrors: Record<string, string> = {};
     const amount = parseFloat(value.amount);
@@ -32,9 +28,6 @@ export function DonationStep(props: {
       nextErrors.donationAmount = "Donation amount is required";
     else if (Number.isNaN(amount) || amount <= 0)
       nextErrors.donationAmount = "Enter an amount greater than 0";
-
-    if (value.email.trim() && !isValidEmail(value.email))
-      nextErrors.donationEmail = "Enter a valid email";
 
     setLocalErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -56,46 +49,20 @@ export function DonationStep(props: {
           operations.
         </p>
 
-        <Input
+        <DonationAmountInput
           label="Donation Amount ($)"
           value={value.amount}
-          onValueChange={(v) => {
-            if (v.trim().startsWith("-")) return;
-            setValue((s) => ({ ...s, amount: v }));
-          }}
+          onValueChange={(nextValue) =>
+            setValue((s) => ({ ...s, amount: nextValue }))
+          }
           isInvalid={!!localErrors.donationAmount}
           errorMessage={localErrors.donationAmount}
-          variant="bordered"
-          type="number"
-          min={0}
-          step={"0.01"}
           required
-        />
-
-        <Input
-          label="Name (optional)"
-          value={value.name}
-          onValueChange={(v) => setValue((s) => ({ ...s, name: v }))}
-          variant="bordered"
-        />
-
-        <Input
-          label="Email (optional)"
-          value={value.email}
-          onValueChange={(v) => setValue((s) => ({ ...s, email: v }))}
-          isInvalid={!!localErrors.donationEmail}
-          errorMessage={localErrors.donationEmail}
-          variant="bordered"
-          type="email"
         />
       </CardBody>
       <Divider />
       <CardFooter className="flex justify-end">
-        <Button
-          color="primary"
-          className="w-full font-bold uppercase tracking-wide"
-          onPress={handlePay}
-        >
+        <Button color="primary" onPress={handlePay}>
           Make Donation
         </Button>
       </CardFooter>

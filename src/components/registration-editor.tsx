@@ -36,7 +36,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   // Build a fast lookup set for valid user ids
   const validUserIds = React.useMemo(
     () => new Set(users.map((u) => u.id)),
-    [users]
+    [users],
   );
 
   // Effect: whenever the users list changes, drop any stale ids that no longer exist
@@ -117,6 +117,9 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               variant="light"
               color="danger"
               onPress={() => removeSlot(idx)}
+              aria-label={
+                idx === 0 ? "Remove team leader" : `Remove teammate ${idx + 1}`
+              }
               isDisabled={disabled}
             >
               <Icon icon="lucide:trash-2" />

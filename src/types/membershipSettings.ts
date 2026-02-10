@@ -11,7 +11,7 @@ export interface MembershipSettings {
   /** Price for full membership (in dollars) */
   fullMembershipPrice: number;
 
-  /** Price for handicap membership (in dollars) */
+  /** Price for handicap only membership (in dollars) */
   handicapMembershipPrice: number;
 
   /** Message to display when registration is closed */

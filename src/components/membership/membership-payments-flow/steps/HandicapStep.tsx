@@ -55,7 +55,7 @@ export function HandicapStep(props: {
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4">
-        <h3 className="text-base font-semibold">Handicap Membership</h3>
+        <h3 className="text-base font-semibold">Handicap Only</h3>
         <p className="text-sm text-default-600">
           Provide your details below. If you don’t know your GHIN yet, you can
           leave it blank.

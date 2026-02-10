@@ -35,10 +35,10 @@ export function SelectOptionStep(props: {
       <div className="mt-10 grid gap-6 md:grid-cols-3">
         <Card
           shadow="sm"
-          className="relative rounded-2xl border border-default-200"
+          className="relative order-2 rounded-2xl border border-default-200 md:order-1"
         >
           <CardHeader className="flex flex-col items-start gap-1">
-            <h3 className="text-xl font-semibold">Handicap Membership</h3>
+            <h3 className="text-xl font-semibold">Handicap Only</h3>
             <p className="text-sm text-default-600">
               Players looking only for a GHIN Handicap Index.
             </p>
@@ -89,7 +89,7 @@ export function SelectOptionStep(props: {
 
         <Card
           shadow="sm"
-          className="relative rounded-2xl border-2 border-primary shadow-lg md:scale-[1.02]"
+          className="relative order-1 rounded-2xl border-2 border-primary shadow-lg md:order-2 md:scale-[1.02]"
         >
           <CardHeader className="flex flex-col items-start gap-1">
             <h3 className="text-2xl font-bold">{currentYear} Membership</h3>
@@ -137,7 +137,7 @@ export function SelectOptionStep(props: {
 
         <Card
           shadow="sm"
-          className="relative rounded-2xl border border-default-200"
+          className="relative order-3 rounded-2xl border border-default-200"
         >
           <CardHeader className="flex flex-col items-start gap-1">
             <h3 className="text-xl font-semibold">Donation Only</h3>

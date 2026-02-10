@@ -5,10 +5,10 @@ import {
   CardFooter,
   CardHeader,
   Divider,
-  Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
+import { DonationAmountInput } from "../DonationAmountInput";
 
 import type { HandicapState } from "../types";
 
@@ -40,16 +40,16 @@ export function HandicapConfirmStep(props: {
   const total = handicapFee + donationValue;
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
+    <Card className="w-full min-w-[320px] max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Step 3: Payment</h2>
+        <h2 className="text-lg font-semibold">Step 3: Review &amp; confirm</h2>
         <BackButton onPress={onBack} />
       </CardHeader>
       <Divider />
       <CardBody className="space-y-4">
         <div className="space-y-1">
           <div className="text-sm text-default-600">Membership</div>
-          <div className="text-base font-semibold">Handicap Membership</div>
+          <div className="text-base font-semibold">Handicap Only</div>
         </div>
 
         <div className="space-y-1">
@@ -81,23 +81,13 @@ export function HandicapConfirmStep(props: {
             <span className="font-semibold">{currency(handicapFee)}</span>
           </div>
           <div className="mb-2">
-            <Input
+            <DonationAmountInput
               label="Optional donation"
               labelPlacement="inside"
               value={donationAmount}
-              onValueChange={(v) => {
-                if (v.trim().startsWith("-")) return;
-                onDonationAmountChange(v);
-              }}
-              variant="bordered"
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="$0"
+              onValueChange={onDonationAmountChange}
+              description="Add an optional donation to support the course through the Ridgefield Golf Club Improvement Fund (RGCIF)."
             />
-            <div className="mt-1 text-xs text-default-500">
-              Add an optional donation to support the club.
-            </div>
           </div>
         </div>
 

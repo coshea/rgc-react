@@ -25,6 +25,9 @@ import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 
+const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
+const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
+
 export default function LoginPage() {
   usePageTracking("Sign In");
   const [isVisible, setIsVisible] = React.useState(false);
@@ -33,6 +36,7 @@ export default function LoginPage() {
     "magic-link",
   );
   const [linkSent, setLinkSent] = React.useState(false);
+  const [linkSentEmail, setLinkSentEmail] = React.useState("");
   const handledMagicLink = useRef(false);
 
   const {
@@ -71,6 +75,20 @@ export default function LoginPage() {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedSent = window.sessionStorage.getItem(MAGIC_LINK_SENT_KEY);
+    if (storedSent === "1") {
+      const storedEmail =
+        window.sessionStorage.getItem(MAGIC_LINK_EMAIL_KEY) || "";
+      setLinkSent(true);
+      setLinkSentEmail(storedEmail);
+      if (!email && storedEmail) {
+        setEmail(storedEmail);
+      }
+    }
+  }, [email]);
 
   const completeMagicLinkSignIn = React.useCallback(
     async (emailAddress: string, link: string) => {
@@ -204,6 +222,11 @@ export default function LoginPage() {
           try {
             await sendLoginLink(email);
             setLinkSent(true);
+            setLinkSentEmail(email.trim());
+            if (typeof window !== "undefined") {
+              window.sessionStorage.setItem(MAGIC_LINK_SENT_KEY, "1");
+              window.sessionStorage.setItem(MAGIC_LINK_EMAIL_KEY, email.trim());
+            }
             addToast({
               title: "Link sent!",
               description: "Check your email for the sign-in link.",
@@ -327,31 +350,6 @@ export default function LoginPage() {
   // If already logged in and not loading, render null or a loading indicator to prevent flash of login form
   if (userLoggedIn && !authLoading) {
     return null; // Or a loading spinner
-  }
-
-  if (linkSent) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small text-center">
-          <Icon
-            icon="solar:letter-linear"
-            className="mx-auto text-6xl text-primary"
-          />
-          <h1 className="text-large font-medium">Check your email</h1>
-          <p className="text-small text-default-500">
-            We sent a sign-in link to your email address. Click the link to sign
-            in.
-          </p>
-          <Button
-            variant="light"
-            onPress={() => setLinkSent(false)}
-            className="mt-2"
-          >
-            Back to Sign In
-          </Button>
-        </div>
-      </div>
-    );
   }
 
   const handleForgotPassword = async () => {
@@ -559,6 +557,47 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+      <Modal isOpen={linkSent} isDismissable={false}>
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Check your email
+              </ModalHeader>
+              <ModalBody className="space-y-3">
+                <p className="text-small text-default-600">
+                  We sent a sign-in link
+                  {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the link
+                  to finish signing in.
+                </p>
+                <p className="text-small text-default-600">
+                  If you don't see it, check your spam folder and look for an
+                  email from{" "}
+                  <span className="font-mono text-xs">
+                    noreply@ridgefield-golf-club.firebaseapp.com
+                  </span>
+                  .
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={() => {
+                    setLinkSent(false);
+                    setLinkSentEmail("");
+                    if (typeof window !== "undefined") {
+                      window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
+                      window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
+                    }
+                  }}
+                >
+                  Close
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
       <Modal
         isOpen={isEmailConfirmationModalOpen}
         isDismissable={!magicLinkSubmitting}
