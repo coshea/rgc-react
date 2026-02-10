@@ -200,10 +200,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" });
 
-      console.log("AuthProvider: Starting Google Redirect Flow...");
-      // Ensure persistence is set to LOCAL so the session survives the redirect
-      await setPersistence(auth, browserLocalPersistence);
-      await signInWithRedirect(auth, provider);
+      if (import.meta.env.DEV) {
+        console.log("AuthProvider: Starting Google Popup Flow (Dev)...");
+        const result = await signInWithPopup(auth, provider);
+        return result;
+      } else {
+        console.log("AuthProvider: Starting Google Redirect Flow (Prod)...");
+        // Ensure persistence is set to LOCAL so the session survives the redirect
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithRedirect(auth, provider);
+      }
       return;
     } catch (err) {
       console.error("AuthProvider: signInWithGoogle Error:", err);
