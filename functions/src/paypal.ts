@@ -7,6 +7,15 @@ export type PayPalOrderSummary = {
   currency?: string;
 };
 
+export type PayPalTransactionInfo = {
+  transactionId?: string;
+  paypalReferenceId?: string;
+  customId?: string;
+  customField?: string;
+  status?: string;
+  initiatedAt?: string;
+};
+
 function envToBaseUrl(env: PayPalEnvironment): string {
   return env === "PRODUCTION"
     ? "https://api-m.paypal.com"
@@ -138,4 +147,108 @@ export async function fetchPayPalOrder(params: {
 
   const json = (await resp.json()) as unknown;
   return parsePayPalOrderSummary(json);
+}
+
+function readString(
+  value: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const raw = value[key];
+  return typeof raw === "string" ? raw : undefined;
+}
+
+function parseTransactionInfo(value: unknown): PayPalTransactionInfo | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const infoRaw = record.transaction_info;
+  if (typeof infoRaw !== "object" || infoRaw === null) return null;
+  const info = infoRaw as Record<string, unknown>;
+
+  return {
+    transactionId: readString(info, "transaction_id"),
+    paypalReferenceId: readString(info, "paypal_reference_id"),
+    customId: readString(info, "custom_id"),
+    customField: readString(info, "custom_field"),
+    status: readString(info, "transaction_status"),
+    initiatedAt: readString(info, "transaction_initiation_date"),
+  };
+}
+
+function parseTransactionsResponse(json: unknown): {
+  transactions: PayPalTransactionInfo[];
+  totalPages: number;
+} {
+  if (typeof json !== "object" || json === null) {
+    return { transactions: [], totalPages: 1 };
+  }
+
+  const record = json as Record<string, unknown>;
+  const details = record.transaction_details;
+  const transactions: PayPalTransactionInfo[] = [];
+
+  if (Array.isArray(details)) {
+    for (const item of details) {
+      const parsed = parseTransactionInfo(item);
+      if (parsed) transactions.push(parsed);
+    }
+  }
+
+  const totalPagesRaw = record.total_pages;
+  const totalPages =
+    typeof totalPagesRaw === "number" && Number.isFinite(totalPagesRaw)
+      ? Math.max(1, Math.floor(totalPagesRaw))
+      : 1;
+
+  return { transactions, totalPages };
+}
+
+export async function fetchPayPalTransactions(params: {
+  env: PayPalEnvironment;
+  accessToken: string;
+  startDate: string;
+  endDate: string;
+  pageSize?: number;
+  fetchImpl?: typeof fetch;
+}): Promise<PayPalTransactionInfo[]> {
+  const { env, accessToken, startDate, endDate } = params;
+  const fetchImpl = params.fetchImpl ?? fetch;
+  const pageSize = params.pageSize ?? 100;
+  const baseUrl = `${envToBaseUrl(env)}/v1/reporting/transactions`;
+
+  const transactions: PayPalTransactionInfo[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const qs = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+      fields: "all",
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    const url = `${baseUrl}?${qs.toString()}`;
+    const resp = await fetchImpl(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(
+        `PayPal transactions fetch failed: ${resp.status} ${text}`.trim(),
+      );
+    }
+
+    const json = (await resp.json()) as unknown;
+    const parsed = parseTransactionsResponse(json);
+    transactions.push(...parsed.transactions);
+    totalPages = parsed.totalPages;
+    page += 1;
+  } while (page <= totalPages && page <= 10);
+
+  return transactions;
 }

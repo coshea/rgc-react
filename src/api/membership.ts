@@ -34,6 +34,24 @@ export type MembershipPayment = {
   groupId?: string | null;
 };
 
+export type PayPalReconcileResponse = {
+  ok: boolean;
+  scanned: number;
+  processed: number;
+  skipped: number;
+  skippedItems: Array<{
+    orderId?: string | null;
+    customId?: string | null;
+    reason: string;
+  }>;
+  errors: Array<{
+    orderId?: string | null;
+    customId?: string | null;
+    error: string;
+  }>;
+  error?: string;
+};
+
 /** Create a membership payment record plus denormalized user update */
 export async function recordMembershipPayment(params: {
   userId: string;
@@ -334,6 +352,43 @@ export async function requestCheckMembershipPayment(params: {
     groupId: string;
     reused?: boolean;
   };
+}
+
+function readErrorFromResponse(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const error = record.error;
+  return typeof error === "string" && error.trim() ? error : null;
+}
+
+export async function reconcilePayPalMembershipOrders(params: {
+  user: User;
+}): Promise<PayPalReconcileResponse> {
+  const { user } = params;
+  if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
+    throw new Error("User must be authenticated to reconcile PayPal orders.");
+  }
+
+  const token = await user.getIdToken();
+  const baseUrl = getFirebaseFunctionsBaseUrl();
+
+  const resp = await fetch(`${baseUrl}/reconcile_paypal_membership_orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  const json = (await resp.json().catch(() => null)) as unknown;
+  if (!resp.ok) {
+    const message =
+      readErrorFromResponse(json) || `Reconciliation failed: ${resp.status}`;
+    throw new Error(message);
+  }
+
+  return json as PayPalReconcileResponse;
 }
 
 export async function confirmMembershipPaymentGroup(params: {

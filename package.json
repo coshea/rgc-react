@@ -13,10 +13,10 @@
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
     "functions": "npm run build && firebase deploy --only functions",
+    "firestore": "firebase deploy --only firestore:rules",
     "emulators": "firebase emulators:start --only auth,firestore,functions",
     "emulators:functions": "firebase emulators:start --only functions",
     "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs",
-    "firestore": "firebase deploy --only firestore:rules",
     "build-full": "npm run build && npm run test && npm run lint"
   },
   "dependencies": {
