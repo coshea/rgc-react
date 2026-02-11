@@ -11,6 +11,7 @@ import {
 import { verifyAndRecordMembershipPayment } from "./verifyAndRecordMembershipPayment";
 import { recordCheckMembershipPayment } from "./firestoreMembership";
 import { verifyAndRecordDonationPayment } from "./verifyAndRecordDonationPayment";
+import { logger } from "./logger";
 
 const PAYPAL_CLIENT_ID = defineString("PAYPAL_CLIENT_ID");
 const PAYPAL_CLIENT_SECRET = defineSecret("PAYPAL_CLIENT_SECRET");
@@ -173,12 +174,15 @@ export const verify_and_record_membership_payment = onRequest(
         return;
       }
 
+      let uid: string | null = null;
+      let request: ReturnType<typeof parseVerifyRequest> | null = null;
+
       try {
-        const uid = await getUidFromRequest(
+        uid = await getUidFromRequest(
           req as unknown as { headers: Record<string, unknown> },
         );
 
-        const request = parseVerifyRequest(req.body);
+        request = parseVerifyRequest(req.body);
 
         const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
         const clientSecret = required(
@@ -222,11 +226,22 @@ export const verify_and_record_membership_payment = onRequest(
 
         res.status(200).json(resp);
       } catch (e) {
+        const message = e instanceof Error ? e.message : "Unknown error";
+        logger.error("verify_and_record_membership_payment failed", {
+          error: message,
+          stack: e instanceof Error ? e.stack : undefined,
+          uid,
+          orderId: request?.orderId ?? null,
+          year: request?.year ?? null,
+          membershipType: request?.membershipType ?? null,
+          purpose: request?.purpose ?? null,
+          origin: req.headers.origin ?? null,
+          host: req.headers.host ?? null,
+        });
         if (e instanceof AuthError) {
           res.status(e.status).json({ ok: false, error: e.message });
           return;
         }
-        const message = e instanceof Error ? e.message : "Unknown error";
         res.status(500).json({ ok: false, error: message });
       }
     });
@@ -245,12 +260,15 @@ export const request_check_membership_payment = onRequest(async (req, res) => {
       return;
     }
 
+    let uid: string | null = null;
+    let request: ReturnType<typeof parseCheckPaymentRequest> | null = null;
+
     try {
-      const uid = await getUidFromRequest(
+      uid = await getUidFromRequest(
         req as unknown as { headers: Record<string, unknown> },
       );
 
-      const request = parseCheckPaymentRequest(req.body);
+      request = parseCheckPaymentRequest(req.body);
 
       const serverNow =
         typeof admin.firestore.FieldValue?.serverTimestamp === "function"
@@ -271,11 +289,22 @@ export const request_check_membership_payment = onRequest(async (req, res) => {
 
       res.status(200).json({ ok: true, groupId, reused });
     } catch (e) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      logger.error("request_check_membership_payment failed", {
+        error: message,
+        stack: e instanceof Error ? e.stack : undefined,
+        uid,
+        year: request?.year ?? null,
+        membershipType: request?.membershipType ?? null,
+        donationAmount: request?.donationAmount ?? null,
+        requestId: request?.requestId ?? null,
+        origin: req.headers.origin ?? null,
+        host: req.headers.host ?? null,
+      });
       if (e instanceof AuthError) {
         res.status(e.status).json({ ok: false, error: e.message });
         return;
       }
-      const message = e instanceof Error ? e.message : "Unknown error";
       res.status(500).json({ ok: false, error: message });
     }
   });
@@ -295,12 +324,15 @@ export const verify_and_record_donation_payment = onRequest(
         return;
       }
 
+      let uid: string | null = null;
+      let request: ReturnType<typeof parseDonationVerifyRequest> | null = null;
+
       try {
-        const uid = await getUidFromRequest(
+        uid = await getUidFromRequest(
           req as unknown as { headers: Record<string, unknown> },
         );
 
-        const request = parseDonationVerifyRequest(req.body);
+        request = parseDonationVerifyRequest(req.body);
 
         const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
         const clientSecret = required(
@@ -337,11 +369,20 @@ export const verify_and_record_donation_payment = onRequest(
 
         res.status(200).json(resp);
       } catch (e) {
+        const message = e instanceof Error ? e.message : "Unknown error";
+        logger.error("verify_and_record_donation_payment failed", {
+          error: message,
+          stack: e instanceof Error ? e.stack : undefined,
+          uid,
+          orderId: request?.orderId ?? null,
+          year: request?.year ?? null,
+          origin: req.headers.origin ?? null,
+          host: req.headers.host ?? null,
+        });
         if (e instanceof AuthError) {
           res.status(e.status).json({ ok: false, error: e.message });
           return;
         }
-        const message = e instanceof Error ? e.message : "Unknown error";
         res.status(500).json({ ok: false, error: message });
       }
     });
