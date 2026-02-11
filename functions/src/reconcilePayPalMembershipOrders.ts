@@ -149,7 +149,7 @@ export const reconcile_paypal_membership_orders = onRequest(
 
         for (const tx of transactions) {
           const orderId = tx.paypalReferenceId ?? tx.transactionId ?? null;
-          const customId = tx.customId ?? tx.customField ?? null;
+          const customId = tx.customId ?? null;
 
           if (!orderId) {
             response.skipped += 1;

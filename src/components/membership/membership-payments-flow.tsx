@@ -204,6 +204,11 @@ export default function MembershipPaymentsFlow({
       (step.purpose === "renew" || step.purpose === "handicap") &&
       `${user.uid}:${currentYear}:${step.purpose === "renew" ? MEMBERSHIP_TYPES.FULL : MEMBERSHIP_TYPES.HANDICAP}:${step.purpose}`;
 
+    const invoiceId =
+      user && (step.purpose === "renew" || step.purpose === "handicap")
+        ? `RGCM-${currentYear}-${user.uid}-${step.purpose}`
+        : null;
+
     return actions.order.create({
       intent: "CAPTURE",
       purchase_units: [
@@ -214,6 +219,7 @@ export default function MembershipPaymentsFlow({
             value,
           },
           ...(customId ? { custom_id: customId } : {}),
+          ...(invoiceId ? { invoice_id: invoiceId } : {}),
         },
       ],
     });
