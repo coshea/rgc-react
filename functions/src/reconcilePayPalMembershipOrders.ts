@@ -57,7 +57,7 @@ async function requireAdminUser(uid: string): Promise<void> {
   }
   const data = snap.data() as Record<string, unknown> | undefined;
   const isAdmin =
-    data?.isAdmin === true || data?.admin === true || data?.admin === "true";
+    data?.isAdmin === true || data?.admin === true;
   if (!isAdmin) {
     throw new AuthError("Admin access required", 403);
   }
