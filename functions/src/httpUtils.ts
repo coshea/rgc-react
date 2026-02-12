@@ -37,6 +37,9 @@ type JwtPayload = {
   [key: string]: unknown;
 };
 
+const EMULATOR_AUTH_CLAIM_KEY = "emulator_auth";
+const EMULATOR_AUTH_CLAIM_VALUE = "rgc-functions-emulator-only";
+
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padLength = (4 - (normalized.length % 4)) % 4;
@@ -81,6 +84,10 @@ export async function getUidFromRequest(req: {
     const payload = decodeJwtNoVerify(token);
     if (!isJwtPayload(payload)) {
       throw new AuthError("Invalid emulator token payload");
+    }
+
+    if (payload[EMULATOR_AUTH_CLAIM_KEY] !== EMULATOR_AUTH_CLAIM_VALUE) {
+      throw new AuthError("Invalid emulator auth claim");
     }
 
     const uid = payload.uid ?? payload.user_id ?? payload.sub ?? "";
