@@ -22,13 +22,15 @@ import {
   confirmMembershipPaymentGroup,
   getMembershipSettings,
   reconcilePayPalMembershipOrders,
-  type PayPalReconcileResponse,
 } from "@/api/membership";
+import {
+  MEMBERSHIP_TYPES,
+  type MembershipType,
+  type ReconcilePayPalOrdersResponse,
+} from "@@/types";
 import { useMembershipPayments } from "@/hooks/useMembershipPayments";
 import { useMembers } from "@/hooks/useMembers";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
-import { MEMBERSHIP_TYPES } from "@/types/membership";
-import type { MembershipType } from "@/types/membership";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 
 type Filter = "all" | "yearly" | "handicap" | "donation";
@@ -99,7 +101,7 @@ export default function MembershipDashboardPage() {
   );
   const [reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
-    useState<PayPalReconcileResponse | null>(null);
+    useState<ReconcilePayPalOrdersResponse | null>(null);
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
   const qc = useQueryClient();

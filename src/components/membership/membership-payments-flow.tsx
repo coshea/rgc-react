@@ -14,7 +14,7 @@ import {
 } from "@/api/paypal";
 import { requestCheckMembershipPayment } from "@/api/membership";
 import { saveUserProfile } from "@/api/users";
-import { MEMBERSHIP_TYPES } from "@/types/membership";
+import { MEMBERSHIP_TYPES } from "@@/types";
 
 import type {
   DonationState,

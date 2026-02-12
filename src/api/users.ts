@@ -13,7 +13,7 @@ import {
   deleteDoc,
   Timestamp,
 } from "firebase/firestore";
-import type { MembershipType } from "@/types/membership";
+import type { MembershipType } from "@@/types";
 
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
 export type FirestoreTimestamp = Timestamp | Date;

@@ -8,7 +8,8 @@
     "baseUrl": ".",
     "types": ["vite/client", "node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@@/*": ["./functions/src/*"]
     },
 
     /* Bundler mode */
@@ -27,6 +28,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "functions/src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

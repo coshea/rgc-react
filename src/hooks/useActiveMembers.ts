@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import type { MembershipType } from "@/types/membership";
+import type { MembershipType } from "@@/types";
 import type { User } from "@/api/users";
 
 export interface ActiveMemberRecord {
