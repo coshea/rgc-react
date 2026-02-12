@@ -248,7 +248,7 @@ export async function fetchPayPalTransactions(params: {
     transactions.push(...parsed.transactions);
     totalPages = parsed.totalPages;
     page += 1;
-  } while (page <= totalPages && page <= 10);
+  } while (page <= totalPages && page <= 100);
 
   return transactions;
 }
