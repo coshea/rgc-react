@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionItem,
   Button,
   ButtonGroup,
   Card,
@@ -38,7 +40,7 @@ type Filter = "all" | "yearly" | "handicap" | "donation";
 function typeLabel(type?: MembershipType | string | null) {
   switch (type) {
     case MEMBERSHIP_TYPES.FULL:
-      return "Yearly Membership";
+      return "Full Membership";
     case MEMBERSHIP_TYPES.HANDICAP:
       return "Handicap Only";
     default:
@@ -102,9 +104,27 @@ export default function MembershipDashboardPage() {
   const [reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (typeof window.matchMedia !== "function") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobileView(event.matches);
+    };
+
+    setIsMobileView(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   const { allMembers, loading: loadingMembers } = useMembers(year);
   const { data: payments, isLoading: loadingPayments } =
@@ -285,6 +305,7 @@ export default function MembershipDashboardPage() {
       (sum, payment) => sum + (payment.amount ?? 0),
       0,
     );
+    const totalAmount = yearlyAmount + handicapAmount + donationAmount;
 
     return {
       total: rows.duesRows.length,
@@ -295,6 +316,7 @@ export default function MembershipDashboardPage() {
         (r) => r.membershipType === MEMBERSHIP_TYPES.HANDICAP,
       ).length,
       donations: confirmedDonations.length,
+      totalAmount,
       yearlyAmount,
       handicapAmount,
       donationAmount,
@@ -440,7 +462,7 @@ export default function MembershipDashboardPage() {
   const isLoading = loadingMembers || loadingPayments;
 
   return (
-    <div className="min-h-screen px-6 py-12">
+    <div className="min-h-screen px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-4">
           <BackButton />
@@ -456,11 +478,14 @@ export default function MembershipDashboardPage() {
             <CardBody className="p-6">
               <div className="text-sm text-default-500">Payments</div>
               <div className="mt-2 text-2xl font-bold">{stats.total}</div>
+              <div className="mt-1 text-sm text-default-500">
+                Total: {currency(stats.totalAmount)}
+              </div>
             </CardBody>
           </Card>
           <Card shadow="sm">
             <CardBody className="p-6">
-              <div className="text-sm text-default-500">Yearly</div>
+              <div className="text-sm text-default-500">Full Membership</div>
               <div className="mt-2 text-2xl font-bold">{stats.yearly}</div>
               <div className="mt-1 text-sm text-default-500">
                 Total: {currency(stats.yearlyAmount)}
@@ -522,7 +547,7 @@ export default function MembershipDashboardPage() {
               onPress={() => setFilter("yearly")}
               color={filter === "yearly" ? "primary" : "default"}
             >
-              Yearly
+              Full
             </Button>
             <Button
               onPress={() => setFilter("handicap")}
@@ -539,7 +564,232 @@ export default function MembershipDashboardPage() {
           </ButtonGroup>
         </div>
 
-        <Divider className="mt-8" />
+        <Card className="mt-8 overflow-hidden" shadow="sm">
+          <CardHeader className="flex items-center justify-between">
+            <div className="font-semibold">Paid Members</div>
+            {isLoading ? <Spinner size="sm" /> : null}
+          </CardHeader>
+          <CardBody className="p-0">
+            {isMobileView ? (
+              <div className="px-2 py-2">
+                {!isLoading && filteredRows.length === 0 ? (
+                  <div className="px-4 py-10 text-center text-default-500">
+                    No payments found.
+                  </div>
+                ) : (
+                  <Accordion selectionMode="multiple" variant="splitted">
+                    {filteredRows.map((row) => (
+                      <AccordionItem
+                        key={row.id}
+                        aria-label={`Paid member ${row.name}`}
+                        title={
+                          <div className="min-w-0">
+                            <div className="font-medium break-words">
+                              {row.name}
+                            </div>
+                            <div className="text-xs text-default-500 break-all">
+                              {row.email || "—"}
+                            </div>
+                          </div>
+                        }
+                      >
+                        <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
+                          <div className="text-default-500">Membership</div>
+                          <div>
+                            <Chip
+                              size="sm"
+                              variant="flat"
+                              color={typeColor(row.membershipType)}
+                            >
+                              {typeLabel(row.membershipType)}
+                            </Chip>
+                          </div>
+                          <div className="text-default-500">Payment</div>
+                          <div>{currency(row.paymentAmount)}</div>
+                          <div className="text-default-500">Donation</div>
+                          <div>{currency(row.donationAmount)}</div>
+                          <div className="text-default-500">Paid</div>
+                          <div>{formatDate(row.paidAt)}</div>
+                        </div>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-hidden">
+                <table className="w-full table-fixed text-left text-sm">
+                  <thead className="bg-default-100">
+                    <tr>
+                      <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                        Name
+                      </th>
+                      <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                        Email
+                      </th>
+                      <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                        Membership Type
+                      </th>
+                      <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                        Payment
+                      </th>
+                      <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                        Donation
+                      </th>
+                      <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                        Paid
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((row) => (
+                      <tr key={row.id} className="border-t border-default-200">
+                        <td className="px-3 py-3 break-words sm:px-4">
+                          {row.name}
+                        </td>
+                        <td className="px-3 py-3 break-all sm:px-4">
+                          {row.email || "—"}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            color={typeColor(row.membershipType)}
+                          >
+                            {typeLabel(row.membershipType)}
+                          </Chip>
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {currency(row.paymentAmount)}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {currency(row.donationAmount)}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {formatDate(row.paidAt)}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {!isLoading && filteredRows.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-4 py-10 text-center text-default-500"
+                        >
+                          No payments found.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card className="mt-8 overflow-hidden" shadow="sm">
+          <CardHeader className="flex items-center justify-between">
+            <div className="font-semibold">Pending Check Payments</div>
+            {isLoading ? <Spinner size="sm" /> : null}
+          </CardHeader>
+          <CardBody className="p-0">
+            <div className="overflow-x-hidden">
+              <table className="w-full table-fixed text-left text-sm">
+                <thead className="bg-default-100">
+                  <tr>
+                    <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                      Name
+                    </th>
+                    <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                      Email
+                    </th>
+                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Membership Type
+                    </th>
+                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Amount
+                    </th>
+                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Donation
+                    </th>
+                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                      Requested
+                    </th>
+                    <th className="px-3 py-3 font-medium sm:px-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingChecks.map((r) => {
+                    const user = userById.get(r.userId);
+                    const name =
+                      user?.displayName ||
+                      [user?.firstName, user?.lastName]
+                        .filter(Boolean)
+                        .join(" ") ||
+                      user?.email ||
+                      r.userId;
+
+                    return (
+                      <tr key={r.id} className="border-t border-default-200">
+                        <td className="px-3 py-3 break-words sm:px-4">
+                          {name}
+                        </td>
+                        <td className="px-3 py-3 break-all sm:px-4">
+                          {user?.email || "—"}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            color={typeColor(r.membershipType)}
+                          >
+                            {typeLabel(r.membershipType)}
+                          </Chip>
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {currency(r.amount)}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {currency(r.donationAmount)}
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {formatDate(r.paidAt)}
+                        </td>
+                        <td className="px-3 py-3 sm:px-4">
+                          <Button
+                            size="sm"
+                            color="primary"
+                            className="w-full sm:w-auto"
+                            isLoading={
+                              confirmingGroupId === (r.groupId ?? r.id)
+                            }
+                            onPress={() =>
+                              handleConfirmCheck(r.groupId ?? undefined, r.id)
+                            }
+                          >
+                            Mark paid
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {!isLoading && pendingChecks.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-4 py-6 text-center text-default-500"
+                      >
+                        No pending check payments.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </CardBody>
+        </Card>
 
         {isAdmin ? (
           <Card className="mt-8" shadow="sm">
@@ -605,144 +855,6 @@ export default function MembershipDashboardPage() {
             </CardBody>
           </Card>
         ) : null}
-
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
-            <div className="font-semibold">Paid Members</div>
-            {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-default-100">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Email</th>
-                    <th className="px-4 py-3 font-medium">Membership Type</th>
-                    <th className="px-4 py-3 font-medium">Payment</th>
-                    <th className="px-4 py-3 font-medium">Donation</th>
-                    <th className="px-4 py-3 font-medium">Paid</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.map((r) => (
-                    <tr key={r.id} className="border-t border-default-200">
-                      <td className="px-4 py-3">{r.name}</td>
-                      <td className="px-4 py-3">{r.email || "—"}</td>
-                      <td className="px-4 py-3">
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          color={typeColor(r.membershipType)}
-                        >
-                          {typeLabel(r.membershipType)}
-                        </Chip>
-                      </td>
-                      <td className="px-4 py-3">{currency(r.paymentAmount)}</td>
-                      <td className="px-4 py-3">
-                        {currency(r.donationAmount)}
-                      </td>
-                      <td className="px-4 py-3">{formatDate(r.paidAt)}</td>
-                    </tr>
-                  ))}
-
-                  {!isLoading && filteredRows.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-10 text-center text-default-500"
-                      >
-                        No payments found.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
-            <div className="font-semibold">Pending Check Payments</div>
-            {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-default-100">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Email</th>
-                    <th className="px-4 py-3 font-medium">Membership Type</th>
-                    <th className="px-4 py-3 font-medium">Amount</th>
-                    <th className="px-4 py-3 font-medium">Donation</th>
-                    <th className="px-4 py-3 font-medium">Requested</th>
-                    <th className="px-4 py-3 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingChecks.map((r) => {
-                    const user = userById.get(r.userId);
-                    const name =
-                      user?.displayName ||
-                      [user?.firstName, user?.lastName]
-                        .filter(Boolean)
-                        .join(" ") ||
-                      user?.email ||
-                      r.userId;
-
-                    return (
-                      <tr key={r.id} className="border-t border-default-200">
-                        <td className="px-4 py-3">{name}</td>
-                        <td className="px-4 py-3">{user?.email || "—"}</td>
-                        <td className="px-4 py-3">
-                          <Chip
-                            size="sm"
-                            variant="flat"
-                            color={typeColor(r.membershipType)}
-                          >
-                            {typeLabel(r.membershipType)}
-                          </Chip>
-                        </td>
-                        <td className="px-4 py-3">{currency(r.amount)}</td>
-                        <td className="px-4 py-3">
-                          {currency(r.donationAmount)}
-                        </td>
-                        <td className="px-4 py-3">{formatDate(r.paidAt)}</td>
-                        <td className="px-4 py-3">
-                          <Button
-                            size="sm"
-                            color="primary"
-                            isLoading={
-                              confirmingGroupId === (r.groupId ?? r.id)
-                            }
-                            onPress={() =>
-                              handleConfirmCheck(r.groupId ?? undefined, r.id)
-                            }
-                          >
-                            Mark paid
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {!isLoading && pendingChecks.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-6 text-center text-default-500"
-                      >
-                        No pending check payments.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
       </div>
     </div>
   );
