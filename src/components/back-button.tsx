@@ -35,20 +35,9 @@ export default function BackButton({
       return;
     }
 
-    // Attempt to go back in history. If there is no prior entry (e.g. MemoryRouter
-    // initial entry), navigate(-1) will not change the location. In that case,
-    // fall back to a sane default route so the user is not stuck.
-    const prevPath = window.location.pathname;
+    // Prefer standard history navigation; this behaves correctly for both
+    // BrowserRouter and MemoryRouter stacks.
     navigate(-1);
-
-    // If navigate(-1) did not change the path, schedule a microtask to navigate
-    // to the fallback. A tiny timeout is used so this works predictably in tests
-    // and in environments where history cannot go back.
-    setTimeout(() => {
-      if (window.location.pathname === prevPath) {
-        navigate("/");
-      }
-    }, 0);
   };
 
   return (

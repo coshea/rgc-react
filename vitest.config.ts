@@ -17,6 +17,7 @@ export default defineConfig({
     // the pre-commit hook and causing unrelated failures).
     exclude: [
       "node_modules/**",
+      "functions/src/**",
       "functions/lib/**",
       "functions/node_modules/**",
     ],
