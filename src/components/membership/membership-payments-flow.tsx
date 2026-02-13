@@ -4,6 +4,7 @@ import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
 import { Spacer, addToast } from "@heroui/react";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
+import { logger } from "@/config/sentry";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
 import MinimalRowSteps from "@/components/minimal-row-steps";
@@ -13,7 +14,7 @@ import {
 } from "@/api/paypal";
 import { requestCheckMembershipPayment } from "@/api/membership";
 import { saveUserProfile } from "@/api/users";
-import { MEMBERSHIP_TYPES } from "@/types/membership";
+import { MEMBERSHIP_TYPES } from "@@/types";
 
 import type {
   DonationState,
@@ -203,6 +204,11 @@ export default function MembershipPaymentsFlow({
       (step.purpose === "renew" || step.purpose === "handicap") &&
       `${user.uid}:${currentYear}:${step.purpose === "renew" ? MEMBERSHIP_TYPES.FULL : MEMBERSHIP_TYPES.HANDICAP}:${step.purpose}`;
 
+    const invoiceId =
+      user && (step.purpose === "renew" || step.purpose === "handicap")
+        ? `RGCM-${currentYear}-${user.uid}-${step.purpose}`
+        : null;
+
     return actions.order.create({
       intent: "CAPTURE",
       purchase_units: [
@@ -213,6 +219,7 @@ export default function MembershipPaymentsFlow({
             value,
           },
           ...(customId ? { custom_id: customId } : {}),
+          ...(invoiceId ? { invoice_id: invoiceId } : {}),
         },
       ],
     });
@@ -235,6 +242,25 @@ export default function MembershipPaymentsFlow({
     // Capture first; then record a Firestore payment record via a trusted backend
     // (Firestore rules restrict memberPayments writes to admins).
     await actions.order.capture();
+
+    const membershipTypeForLog =
+      step.kind === "paypal" &&
+      (step.purpose === "renew" || step.purpose === "handicap")
+        ? step.purpose === "renew"
+          ? MEMBERSHIP_TYPES.FULL
+          : MEMBERSHIP_TYPES.HANDICAP
+        : null;
+
+    logger.info("PayPal payment captured", {
+      orderId: data.orderID ?? null,
+      uid: user?.uid ?? null,
+      purpose: step.kind === "paypal" ? step.purpose : null,
+      membershipType: membershipTypeForLog,
+      amount: step.kind === "paypal" ? step.amount : null,
+      currency: paypalCurrency,
+      year: currentYear,
+      environment: paypalEnvironment,
+    });
 
     if (step.kind !== "paypal") {
       setStep({

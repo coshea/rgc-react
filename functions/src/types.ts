@@ -48,3 +48,25 @@ export type RequestCheckMembershipPaymentResponse = {
   groupId: string;
   reused?: boolean;
 };
+
+export type ReconcilePayPalOrdersRequest = {
+  days?: number;
+};
+
+export type ReconcilePayPalOrdersResponse = {
+  ok: boolean;
+  scanned: number;
+  processed: number;
+  skipped: number;
+  skippedItems: Array<{
+    orderId?: string | null;
+    customId?: string | null;
+    reason: string;
+  }>;
+  errors: Array<{
+    orderId?: string | null;
+    customId?: string | null;
+    error: string;
+  }>;
+  error?: string;
+};

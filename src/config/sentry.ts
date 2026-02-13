@@ -181,12 +181,6 @@ if (enabled) {
   try {
     const sentryClient = getSentryClient();
     const hasClient = !!sentryClient;
-    const dsnSource = import.meta.env.VITE_SENTRY_DSN ? "env" : "fallback";
-
-    // eslint-disable-next-line no-console
-    console.log(
-      `[Sentry] initialized: enabled=${enabled}, client=${hasClient ? "present" : "missing"}, environment=${import.meta.env.MODE}, dsn=${dsnSource}`,
-    );
 
     // Optional, opt-in smoke test: add `?sentryTest=1` to the URL.
     if (hasClient && isSmokeTest) {

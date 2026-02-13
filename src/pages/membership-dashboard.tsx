@@ -15,17 +15,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import BackButton from "@/components/back-button";
 import { addToast } from "@/providers/toast";
+import { useAuth } from "@/providers/AuthProvider";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
 import {
   confirmMembershipPaymentGroup,
   getMembershipSettings,
+  reconcilePayPalMembershipOrders,
 } from "@/api/membership";
+import {
+  MEMBERSHIP_TYPES,
+  type MembershipType,
+  type ReconcilePayPalOrdersResponse,
+} from "@@/types";
 import { useMembershipPayments } from "@/hooks/useMembershipPayments";
 import { useMembers } from "@/hooks/useMembers";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
-import { MEMBERSHIP_TYPES } from "@/types/membership";
-import type { MembershipType } from "@/types/membership";
+import { useDocAdminFlag } from "@/components/membership/hooks";
 
 type Filter = "all" | "yearly" | "handicap" | "donation";
 
@@ -93,6 +99,11 @@ export default function MembershipDashboardPage() {
   const [confirmingGroupId, setConfirmingGroupId] = useState<string | null>(
     null,
   );
+  const [reconciling, setReconciling] = useState(false);
+  const [reconcileResult, setReconcileResult] =
+    useState<ReconcilePayPalOrdersResponse | null>(null);
+  const { user } = useAuth();
+  const { isAdmin } = useDocAdminFlag(user);
   const qc = useQueryClient();
 
   const { allMembers, loading: loadingMembers } = useMembers(year);
@@ -228,7 +239,7 @@ export default function MembershipDashboardPage() {
         ? [...rows.duesRows, ...rows.donationOnlyRows]
         : rows.duesRows;
 
-    return sourceRows.filter((r) => {
+    const filtered = sourceRows.filter((r) => {
       const matchesSearch =
         !q ||
         r.name.toLowerCase().includes(q) ||
@@ -242,6 +253,12 @@ export default function MembershipDashboardPage() {
         (filter === "donation" && r.donationAmount > 0);
 
       return matchesSearch && matchesType;
+    });
+
+    return filtered.sort((a, b) => {
+      const timeDiff = toMillis(b.paidAt) - toMillis(a.paidAt);
+      if (timeDiff !== 0) return timeDiff;
+      return a.name.localeCompare(b.name);
     });
   }, [rows, filter, search]);
 
@@ -378,6 +395,48 @@ export default function MembershipDashboardPage() {
     }
   }
 
+  async function handleReconcilePayPal() {
+    if (!user) {
+      addToast({
+        title: "Sign in required",
+        description: "Please sign in to run PayPal reconciliation.",
+        color: "danger",
+      });
+      return;
+    }
+
+    setReconciling(true);
+    try {
+      const result = await reconcilePayPalMembershipOrders({ user });
+      setReconcileResult(result);
+
+      await qc.invalidateQueries({ queryKey: ["membershipPayments", year] });
+      await qc.invalidateQueries({ queryKey: ["activeMembers", year] });
+
+      const issues =
+        (result.errors?.length ?? 0) + (result.skippedItems?.length ?? 0);
+
+      addToast({
+        title:
+          issues > 0
+            ? "Reconciliation complete with notes"
+            : "Reconciliation complete",
+        description: `Scanned ${result.scanned}, recorded ${result.processed}.`,
+        color: issues > 0 ? "warning" : "success",
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Reconciliation failed";
+      addToast({
+        title: "Reconciliation failed",
+        description: message,
+        color: "danger",
+      });
+    } finally {
+      setReconciling(false);
+    }
+  }
+
   const isLoading = loadingMembers || loadingPayments;
 
   return (
@@ -481,6 +540,71 @@ export default function MembershipDashboardPage() {
         </div>
 
         <Divider className="mt-8" />
+
+        {isAdmin ? (
+          <Card className="mt-8" shadow="sm">
+            <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="font-semibold">PayPal Reconciliation</div>
+                <div className="text-sm text-default-500">
+                  Checks for missed PayPal membership orders from the last 14
+                  days.
+                </div>
+              </div>
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={handleReconcilePayPal}
+                isLoading={reconciling}
+              >
+                Check PayPal orders
+              </Button>
+            </CardHeader>
+            <CardBody>
+              {reconcileResult ? (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    Scanned {reconcileResult.scanned} transactions. Recorded{" "}
+                    {reconcileResult.processed}. Skipped{" "}
+                    {reconcileResult.skipped}.
+                  </div>
+                  {reconcileResult.errors.length > 0 ? (
+                    <div>
+                      <div className="font-medium text-danger-600">Errors</div>
+                      <ul className="mt-2 list-disc pl-5 text-danger-600">
+                        {reconcileResult.errors.map((item, index) => (
+                          <li key={`err-${item.orderId ?? "unknown"}-${index}`}>
+                            {item.orderId ?? "Unknown order"}: {item.error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {reconcileResult.skippedItems.length > 0 ? (
+                    <div>
+                      <div className="font-medium text-default-600">
+                        Skipped
+                      </div>
+                      <ul className="mt-2 list-disc pl-5 text-default-500">
+                        {reconcileResult.skippedItems.map((item, index) => (
+                          <li
+                            key={`skip-${item.orderId ?? "unknown"}-${index}`}
+                          >
+                            {item.orderId ?? "Unknown order"}: {item.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="text-sm text-default-500">
+                  No reconciliation run yet.
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        ) : null}
 
         <Card className="mt-8 overflow-hidden" shadow="sm">
           <CardHeader className="flex items-center justify-between">

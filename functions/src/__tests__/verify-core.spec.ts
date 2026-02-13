@@ -5,7 +5,7 @@ import { verifyAndRecordMembershipPayment } from "../verifyAndRecordMembershipPa
 describe("verifyAndRecordMembershipPayment", () => {
   it("returns ok=false when PayPal status not COMPLETED", async () => {
     // Dependency-inject fetch so PayPal calls are deterministic.
-    const fetchImpl: typeof fetch = async (url, init) => {
+    const fetchImpl: typeof fetch = async (url, _init) => {
       const u = String(url);
       if (u.includes("/v1/oauth2/token")) {
         return new Response(JSON.stringify({ access_token: "token" }), {
@@ -22,7 +22,7 @@ describe("verifyAndRecordMembershipPayment", () => {
               { amount: { currency_code: "USD", value: "100.00" } },
             ],
           }),
-          { status: 200, headers: { "content-type": "application/json" } }
+          { status: 200, headers: { "content-type": "application/json" } },
         );
       }
       return new Response("not found", { status: 404 });

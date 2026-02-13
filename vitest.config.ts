@@ -3,7 +3,10 @@ import { resolve } from "path";
 
 export default defineConfig({
   resolve: {
-    alias: [{ find: "@", replacement: resolve(__dirname, "src") }],
+    alias: [
+      { find: "@", replacement: resolve(__dirname, "src") },
+      { find: "@@", replacement: resolve(__dirname, "functions/src") },
+    ],
   },
   test: {
     environment: "jsdom",
@@ -14,6 +17,7 @@ export default defineConfig({
     // the pre-commit hook and causing unrelated failures).
     exclude: [
       "node_modules/**",
+      "functions/src/**",
       "functions/lib/**",
       "functions/node_modules/**",
     ],

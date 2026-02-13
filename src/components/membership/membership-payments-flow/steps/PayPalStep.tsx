@@ -89,6 +89,7 @@ export function PayPalStep(props: {
                 clientId: paypalClientId,
                 currency: paypalCurrency,
                 intent: "capture",
+                enableFunding: "venmo",
                 disableFunding: "paylater",
               }}
             >

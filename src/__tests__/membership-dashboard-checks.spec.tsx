@@ -97,6 +97,14 @@ vi.mock("@/hooks/usePageTracking", () => ({
   usePageTracking: () => {},
 }));
 
+vi.mock("@/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: null }),
+}));
+
+vi.mock("@/components/membership/hooks", () => ({
+  useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+}));
+
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {

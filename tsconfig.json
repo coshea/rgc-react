@@ -8,7 +8,8 @@
     "baseUrl": ".",
     "types": ["vite/client", "node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@@/*": ["./functions/src/*"]
     },
 
     /* Bundler mode */

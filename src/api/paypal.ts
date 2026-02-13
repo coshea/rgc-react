@@ -1,37 +1,12 @@
 import type { User } from "firebase/auth";
 
 import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
-
-export type MembershipType = "full" | "handicap";
-export type MembershipPurpose = "renew" | "handicap";
-
-export type VerifyAndRecordPayPalRequest = {
-  orderId: string;
-  year: number;
-  membershipType: MembershipType;
-  purpose: MembershipPurpose;
-};
-
-export type VerifyAndRecordPayPalResponse = {
-  ok: boolean;
-  reused?: boolean;
-  paypalStatus?: string;
-  amount?: number;
-  currency?: string;
-};
-
-export type VerifyAndRecordPayPalDonationRequest = {
-  orderId: string;
-  year: number;
-};
-
-export type VerifyAndRecordPayPalDonationResponse = {
-  ok: boolean;
-  reused?: boolean;
-  paypalStatus?: string;
-  amount?: number;
-  currency?: string;
-};
+import type {
+  VerifyAndRecordPayPalRequest,
+  VerifyAndRecordPayPalResponse,
+  VerifyAndRecordPayPalDonationRequest,
+  VerifyAndRecordPayPalDonationResponse,
+} from "@@/types";
 
 export async function verifyAndRecordPayPalMembershipPayment(params: {
   user: User;
@@ -62,7 +37,14 @@ export async function verifyAndRecordPayPalMembershipPayment(params: {
     throw new Error(`Payment recording failed: ${resp.status} ${text}`.trim());
   }
 
-  return (await resp.json()) as VerifyAndRecordPayPalResponse;
+  const json = (await resp.json().catch(() => null)) as unknown;
+  if (!json || typeof json !== "object") {
+    throw new Error(
+      `Payment recording failed: Invalid response format (Status ${resp.status})`,
+    );
+  }
+
+  return json as VerifyAndRecordPayPalResponse;
 }
 
 export async function verifyAndRecordPayPalDonationPayment(params: {
@@ -94,5 +76,12 @@ export async function verifyAndRecordPayPalDonationPayment(params: {
     throw new Error(`Donation recording failed: ${resp.status} ${text}`.trim());
   }
 
-  return (await resp.json()) as VerifyAndRecordPayPalDonationResponse;
+  const json = (await resp.json().catch(() => null)) as unknown;
+  if (!json || typeof json !== "object") {
+    throw new Error(
+      `Donation recording failed: Invalid response format (Status ${resp.status})`,
+    );
+  }
+
+  return json as VerifyAndRecordPayPalDonationResponse;
 }

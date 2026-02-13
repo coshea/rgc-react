@@ -13,10 +13,10 @@
     "preview": "vite preview",
     "firebase": "npm run build && firebase deploy",
     "functions": "npm run build && firebase deploy --only functions",
+    "firestore": "firebase deploy --only firestore:rules",
     "emulators": "firebase emulators:start --only auth,firestore,functions",
     "emulators:functions": "firebase emulators:start --only functions",
     "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs",
-    "firestore": "firebase deploy --only firestore:rules",
     "build-full": "npm run build && npm run test && npm run lint"
   },
   "dependencies": {
@@ -47,7 +47,7 @@
     "@tanstack/react-query": "^5.87.1",
     "@tanstack/react-query-devtools": "^5.87.1",
     "clsx": "2.1.1",
-    "firebase": "^12.2.1",
+    "firebase": "^12.9.0",
     "framer-motion": "11.15.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",

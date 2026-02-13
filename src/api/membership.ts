@@ -17,7 +17,12 @@ import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
 import { logFsStart, logFsSuccess, logFsError } from "@/utils/firestoreLogger";
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
-import type { MembershipType } from "@/types/membership";
+import type {
+  MembershipType,
+  ReconcilePayPalOrdersResponse,
+  RequestCheckMembershipPaymentRequest,
+  RequestCheckMembershipPaymentResponse,
+} from "@@/types";
 
 export type MembershipPayment = {
   id?: string;
@@ -297,13 +302,8 @@ export async function updateMembershipPayment(params: {
 
 export async function requestCheckMembershipPayment(params: {
   user: User;
-  request: {
-    year: number;
-    membershipType: MembershipType;
-    donationAmount?: number;
-    requestId: string;
-  };
-}): Promise<{ ok: boolean; groupId: string; reused?: boolean }> {
+  request: RequestCheckMembershipPaymentRequest;
+}): Promise<RequestCheckMembershipPaymentResponse> {
   const { user, request } = params;
 
   if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
@@ -329,11 +329,57 @@ export async function requestCheckMembershipPayment(params: {
     throw new Error(`Check request failed: ${resp.status} ${text}`.trim());
   }
 
-  return (await resp.json()) as {
-    ok: boolean;
-    groupId: string;
-    reused?: boolean;
-  };
+  const json = (await resp.json().catch(() => null)) as unknown;
+  if (!json || typeof json !== "object") {
+    throw new Error(
+      `Check request failed: Invalid response format (Status ${resp.status})`,
+    );
+  }
+
+  return json as RequestCheckMembershipPaymentResponse;
+}
+
+function readErrorFromResponse(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const error = record.error;
+  return typeof error === "string" && error.trim() ? error : null;
+}
+
+export async function reconcilePayPalMembershipOrders(params: {
+  user: User;
+}): Promise<ReconcilePayPalOrdersResponse> {
+  const { user } = params;
+  if (!user || typeof user.uid !== "string" || user.uid.trim() === "") {
+    throw new Error("User must be authenticated to reconcile PayPal orders.");
+  }
+
+  const token = await user.getIdToken();
+  const baseUrl = getFirebaseFunctionsBaseUrl();
+
+  const resp = await fetch(`${baseUrl}/reconcile_paypal_membership_orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({}),
+  });
+
+  const json = (await resp.json().catch(() => null)) as unknown;
+  if (!resp.ok) {
+    const message =
+      readErrorFromResponse(json) || `Reconciliation failed: ${resp.status}`;
+    throw new Error(message);
+  }
+
+  if (!json || typeof json !== "object") {
+    throw new Error(
+      `Reconciliation failed: Invalid response format (Status ${resp.status})`,
+    );
+  }
+
+  return json as ReconcilePayPalOrdersResponse;
 }
 
 export async function confirmMembershipPaymentGroup(params: {
