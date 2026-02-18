@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -19,6 +19,7 @@ import { addToast } from "@/providers/toast";
 import { useAuth } from "@/providers/AuthProvider";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   confirmMembershipPaymentGroup,
   getMembershipSettings,
@@ -103,27 +104,11 @@ export default function MembershipDashboardPage() {
   const [reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
-  const [isMobileView, setIsMobileView] = useState(false);
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
   const qc = useQueryClient();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (typeof window.matchMedia !== "function") return;
-
-    const mediaQuery = window.matchMedia("(max-width: 639px)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsMobileView(event.matches);
-    };
-
-    setIsMobileView(mediaQuery.matches);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
+  const isMobileView = useMediaQuery("(max-width: 639px)");
 
   const { allMembers, loading: loadingMembers } = useMembers(year);
   const { data: payments, isLoading: loadingPayments } =

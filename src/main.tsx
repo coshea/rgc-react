@@ -5,6 +5,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import * as Sentry from "@sentry/react";
 
 import App from "./App.tsx";
 import { Provider } from "./provider.tsx";
@@ -35,11 +36,28 @@ function getErrorMessage(value: unknown): string {
   return "";
 }
 
-function reloadOnceForChunkFailure(): void {
+function reloadOnceForChunkFailure(error: unknown): void {
   if (typeof window === "undefined") return;
 
   const hasReloaded = window.sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY);
-  if (hasReloaded === "true") return;
+  const isRetry = hasReloaded === "true";
+
+  // Capture to Sentry before reloading to track chunk load failures
+  Sentry.captureException(error, {
+    level: "warning",
+    tags: {
+      error_type: "chunk_load_failure",
+      recovery_attempted: !isRetry,
+    },
+    extra: {
+      errorMessage: getErrorMessage(error),
+      hasReloadedBefore: isRetry,
+      userAgent: window.navigator.userAgent,
+      url: window.location.href,
+    },
+  });
+
+  if (isRetry) return;
 
   window.sessionStorage.setItem(CHUNK_RELOAD_GUARD_KEY, "true");
   window.location.reload();
@@ -51,14 +69,14 @@ function installChunkLoadRecovery(): void {
   window.addEventListener("error", (event) => {
     const message = event.message || getErrorMessage(event.error);
     if (isChunkLoadFailureMessage(message)) {
-      reloadOnceForChunkFailure();
+      reloadOnceForChunkFailure(event.error || new Error(message));
     }
   });
 
   window.addEventListener("unhandledrejection", (event) => {
     const message = getErrorMessage(event.reason);
     if (isChunkLoadFailureMessage(message)) {
-      reloadOnceForChunkFailure();
+      reloadOnceForChunkFailure(event.reason || new Error(message));
     }
   });
 }
