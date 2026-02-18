@@ -1,5 +1,12 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
+import {
+  Auth,
+  browserLocalPersistence,
+  inMemoryPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  setPersistence,
+} from "firebase/auth";
 import {
   getAnalytics,
   isSupported as analyticsIsSupported,
@@ -24,7 +31,61 @@ const firebaseConfig = {
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
-const auth: Auth = getAuth(app);
+const auth: Auth = initializeAuth(app, {
+  persistence: [
+    indexedDBLocalPersistence,
+    browserLocalPersistence,
+    inMemoryPersistence,
+  ],
+});
+
+let authPersistenceDowngraded = false;
+
+function isIndexedDbClosingError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const maybeError = error as { code?: unknown; message?: unknown };
+  const code =
+    typeof maybeError.code === "string" ? maybeError.code.toLowerCase() : "";
+  const message =
+    typeof maybeError.message === "string"
+      ? maybeError.message.toLowerCase()
+      : "";
+
+  return (
+    code.includes("app/idb-set") ||
+    (message.includes("indexeddb") && message.includes("database connection"))
+  );
+}
+
+async function downgradeAuthPersistence(): Promise<void> {
+  if (authPersistenceDowngraded) return;
+
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    authPersistenceDowngraded = true;
+    return;
+  } catch {
+    // Try in-memory as a final fallback.
+  }
+
+  await setPersistence(auth, inMemoryPersistence);
+  authPersistenceDowngraded = true;
+}
+
+export async function withAuthPersistenceRetry<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isIndexedDbClosingError(error)) {
+      throw error;
+    }
+
+    await downgradeAuthPersistence();
+    return operation();
+  }
+}
 
 // If you plan to use other Firebase services like Firestore,
 // initialize them here and export as well:

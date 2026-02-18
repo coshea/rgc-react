@@ -1,4 +1,4 @@
-import { auth } from "@/config/firebase";
+import { auth, withAuthPersistenceRetry } from "@/config/firebase";
 import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
@@ -94,7 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await withAuthPersistenceRetry(() =>
+        signInWithEmailAndPassword(auth, email, password),
+      );
       return result;
       // onAuthStateChanged will handle setting user and userLoggedIn
     } catch (err) {
@@ -109,10 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password,
+      const userCredential = await withAuthPersistenceRetry(() =>
+        createUserWithEmailAndPassword(auth, email, password),
       );
       // onAuthStateChanged will handle setting user and userLoggedIn
       if (userCredential.user) {
@@ -155,12 +155,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         typeof window !== "undefined" &&
         (window as WindowWithCOI).crossOriginIsolated
       ) {
-        await signInWithRedirect(auth, provider);
+        await withAuthPersistenceRetry(() =>
+          signInWithRedirect(auth, provider),
+        );
         return;
       }
 
       try {
-        const result = await signInWithPopup(auth, provider);
+        const result = await withAuthPersistenceRetry(() =>
+          signInWithPopup(auth, provider),
+        );
         return result;
       } catch (popupErr) {
         // Some hosting setups (Cross-Origin-Opener-Policy) block reading
@@ -173,7 +177,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           message.includes("Unable to use window.closed")
         ) {
           // Use redirect as a fallback; this will navigate away.
-          await signInWithRedirect(auth, provider);
+          await withAuthPersistenceRetry(() =>
+            signInWithRedirect(auth, provider),
+          );
           return; // caller should handle void result (redirect occurred)
         }
         throw popupErr;
@@ -199,7 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         url: window.location.origin + siteConfig.pages.login.link,
         handleCodeInApp: true,
       };
-      await sendSignInLinkToEmail(auth, safeEmail, actionCodeSettings);
+      await withAuthPersistenceRetry(() =>
+        sendSignInLinkToEmail(auth, safeEmail, actionCodeSettings),
+      );
       window.localStorage.setItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY, safeEmail);
     } catch (err) {
       setError(err as Error);
@@ -215,7 +223,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const safeEmail = normalizeAndValidateEmail(email);
       if (isSignInWithEmailLink(auth, href)) {
-        const result = await signInWithEmailLink(auth, safeEmail, href);
+        const result = await withAuthPersistenceRetry(() =>
+          signInWithEmailLink(auth, safeEmail, href),
+        );
         window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_STORAGE_KEY);
         return result;
       }
@@ -232,7 +242,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await sendPasswordResetEmail(auth, email);
+      const safeEmail = normalizeAndValidateEmail(email);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: window.location.origin + siteConfig.pages.login.link,
+      };
+      await withAuthPersistenceRetry(() =>
+        sendPasswordResetEmail(auth, safeEmail, actionCodeSettings),
+      );
     } catch (err) {
       setError(err as Error);
       throw err;
@@ -245,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await signOut(auth);
+      await withAuthPersistenceRetry(() => signOut(auth));
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
     } catch (err) {
       setError(err as Error);

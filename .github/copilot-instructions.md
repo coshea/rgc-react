@@ -200,7 +200,7 @@ Sentry offers a consoleLoggingIntegration that can be used to log specific conso
 import * as Sentry from "@sentry/react";
 
 Sentry.init({
-  dsn: "https://fc000efe85e0fae20f18bfb05ee0ab21@o4510721156644864.ingest.us.sentry.io/4510721158283264",
+  dsn: "your_dsn_here",
 
   enableLogs: true,
 });
@@ -210,7 +210,7 @@ Sentry.init({
 
 ```javascript
 Sentry.init({
-  dsn: "https://fc000efe85e0fae20f18bfb05ee0ab21@o4510721156644864.ingest.us.sentry.io/4510721158283264",
+  dsn: "your_dsn_here",
   integrations: [
     // send console.log, console.warn, and console.error calls as logs to Sentry
     Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),

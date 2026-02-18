@@ -459,17 +459,12 @@ export async function confirmMembershipPaymentGroup(params: {
  */
 export async function getMembershipSettings(): Promise<MembershipSettings> {
   const ref = doc(db, "config", "membershipSettings");
-  logFsStart("getMembershipSettings");
   try {
     const snap = await getDoc(ref);
     if (!snap.exists()) {
-      logFsSuccess("getMembershipSettings", { source: "default" });
       return DEFAULT_MEMBERSHIP_SETTINGS;
     }
     const data = snap.data() as MembershipSettings;
-    logFsSuccess("getMembershipSettings", {
-      registrationOpen: data.registrationOpen,
-    });
     return data;
   } catch (e) {
     const errorCode =
