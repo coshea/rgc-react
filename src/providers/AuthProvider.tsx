@@ -242,7 +242,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      await withAuthPersistenceRetry(() => sendPasswordResetEmail(auth, email));
+      const safeEmail = normalizeAndValidateEmail(email);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: window.location.origin + siteConfig.pages.login.link,
+      };
+      await withAuthPersistenceRetry(() =>
+        sendPasswordResetEmail(auth, safeEmail, actionCodeSettings),
+      );
     } catch (err) {
       setError(err as Error);
       throw err;
