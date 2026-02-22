@@ -1,6 +1,7 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
 import {
   Auth,
+  browserPopupRedirectResolver,
   browserLocalPersistence,
   inMemoryPersistence,
   indexedDBLocalPersistence,
@@ -31,13 +32,25 @@ const firebaseConfig = {
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
-const auth: Auth = initializeAuth(app, {
-  persistence: [
-    indexedDBLocalPersistence,
-    browserLocalPersistence,
-    inMemoryPersistence,
-  ],
-});
+const authPersistence = [
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  inMemoryPersistence,
+];
+
+const shouldUsePopupRedirectResolver = !import.meta.env.VITEST;
+
+const auth: Auth = initializeAuth(
+  app,
+  shouldUsePopupRedirectResolver
+    ? {
+        popupRedirectResolver: browserPopupRedirectResolver,
+        persistence: authPersistence,
+      }
+    : {
+        persistence: authPersistence,
+      },
+);
 
 let authPersistenceDowngraded = false;
 
