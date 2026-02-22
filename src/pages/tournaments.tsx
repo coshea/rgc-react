@@ -29,6 +29,8 @@ type TournamentsProps = Record<string, never>;
 
 const Tournaments: React.FC<TournamentsProps> = () => {
   usePageTracking("Tournaments");
+  const googleCalendarSubscribeUrl =
+    "https://calendar.google.com/calendar/u/0?cid=ZTdpOG43OGdrdWRqMzU3YjlmNnJoaWJwcTRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ";
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
   const [editingTournament, setEditingTournament] =
     React.useState<Tournament | null>(null);
@@ -277,24 +279,44 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             <h2 className="text-xl font-medium text-foreground">
               Scheduled Tournaments
             </h2>
-            {isAdmin && (
+            <div className="flex items-center gap-2">
               <Button
-                color="primary"
+                as="a"
+                href={googleCalendarSubscribeUrl}
+                target="_blank"
+                rel="noreferrer"
                 size="sm"
+                variant="flat"
                 startContent={
-                  <Icon icon="lucide:plus" className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Icon icon="lucide:calendar" className="w-4 h-4" />
                 }
-                className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
-                onPress={handleCreateTournament}
-                isDisabled={isLoading}
-                aria-label="Create new tournament"
+                aria-label="Subscribe to Google Calendar"
+                title="Subscribe to the club Google Calendar"
               >
-                <span className="hidden xs:inline sm:inline">
-                  New Tournament
-                </span>
-                <span className="sm:hidden sr-only">New Tournament</span>
+                Subscribe
               </Button>
-            )}
+              {isAdmin && (
+                <Button
+                  color="primary"
+                  size="sm"
+                  startContent={
+                    <Icon
+                      icon="lucide:plus"
+                      className="w-4 h-4 sm:w-5 sm:h-5"
+                    />
+                  }
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
+                  onPress={handleCreateTournament}
+                  isDisabled={isLoading}
+                  aria-label="Create new tournament"
+                >
+                  <span className="hidden xs:inline sm:inline">
+                    New Tournament
+                  </span>
+                  <span className="sm:hidden sr-only">New Tournament</span>
+                </Button>
+              )}
+            </div>
           </div>
 
           {isLoading ? (
