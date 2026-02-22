@@ -143,6 +143,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
     setLoading(true);
     setError(null);
+
+    // evaluate once so both the try block and the catch handler can reference it
+    let isCrossOriginIsolated: boolean | undefined =
+      typeof window !== "undefined" &&
+      (window as WindowWithCOI).crossOriginIsolated;
+
     try {
       const provider = new GoogleAuthProvider();
       provider.addScope("profile");
@@ -152,9 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // accessing `window.closed` from the popup can be blocked causing the
       // popup-based flow to fail with console errors. Detect that and use the
       // redirect flow proactively to avoid the popup error noise.
-      const isCrossOriginIsolated =
-        typeof window !== "undefined" &&
-        (window as WindowWithCOI).crossOriginIsolated;
 
       if (isCrossOriginIsolated) {
         console.info("Google auth using redirect due to crossOriginIsolated", {
@@ -212,10 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ? authError.message
             : "Unknown Firebase auth error",
         name: typeof authError.name === "string" ? authError.name : undefined,
-        isCrossOriginIsolated:
-          typeof window !== "undefined"
-            ? (window as WindowWithCOI).crossOriginIsolated
-            : undefined,
+        isCrossOriginIsolated,
       });
       setError(err as Error);
       throw err; // Re-throw the error for the calling component

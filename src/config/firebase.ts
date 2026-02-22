@@ -40,17 +40,12 @@ const authPersistence = [
 
 const shouldUsePopupRedirectResolver = !import.meta.env.VITEST;
 
-const auth: Auth = initializeAuth(
-  app,
-  shouldUsePopupRedirectResolver
-    ? {
-        popupRedirectResolver: browserPopupRedirectResolver,
-        persistence: authPersistence,
-      }
-    : {
-        persistence: authPersistence,
-      },
-);
+const auth: Auth = initializeAuth(app, {
+  ...(shouldUsePopupRedirectResolver && {
+    popupRedirectResolver: browserPopupRedirectResolver,
+  }),
+  persistence: authPersistence,
+});
 
 let authPersistenceDowngraded = false;
 
