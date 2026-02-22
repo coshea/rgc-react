@@ -217,7 +217,7 @@ export default function SignUpPage() {
         return;
       }
 
-      const result = await signInWithGoogle(signupEmail.trim() || undefined);
+      const result = await signInWithGoogle();
       // If a redirect fallback was used the function may return void.
       if (!result) return;
       if (result.user) {

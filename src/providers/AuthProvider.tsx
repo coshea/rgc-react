@@ -47,9 +47,7 @@ interface AuthContextType {
   ) => Promise<UserCredential>;
   sendLoginLink: (email: string) => Promise<void>;
   signInWithLink: (email: string, href: string) => Promise<UserCredential>;
-  signInWithGoogle: (
-    emailForLogging?: string,
-  ) => Promise<UserCredential | void>;
+  signInWithGoogle: () => Promise<UserCredential | void>;
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -139,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async (emailForLogging?: string) => {
+  const signInWithGoogle = async () => {
     type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
     setLoading(true);
     setError(null);
@@ -161,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isCrossOriginIsolated) {
         console.info("Google auth using redirect due to crossOriginIsolated", {
-          emailForLogging,
+          currentUserUid: auth.currentUser?.uid ?? null,
           isCrossOriginIsolated,
         });
         await withAuthPersistenceRetry(() =>
@@ -186,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           message.includes("Unable to use window.closed")
         ) {
           console.warn("Google popup flow failed; falling back to redirect", {
-            emailForLogging,
+            currentUserUid: auth.currentUser?.uid ?? null,
             popupErrorMessage: message,
             isCrossOriginIsolated,
           });
@@ -207,8 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name?: unknown;
       };
       console.error("Google auth failed", {
-        emailForLogging,
-        currentUserEmail: auth.currentUser?.email ?? null,
+        currentUserUid: auth.currentUser?.uid ?? null,
         code: typeof authError.code === "string" ? authError.code : undefined,
         message:
           typeof authError.message === "string"

@@ -288,7 +288,7 @@ export default function LoginPage() {
         return;
       }
 
-      const result = await signInWithGoogle(email.trim() || undefined);
+      const result = await signInWithGoogle();
       // If redirect fallback was used the function may return void.
       if (!result) return;
       // Navigation or further actions on successful Google sign-in
