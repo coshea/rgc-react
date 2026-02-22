@@ -300,7 +300,10 @@ export default function LoginPage() {
         navigate(dest);
       }
     } catch (error: unknown) {
-      console.error("Google Sign-In failed on LoginPage:", error);
+      console.error("Google Sign-In failed on LoginPage:", {
+        currentUserUid: auth.currentUser?.uid ?? null,
+        error,
+      });
       const msg = getFirebaseAuthErrorMessage(error);
       try {
         addToast({

@@ -46,6 +46,7 @@ export default function SignUpPage() {
   const [isTermsOpen, setIsTermsOpen] = React.useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [signupEmail, setSignupEmail] = React.useState("");
 
   const stackedInputClassNames = {
     base: "-mb-[2px]",
@@ -248,7 +249,10 @@ export default function SignUpPage() {
     } catch (error: unknown) {
       const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);
-      console.error("Google Sign-Up failed:", error);
+      console.error("Google Sign-Up failed:", {
+        currentUserUid: auth.currentUser?.uid ?? null,
+        error,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -392,6 +396,8 @@ export default function SignUpPage() {
                 placeholder="Enter your email"
                 type="email"
                 variant="bordered"
+                value={signupEmail}
+                onValueChange={setSignupEmail}
               />
               {signupMode === "password" && (
                 <>
