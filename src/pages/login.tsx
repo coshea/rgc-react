@@ -301,7 +301,7 @@ export default function LoginPage() {
       }
     } catch (error: unknown) {
       console.error("Google Sign-In failed on LoginPage:", {
-        email: email.trim() || undefined,
+        currentUserUid: auth.currentUser?.uid ?? null,
         error,
       });
       const msg = getFirebaseAuthErrorMessage(error);
