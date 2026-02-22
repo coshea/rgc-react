@@ -250,7 +250,7 @@ export default function SignUpPage() {
       const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);
       console.error("Google Sign-Up failed:", {
-        email: signupEmail.trim() || undefined,
+        currentUserUid: auth.currentUser?.uid ?? null,
         error,
       });
     } finally {
