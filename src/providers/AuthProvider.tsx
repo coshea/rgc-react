@@ -47,7 +47,9 @@ interface AuthContextType {
   ) => Promise<UserCredential>;
   sendLoginLink: (email: string) => Promise<void>;
   signInWithLink: (email: string, href: string) => Promise<UserCredential>;
-  signInWithGoogle: () => Promise<UserCredential | void>;
+  signInWithGoogle: (
+    emailForLogging?: string,
+  ) => Promise<UserCredential | void>;
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -137,7 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (emailForLogging?: string) => {
+    type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
     setLoading(true);
     setError(null);
     try {
@@ -149,12 +152,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // accessing `window.closed` from the popup can be blocked causing the
       // popup-based flow to fail with console errors. Detect that and use the
       // redirect flow proactively to avoid the popup error noise.
-      // Avoid using `as any` by declaring a local typed Window variant.
-      type WindowWithCOI = Window & { crossOriginIsolated?: boolean };
-      if (
+      const isCrossOriginIsolated =
         typeof window !== "undefined" &&
-        (window as WindowWithCOI).crossOriginIsolated
-      ) {
+        (window as WindowWithCOI).crossOriginIsolated;
+
+      if (isCrossOriginIsolated) {
+        console.info("Google auth using redirect due to crossOriginIsolated", {
+          emailForLogging,
+          isCrossOriginIsolated,
+        });
         await withAuthPersistenceRetry(() =>
           signInWithRedirect(auth, provider),
         );
@@ -176,6 +182,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           message.includes("blocked the window.closed call") ||
           message.includes("Unable to use window.closed")
         ) {
+          console.warn("Google popup flow failed; falling back to redirect", {
+            emailForLogging,
+            popupErrorMessage: message,
+            isCrossOriginIsolated,
+          });
           // Use redirect as a fallback; this will navigate away.
           await withAuthPersistenceRetry(() =>
             signInWithRedirect(auth, provider),
@@ -187,6 +198,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // onAuthStateChanged will handle setting user and userLoggedIn
       // and creating a new user if one doesn't exist.
     } catch (err) {
+      const authError = err as {
+        code?: unknown;
+        message?: unknown;
+        name?: unknown;
+      };
+      console.error("Google auth failed", {
+        emailForLogging,
+        currentUserEmail: auth.currentUser?.email ?? null,
+        code: typeof authError.code === "string" ? authError.code : undefined,
+        message:
+          typeof authError.message === "string"
+            ? authError.message
+            : "Unknown Firebase auth error",
+        name: typeof authError.name === "string" ? authError.name : undefined,
+        isCrossOriginIsolated:
+          typeof window !== "undefined"
+            ? (window as WindowWithCOI).crossOriginIsolated
+            : undefined,
+      });
       setError(err as Error);
       throw err; // Re-throw the error for the calling component
     } finally {

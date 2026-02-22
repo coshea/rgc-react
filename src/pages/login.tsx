@@ -288,7 +288,7 @@ export default function LoginPage() {
         return;
       }
 
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(email.trim() || undefined);
       // If redirect fallback was used the function may return void.
       if (!result) return;
       // Navigation or further actions on successful Google sign-in
@@ -300,7 +300,10 @@ export default function LoginPage() {
         navigate(dest);
       }
     } catch (error: unknown) {
-      console.error("Google Sign-In failed on LoginPage:", error);
+      console.error("Google Sign-In failed on LoginPage:", {
+        email: email.trim() || undefined,
+        error,
+      });
       const msg = getFirebaseAuthErrorMessage(error);
       try {
         addToast({

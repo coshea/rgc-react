@@ -46,6 +46,7 @@ export default function SignUpPage() {
   const [isTermsOpen, setIsTermsOpen] = React.useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [signupEmail, setSignupEmail] = React.useState("");
 
   const stackedInputClassNames = {
     base: "-mb-[2px]",
@@ -216,7 +217,7 @@ export default function SignUpPage() {
         return;
       }
 
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(signupEmail.trim() || undefined);
       // If a redirect fallback was used the function may return void.
       if (!result) return;
       if (result.user) {
@@ -248,7 +249,10 @@ export default function SignUpPage() {
     } catch (error: unknown) {
       const msg = getFirebaseSignupErrorMessage(error);
       setInlineError(msg);
-      console.error("Google Sign-Up failed:", error);
+      console.error("Google Sign-Up failed:", {
+        email: signupEmail.trim() || undefined,
+        error,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -392,6 +396,8 @@ export default function SignUpPage() {
                 placeholder="Enter your email"
                 type="email"
                 variant="bordered"
+                value={signupEmail}
+                onValueChange={setSignupEmail}
               />
               {signupMode === "password" && (
                 <>
