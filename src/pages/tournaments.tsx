@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
@@ -29,6 +30,9 @@ type TournamentsProps = Record<string, never>;
 
 const Tournaments: React.FC<TournamentsProps> = () => {
   usePageTracking("Tournaments");
+  const navigate = useNavigate();
+  const googleCalendarSubscribeUrl =
+    "https://calendar.google.com/calendar/u/0?cid=ZTdpOG43OGdrdWRqMzU3YjlmNnJoaWJwcTRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ";
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
   const [editingTournament, setEditingTournament] =
     React.useState<Tournament | null>(null);
@@ -273,28 +277,61 @@ const Tournaments: React.FC<TournamentsProps> = () => {
         )
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-xl font-medium text-foreground">
               Scheduled Tournaments
             </h2>
-            {isAdmin && (
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button
-                color="primary"
+                as="a"
+                href={googleCalendarSubscribeUrl}
+                target="_blank"
+                rel="noreferrer"
                 size="sm"
+                variant="flat"
                 startContent={
-                  <Icon icon="lucide:plus" className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Icon icon="lucide:calendar" className="w-4 h-4" />
                 }
-                className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
-                onPress={handleCreateTournament}
-                isDisabled={isLoading}
-                aria-label="Create new tournament"
+                aria-label="Subscribe to Google Calendar"
+                title="Subscribe to the club Google Calendar"
               >
-                <span className="hidden xs:inline sm:inline">
-                  New Tournament
-                </span>
-                <span className="sm:hidden sr-only">New Tournament</span>
+                Subscribe
               </Button>
-            )}
+              {isAdmin && (
+                <>
+                  <Button
+                    variant="flat"
+                    size="sm"
+                    onPress={() => navigate("/season-awards")}
+                    startContent={
+                      <Icon icon="lucide:medal" className="w-4 h-4" />
+                    }
+                    aria-label="Go to season awards"
+                  >
+                    Awards
+                  </Button>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    startContent={
+                      <Icon
+                        icon="lucide:plus"
+                        className="w-4 h-4 sm:w-5 sm:h-5"
+                      />
+                    }
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
+                    onPress={handleCreateTournament}
+                    isDisabled={isLoading}
+                    aria-label="Create new tournament"
+                  >
+                    <span className="hidden xs:inline sm:inline">
+                      New Tournament
+                    </span>
+                    <span className="sm:hidden sr-only">New Tournament</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {isLoading ? (

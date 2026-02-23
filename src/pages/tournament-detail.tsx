@@ -14,6 +14,10 @@ import {
   Button,
   Divider,
   Tooltip,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
   Modal,
   ModalContent,
   ModalHeader,
@@ -47,6 +51,10 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
 import { getWeatherIcon } from "@/utils/weather";
+import {
+  getTournamentGoogleCalendarUrl,
+  downloadTournamentIcsFile,
+} from "@/utils/calendar";
 
 const formatLocalDateTime = (date?: Date) => {
   if (!date) return undefined;
@@ -310,6 +318,22 @@ const TournamentDetailPage: React.FC = () => {
     }
   };
 
+  const handleCalendarAction = (key: React.Key) => {
+    if (!tournament?.firestoreId) return;
+
+    const detailUrl = `${window.location.origin}/tournaments/${tournament.firestoreId}`;
+
+    if (key === "google") {
+      const googleUrl = getTournamentGoogleCalendarUrl(tournament, detailUrl);
+      window.open(googleUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (key === "ics") {
+      downloadTournamentIcsFile(tournament, detailUrl);
+    }
+  };
+
   // Export registrations as CSV
   const exportRegistrations = () => {
     if (!isAdmin) return;
@@ -401,52 +425,87 @@ const TournamentDetailPage: React.FC = () => {
                 {/* Mobile First row: Back button and Share button */}
                 <div className="flex items-center justify-between">
                   <BackButton />
-                  <Tooltip content="Share tournament">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={shareLink}
-                      startContent={<Icon icon="lucide:share" />}
-                      aria-label="Share tournament"
-                    >
-                      Share
-                    </Button>
-                  </Tooltip>
+                  <div className="flex items-center gap-2">
+                    <Dropdown placement="bottom-end">
+                      <DropdownTrigger>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          startContent={<Icon icon="lucide:calendar-plus" />}
+                          aria-label="Add tournament to calendar"
+                          title="Add tournament to your calendar"
+                        >
+                          Calendar
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label="Calendar options"
+                        onAction={handleCalendarAction}
+                      >
+                        <DropdownItem
+                          key="google"
+                          startContent={<Icon icon="lucide:calendar" />}
+                        >
+                          Add to Google Calendar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="ics"
+                          startContent={<Icon icon="lucide:download" />}
+                        >
+                          Download calendar file (.ics)
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                    <Tooltip content="Share tournament">
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={shareLink}
+                        startContent={<Icon icon="lucide:share" />}
+                        aria-label="Share tournament"
+                      >
+                        Share
+                      </Button>
+                    </Tooltip>
+                  </div>
                 </div>
 
                 {/* Mobile Second row: Admin actions */}
                 {isAdmin && (
                   <div className="flex items-center justify-end gap-2">
-                    <Tooltip content="Export registrations">
+                    <Chip color="secondary" size="sm" variant="flat">
+                      Admin only
+                    </Chip>
+                    <Tooltip content="Export registrations (Admin only)">
                       <Button
                         size="sm"
                         variant="flat"
                         onPress={exportRegistrations}
                         startContent={<Icon icon="lucide:download" />}
-                        aria-label="Export registrations"
+                        aria-label="Export registrations (Admin only)"
                       >
                         Export
                       </Button>
                     </Tooltip>
-                    <Tooltip content="Edit tournament">
+                    <Tooltip content="Edit tournament (Admin only)">
                       <Button
                         size="sm"
                         variant="flat"
                         onPress={() => setEditOpen(true)}
                         startContent={<Icon icon="lucide:edit" />}
-                        aria-label="Edit tournament"
+                        aria-label="Edit tournament (Admin only)"
                       >
                         Edit
                       </Button>
                     </Tooltip>
-                    <Tooltip content="Delete tournament">
+                    <Tooltip content="Delete tournament (Admin only)">
                       <Button
                         size="sm"
                         variant="flat"
                         color="danger"
                         onPress={() => setDeleteConfirm(true)}
                         startContent={<Icon icon="lucide:trash-2" />}
-                        aria-label="Delete tournament"
+                        aria-label="Delete tournament (Admin only)"
                       >
                         Delete
                       </Button>
@@ -459,6 +518,36 @@ const TournamentDetailPage: React.FC = () => {
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<Icon icon="lucide:calendar-plus" />}
+                        aria-label="Add tournament to calendar"
+                        title="Add tournament to your calendar"
+                      >
+                        Calendar
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Calendar options"
+                      onAction={handleCalendarAction}
+                    >
+                      <DropdownItem
+                        key="google"
+                        startContent={<Icon icon="lucide:calendar" />}
+                      >
+                        Add to Google Calendar
+                      </DropdownItem>
+                      <DropdownItem
+                        key="ics"
+                        startContent={<Icon icon="lucide:download" />}
+                      >
+                        Download calendar file (.ics)
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"
@@ -473,36 +562,39 @@ const TournamentDetailPage: React.FC = () => {
 
                   {isAdmin && (
                     <div className="flex items-center gap-2 pl-2 border-l border-divider">
-                      <Tooltip content="Export registrations">
+                      <Chip color="secondary" size="sm" variant="flat">
+                        Admin only
+                      </Chip>
+                      <Tooltip content="Export registrations (Admin only)">
                         <Button
                           size="sm"
                           variant="flat"
                           onPress={exportRegistrations}
                           startContent={<Icon icon="lucide:download" />}
-                          aria-label="Export registrations"
+                          aria-label="Export registrations (Admin only)"
                         >
                           Export
                         </Button>
                       </Tooltip>
-                      <Tooltip content="Edit tournament">
+                      <Tooltip content="Edit tournament (Admin only)">
                         <Button
                           size="sm"
                           variant="flat"
                           onPress={() => setEditOpen(true)}
                           startContent={<Icon icon="lucide:edit" />}
-                          aria-label="Edit tournament"
+                          aria-label="Edit tournament (Admin only)"
                         >
                           Edit
                         </Button>
                       </Tooltip>
-                      <Tooltip content="Delete tournament">
+                      <Tooltip content="Delete tournament (Admin only)">
                         <Button
                           size="sm"
                           variant="flat"
                           color="danger"
                           onPress={() => setDeleteConfirm(true)}
                           startContent={<Icon icon="lucide:trash-2" />}
-                          aria-label="Delete tournament"
+                          aria-label="Delete tournament (Admin only)"
                         >
                           Delete
                         </Button>

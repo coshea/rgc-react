@@ -186,7 +186,7 @@ dark:border-default-100/10"
         ) : userLoggedIn ? (
           <ProfileDropdown />
         ) : (
-          <NavbarItem className="ml-2 flex! gap-2">
+          <NavbarItem className="ml-2 flex gap-2">
             <Button
               className="text-default-500"
               radius="full"

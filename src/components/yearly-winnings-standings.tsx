@@ -1,7 +1,11 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Card, CardBody, Button, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
-import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
+import {
+  useYearlyWinnings,
+  UserYearlyWinnings,
+  WinningsBreakdownItem,
+} from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
@@ -12,17 +16,7 @@ interface Props {
   year: number;
 }
 
-interface WinningsRow {
-  userId: string;
-  displayName: string;
-  total: number;
-  breakdown?: Array<{
-    tournamentId: string;
-    title: string;
-    place: number;
-    amount: number;
-    date: string | number | Date;
-  }>;
+interface WinningsRow extends UserYearlyWinnings {
   rank: number;
 }
 
@@ -44,11 +38,18 @@ export function YearlyWinningsStandings({ year }: Props) {
   // Global stats chips derived from per-user breakdowns
   const stats = useMemo(() => {
     const tournamentIds = new Set<string>();
+    let seasonAwardEntries = 0;
+    let seasonAwardTotal = 0;
     let entries = 0;
     let totalPrize = 0;
-    (winnings || []).forEach((w: any) => {
-      (w.breakdown || []).forEach((b: any) => {
-        if (b?.tournamentId) tournamentIds.add(b.tournamentId);
+    (winnings || []).forEach((w: UserYearlyWinnings) => {
+      (w.breakdown || []).forEach((b: WinningsBreakdownItem) => {
+        if (b?.source === "season-award") {
+          seasonAwardEntries += 1;
+          seasonAwardTotal += Number(b?.amount || 0);
+        } else if (b?.tournamentId) {
+          tournamentIds.add(b.tournamentId);
+        }
         entries += 1;
         totalPrize += Number(b?.amount || 0);
       });
@@ -56,7 +57,14 @@ export function YearlyWinningsStandings({ year }: Props) {
     const withResults = tournamentIds.size;
     const unique = rows.length; // unique winning players in the year
     const avgWinners = withResults ? entries / withResults : 0;
-    return { withResults, unique, totalPrize, avgWinners } as const;
+    return {
+      withResults,
+      unique,
+      totalPrize,
+      avgWinners,
+      seasonAwardEntries,
+      seasonAwardTotal,
+    } as const;
   }, [winnings, rows]);
 
   const [filter, setFilter] = useState("");
@@ -256,6 +264,14 @@ export function YearlyWinningsStandings({ year }: Props) {
               >
                 {stats.avgWinners.toFixed(1)} winners / event
               </Chip>
+              <Chip
+                size="sm"
+                variant="flat"
+                color="warning"
+                startContent={<Icon icon="lucide:target" className="w-3 h-3" />}
+              >
+                {`Awards $${stats.seasonAwardTotal.toLocaleString("en-US")}`}
+              </Chip>
             </>
           )}
           <div className="text-[11px] text-default-500 ml-1">
@@ -283,6 +299,9 @@ export function YearlyWinningsStandings({ year }: Props) {
                   <th className="hidden sm:table-cell text-left px-4 py-2 w-28">
                     Wins
                   </th>
+                  <th className="hidden sm:table-cell text-right px-4 py-2 w-28">
+                    Awards
+                  </th>
                   <th className="text-right px-2 sm:px-4 py-2 w-20 sm:w-28 whitespace-nowrap">
                     Winnings
                   </th>
@@ -292,7 +311,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-4 py-6 text-center text-default-400"
                     >
                       Loading standings...
@@ -302,7 +321,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                 {!isLoading && filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-4 py-6 text-center text-default-400"
                     >
                       {filter
@@ -314,9 +333,18 @@ export function YearlyWinningsStandings({ year }: Props) {
                 {!isLoading &&
                   filtered.map((row) => {
                     const isExpanded = expanded.has(row.userId);
-                    const played = row.breakdown?.length || 0;
-                    const wins =
-                      row.breakdown?.filter((b) => b.place === 1).length || 0;
+                    const tournamentPlacements =
+                      row.breakdown?.filter(
+                        (b) => b.source !== "season-award",
+                      ) || [];
+                    const seasonAwards =
+                      row.breakdown?.filter(
+                        (b) => b.source === "season-award",
+                      ) || [];
+                    const wins = tournamentPlacements.filter(
+                      (b) => b.place === 1,
+                    ).length;
+                    const awardsAmount = row.seasonAwardsTotal || 0;
                     const amountDisplay = row.total.toLocaleString("en-US", {
                       style: "currency",
                       currency: "USD",
@@ -384,7 +412,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                     size="sm"
                                     user={user}
                                     name={user ? undefined : row.displayName}
-                                    className="flex-shrink-0"
+                                    className="shrink-0"
                                   />
                                 );
                               })()}
@@ -396,17 +424,20 @@ export function YearlyWinningsStandings({ year }: Props) {
                             </div>
                           </td>
                           <td className="hidden sm:table-cell px-4 py-2 text-xs font-medium text-default-600 tabular-nums">
-                            {played}
+                            {tournamentPlacements.length}
                           </td>
                           <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-default-600">
                             {wins}
+                          </td>
+                          <td className="hidden sm:table-cell px-4 py-2 text-right text-xs font-medium tabular-nums text-default-700">
+                            ${awardsAmount.toLocaleString("en-US")}
                           </td>
                           <td className="px-2 sm:px-4 py-2 text-right font-semibold tabular-nums align-middle">
                             {amountDisplay}
                           </td>
                         </tr>
                         <tr aria-hidden={!isExpanded}>
-                          <td colSpan={5} className="px-0 pb-0 pt-0">
+                          <td colSpan={6} className="px-0 pb-0 pt-0">
                             <div
                               className={[
                                 "overflow-hidden transition-all duration-300 ease-in-out",
@@ -429,8 +460,11 @@ export function YearlyWinningsStandings({ year }: Props) {
                                           variant="flat"
                                           color="primary"
                                         >
-                                          {played} placement
-                                          {played === 1 ? "" : "s"}
+                                          {tournamentPlacements.length}{" "}
+                                          placement
+                                          {tournamentPlacements.length === 1
+                                            ? ""
+                                            : "s"}
                                         </Chip>
                                         <Chip
                                           size="sm"
@@ -438,6 +472,14 @@ export function YearlyWinningsStandings({ year }: Props) {
                                           color="success"
                                         >
                                           {wins} win{wins === 1 ? "" : "s"}
+                                        </Chip>
+                                        <Chip
+                                          size="sm"
+                                          variant="flat"
+                                          color="warning"
+                                        >
+                                          {seasonAwards.length} award
+                                          {seasonAwards.length === 1 ? "" : "s"}
                                         </Chip>
                                       </div>
                                       <ul className="space-y-1.5 overflow-x-hidden">
@@ -467,6 +509,21 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                     •
                                                   </span>
                                                   {(() => {
+                                                    if (
+                                                      b.source ===
+                                                      "season-award"
+                                                    ) {
+                                                      return (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 tabular-nums ring-1 ring-black/5 dark:ring-white/5 bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300">
+                                                          <Icon
+                                                            icon="lucide:target"
+                                                            className="w-3 h-3"
+                                                          />
+                                                          <span>Award</span>
+                                                        </span>
+                                                      );
+                                                    }
+
                                                     const meta = getPlaceMeta(
                                                       b.place,
                                                     );

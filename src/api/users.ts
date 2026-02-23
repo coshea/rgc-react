@@ -12,11 +12,12 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  type FieldValue,
 } from "firebase/firestore";
 import type { MembershipType } from "@@/types";
 
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
-export type FirestoreTimestamp = Timestamp | Date;
+export type FirestoreTimestamp = Timestamp | Date | FieldValue;
 
 /**
  * Utility function to safely convert Firestore timestamp to Date
@@ -65,11 +66,23 @@ export type UserProfilePayload = {
   ghinNumber?: string;
   photoURL?: string | null;
   boardMember?: boolean;
-  role?: string;
+  role?: string | null;
   membershipType?: MembershipType;
   lastPaidYear?: number;
   isMigrated?: boolean;
   migrationEligible?: boolean;
+};
+
+// Firestore document payload for the `users` collection. When writing,
+// serverTimestamp() may populate the timestamp fields, so they are marked
+// optional. The `email`, `boardMember`, and `role` fields are required in
+// many write paths, hence the explicit typing here instead of generic types.
+export type FirestoreUserPayload = UserProfilePayload & {
+  email: string;
+  boardMember: boolean;
+  role: string | null;
+  createdAt?: FirestoreTimestamp;
+  updatedAt: FirestoreTimestamp;
 };
 
 export type User = UserProfilePayload & {
@@ -86,7 +99,7 @@ export async function createUser(data: UserProfilePayload) {
   // Compute displayName from first + last names
   const displayName = computeDisplayName(data);
 
-  const payload: Record<string, any> = {
+  const payload: FirestoreUserPayload = {
     firstName: first || undefined,
     lastName: last || undefined,
     displayName: displayName || undefined,
@@ -130,10 +143,10 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   // Create payload and explicitly exclude board fields for security
   // Only admins should be able to set these fields
   const { boardMember: _boardMember, role: _role, ...safeData } = data;
-  const payload = {
+  const payload: Partial<FirestoreUserPayload> = {
     ...safeData,
     updatedAt: serverTimestamp(),
-  } as Record<string, any>;
+  };
 
   // Basic client-side sanity check: ensure the currently signed-in user
   // matches the UID we're attempting to write. This doesn't replace
@@ -152,9 +165,75 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
     );
   }
 
+  // Firestore rules require a non-empty email when creating users/{uid}.
+  // If caller didn't provide one (common for profile edits), fall back to the
+  // authenticated Firebase user's email so first-write bootstrap succeeds.
+  const authEmail = (auth.currentUser?.email || "").trim();
+  const payloadEmail =
+    typeof payload.email === "string" ? payload.email.trim() : "";
+  if (!payloadEmail && authEmail) {
+    payload.email = authEmail;
+  }
+
+  const profileRef = doc(db, "users", uid);
+  let profileExists = false;
   try {
-    return await setDoc(doc(db, "users", uid), payload, { merge: true });
+    const existing = await getDoc(profileRef);
+    profileExists = existing.exists();
+  } catch {
+    // If pre-read fails (e.g. transient token timing), continue with write path below.
+    // Firestore rules remain the source of truth.
+  }
+
+  // Edge case guard: if no email is available at all and the profile doc does
+  // not exist yet, the create will be denied by rules. Surface a clear error.
+  if (
+    !profileExists &&
+    !(typeof payload.email === "string" && payload.email.trim())
+  ) {
+    throw new Error(
+      "Cannot create profile record: no email available for users/" +
+        uid +
+        ". Please re-authenticate and ensure your account has an email address.",
+    );
+  }
+
+  try {
+    if (!profileExists) {
+      const createPayload: FirestoreUserPayload = {
+        ...payload,
+        email: typeof payload.email === "string" ? payload.email : "",
+        boardMember: false,
+        role: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      return await setDoc(profileRef, createPayload, { merge: false });
+    }
+
+    return await setDoc(profileRef, payload, { merge: true });
   } catch (err: any) {
+    if (err?.code === "permission-denied") {
+      // One retry after token refresh helps in rare auth-token timing races.
+      try {
+        await auth.currentUser?.getIdToken(true);
+        if (!profileExists) {
+          const retryCreatePayload: FirestoreUserPayload = {
+            ...payload,
+            email: typeof payload.email === "string" ? payload.email : "",
+            boardMember: false,
+            role: null,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+          return await setDoc(profileRef, retryCreatePayload, { merge: false });
+        }
+        return await setDoc(profileRef, payload, { merge: true });
+      } catch {
+        // Fall through to standardized error below.
+      }
+    }
+
     // Surface permission-specific information to aid debugging.
     // Don't leak sensitive internals — just annotate the error sensibly.
     if (err?.code === "permission-denied") {
@@ -224,13 +303,17 @@ export async function updateUser(
     lastName: data.lastName,
     displayName: data.displayName,
   });
-  const payload: Record<string, any> = {};
+  const payload: Record<string, unknown> = {};
   Object.entries(data).forEach(([k, v]) => {
-    if (v !== undefined) payload[k] = v; // avoid undefined writes (Firestore rejects)
+    if (v !== undefined) {
+      // We use Record<string, unknown> for the accumulating object
+      // to avoid `any` and then cast to the target type for the write.
+      payload[k] = v;
+    }
   });
   if (computed) payload.displayName = computed;
   payload.updatedAt = serverTimestamp();
-  await updateDoc(ref, payload);
+  await updateDoc(ref, payload as Partial<FirestoreUserPayload>);
 }
 
 /** Admin-only: delete a user profile document. */
@@ -261,7 +344,7 @@ export async function bulkCreateUsers(
     try {
       const first = (r.firstName || "").trim();
       const last = (r.lastName || "").trim();
-      const payload: Record<string, any> = {
+      const payload: Partial<FirestoreUserPayload> = {
         firstName: first || undefined,
         lastName: last || undefined,
         email: r.email || "",

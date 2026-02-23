@@ -17,6 +17,7 @@ import ProfilePage from "@/pages/profile";
 import ProfileEditPage from "@/pages/profile-edit";
 import UserProfilePage from "@/pages/user-profile";
 import TournamentsPage from "@/pages/tournaments";
+import SeasonAwardsPage from "@/pages/season-awards";
 import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
@@ -80,6 +81,14 @@ function App() {
               path="/profile/:userId"
             />
             <Route element={<TournamentsPage />} path="/tournaments" />
+            <Route
+              element={
+                <RequireAdmin>
+                  <SeasonAwardsPage />
+                </RequireAdmin>
+              }
+              path="/season-awards"
+            />
             <Route
               element={<TournamentDetailPage />}
               path="/tournaments/:firestoreId"
