@@ -11,6 +11,7 @@ import {
   setDoc,
   where,
   type FirestoreError,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import type { SeasonAward, UpsertSeasonAwardInput } from "@/types/seasonAwards";
 
@@ -30,7 +31,7 @@ function toDate(value: unknown): Date {
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
-function mapSeasonAwardDoc(d: any): SeasonAward {
+function mapSeasonAwardDoc(d: QueryDocumentSnapshot): SeasonAward {
   const data = (d.data ? d.data() : d) as Record<string, unknown>;
   return {
     id: d.id,

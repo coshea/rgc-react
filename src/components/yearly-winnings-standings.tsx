@@ -1,7 +1,11 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Card, CardBody, Button, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
-import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
+import {
+  useYearlyWinnings,
+  UserYearlyWinnings,
+  WinningsBreakdownItem,
+} from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
@@ -12,20 +16,7 @@ interface Props {
   year: number;
 }
 
-interface WinningsRow {
-  userId: string;
-  displayName: string;
-  total: number;
-  tournamentTotal: number;
-  seasonAwardsTotal: number;
-  breakdown?: Array<{
-    tournamentId: string;
-    title: string;
-    place: number;
-    amount: number;
-    date: string | number | Date;
-    source?: "tournament" | "season-award";
-  }>;
+interface WinningsRow extends UserYearlyWinnings {
   rank: number;
 }
 
@@ -51,8 +42,8 @@ export function YearlyWinningsStandings({ year }: Props) {
     let seasonAwardTotal = 0;
     let entries = 0;
     let totalPrize = 0;
-    (winnings || []).forEach((w: any) => {
-      (w.breakdown || []).forEach((b: any) => {
+    (winnings || []).forEach((w: UserYearlyWinnings) => {
+      (w.breakdown || []).forEach((b: WinningsBreakdownItem) => {
         if (b?.source === "season-award") {
           seasonAwardEntries += 1;
           seasonAwardTotal += Number(b?.amount || 0);

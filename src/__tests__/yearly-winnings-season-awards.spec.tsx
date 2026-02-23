@@ -44,8 +44,13 @@ vi.mock("@/hooks/useUsers", () => ({
   useUsersMap: () => ({ usersMap: new Map() }),
 }));
 
+// typed mock props for avatar; name is optional in production component
+interface MockAvatarProps {
+  name?: string;
+}
+
 vi.mock("@/components/avatar", () => ({
-  UserAvatar: ({ name }: any) => <div data-testid="avatar">{name}</div>,
+  UserAvatar: ({ name }: MockAvatarProps) => <div data-testid="avatar">{name}</div>,
 }));
 
 describe("YearlyWinningsStandings season awards", () => {

@@ -30,9 +30,16 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
+// provide a lightweight typed mock for UserSelect used by tests
+interface UserSelectMockProps {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}
+
 vi.mock("@/components/UserSelect", () => ({
   __esModule: true,
-  default: ({ value, onChange, label }: any) => (
+  default: ({ value, onChange, label }: UserSelectMockProps) => (
     <label>
       {label}
       <select
