@@ -19,6 +19,13 @@ import {
 const MIN_AWARD_YEAR = 2000;
 const MAX_AWARD_YEAR = 2100;
 
+function toLocalDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function SeasonAwardsManager() {
   const awardTypes = React.useMemo(
     () => Object.values(SeasonAwardType) as SeasonAwardType[],
@@ -58,7 +65,7 @@ export function SeasonAwardsManager() {
       const sourceDate = seedDate ?? new Date(targetYear, 0, 1);
       const nextDate = new Date(sourceDate);
       nextDate.setFullYear(targetYear);
-      setAwardDate(nextDate.toISOString().slice(0, 10));
+      setAwardDate(toLocalDateInputValue(nextDate));
     },
     [selectedYear],
   );
@@ -182,7 +189,7 @@ export function SeasonAwardsManager() {
       award.amount !== defaultAmount ? String(award.amount) : "",
     );
     setAwardUserId(award.userId);
-    setAwardDate(award.date.toISOString().slice(0, 10));
+    setAwardDate(toLocalDateInputValue(award.date));
     setAwardError(null);
   };
 
