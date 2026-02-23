@@ -505,7 +505,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                               key={`${b.tournamentId}-${b.place}-${b.amount}-${i}`}
                                               className="group relative overflow-hidden rounded-md border border-default-200/60 dark:border-default-100/10 bg-content2/70 dark:bg-content2/20 hover:bg-content2/90 dark:hover:bg-content2/30 transition-colors"
                                             >
-                                              <div className="absolute left-0 top-0 h-full w-1 bg-linear-to-b from-primary/60 via-primary/40 to-primary/10 group-hover:from-primary group-hover:via-primary/70 group-hover:to-primary/30 transition-colors" />
+                                              <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/10 group-hover:from-primary group-hover:via-primary/70 group-hover:to-primary/30 transition-colors" />
                                               <div className="pl-3 pr-2 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                                                 <div className="flex items-center gap-2 min-w-0">
                                                   <span
