@@ -31,7 +31,7 @@ export default function MoneyListPage() {
         <div className="space-y-1">
           <h1 className="text-lg font-semibold tracking-tight">Money List</h1>
           <p className="text-[11px] text-default-500">
-            Yearly prize earnings & tournament results.
+            Yearly earnings (tournament winnings + season awards).
           </p>
         </div>
         <Select
@@ -99,7 +99,8 @@ export default function MoneyListPage() {
 
       <p className="text-[10px] text-default-400 leading-relaxed">
         Prize amounts are per-person shares; team winnings shown per member.
-        Data updates live from tournaments.
+        Totals include season awards (e.g. hole in one). Data updates live from
+        tournaments and awards.
       </p>
     </div>
   );

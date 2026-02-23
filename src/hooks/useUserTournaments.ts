@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, where } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { fetchUserChampionships } from "@/api/championships";
+import { SEASON_AWARD_LABELS } from "@/types/seasonAwards";
 import type { Tournament } from "@/types/tournament";
 
 export interface UserTournamentWin {
@@ -32,6 +33,12 @@ export interface UserWinnings {
     amount: number;
   }>;
   lifetime: number;
+}
+
+export interface UserSeasonAward {
+  id: string;
+  year: number;
+  amount: number;
 }
 
 /**
@@ -165,6 +172,8 @@ export function useUserWinnings(userId: string | undefined) {
     useUserTournamentWins(userId);
   const { data: championships = [], isLoading: championshipsLoading } =
     useUserChampionships(userId);
+  const { data: seasonAwards = [], isLoading: seasonAwardsLoading } =
+    useUserSeasonAwards(userId);
 
   return useQuery({
     queryKey: [
@@ -172,6 +181,7 @@ export function useUserWinnings(userId: string | undefined) {
       userId,
       tournamentWins.length,
       championships.length,
+      seasonAwards.length,
     ],
     queryFn: async (): Promise<UserWinnings> => {
       if (!userId) {
@@ -199,6 +209,11 @@ export function useUserWinnings(userId: string | undefined) {
         yearlyWinningsMap.set(year, currentAmount + amount);
       });
 
+      seasonAwards.forEach((award) => {
+        const currentAmount = yearlyWinningsMap.get(award.year) || 0;
+        yearlyWinningsMap.set(award.year, currentAmount + award.amount);
+      });
+
       // Convert to array and sort by year descending
       const yearlyWinnings = Array.from(yearlyWinningsMap.entries())
         .map(([year, amount]) => ({ year, amount }))
@@ -207,7 +222,7 @@ export function useUserWinnings(userId: string | undefined) {
       // Calculate lifetime winnings
       const lifetime = yearlyWinnings.reduce(
         (total, { amount }) => total + amount,
-        0
+        0,
       );
 
       return {
@@ -215,7 +230,66 @@ export function useUserWinnings(userId: string | undefined) {
         lifetime,
       };
     },
-    enabled: !!userId && !tournamentWinsLoading && !championshipsLoading,
+    enabled:
+      !!userId &&
+      !tournamentWinsLoading &&
+      !championshipsLoading &&
+      !seasonAwardsLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useUserSeasonAwards(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["userSeasonAwards", userId],
+    queryFn: async (): Promise<UserSeasonAward[]> => {
+      if (!userId) return [];
+
+      const ref = collection(db, "seasonAwards");
+      const q = query(ref, where("userId", "==", userId));
+      const snapshot = await getDocs(q);
+
+      const rows: UserSeasonAward[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data() as {
+          amount?: unknown;
+          seasonYear?: unknown;
+          date?: unknown;
+          awardType?: unknown;
+        };
+
+        const amount = Number(data.amount || 0);
+        if (amount <= 0) return;
+
+        const seasonYear = Number(data.seasonYear || 0);
+        const rawDate =
+          typeof data.date === "object" &&
+          data.date !== null &&
+          "toDate" in data.date
+            ? (data.date as { toDate: () => Date }).toDate()
+            : new Date(String(data.date || ""));
+
+        const fallbackYear =
+          Number.isNaN(rawDate.getTime()) || rawDate.getFullYear() < 1970
+            ? new Date().getFullYear()
+            : rawDate.getFullYear();
+
+        rows.push({
+          id: d.id,
+          amount,
+          year: seasonYear || fallbackYear,
+        });
+
+        const awardType =
+          typeof data.awardType === "string" ? data.awardType : undefined;
+        if (awardType && !(awardType in SEASON_AWARD_LABELS)) {
+          // Keep query permissive for forward compatibility with future award types.
+        }
+      });
+
+      return rows;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 }

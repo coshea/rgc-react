@@ -304,8 +304,8 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     return (
       <Card
         key={tournament.firestoreId}
-        isPressable
-        onPress={goToDetails}
+        isPressable={!isAdmin}
+        onPress={!isAdmin ? goToDetails : undefined}
         aria-label={`View details for ${tournament.title}`}
         className="mb-4 border border-default-200 hover:bg-content2 transition-colors"
       >
@@ -345,6 +345,18 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               </div>
               {isAdmin && (
                 <div className="flex gap-1 mt-1">
+                  <Button
+                    size="sm"
+                    variant="light"
+                    isIconOnly
+                    onPress={(e: unknown) => {
+                      stopPropagationIfPossible(e);
+                      goToDetails();
+                    }}
+                    aria-label="View tournament details"
+                  >
+                    <Icon icon="lucide:eye" />
+                  </Button>
                   <Button
                     size="sm"
                     variant="light"
