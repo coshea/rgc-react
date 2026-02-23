@@ -179,7 +179,7 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
     !(typeof payload.email === "string" && payload.email.trim())
   ) {
     throw new Error(
-      "Cannot create profile record: no email available for users/{uid}. Please re-authenticate and ensure your account has an email address.",
+      "Cannot create profile record: no email available for users/" + uid + ". Please re-authenticate and ensure your account has an email address.",
     );
   }
 
