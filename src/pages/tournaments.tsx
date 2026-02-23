@@ -277,11 +277,11 @@ const Tournaments: React.FC<TournamentsProps> = () => {
         )
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-xl font-medium text-foreground">
               Scheduled Tournaments
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button
                 as="a"
                 href={googleCalendarSubscribeUrl}
