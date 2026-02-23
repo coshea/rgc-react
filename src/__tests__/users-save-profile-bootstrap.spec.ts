@@ -63,4 +63,27 @@ describe("saveUserProfile bootstrap create", () => {
     expect(payloadArg.updatedAt).toBe("ts");
     expect(payloadArg.displayName).toBe("Alice Member");
   });
+
+  it("updates users/{uid} with merge:true when profile doc exists", async () => {
+    getDocMock.mockResolvedValueOnce({ exists: () => true });
+
+    await saveUserProfile("uid-123", {
+      firstName: "Alice",
+      lastName: "Updated",
+      phone: "555-222-3333",
+    });
+
+    expect(getDocMock).toHaveBeenCalledTimes(1);
+    expect(setDocMock).toHaveBeenCalledTimes(1);
+
+    const [refArg, payloadArg, optionsArg] = setDocMock.mock.calls[0];
+
+    expect(refArg).toEqual({ path: "users/uid-123" });
+    expect(optionsArg).toEqual({ merge: true });
+    expect(payloadArg.displayName).toBe("Alice Updated");
+    expect(payloadArg.updatedAt).toBe("ts");
+    expect(payloadArg.createdAt).toBeUndefined();
+    expect(payloadArg.boardMember).toBeUndefined();
+    expect(payloadArg.role).toBeUndefined();
+  });
 });
