@@ -59,6 +59,7 @@ export function ProfileForm({
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const [isDirty, setIsDirty] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
@@ -81,6 +82,8 @@ export function ProfileForm({
 
   // Initialize form data from userProfile hook (simplified single source of truth)
   React.useEffect(() => {
+    if (isDirty) return;
+
     if (user && userProfile !== undefined) {
       // userProfile can be null (no Firestore doc) or populated
       const profile = userProfile || {};
@@ -108,7 +111,7 @@ export function ProfileForm({
       });
       setImagePreview(user.photoURL || null);
     }
-  }, [user, userProfile, isLoading]);
+  }, [user, userProfile, isLoading, isDirty]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -148,6 +151,7 @@ export function ProfileForm({
   };
 
   const handleInputChange = (field: keyof FormData) => (value: string) => {
+    setIsDirty(true);
     setFormData((prev) => {
       const next = { ...prev };
       if (field === "phone") {
@@ -178,6 +182,7 @@ export function ProfileForm({
     const file = e.target.files?.[0] || null;
 
     if (file) {
+      setIsDirty(true);
       setFormData((prev) => ({ ...prev, profilePicture: file }));
 
       // Create preview URL
@@ -243,6 +248,7 @@ export function ProfileForm({
             .trim(),
         };
       });
+      setIsDirty(false);
       setIsSuccess(true);
 
       // Toast feedback

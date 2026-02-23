@@ -152,9 +152,71 @@ export async function saveUserProfile(uid: string, data: UserProfilePayload) {
     );
   }
 
+  // Firestore rules require a non-empty email when creating users/{uid}.
+  // If caller didn't provide one (common for profile edits), fall back to the
+  // authenticated Firebase user's email so first-write bootstrap succeeds.
+  const authEmail = (auth.currentUser?.email || "").trim();
+  const payloadEmail =
+    typeof payload.email === "string" ? payload.email.trim() : "";
+  if (!payloadEmail && authEmail) {
+    payload.email = authEmail;
+  }
+
+  const profileRef = doc(db, "users", uid);
+  let profileExists = false;
   try {
-    return await setDoc(doc(db, "users", uid), payload, { merge: true });
+    const existing = await getDoc(profileRef);
+    profileExists = existing.exists();
+  } catch {
+    // If pre-read fails (e.g. transient token timing), continue with write path below.
+    // Firestore rules remain the source of truth.
+  }
+
+  // Edge case guard: if no email is available at all and the profile doc does
+  // not exist yet, the create will be denied by rules. Surface a clear error.
+  if (
+    !profileExists &&
+    !(typeof payload.email === "string" && payload.email.trim())
+  ) {
+    throw new Error(
+      "Cannot create profile record: no email available for users/{uid}. Please re-authenticate and ensure your account has an email address.",
+    );
+  }
+
+  try {
+    if (!profileExists) {
+      const createPayload: Record<string, any> = {
+        ...payload,
+        email: payload.email,
+        boardMember: false,
+        role: null,
+        createdAt: serverTimestamp(),
+      };
+      return await setDoc(profileRef, createPayload, { merge: false });
+    }
+
+    return await setDoc(profileRef, payload, { merge: true });
   } catch (err: any) {
+    if (err?.code === "permission-denied") {
+      // One retry after token refresh helps in rare auth-token timing races.
+      try {
+        await auth.currentUser?.getIdToken(true);
+        if (!profileExists) {
+          const retryCreatePayload: Record<string, any> = {
+            ...payload,
+            email: payload.email,
+            boardMember: false,
+            role: null,
+            createdAt: serverTimestamp(),
+          };
+          return await setDoc(profileRef, retryCreatePayload, { merge: false });
+        }
+        return await setDoc(profileRef, payload, { merge: true });
+      } catch {
+        // Fall through to standardized error below.
+      }
+    }
+
     // Surface permission-specific information to aid debugging.
     // Don't leak sensitive internals — just annotate the error sensibly.
     if (err?.code === "permission-denied") {
