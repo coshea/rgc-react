@@ -91,8 +91,7 @@ export default function SiteFooter() {
                 <Link
                   href="https://policies.google.com/privacy"
                   isExternal
-                  color="foreground"
-                  className="underline underline-offset-2"
+                  className="text-[11px]! sm:text-xs! font-normal! text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Privacy Policy
                 </Link>{" "}
@@ -100,8 +99,7 @@ export default function SiteFooter() {
                 <Link
                   href="https://policies.google.com/terms"
                   isExternal
-                  color="foreground"
-                  className="underline underline-offset-2"
+                  className="text-[11px]! sm:text-xs! font-normal! text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Terms of Service
                 </Link>{" "}
