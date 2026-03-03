@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Private/admin/auth areas
+Disallow: /admin
+Disallow: /admin/
+Disallow: /season-awards
+Disallow: /profile
+Disallow: /profile/
+Disallow: /verify-email
+Disallow: /login
+Disallow: /signup
+Disallow: /find-a-game
+
+# Dynamic editor/admin routes
+Disallow: /announcements/new
+Disallow: /announcements/edit/
+Disallow: /admin/policies/
+
+Sitemap: https://ridgefieldgolfclub.org/sitemap.xml
