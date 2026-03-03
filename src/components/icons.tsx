@@ -7,11 +7,13 @@ import rgcFavPng from "@/assets/rgc_icon.png";
 // };
 
 export const RGCLogo = ({ className }: IconSvgProps) => {
-  return <img className={className} src={rgcLogoPng} />;
+  return (
+    <img className={className} src={rgcLogoPng} alt="Ridgefield Golf Club" />
+  );
 };
 
 export const RGCIcon = ({ className }: IconSvgProps) => {
-  <img className={className} src={rgcFavPng} />;
+  return <img className={className} src={rgcFavPng} alt="" aria-hidden />;
 };
 
 export const MoonFilledIcon = ({
