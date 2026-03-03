@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Skeleton } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { siteConfig } from "@/config/site";
@@ -19,7 +20,19 @@ const ProfileCompletionGate: React.FC = () => {
   const location = useLocation();
 
   if (loading || (user && isLoading)) {
-    return null;
+    return (
+      <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56 rounded-lg" />
+          <Skeleton className="h-4 w-80 max-w-[90vw] rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
   }
 
   if (!user) {

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, Button, Chip } from "@heroui/react";
+import { Card, CardBody, Button, Chip, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { BlogPost } from "@/types/blog";
 import { onPublishedBlogPosts, mapBlogPostDoc } from "@/api/blog";
@@ -29,7 +29,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
         console.error("Failed to load blog posts", err);
         setLoading(false);
       },
-      limit
+      limit,
     );
     return () => unsub();
   }, [limit]);
@@ -52,11 +52,36 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
   if (loading) {
     return (
       <section className="w-full max-w-6xl mx-auto px-4 py-8">
-        <div className="flex justify-center py-12">
-          <Icon
-            icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
-          />
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40 rounded-lg" />
+            <Skeleton className="h-4 w-80 max-w-[90vw] rounded-lg" />
+          </div>
+          {showViewAll && <Skeleton className="h-8 w-24 rounded-lg" />}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: limit }).map((_, idx) => (
+            <Card key={idx} className="w-full h-full">
+              <CardBody className="p-0">
+                <div className="h-32 w-full">
+                  <Skeleton className="h-full w-full rounded-t-lg" />
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-11/12 rounded-lg" />
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
+                  <div className="pt-1">
+                    <Skeleton className="h-4 w-2/3 rounded-lg" />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
         </div>
       </section>
     );

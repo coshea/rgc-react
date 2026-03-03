@@ -1,6 +1,6 @@
 import { TournamentCard } from "./tournament-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { Button } from "@heroui/react";
+import { Button, Card, CardBody, Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@iconify/react";
@@ -98,44 +98,27 @@ export function TournamentSection() {
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {latestYearLoading || tournamentsLoading ? (
-            <div className="col-span-full flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-2">
-                <i className="text-3xl text-primary animate-spin">
-                  {/* fallback icon; using inline SVG class to avoid new imports */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="32"
-                    height="32"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="lucide-loader"
-                  >
-                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-                  </svg>
-                </i>
-                <p className="text-foreground-500">Loading tournaments...</p>
-              </div>
-            </div>
-          ) : (
-            displayTournaments.map((tournament) => (
-              <TournamentCard
-                key={tournament.firestoreId || tournament.title}
-                tournament={tournament}
-              />
-            ))
-          )}
+          {latestYearLoading || tournamentsLoading
+            ? Array.from({ length: isMobile ? 3 : 4 }).map((_, idx) => (
+                <Card key={idx} className="w-full">
+                  <CardBody className="p-4 space-y-3">
+                    <Skeleton className="h-6 w-3/4 rounded-lg" />
+                    <Skeleton className="h-4 w-1/2 rounded-lg" />
+                    <Skeleton className="h-4 w-full rounded-lg" />
+                    <Skeleton className="h-4 w-5/6 rounded-lg" />
+                    <div className="pt-2 flex justify-between items-center">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-8 w-24 rounded-lg" />
+                    </div>
+                  </CardBody>
+                </Card>
+              ))
+            : displayTournaments.map((tournament) => (
+                <TournamentCard
+                  key={tournament.firestoreId || tournament.title}
+                  tournament={tournament}
+                />
+              ))}
         </div>
       </div>
     </section>
