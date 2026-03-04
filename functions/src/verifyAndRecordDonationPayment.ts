@@ -5,7 +5,11 @@ import type {
   VerifyAndRecordPayPalDonationResponse,
 } from "./types";
 import type { PayPalEnvironment, PayPalOrderSummary } from "./paypal";
-import { fetchPayPalAccessToken, fetchPayPalOrder } from "./paypal";
+import {
+  capturePayPalOrder,
+  fetchPayPalAccessToken,
+  fetchPayPalOrder,
+} from "./paypal";
 import { logger } from "./logger";
 import { recordPayPalDonationPayment } from "./firestoreMembership";
 
@@ -44,7 +48,7 @@ export async function verifyAndRecordDonationPayment(params: {
     orderId: request.orderId,
   });
 
-  const order: PayPalOrderSummary = await fetchPayPalOrder({
+  let order: PayPalOrderSummary = await fetchPayPalOrder({
     env: deps.paypal.env,
     accessToken,
     orderId: request.orderId,
@@ -59,12 +63,38 @@ export async function verifyAndRecordDonationPayment(params: {
     currency: order.currency,
   });
 
+  if (!order.status) {
+    throw new Error("PayPal order missing status");
+  }
+
+  if (order.status === "APPROVED") {
+    logger.info("verifyAndRecordDonationPayment: capturing approved order", {
+      uid,
+      orderId: request.orderId,
+    });
+
+    order = await capturePayPalOrder({
+      env: deps.paypal.env,
+      accessToken,
+      orderId: request.orderId,
+      fetchImpl: deps.paypal.fetchImpl,
+    });
+
+    logger.info("verifyAndRecordDonationPayment: captured PayPal order", {
+      uid,
+      orderId: order.id,
+      status: order.status,
+      amount: order.amount,
+      currency: order.currency,
+    });
+  }
+
   const paypalStatus = order.status;
   const amount = order.amount;
   const currency = order.currency;
 
   if (!paypalStatus) {
-    throw new Error("PayPal order missing status");
+    throw new Error("PayPal order missing status after capture attempt");
   }
 
   if (paypalStatus !== "COMPLETED") {

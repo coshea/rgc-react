@@ -239,9 +239,22 @@ export default function MembershipPaymentsFlow({
       return;
     }
 
-    // Capture first; then record a Firestore payment record via a trusted backend
-    // (Firestore rules restrict memberPayments writes to admins).
-    await actions.order.capture();
+    let clientCaptureErrorMessage: string | null = null;
+    try {
+      await actions.order.capture();
+    } catch (captureError) {
+      clientCaptureErrorMessage =
+        captureError instanceof Error
+          ? captureError.message
+          : "Unknown client capture error";
+
+      logger.warn("PayPal client capture failed; falling back to server", {
+        orderId: data.orderID ?? null,
+        uid: user?.uid ?? null,
+        purpose: step.kind === "paypal" ? step.purpose : null,
+        message: clientCaptureErrorMessage,
+      });
+    }
 
     const membershipTypeForLog =
       step.kind === "paypal" &&
@@ -251,7 +264,7 @@ export default function MembershipPaymentsFlow({
           : MEMBERSHIP_TYPES.HANDICAP
         : null;
 
-    logger.info("PayPal payment captured", {
+    logger.info("PayPal payment approval received", {
       orderId: data.orderID ?? null,
       uid: user?.uid ?? null,
       purpose: step.kind === "paypal" ? step.purpose : null,
@@ -260,6 +273,7 @@ export default function MembershipPaymentsFlow({
       currency: paypalCurrency,
       year: currentYear,
       environment: paypalEnvironment,
+      clientCaptureSucceeded: !clientCaptureErrorMessage,
     });
 
     if (step.kind !== "paypal") {
@@ -293,14 +307,8 @@ export default function MembershipPaymentsFlow({
       donation: `Donation of ${paid} captured successfully.`,
     };
 
-    addToast({
-      title: titleByPurpose[step.purpose],
-      description: descriptionByPurpose[step.purpose],
-      color: "success",
-    });
-
     // Record dues or donation payments after a successful PayPal capture.
-    // This uses callable Cloud Functions that verify the PayPal order server-side
+    // This uses callable Cloud Functions that verify/capture the PayPal order server-side
     // and then write memberPayments/users with admin privileges.
     if (user && data.orderID) {
       try {
@@ -309,7 +317,7 @@ export default function MembershipPaymentsFlow({
             step.purpose === "renew"
               ? MEMBERSHIP_TYPES.FULL
               : MEMBERSHIP_TYPES.HANDICAP;
-          await verifyAndRecordPayPalMembershipPayment({
+          const verifyResp = await verifyAndRecordPayPalMembershipPayment({
             user,
             request: {
               orderId: data.orderID,
@@ -318,22 +326,35 @@ export default function MembershipPaymentsFlow({
               purpose: step.purpose,
             },
           });
+
+          if (!verifyResp.ok) {
+            throw new Error(
+              `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
+            );
+          }
+
           await refetchUserProfile();
         }
 
         if (step.purpose === "donation") {
-          await verifyAndRecordPayPalDonationPayment({
+          const verifyResp = await verifyAndRecordPayPalDonationPayment({
             user,
             request: {
               orderId: data.orderID,
               year: currentYear,
             },
           });
+
+          if (!verifyResp.ok) {
+            throw new Error(
+              `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
+            );
+          }
         }
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Unknown recording error";
-        console.error("verifyAndRecordPayPal payment failed", {
+        console.error("verifyAndRecordPayPal payment failed. " + message, {
           error: e,
           uid: user?.uid,
           orderId: data?.orderID,
@@ -341,12 +362,26 @@ export default function MembershipPaymentsFlow({
         addToast({
           title: "Payment captured, but not recorded",
           description:
-            "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt. " +
-            message,
+            "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt. ",
           color: "danger",
         });
+        return;
       }
+    } else if (clientCaptureErrorMessage) {
+      addToast({
+        title: "Payment verification needed",
+        description:
+          "We couldn't confirm this Venmo payment automatically. Please try again or contact the club if your payment was charged.",
+        color: "warning",
+      });
+      return;
     }
+
+    addToast({
+      title: titleByPurpose[step.purpose],
+      description: descriptionByPurpose[step.purpose],
+      color: "success",
+    });
 
     setStep({
       kind: "done",
