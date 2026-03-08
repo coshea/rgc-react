@@ -371,7 +371,7 @@ export default function MembershipPaymentsFlow({
       addToast({
         title: "Payment verification needed",
         description:
-          "We couldn't confirm this Venmo payment automatically. Please try again or contact the club if your payment was charged.",
+          "We couldn't confirm this payment automatically. Please try again or contact the club if your payment was charged.",
         color: "warning",
       });
       return;
