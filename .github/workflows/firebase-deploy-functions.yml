@@ -53,7 +53,7 @@ jobs:
 
       - name: Deploy Cloud Functions
         run: |
-          firebase deploy --only functions:rgcReact --project ridgefield-golf-club --non-interactive
+          firebase deploy --only functions:rgc-react --project ridgefield-golf-club --non-interactive
         env:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
