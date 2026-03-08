@@ -1,7 +1,7 @@
 {
   "functions": [
     {
-      "codebase": "rgcReact",
+      "codebase": "rgc-react",
       "source": "functions",
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" install",
