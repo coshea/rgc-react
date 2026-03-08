@@ -1,6 +1,5 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import { defineSecret, defineString } from "firebase-functions/params";
 
 import {
   parseCheckPaymentRequest,
@@ -12,16 +11,22 @@ import { recordCheckMembershipPayment } from "./firestoreMembership";
 import { verifyAndRecordDonationPayment } from "./verifyAndRecordDonationPayment";
 import { logger } from "./logger";
 import {
+  PAYPAL_CLIENT_ID,
+  PAYPAL_CLIENT_ID_NAME,
+  PAYPAL_CLIENT_SECRET,
+  PAYPAL_CLIENT_SECRET_NAME,
+  PAYPAL_ENVIRONMENT,
+  PAYPAL_ENVIRONMENT_NAME,
+} from "./paypalConfig";
+import {
   AuthError,
   corsMiddleware,
+  getFirestoreWriteTime,
   getUidFromRequest,
   mockPayPalFetchFromEnv,
   required,
+  resolveConfiguredValue,
 } from "./httpUtils";
-
-const PAYPAL_CLIENT_ID = defineString("PAYPAL_CLIENT_ID");
-const PAYPAL_CLIENT_SECRET = defineSecret("PAYPAL_CLIENT_SECRET");
-const PAYPAL_ENVIRONMENT = defineString("PAYPAL_ENVIRONMENT");
 
 admin.initializeApp();
 
@@ -49,30 +54,32 @@ export const verify_and_record_membership_payment = onRequest(
 
         request = parseVerifyRequest(req.body);
 
-        const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
+        const clientId = required(
+          PAYPAL_CLIENT_ID_NAME,
+          resolveConfiguredValue(
+            PAYPAL_CLIENT_ID_NAME,
+            PAYPAL_CLIENT_ID.value(),
+          ),
+        );
         const clientSecret = required(
-          "PAYPAL_CLIENT_SECRET",
-          PAYPAL_CLIENT_SECRET.value(),
+          PAYPAL_CLIENT_SECRET_NAME,
+          resolveConfiguredValue(
+            PAYPAL_CLIENT_SECRET_NAME,
+            PAYPAL_CLIENT_SECRET.value(),
+          ),
         );
         const envRaw = required(
-          "PAYPAL_ENVIRONMENT",
-          PAYPAL_ENVIRONMENT.value(),
+          PAYPAL_ENVIRONMENT_NAME,
+          resolveConfiguredValue(
+            PAYPAL_ENVIRONMENT_NAME,
+            PAYPAL_ENVIRONMENT.value(),
+          ),
         ).toUpperCase();
         const env = envRaw === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
 
         const fetchImpl = mockPayPalFetchFromEnv() ?? undefined;
 
-        // Support runtimes where `admin.firestore.FieldValue` may not be present
-        // (emulator or differing admin SDK shapes). Prefer serverTimestamp
-        // sentinel when available, otherwise use a concrete Timestamp.now().
-        const serverNow =
-          typeof admin.firestore.FieldValue?.serverTimestamp === "function"
-            ? // FieldValue.serverTimestamp() is the preferred sentinel when
-              // available.
-              admin.firestore.FieldValue.serverTimestamp()
-            : // Fall back to a concrete Timestamp for runtimes that don't
-              // expose the FieldValue sentinel.
-              admin.firestore.Timestamp.now();
+        const serverNow = getFirestoreWriteTime();
 
         const resp = await verifyAndRecordMembershipPayment({
           uid,
@@ -135,10 +142,7 @@ export const request_check_membership_payment = onRequest(async (req, res) => {
 
       request = parseCheckPaymentRequest(req.body);
 
-      const serverNow =
-        typeof admin.firestore.FieldValue?.serverTimestamp === "function"
-          ? admin.firestore.FieldValue.serverTimestamp()
-          : admin.firestore.Timestamp.now();
+      const serverNow = getFirestoreWriteTime();
 
       const { groupId, reused } = await recordCheckMembershipPayment({
         db: admin.firestore(),
@@ -199,23 +203,32 @@ export const verify_and_record_donation_payment = onRequest(
 
         request = parseDonationVerifyRequest(req.body);
 
-        const clientId = required("PAYPAL_CLIENT_ID", PAYPAL_CLIENT_ID.value());
+        const clientId = required(
+          PAYPAL_CLIENT_ID_NAME,
+          resolveConfiguredValue(
+            PAYPAL_CLIENT_ID_NAME,
+            PAYPAL_CLIENT_ID.value(),
+          ),
+        );
         const clientSecret = required(
-          "PAYPAL_CLIENT_SECRET",
-          PAYPAL_CLIENT_SECRET.value(),
+          PAYPAL_CLIENT_SECRET_NAME,
+          resolveConfiguredValue(
+            PAYPAL_CLIENT_SECRET_NAME,
+            PAYPAL_CLIENT_SECRET.value(),
+          ),
         );
         const envRaw = required(
-          "PAYPAL_ENVIRONMENT",
-          PAYPAL_ENVIRONMENT.value(),
+          PAYPAL_ENVIRONMENT_NAME,
+          resolveConfiguredValue(
+            PAYPAL_ENVIRONMENT_NAME,
+            PAYPAL_ENVIRONMENT.value(),
+          ),
         ).toUpperCase();
         const env = envRaw === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
 
         const fetchImpl = mockPayPalFetchFromEnv() ?? undefined;
 
-        const serverNow =
-          typeof admin.firestore.FieldValue?.serverTimestamp === "function"
-            ? admin.firestore.FieldValue.serverTimestamp()
-            : admin.firestore.Timestamp.now();
+        const serverNow = getFirestoreWriteTime();
 
         const resp = await verifyAndRecordDonationPayment({
           uid,

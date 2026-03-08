@@ -1,5 +1,7 @@
 import type { firestore as AdminFirestore } from "firebase-admin";
 
+import type { FirestoreWriteTime } from "./httpUtils";
+
 import { MEMBERSHIP_TYPES } from "./types";
 import type { MembershipType } from "./types";
 
@@ -86,7 +88,7 @@ async function resolveMembershipFee(
 
 export async function recordPayPalMembershipPayment(params: {
   db: AdminFirestore.Firestore;
-  now: AdminFirestore.FieldValue;
+  now: FirestoreWriteTime;
   payment: RecordPayPalPaymentParams;
 }): Promise<{ reused: boolean }> {
   const { db, now, payment } = params;
@@ -206,7 +208,7 @@ export async function recordPayPalMembershipPayment(params: {
 
 export async function recordCheckMembershipPayment(params: {
   db: AdminFirestore.Firestore;
-  now: AdminFirestore.FieldValue;
+  now: FirestoreWriteTime;
   payment: RecordCheckPaymentParams;
 }): Promise<{ groupId: string; reused: boolean }> {
   const { db, now, payment } = params;
@@ -281,7 +283,7 @@ export async function recordCheckMembershipPayment(params: {
 
 export async function recordPayPalDonationPayment(params: {
   db: AdminFirestore.Firestore;
-  now: AdminFirestore.FieldValue;
+  now: FirestoreWriteTime;
   payment: RecordPayPalDonationParams;
 }): Promise<{ reused: boolean }> {
   const { db, now, payment } = params;

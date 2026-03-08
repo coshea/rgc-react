@@ -1,4 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import * as admin from "firebase-admin";
+import type { firestore as AdminFirestore } from "firebase-admin";
 import cors from "cors";
 
 export const corsMiddleware = cors({
@@ -21,6 +25,105 @@ export function required(name: string, value: string | undefined): string {
   return value.trim();
 }
 
+let emulatorLocalEnvCache: Record<string, string> | null | undefined;
+
+function stripOptionalQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+function parseDotEnvFile(content: string): Record<string, string> {
+  const parsed: Record<string, string> = {};
+
+  for (const rawLine of content.split(/\r?\n/u)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const equalsIndex = rawLine.indexOf("=");
+    if (equalsIndex <= 0) continue;
+
+    const key = rawLine.slice(0, equalsIndex).trim();
+    const value = rawLine.slice(equalsIndex + 1);
+    if (!key) continue;
+
+    parsed[key] = stripOptionalQuotes(value);
+  }
+
+  return parsed;
+}
+
+function readEmulatorLocalEnv(): Record<string, string> | null {
+  if (emulatorLocalEnvCache !== undefined) return emulatorLocalEnvCache;
+  if (!isFunctionsEmulator()) {
+    emulatorLocalEnvCache = null;
+    return emulatorLocalEnvCache;
+  }
+
+  const candidates = [
+    path.resolve(process.cwd(), ".env.local"),
+    path.resolve(__dirname, "../.env.local"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const content = fs.readFileSync(candidate, "utf8");
+      emulatorLocalEnvCache = parseDotEnvFile(content);
+      return emulatorLocalEnvCache;
+    } catch {
+      continue;
+    }
+  }
+
+  emulatorLocalEnvCache = null;
+  return emulatorLocalEnvCache;
+}
+
+export function resolveConfiguredValue(
+  name: string,
+  value: string | undefined,
+): string | undefined {
+  const localOverride = readEmulatorLocalEnv()?.[name];
+  return localOverride ?? process.env[name] ?? value;
+}
+
+export function resetConfiguredValueCacheForTests(): void {
+  emulatorLocalEnvCache = undefined;
+}
+
+export type FirestoreWriteTime =
+  | AdminFirestore.FieldValue
+  | AdminFirestore.Timestamp
+  | Date;
+
+export function getFirestoreWriteTime(): FirestoreWriteTime {
+  const firestoreNamespace = admin.firestore as unknown as {
+    FieldValue?: {
+      serverTimestamp?: () => AdminFirestore.FieldValue;
+    };
+    Timestamp?: {
+      now?: () => AdminFirestore.Timestamp;
+    };
+  };
+
+  const serverTimestamp = firestoreNamespace.FieldValue?.serverTimestamp;
+  if (typeof serverTimestamp === "function") {
+    return serverTimestamp();
+  }
+
+  const timestampNow = firestoreNamespace.Timestamp?.now;
+  if (typeof timestampNow === "function") {
+    return timestampNow();
+  }
+
+  return new Date();
+}
+
 function getBearerToken(req: {
   headers: Record<string, unknown>;
 }): string | null {
@@ -34,11 +137,15 @@ type JwtPayload = {
   uid?: string;
   user_id?: string;
   sub?: string;
+  aud?: string;
+  iss?: string;
+  firebase?: unknown;
   [key: string]: unknown;
 };
 
 const EMULATOR_AUTH_CLAIM_KEY = "emulator_auth";
 const EMULATOR_AUTH_CLAIM_VALUE = "rgc-functions-emulator-only";
+const FIREBASE_ISSUER_PREFIX = "https://securetoken.google.com/";
 
 function decodeBase64Url(value: string): string {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -72,6 +179,60 @@ function isJwtPayload(value: unknown): value is JwtPayload {
   );
 }
 
+function parseFirebaseConfigProjectId(): string | null {
+  const raw = process.env.FIREBASE_CONFIG;
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as { projectId?: unknown };
+    return typeof parsed.projectId === "string" && parsed.projectId.trim()
+      ? parsed.projectId.trim()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getConfiguredProjectIds(): string[] {
+  const values = [
+    process.env.GCLOUD_PROJECT,
+    process.env.GOOGLE_CLOUD_PROJECT,
+    parseFirebaseConfigProjectId(),
+  ];
+
+  const unique = new Set<string>();
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      unique.add(value.trim());
+    }
+  }
+
+  return [...unique];
+}
+
+function hasLegacyEmulatorAuthClaim(payload: JwtPayload): boolean {
+  return payload[EMULATOR_AUTH_CLAIM_KEY] === EMULATOR_AUTH_CLAIM_VALUE;
+}
+
+function isStandardFirebaseEmulatorToken(payload: JwtPayload): boolean {
+  const aud = typeof payload.aud === "string" ? payload.aud.trim() : "";
+  const iss = typeof payload.iss === "string" ? payload.iss.trim() : "";
+  const firebaseClaim = payload.firebase;
+
+  if (!aud || !iss) return false;
+  if (typeof firebaseClaim !== "object" || firebaseClaim === null) return false;
+
+  const projectIds = getConfiguredProjectIds();
+  if (projectIds.length > 0) {
+    return projectIds.some(
+      (projectId) =>
+        aud === projectId && iss === `${FIREBASE_ISSUER_PREFIX}${projectId}`,
+    );
+  }
+
+  return iss.startsWith(FIREBASE_ISSUER_PREFIX);
+}
+
 export async function getUidFromRequest(req: {
   headers: Record<string, unknown>;
 }): Promise<string> {
@@ -86,7 +247,10 @@ export async function getUidFromRequest(req: {
       throw new AuthError("Invalid emulator token payload");
     }
 
-    if (payload[EMULATOR_AUTH_CLAIM_KEY] !== EMULATOR_AUTH_CLAIM_VALUE) {
+    if (
+      !hasLegacyEmulatorAuthClaim(payload) &&
+      !isStandardFirebaseEmulatorToken(payload)
+    ) {
       throw new AuthError("Invalid emulator auth claim");
     }
 

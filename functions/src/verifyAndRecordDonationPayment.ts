@@ -4,6 +4,7 @@ import type {
   VerifyAndRecordPayPalDonationRequest,
   VerifyAndRecordPayPalDonationResponse,
 } from "./types";
+import type { FirestoreWriteTime } from "./httpUtils";
 import type { PayPalEnvironment, PayPalOrderSummary } from "./paypal";
 import {
   capturePayPalOrder,
@@ -15,7 +16,7 @@ import { recordPayPalDonationPayment } from "./firestoreMembership";
 
 export type VerifyDonationDeps = {
   db: AdminFirestore.Firestore;
-  now: AdminFirestore.FieldValue;
+  now: FirestoreWriteTime;
   paypal: {
     env: PayPalEnvironment;
     clientId: string;
