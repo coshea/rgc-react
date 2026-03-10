@@ -89,6 +89,8 @@ export function PayPalStep(props: {
                 clientId: paypalClientId,
                 currency: paypalCurrency,
                 intent: "capture",
+                locale: "en_US",
+                ...(showPayPalSandboxNotice ? { buyerCountry: "US" } : {}),
                 enableFunding: "venmo",
                 disableFunding: "paylater",
               }}

@@ -29,6 +29,14 @@ export function AnnualStartStep(props: {
     onApplyNewMember,
   } = props;
 
+  const renewingCardClass = hasPriorMembership
+    ? "rounded-2xl border-2 border-primary shadow-md"
+    : "rounded-2xl border border-default-200";
+
+  const newMemberCardClass = hasPriorMembership
+    ? "rounded-2xl border border-default-200"
+    : "rounded-2xl border-2 border-primary shadow-md";
+
   return (
     <Card className="w-full max-w-4xl" shadow="sm">
       <CardHeader className="flex items-center justify-between">
@@ -42,7 +50,7 @@ export function AnnualStartStep(props: {
       </CardHeader>
       <Divider />
       <CardBody className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card className="rounded-2xl border border-default-200" shadow="none">
+        <Card className={renewingCardClass} shadow="none">
           <CardHeader className="pb-0">
             <h3 className="text-base font-semibold">
               I’m renewing (existing member)
@@ -70,10 +78,7 @@ export function AnnualStartStep(props: {
           </CardFooter>
         </Card>
 
-        <Card
-          className="rounded-2xl border-2 border-primary shadow-md"
-          shadow="none"
-        >
+        <Card className={newMemberCardClass} shadow="none">
           <CardHeader className="pb-0">
             <h3 className="text-base font-semibold">I’m new (apply to join)</h3>
           </CardHeader>

@@ -1,23 +1,28 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import { defineSecret, defineString } from "firebase-functions/params";
 
 import { fetchPayPalAccessToken, fetchPayPalTransactions } from "./paypal";
 import { verifyAndRecordMembershipPayment } from "./verifyAndRecordMembershipPayment";
 import { logger } from "./logger";
+import {
+  PAYPAL_CLIENT_ID,
+  PAYPAL_CLIENT_ID_NAME,
+  PAYPAL_CLIENT_SECRET,
+  PAYPAL_CLIENT_SECRET_NAME,
+  PAYPAL_ENVIRONMENT,
+  PAYPAL_ENVIRONMENT_NAME,
+} from "./paypalConfig";
 import { MEMBERSHIP_TYPES } from "./types";
 import type { MembershipType, ReconcilePayPalOrdersResponse } from "./types";
 import {
   AuthError,
   corsMiddleware,
+  getFirestoreWriteTime,
   getUidFromRequest,
   mockPayPalFetchFromEnv,
   required,
+  resolveConfiguredValue,
 } from "./httpUtils";
-
-const PAYPAL_CLIENT_ID = defineString("PAYPAL_CLIENT_ID");
-const PAYPAL_CLIENT_SECRET = defineSecret("PAYPAL_CLIENT_SECRET");
-const PAYPAL_ENVIRONMENT = defineString("PAYPAL_ENVIRONMENT");
 
 function parseMembershipCustomId(value: string): {
   uid: string;
@@ -56,8 +61,7 @@ async function requireAdminUser(uid: string): Promise<void> {
     throw new AuthError("Admin access required", 403);
   }
   const data = snap.data() as Record<string, unknown> | undefined;
-  const isAdmin =
-    data?.isAdmin === true || data?.admin === true;
+  const isAdmin = data?.isAdmin === true || data?.admin === true;
   if (!isAdmin) {
     throw new AuthError("Admin access required", 403);
   }
@@ -113,12 +117,18 @@ export const reconcile_paypal_membership_orders = onRequest(
           },
         );
 
-        const clientId = required("PAYPAL_CLIENT_ID", clientIdValue);
-        const clientSecret = required(
-          "PAYPAL_CLIENT_SECRET",
-          clientSecretValue,
+        const clientId = required(
+          PAYPAL_CLIENT_ID_NAME,
+          resolveConfiguredValue(PAYPAL_CLIENT_ID_NAME, clientIdValue),
         );
-        const envRaw = required("PAYPAL_ENVIRONMENT", envValue).toUpperCase();
+        const clientSecret = required(
+          PAYPAL_CLIENT_SECRET_NAME,
+          resolveConfiguredValue(PAYPAL_CLIENT_SECRET_NAME, clientSecretValue),
+        );
+        const envRaw = required(
+          PAYPAL_ENVIRONMENT_NAME,
+          resolveConfiguredValue(PAYPAL_ENVIRONMENT_NAME, envValue),
+        ).toUpperCase();
         const env = envRaw === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
 
         const fetchImpl = mockPayPalFetchFromEnv() ?? undefined;
@@ -142,10 +152,7 @@ export const reconcile_paypal_membership_orders = onRequest(
 
         response.scanned = transactions.length;
 
-        const serverNow =
-          typeof admin.firestore.FieldValue?.serverTimestamp === "function"
-            ? admin.firestore.FieldValue.serverTimestamp()
-            : admin.firestore.Timestamp.now();
+        const serverNow = getFirestoreWriteTime();
 
         for (const tx of transactions) {
           const orderId = tx.paypalReferenceId ?? tx.transactionId ?? null;

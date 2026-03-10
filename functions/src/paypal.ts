@@ -149,6 +149,35 @@ export async function fetchPayPalOrder(params: {
   return parsePayPalOrderSummary(json);
 }
 
+export async function capturePayPalOrder(params: {
+  env: PayPalEnvironment;
+  accessToken: string;
+  orderId: string;
+  fetchImpl?: typeof fetch;
+}): Promise<PayPalOrderSummary> {
+  const { env, accessToken, orderId } = params;
+  const fetchImpl = params.fetchImpl ?? fetch;
+
+  const url = `${envToBaseUrl(env)}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`;
+  const resp = await fetchImpl(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(
+      `PayPal order capture failed: ${resp.status} ${text}`.trim(),
+    );
+  }
+
+  const json = (await resp.json()) as unknown;
+  return parsePayPalOrderSummary(json);
+}
+
 function readString(
   value: Record<string, unknown>,
   key: string,
