@@ -59,7 +59,7 @@ export default function MembershipPage() {
   const showFlow = !loadingSettings && (settings?.registrationOpen || isAdmin);
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
+    <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-4">
       <header className="w-full max-w-3xl text-center">
         <h1 className="text-4xl font-semibold tracking-tight text-foreground">
           Membership & Annual Dues
@@ -114,7 +114,7 @@ export default function MembershipPage() {
               />
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground mb-2">
-                  Welcome! Read Our 2025 Membership Letter
+                  Welcome! Read Our Membership Letter
                 </h2>
                 <p className="text-sm text-foreground-600 leading-relaxed">
                   Before you join or renew, please take a moment to review our
