@@ -178,7 +178,7 @@ dark:border-default-100/10"
 
       {/* Right Content */}
 
-      {/* Profile Dropdown */}
+      {/* Notification Bell + Profile Dropdown */}
       <NavbarContent justify="end" className="pr-3 sm:pr-5">
         {loading ? (
           // Optional: Show a loading spinner or placeholder

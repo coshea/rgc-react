@@ -151,5 +151,11 @@ export const siteConfig = {
       link: "/announcements",
       icon: "lucide:newspaper",
     },
+    adminNotifications: {
+      title: "Notifications",
+      description: "Send and manage member notifications",
+      link: "/admin/notifications",
+      icon: "lucide:bell",
+    },
   },
 };

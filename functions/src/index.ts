@@ -30,6 +30,9 @@ import {
 
 admin.initializeApp();
 
+export { dispatch_push_notification } from "./sendPushNotification";
+export { send_notification } from "./sendNotificationCallable";
+
 export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
   async (req, res) => {

@@ -1,4 +1,6 @@
 import { auth, withAuthPersistenceRetry } from "@/config/firebase";
+import { useFCMToken } from "@/hooks/useFCMToken";
+import { NotificationPermissionPrompt } from "@/components/notification-permission-prompt";
 import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
@@ -312,5 +314,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {user && <FCMTokenRegistrar uid={user.uid} />}
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+/** Thin component so useFCMToken is only called when a user is present. */
+function FCMTokenRegistrar({ uid }: { uid: string }) {
+  const { shouldPrompt, requestPermission, dismissPrompt } = useFCMToken(uid);
+  if (!shouldPrompt) return null;
+  return (
+    <NotificationPermissionPrompt
+      onAllow={requestPermission}
+      onDismiss={dismissPrompt}
+    />
+  );
 }

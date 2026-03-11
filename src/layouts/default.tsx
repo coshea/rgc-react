@@ -16,7 +16,7 @@ export default function DefaultLayout({
       {/* Standardize spacing below the navbar for all pages */}
       <main
         className={clsx(
-          "container mx-auto max-w-7xl px-6 pt-2 grow",
+          "container mx-auto max-w-7xl px-3 sm:px-4 pt-2 grow",
           showConsentBanner
             ? "pb-[max(10rem,env(safe-area-inset-bottom))]"
             : "pb-[max(2rem,env(safe-area-inset-bottom))]",
