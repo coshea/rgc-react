@@ -12,6 +12,8 @@ export interface AppNotification {
   /** False on creation; toggled to true when the user views/acknowledges. */
   read: boolean;
   createdAt: Timestamp;
+  /** Firestore TTL field — document is automatically deleted after this timestamp (60 days). */
+  expiresAt: Timestamp;
   /** Optional deep-link payload — used by the service worker and in-app routing. */
   data?: {
     tournamentId?: string;

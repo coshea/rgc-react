@@ -62,12 +62,17 @@ export const send_notification = onCall(async (request) => {
   }
 
   // 4. Build notification doc payload (common fields)
+  const TTL_DAYS = 60;
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + TTL_DAYS);
+
   const basePayload = {
     title: title.trim(),
     body: body.trim(),
     type,
     read: false,
     createdAt: FieldValue.serverTimestamp(),
+    expiresAt,
     ...(data?.link || data?.tournamentId ? { data } : {}),
   };
 
