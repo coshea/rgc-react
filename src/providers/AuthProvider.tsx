@@ -1,6 +1,10 @@
 import { auth, withAuthPersistenceRetry } from "@/config/firebase";
 import { useFCMToken } from "@/hooks/useFCMToken";
 import { NotificationPermissionPrompt } from "@/components/notification-permission-prompt";
+import { getUserProfile } from "@/api/users";
+import { getAnalyticsInstance } from "@/config/firebase";
+import { setUserProperties } from "firebase/analytics";
+import { MEMBERSHIP_TYPES } from "@@/types";
 import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
@@ -317,9 +321,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {user && <FCMTokenRegistrar uid={user.uid} />}
+      {user && <AnalyticsUserTagger uid={user.uid} />}
       {children}
     </AuthContext.Provider>
   );
+}
+
+/**
+ * Tags the current user in Google Analytics with their membership tier so
+ * GA audiences / reports can segment by member type:
+ *   - "full"       → paid full member
+ *   - "handicap"   → paid handicap-only member
+ *   - "non_paying" → authenticated but no active membership
+ */
+function AnalyticsUserTagger({ uid }: { uid: string }) {
+  useEffect(() => {
+    let cancelled = false;
+    void getUserProfile(uid).then((profile) => {
+      if (cancelled) return;
+      const instance = getAnalyticsInstance();
+      if (!instance) return; // analytics not enabled (no consent yet)
+      const tier =
+        profile?.membershipType === MEMBERSHIP_TYPES.FULL
+          ? MEMBERSHIP_TYPES.FULL
+          : profile?.membershipType === MEMBERSHIP_TYPES.HANDICAP
+            ? MEMBERSHIP_TYPES.HANDICAP
+            : "non_paying";
+      setUserProperties(instance, { membership_tier: tier });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+  return null;
 }
 
 /** Thin component so useFCMToken is only called when a user is present. */
