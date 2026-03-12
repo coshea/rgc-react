@@ -28,7 +28,6 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 
   useEffect(() => {
     if (!uid || !messaging || !VAPID_KEY) return;
-    if (import.meta.env.VITEST) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     const permission = Notification.permission;

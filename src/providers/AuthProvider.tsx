@@ -294,6 +294,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      // Clean up FCM tokens before signing out (best-effort, non-blocking on failure)
+      if (user) {
+        try {
+          const [{ db }, { collection, getDocs, deleteDoc }] =
+            await Promise.all([
+              import("@/config/firebase"),
+              import("firebase/firestore"),
+            ]);
+          const tokenSnap = await getDocs(
+            collection(db, "users", user.uid, "fcmTokens"),
+          );
+          await Promise.all(tokenSnap.docs.map((d) => deleteDoc(d.ref)));
+        } catch {
+          // Non-fatal — proceed with logout even if token cleanup fails
+        }
+      }
       await withAuthPersistenceRetry(() => signOut(auth));
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
     } catch (err) {

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Timestamp } from "firebase/firestore";
@@ -20,6 +21,7 @@ function getRelativeTime(ts: Timestamp | undefined): string {
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
@@ -133,10 +135,16 @@ export function NotificationBell() {
                     onMarkRead={() => {
                       markRead(n.id);
                     }}
-                    onDismiss={(e) => {
-                      e.stopPropagation();
-                      dismissNotification(n.id);
-                    }}
+                    onNavigate={
+                      n.data?.link
+                        ? () => {
+                            markRead(n.id);
+                            setOpen(false);
+                            navigate(n.data!.link!);
+                          }
+                        : undefined
+                    }
+                    onDismiss={() => dismissNotification(n.id)}
                   />
                 ))
               )}
@@ -169,7 +177,8 @@ export function NotificationBell() {
 interface NotificationItemProps {
   notification: AppNotification;
   onMarkRead: () => void;
-  onDismiss: (e: React.MouseEvent) => void;
+  onNavigate?: () => void;
+  onDismiss: () => void;
 }
 
 /**
@@ -180,8 +189,10 @@ interface NotificationItemProps {
 function NotificationItem({
   notification: n,
   onMarkRead,
+  onNavigate,
   onDismiss,
 }: NotificationItemProps) {
+  const handleActivate = onNavigate ?? onMarkRead;
   return (
     <div
       role="listitem"
@@ -195,9 +206,9 @@ function NotificationItem({
         role="button"
         tabIndex={0}
         aria-label={`Notification: ${n.title}`}
-        onClick={onMarkRead}
+        onClick={handleActivate}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") onMarkRead();
+          if (e.key === "Enter" || e.key === " ") handleActivate();
         }}
       >
         <p
@@ -222,7 +233,8 @@ function NotificationItem({
         size="sm"
         aria-label="Dismiss notification"
         className="shrink-0 text-default-300 hover:text-danger mt-0.5 min-w-0 w-6 h-6"
-        onPress={(e) => onDismiss(e as unknown as React.MouseEvent)}
+        onClick={(e) => e.stopPropagation()}
+        onPress={() => onDismiss()}
       >
         <Icon icon="lucide:x" className="w-3.5 h-3.5" />
       </Button>

@@ -86,6 +86,11 @@ vi.mock("@heroui/react", async (importOriginal) => {
 // Stub ThemeSwitch to avoid use-theme hook invoking matchMedia
 vi.mock("@/components/theme-switch", () => ({ ThemeSwitch: () => <div /> }));
 
+// Stub NotificationBell to avoid useNavigate needing a Router context
+vi.mock("@/components/notification-bell", () => ({
+  NotificationBell: () => <div />,
+}));
+
 // Provide matchMedia mock before running tests
 beforeAll(() => {
   if (!window.matchMedia) {

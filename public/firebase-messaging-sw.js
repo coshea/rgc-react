@@ -32,3 +32,25 @@ messaging.onBackgroundMessage((payload) => {
     data: payload.data ?? {},
   });
 });
+
+// Opens or focuses the correct page when the user taps an OS-level notification.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link = event.notification.data?.link;
+  const url = link
+    ? new URL(link, self.location.origin).href
+    : self.location.origin;
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if (client.url === url && "focus" in client) {
+            return client.focus();
+          }
+        }
+        return clients.openWindow(url);
+      }),
+  );
+});
