@@ -15,7 +15,7 @@ import RegistrationEditor from "@/components/registration-editor";
 type Registration = {
   id: string;
   ownerId?: string;
-  team?: Array<{ id: string; displayName?: string }>;
+  team?: Array<{ id: string; displayName?: string; goldTee?: boolean }>;
   openSpotsOptIn?: boolean;
 };
 
@@ -26,7 +26,12 @@ interface Props {
   editingId: string | null;
   onStartEdit: (reg: Registration) => void;
   onCancelEdit: () => void;
-  onSave: (regId: string, ids: string[], openSpotsOptIn: boolean) => void;
+  onSave: (
+    regId: string,
+    ids: string[],
+    openSpotsOptIn: boolean,
+    goldTees: string[],
+  ) => void;
   onDelete: (regId: string) => void;
 }
 
@@ -47,6 +52,9 @@ export const RegistrationsList: React.FC<Props> = ({
   );
   const [localOpenSpots, setLocalOpenSpots] = React.useState<
     Record<string, boolean>
+  >({});
+  const [localGoldTees, setLocalGoldTees] = React.useState<
+    Record<string, string[]>
   >({});
 
   const selectedRegistration = React.useMemo(() => {
@@ -71,11 +79,15 @@ export const RegistrationsList: React.FC<Props> = ({
     const ids = Array.isArray(reg.team)
       ? reg.team.map((m) => m.id || "")
       : [""];
+    const goldIds = Array.isArray(reg.team)
+      ? reg.team.filter((m) => m.goldTee).map((m) => m.id)
+      : [];
     setLocalTeams((s) => ({ ...s, [reg.id]: ids }));
     setLocalOpenSpots((s) => ({
       ...s,
       [reg.id]: reg.openSpotsOptIn === true,
     }));
+    setLocalGoldTees((s) => ({ ...s, [reg.id]: goldIds }));
     onStartEdit(reg);
   };
 
@@ -201,6 +213,7 @@ export const RegistrationsList: React.FC<Props> = ({
                               reg.id,
                               (localTeams[reg.id] || []).filter(Boolean),
                               openSpotsValue,
+                              localGoldTees[reg.id] ?? [],
                             )
                           }
                           startContent={
@@ -285,6 +298,10 @@ export const RegistrationsList: React.FC<Props> = ({
                     onChange={(ids) => updateLocal(reg.id, ids)}
                     users={users}
                     maxSize={players}
+                    goldTees={localGoldTees[reg.id] ?? []}
+                    onGoldTeesChange={(ids) =>
+                      setLocalGoldTees((s) => ({ ...s, [reg.id]: ids }))
+                    }
                   />
                   {players > 1 ? (
                     <div className="mt-3">

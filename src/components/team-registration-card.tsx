@@ -1,11 +1,13 @@
 import { Card, CardBody, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { TeeBadge } from "@/components/tee-badge";
 import type { User } from "@/api/users";
 
 export interface TeamMember {
   id: string;
   displayName?: string;
+  goldTee?: boolean;
 }
 
 export interface TeamRegistrationCardProps {
@@ -121,6 +123,14 @@ export function TeamRegistrationCard({
                   >
                     Leader
                   </Chip>
+                )}
+                {m.goldTee && (
+                  <TeeBadge
+                    tee="Gold"
+                    size="xs"
+                    className="shrink-0"
+                    ariaLabel="Gold tees"
+                  />
                 )}
               </li>
             );

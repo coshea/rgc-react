@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
@@ -15,6 +15,10 @@ interface RegistrationEditorProps {
   disableAutoSelect?: boolean;
   /** When true, disable all inputs and controls inside the editor (used to block ineligible users). */
   disabled?: boolean;
+  /** Array of user IDs that should play from the gold (senior) tees. */
+  goldTees?: string[];
+  /** Called when the gold tee selection changes. When omitted, the gold tee toggle is hidden. */
+  onGoldTeesChange?: (ids: string[]) => void;
 }
 
 export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
@@ -25,6 +29,8 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   labels,
   disableAutoSelect,
   disabled = false,
+  goldTees,
+  onGoldTeesChange,
 }) => {
   const ids = value || [];
 
@@ -111,6 +117,36 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               disabled={disabled}
             />
           </div>
+          {onGoldTeesChange && uid && (
+            <Tooltip
+              content="Playing from the gold (senior) tees"
+              placement="top"
+              closeDelay={0}
+            >
+              <Button
+                size="sm"
+                variant={goldTees?.includes(uid) ? "flat" : "light"}
+                color={goldTees?.includes(uid) ? "warning" : "default"}
+                onPress={() => {
+                  const isGold = goldTees?.includes(uid) ?? false;
+                  const next = isGold
+                    ? (goldTees ?? []).filter((id) => id !== uid)
+                    : [...(goldTees ?? []), uid];
+                  onGoldTeesChange(next);
+                }}
+                isDisabled={disabled}
+                aria-label={`${
+                  goldTees?.includes(uid) ? "Remove" : "Add"
+                } gold tees: ${
+                  idx === 0 ? "team leader" : `teammate ${idx + 1}`
+                }`}
+                className="shrink-0"
+                startContent={<Icon icon="lucide:flag" className="text-sm" />}
+              >
+                Gold
+              </Button>
+            </Tooltip>
+          )}
           {ids.length > 1 && (
             <Button
               size="sm"

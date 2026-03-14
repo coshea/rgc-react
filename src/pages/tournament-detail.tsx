@@ -94,7 +94,7 @@ const computeRegistrationWindowCopy = (windowInfo: RegistrationWindowInfo) => {
 interface RegistrationDoc {
   id: string;
   ownerId?: string;
-  team?: Array<{ id: string; displayName?: string }>;
+  team?: Array<{ id: string; displayName?: string; goldTee?: boolean }>;
   registeredAt?: any;
   openSpotsOptIn?: boolean;
 }
@@ -353,16 +353,23 @@ const TournamentDetailPage: React.FC = () => {
     });
     const headers = [
       "registeredDate",
-      ...Array.from({ length: maxTeam }, (_, i) => `member${i + 1}`),
+      ...Array.from({ length: maxTeam }, (_, i) => [
+        `member${i + 1}`,
+        `member${i + 1}_goldTee`,
+      ]).flat(),
     ];
     const rows = registrations.map((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
       const date = r.registeredAt?.toDate
         ? new Date(r.registeredAt.toDate()).toISOString()
         : "";
-      const memberNames = team.map((m) => m.displayName || m.id || "");
-      while (memberNames.length < maxTeam) memberNames.push("");
-      return [date, ...memberNames];
+      const memberCols: string[] = [];
+      for (let i = 0; i < maxTeam; i++) {
+        const m = team[i];
+        memberCols.push(m?.displayName || m?.id || "");
+        memberCols.push(m?.goldTee ? "Gold" : "");
+      }
+      return [date, ...memberCols];
     });
     const csvLines = [headers, ...rows].map((line) =>
       line.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","),
@@ -427,36 +434,37 @@ const TournamentDetailPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Dropdown placement="bottom-end">
-                      <DropdownTrigger>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<Icon icon="lucide:calendar-plus" />}
-                          aria-label="Add tournament to calendar"
-                          title="Add tournament to your calendar"
+                    <Tooltip content="Add to calendar">
+                      <Dropdown placement="bottom-end">
+                        <DropdownTrigger>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<Icon icon="lucide:calendar-plus" />}
+                            aria-label="Add tournament to calendar"
+                          >
+                            Calendar
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="Calendar options"
+                          onAction={handleCalendarAction}
                         >
-                          Calendar
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        aria-label="Calendar options"
-                        onAction={handleCalendarAction}
-                      >
-                        <DropdownItem
-                          key="google"
-                          startContent={<Icon icon="lucide:calendar" />}
-                        >
-                          Add to Google Calendar
-                        </DropdownItem>
-                        <DropdownItem
-                          key="ics"
-                          startContent={<Icon icon="lucide:download" />}
-                        >
-                          Download calendar file (.ics)
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
+                          <DropdownItem
+                            key="google"
+                            startContent={<Icon icon="lucide:calendar" />}
+                          >
+                            Add to Google Calendar
+                          </DropdownItem>
+                          <DropdownItem
+                            key="ics"
+                            startContent={<Icon icon="lucide:download" />}
+                          >
+                            Download calendar file (.ics)
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </Tooltip>
                     <Tooltip content="Share tournament">
                       <Button
                         size="sm"
@@ -519,36 +527,37 @@ const TournamentDetailPage: React.FC = () => {
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Dropdown placement="bottom-end">
-                    <DropdownTrigger>
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        startContent={<Icon icon="lucide:calendar-plus" />}
-                        aria-label="Add tournament to calendar"
-                        title="Add tournament to your calendar"
+                  <Tooltip content="Add to calendar">
+                    <Dropdown placement="bottom-end">
+                      <DropdownTrigger>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          startContent={<Icon icon="lucide:calendar-plus" />}
+                          aria-label="Add tournament to calendar"
+                        >
+                          Calendar
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label="Calendar options"
+                        onAction={handleCalendarAction}
                       >
-                        Calendar
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Calendar options"
-                      onAction={handleCalendarAction}
-                    >
-                      <DropdownItem
-                        key="google"
-                        startContent={<Icon icon="lucide:calendar" />}
-                      >
-                        Add to Google Calendar
-                      </DropdownItem>
-                      <DropdownItem
-                        key="ics"
-                        startContent={<Icon icon="lucide:download" />}
-                      >
-                        Download calendar file (.ics)
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
+                        <DropdownItem
+                          key="google"
+                          startContent={<Icon icon="lucide:calendar" />}
+                        >
+                          Add to Google Calendar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="ics"
+                          startContent={<Icon icon="lucide:download" />}
+                        >
+                          Download calendar file (.ics)
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  </Tooltip>
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"

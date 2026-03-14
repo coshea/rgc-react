@@ -998,12 +998,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   editingId={editingRegId}
                   onStartEdit={(reg) => startEdit(reg)}
                   onCancelEdit={() => cancelEdit()}
-                  onSave={async (regId, ids, openSpotsOptIn) => {
+                  onSave={async (regId, ids, openSpotsOptIn, goldTees) => {
                     const team = ids.map((id) => {
                       const u = allUsers.find((x) => x.id === id);
                       return {
                         id,
                         displayName: u?.displayName || u?.email || id,
+                        ...(goldTees.includes(id) ? { goldTee: true } : {}),
                       };
                     });
                     try {

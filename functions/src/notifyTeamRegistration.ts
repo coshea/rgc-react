@@ -9,6 +9,7 @@ import { logger } from "./logger";
 interface RegistrationMember {
   id: string;
   displayName?: string;
+  goldTee?: boolean;
 }
 
 interface RegistrationData {
@@ -63,7 +64,6 @@ export const notify_team_registration = onDocumentCreated(
     }
     const tournament = tournamentSnap.data() as TournamentData;
     const tournamentTitle = tournament.title ?? "Tournament";
-    const teeStr = tournament.tee ? ` · ${tournament.tee} tees` : "";
 
     // --- Identify leader ---
     const leader = team.find((m) => m.id === ownerId);
@@ -93,7 +93,6 @@ export const notify_team_registration = onDocumentCreated(
 
     // --- Build notification payload ---
     const notifTitle = `Registered: ${tournamentTitle}`;
-    const notifBody = `${leaderName} added you to their team.${teeStr}`;
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + TTL_DAYS);
@@ -103,6 +102,8 @@ export const notify_team_registration = onDocumentCreated(
     // --- Batch-write one notification per eligible member ---
     const batch = db.batch();
     for (const member of eligibleMembers) {
+      const goldTeeStr = member.goldTee ? " · Gold tees" : "";
+      const notifBody = `${leaderName} added you to their team.${goldTeeStr}`;
       const ref = db.collection("notifications").doc();
       batch.set(ref, {
         uid: member.id,
