@@ -1100,7 +1100,7 @@ const TournamentDetailPage: React.FC = () => {
                           </p>
                         </div>
                       )}
-                      <div className="md:max-h-96 lg:max-h-128 px-1 pb-2 overflow-y-auto overflow-x-hidden">
+                      <div className="px-1 pb-2">
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {registrations
                             .filter((reg) => {
