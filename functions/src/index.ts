@@ -32,6 +32,11 @@ admin.initializeApp();
 
 export { dispatch_push_notification } from "./sendPushNotification";
 export { send_notification } from "./sendNotificationCallable";
+export {
+  notify_team_registration,
+  notify_team_registration_canceled,
+} from "./notifyTeamRegistration";
+export { notify_tournament_canceled } from "./notifyTournamentCanceled";
 
 export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
