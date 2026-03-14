@@ -16,6 +16,27 @@ import {
 } from "firebase/firestore";
 import type { MembershipType } from "@@/types";
 
+/**
+ * Per-user notification opt-in preferences stored at users/{uid}.notificationPreferences.
+ * Every key defaults to true (opt-in) when absent so new users receive all notifications.
+ * New notification types can be added here and will default to enabled until a user
+ * explicitly saves their preferences. An emailEnabled flag gates all future email
+ * channels without requiring individual per-type email flags during the in-app phase.
+ */
+export interface NotificationPreferences {
+  /** Receive in-app notifications when added to a tournament team. */
+  tournamentRegistration: boolean;
+  /** Receive in-app notifications for tournament detail changes (time, format, etc.). */
+  tournamentUpdates: boolean;
+  /** Receive in-app notifications for general club announcements. */
+  generalAnnouncements: boolean;
+  // ── Future email channels (infrastructure ready, UI hidden until email is wired) ──
+  /** Master switch: when false no email notifications are sent regardless of other flags. */
+  emailEnabled: boolean;
+  /** Email variant of tournamentRegistration. */
+  emailTournamentRegistration: boolean;
+}
+
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
 export type FirestoreTimestamp = Timestamp | Date | FieldValue;
 
@@ -71,6 +92,7 @@ export type UserProfilePayload = {
   lastPaidYear?: number;
   isMigrated?: boolean;
   migrationEligible?: boolean;
+  notificationPreferences?: NotificationPreferences;
 };
 
 // Firestore document payload for the `users` collection. When writing,
@@ -320,6 +342,30 @@ export async function updateUser(
 export async function deleteUser(uid: string) {
   const ref = doc(db, "users", uid);
   await deleteDoc(ref);
+}
+
+/**
+ * Persist the current user's notification preferences directly without
+ * touching any other profile fields. Validates auth matches uid.
+ */
+export async function saveNotificationPreferences(
+  uid: string,
+  prefs: NotificationPreferences,
+): Promise<void> {
+  const currentUid = auth.currentUser?.uid ?? null;
+  if (!currentUid) {
+    throw new Error("Cannot save preferences: no authenticated user.");
+  }
+  if (currentUid !== uid) {
+    throw new Error(
+      `Cannot save preferences: UID mismatch (${currentUid} ≠ ${uid}).`,
+    );
+  }
+  const ref = doc(db, "users", uid);
+  await updateDoc(ref, {
+    notificationPreferences: prefs,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 /**

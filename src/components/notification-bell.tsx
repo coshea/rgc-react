@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNotifications } from "@/hooks/useNotifications";
+import { siteConfig } from "@/config/site";
 import type { AppNotification } from "@/types/notification";
 
 function getRelativeTime(ts: Timestamp | undefined): string {
@@ -151,8 +152,23 @@ export function NotificationBell() {
             </div>
 
             {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="border-t border-default-100 px-4 py-2 flex justify-end">
+            <div className="border-t border-default-100 px-4 py-2 flex justify-between">
+              <Button
+                variant="light"
+                size="sm"
+                className="text-xs h-6 min-w-0 px-2"
+                aria-label="Notification settings"
+                startContent={
+                  <Icon icon="lucide:settings-2" className="text-base" />
+                }
+                onPress={() => {
+                  setOpen(false);
+                  navigate(siteConfig.pages.notificationSettings.link);
+                }}
+              >
+                Settings
+              </Button>
+              {notifications.length > 0 && (
                 <Button
                   variant="light"
                   size="sm"
@@ -165,8 +181,8 @@ export function NotificationBell() {
                 >
                   Clear all
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

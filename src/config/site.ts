@@ -157,5 +157,11 @@ export const siteConfig = {
       link: "/admin/notifications",
       icon: "lucide:bell",
     },
+    notificationSettings: {
+      title: "Notification Settings",
+      description: "Manage your notification preferences",
+      link: "/settings/notifications",
+      icon: "lucide:settings-2",
+    },
   },
 };
