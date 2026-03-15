@@ -6,7 +6,8 @@ import { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNotifications } from "@/hooks/useNotifications";
 import { siteConfig } from "@/config/site";
-import type { AppNotification } from "@/types/notification";
+import type { AppNotification, NotificationType } from "@/types/notification";
+import { NOTIFICATION_TYPE_META as TYPE_META } from "@/types/notification";
 
 function getRelativeTime(ts: Timestamp | undefined): string {
   if (!ts) return "";
@@ -228,12 +229,17 @@ function NotificationItem({
         }}
       >
         <p
-          className={`text-sm leading-tight ${
+          className={`text-sm leading-tight flex items-center gap-1.5 ${
             !n.read
               ? "font-semibold text-foreground"
               : "font-normal text-foreground-600"
           }`}
         >
+          <Icon
+            icon={TYPE_META[n.type as NotificationType]?.icon ?? "lucide:bell"}
+            className="shrink-0 text-[13px] text-default-400"
+            aria-hidden="true"
+          />
           {n.title}
         </p>
         <p className="text-xs text-default-400 mt-0.5 line-clamp-2">{n.body}</p>

@@ -14,7 +14,7 @@ function makeNotification(
     uid: "user-123",
     title: "Test",
     body: "Test body",
-    type: "general",
+    type: "announcement",
     read: false,
     createdAt: Timestamp.fromDate(new Date()),
     expiresAt: Timestamp.fromDate(

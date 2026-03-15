@@ -1,6 +1,42 @@
 import type { Timestamp } from "firebase/firestore";
 
-export type NotificationType = "general" | "tournament" | "membership";
+export type NotificationType =
+  | "announcement"
+  | "tournament"
+  | "new_features"
+  | "tournament_canceled";
+
+export const NOTIFICATION_TYPE_META: Record<
+  NotificationType,
+  {
+    label: string;
+    icon: string;
+    color:
+      | "default"
+      | "primary"
+      | "success"
+      | "warning"
+      | "danger"
+      | "secondary";
+  }
+> = {
+  announcement: {
+    label: "Announcement",
+    icon: "lucide:megaphone",
+    color: "default",
+  },
+  tournament: { label: "Tournament", icon: "lucide:trophy", color: "primary" },
+  new_features: {
+    label: "New Features",
+    icon: "lucide:sparkles",
+    color: "success",
+  },
+  tournament_canceled: {
+    label: "Tournament Canceled",
+    icon: "lucide:x-circle",
+    color: "danger",
+  },
+};
 
 export interface AppNotification {
   id: string;

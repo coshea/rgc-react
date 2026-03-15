@@ -6,9 +6,11 @@ import { logger } from "./logger";
 interface SendNotificationData {
   title: string;
   body: string;
-  type: "general" | "tournament" | "membership";
+  type: "announcement" | "tournament" | "new_features" | "tournament_canceled";
   /** Target user's UID. If omitted, broadcasts to all non-migrated members. */
   targetUid?: string;
+  /** Target all registrants of a specific tournament instead of a single user or all members. */
+  targetTournamentId?: string;
   data?: {
     link?: string;
     tournamentId?: string;
@@ -49,14 +51,19 @@ export const send_notification = onCall(async (request) => {
   }
 
   // 3. Validate payload
-  const { title, body, type, targetUid, data } =
+  const { title, body, type, targetUid, targetTournamentId, data } =
     request.data as SendNotificationData;
 
   if (!title?.trim() || !body?.trim()) {
     throw new HttpsError("invalid-argument", "title and body are required.");
   }
 
-  const validTypes = ["general", "tournament", "membership"];
+  const validTypes = [
+    "announcement",
+    "tournament",
+    "new_features",
+    "tournament_canceled",
+  ];
   if (!validTypes.includes(type)) {
     throw new HttpsError("invalid-argument", "Invalid notification type.");
   }
@@ -92,6 +99,52 @@ export const send_notification = onCall(async (request) => {
     });
 
     return { success: true, count: 1 };
+  }
+
+  if (targetTournamentId) {
+    // Send to all registrants of a specific tournament
+    const regsSnap = await db
+      .collection(`tournaments/${targetTournamentId}/registrations`)
+      .get();
+
+    const uidSet = new Set<string>();
+    for (const regDoc of regsSnap.docs) {
+      const team = regDoc.data().team;
+      if (Array.isArray(team)) {
+        team.forEach((m: { id?: string }) => {
+          if (m.id) uidSet.add(m.id);
+        });
+      }
+    }
+
+    const uids = Array.from(uidSet);
+    if (uids.length === 0) return { success: true, count: 0 };
+
+    const BATCH_SIZE = 499;
+    let count = 0;
+    let batch = db.batch();
+
+    for (const uid of uids) {
+      const ref = db.collection("notifications").doc();
+      batch.set(ref, { ...basePayload, uid });
+      count++;
+      if (count % BATCH_SIZE === 0) {
+        await batch.commit();
+        batch = db.batch();
+      }
+    }
+    if (count % BATCH_SIZE !== 0) {
+      await batch.commit();
+    }
+
+    logger.info("send_notification: tournament registrant broadcast complete", {
+      callerUid,
+      targetTournamentId,
+      count,
+      type,
+    });
+
+    return { success: true, count };
   }
 
   // Broadcast — create one notification doc per non-migrated user

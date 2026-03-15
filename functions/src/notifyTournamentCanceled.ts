@@ -113,7 +113,7 @@ export const notify_tournament_canceled = onDocumentUpdated(
         uid,
         title: notifTitle,
         body: notifBody,
-        type: "tournament",
+        type: "tournament_canceled",
         read: false,
         createdAt: FieldValue.serverTimestamp(),
         expiresAt,
