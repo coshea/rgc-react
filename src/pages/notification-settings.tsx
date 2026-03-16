@@ -87,17 +87,24 @@ export default function NotificationSettingsPage() {
               isDisabled={isLoading}
             />
             <SwitchCell
-              label="Tournament Updates"
-              description="Get notified when tournament details change (time, format, etc.)"
+              label="Tournament Updates & Cancellations"
+              description="Get notified when a tournament is canceled or has important updates"
               isSelected={prefs.tournamentUpdates}
               onValueChange={() => toggle("tournamentUpdates")}
               isDisabled={isLoading}
             />
             <SwitchCell
-              label="General Announcements"
-              description="Get notified about club news and announcements"
+              label="Announcements"
+              description="Get notified about club news and general announcements"
               isSelected={prefs.generalAnnouncements}
               onValueChange={() => toggle("generalAnnouncements")}
+              isDisabled={isLoading}
+            />
+            <SwitchCell
+              label="New Features"
+              description="Get notified about new app features and improvements"
+              isSelected={prefs.newFeatures}
+              onValueChange={() => toggle("newFeatures")}
               isDisabled={isLoading}
             />
 

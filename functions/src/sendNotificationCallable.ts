@@ -17,6 +17,47 @@ interface SendNotificationData {
   };
 }
 
+interface UserPrefsData {
+  notificationPreferences?: {
+    tournamentUpdates?: boolean;
+    generalAnnouncements?: boolean;
+    newFeatures?: boolean;
+  };
+}
+
+/**
+ * Maps a notification type to the user preference key that gates it.
+ * Returns null if the type has no preference gate (always delivered).
+ */
+function prefKeyForType(
+  type: SendNotificationData["type"],
+): keyof NonNullable<UserPrefsData["notificationPreferences"]> | null {
+  switch (type) {
+    case "announcement":
+      return "generalAnnouncements";
+    case "tournament":
+    case "tournament_canceled":
+      return "tournamentUpdates";
+    case "new_features":
+      return "newFeatures";
+    default:
+      return null;
+  }
+}
+
+/**
+ * Returns true when a user's stored prefs indicate they accept this notification
+ * type. Defaults to true (opt-in) when the preference key is absent.
+ */
+function userWantsType(
+  prefs: UserPrefsData["notificationPreferences"] | undefined,
+  type: SendNotificationData["type"],
+): boolean {
+  const key = prefKeyForType(type);
+  if (!key) return true;
+  return prefs?.[key] !== false;
+}
+
 /**
  * Callable Cloud Function for admins to send in-app (and push) notifications.
  *
@@ -86,7 +127,19 @@ export const send_notification = onCall(async (request) => {
   const db = admin.firestore();
 
   if (targetUid) {
-    // Single-user notification
+    // Check recipient's preferences before writing
+    const userSnap = await db.doc(`users/${targetUid}`).get();
+    const userPrefs = (userSnap.data() as UserPrefsData | undefined)
+      ?.notificationPreferences;
+    if (!userWantsType(userPrefs, type)) {
+      logger.info("send_notification: skipped — user opted out", {
+        callerUid,
+        targetUid,
+        type,
+      });
+      return { success: true, count: 0 };
+    }
+
     await db.collection("notifications").add({
       ...basePayload,
       uid: targetUid,
@@ -120,11 +173,29 @@ export const send_notification = onCall(async (request) => {
     const uids = Array.from(uidSet);
     if (uids.length === 0) return { success: true, count: 0 };
 
+    // Filter by each registrant's notification preferences
+    const prefSnaps = await Promise.all(
+      uids.map((uid) => db.doc(`users/${uid}`).get()),
+    );
+    const eligibleUids = uids.filter((_, i) => {
+      const prefs = (prefSnaps[i].data() as UserPrefsData | undefined)
+        ?.notificationPreferences;
+      return userWantsType(prefs, type);
+    });
+
+    if (eligibleUids.length === 0) {
+      logger.info(
+        "send_notification: all tournament registrants opted out",
+        { callerUid, targetTournamentId, type },
+      );
+      return { success: true, count: 0 };
+    }
+
     const BATCH_SIZE = 499;
     let count = 0;
     let batch = db.batch();
 
-    for (const uid of uids) {
+    for (const uid of eligibleUids) {
       const ref = db.collection("notifications").doc();
       batch.set(ref, { ...basePayload, uid });
       count++;
@@ -163,6 +234,9 @@ export const send_notification = onCall(async (request) => {
   let batch = db.batch();
 
   for (const userDoc of usersSnap.docs) {
+    const prefs = (userDoc.data() as UserPrefsData).notificationPreferences;
+    if (!userWantsType(prefs, type)) continue;
+
     const ref = db.collection("notifications").doc();
     batch.set(ref, { ...basePayload, uid: userDoc.id });
     count++;

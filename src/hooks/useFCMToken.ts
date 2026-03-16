@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { db, messaging } from "@/config/firebase";
-import { getToken } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
@@ -25,6 +25,7 @@ export interface UseFCMTokenReturn {
  */
 export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   const [shouldPrompt, setShouldPrompt] = useState(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!uid || !messaging || !VAPID_KEY) return;
@@ -36,10 +37,32 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     if (permission === "granted") {
       // Already granted — register/refresh token silently
       registerToken(uid);
+      // Forward foreground (app-focused) FCM messages to the OS notification tray.
+      // Background messages are handled by firebase-messaging-sw.js.
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = onMessage(messaging, (payload) => {
+        navigator.serviceWorker.ready
+          .then((reg) =>
+            reg.showNotification(
+              payload.notification?.title ?? "Ridgefield Golf Club",
+              {
+                body: payload.notification?.body ?? "",
+                icon: "/rgc_fav.png",
+                data: payload.data ?? {},
+              },
+            ),
+          )
+          .catch(() => {});
+      });
     } else if (permission === "default" && !dismissed) {
       setShouldPrompt(true);
     }
     // If "denied", nothing we can do — don't bother the user
+
+    return () => {
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = null;
+    };
   }, [uid]);
 
   const requestPermission = useCallback(async () => {
@@ -49,6 +72,24 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         await registerToken(uid);
+        // Set up foreground listener for this session immediately after grant
+        if (messaging) {
+          unsubscribeRef.current?.();
+          unsubscribeRef.current = onMessage(messaging, (payload) => {
+            navigator.serviceWorker.ready
+              .then((reg) =>
+                reg.showNotification(
+                  payload.notification?.title ?? "Ridgefield Golf Club",
+                  {
+                    body: payload.notification?.body ?? "",
+                    icon: "/rgc_fav.png",
+                    data: payload.data ?? {},
+                  },
+                ),
+              )
+              .catch(() => {});
+          });
+        }
       }
     } catch (err) {
       console.warn("[FCM] Permission request failed:", err);
@@ -64,10 +105,37 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 }
 
 async function registerToken(uid: string): Promise<void> {
-  if (!messaging || !VAPID_KEY) return;
+  if (!messaging || !VAPID_KEY) {
+    console.warn(
+      "[FCM] Skipping registerToken: messaging or VAPID_KEY not set",
+    );
+    return;
+  }
   try {
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
-    if (!token) return;
+    // Explicitly register the service worker so we can hand it to getToken().
+    // This avoids a race where Firebase's auto-registration hasn't finished, and
+    // also forces the browser to pick up any updated SW file immediately.
+    let swReg: ServiceWorkerRegistration | undefined;
+    if ("serviceWorker" in navigator) {
+      swReg = await navigator.serviceWorker.register(
+        "/firebase-messaging-sw.js",
+        { scope: "/" },
+      );
+      // Wait for the SW to activate before requesting a token
+      await navigator.serviceWorker.ready;
+    }
+
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      ...(swReg ? { serviceWorkerRegistration: swReg } : {}),
+    });
+
+    if (!token) {
+      console.warn(
+        "[FCM] getToken returned empty — check VAPID key and service worker",
+      );
+      return;
+    }
 
     // Truncated base64 of the token → stable doc ID; idempotent on repeat calls.
     const tokenId = btoa(token)

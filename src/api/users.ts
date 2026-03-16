@@ -30,6 +30,8 @@ export interface NotificationPreferences {
   tournamentUpdates: boolean;
   /** Receive in-app notifications for general club announcements. */
   generalAnnouncements: boolean;
+  /** Receive in-app notifications for app feature updates and new functionality. */
+  newFeatures: boolean;
   // ── Future email channels (infrastructure ready, UI hidden until email is wired) ──
   /** Master switch: when false no email notifications are sent regardless of other flags. */
   emailEnabled: boolean;
