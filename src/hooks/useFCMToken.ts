@@ -41,18 +41,7 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
       // Background messages are handled by firebase-messaging-sw.js.
       unsubscribeRef.current?.();
       unsubscribeRef.current = onMessage(messaging, (payload) => {
-        navigator.serviceWorker.ready
-          .then((reg) =>
-            reg.showNotification(
-              payload.notification?.title ?? "Ridgefield Golf Club",
-              {
-                body: payload.notification?.body ?? "",
-                icon: "/rgc_fav.png",
-                data: payload.data ?? {},
-              },
-            ),
-          )
-          .catch(() => {});
+        showForegroundNotification(payload);
       });
     } else if (permission === "default" && !dismissed) {
       setShouldPrompt(true);
@@ -76,18 +65,7 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
         if (messaging) {
           unsubscribeRef.current?.();
           unsubscribeRef.current = onMessage(messaging, (payload) => {
-            navigator.serviceWorker.ready
-              .then((reg) =>
-                reg.showNotification(
-                  payload.notification?.title ?? "Ridgefield Golf Club",
-                  {
-                    body: payload.notification?.body ?? "",
-                    icon: "/rgc_fav.png",
-                    data: payload.data ?? {},
-                  },
-                ),
-              )
-              .catch(() => {});
+            showForegroundNotification(payload);
           });
         }
       }
@@ -104,24 +82,40 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   return { shouldPrompt, requestPermission, dismissPrompt };
 }
 
-async function registerToken(uid: string): Promise<void> {
-  if (!messaging || !VAPID_KEY) {
-    console.warn(
-      "[FCM] Skipping registerToken: messaging or VAPID_KEY not set",
-    );
-    return;
+import type { MessagePayload } from "firebase/messaging";
+
+function showForegroundNotification(payload: MessagePayload): void {
+  const title = payload.notification?.title ?? "Ridgefield Golf Club";
+  const options: NotificationOptions = {
+    body: payload.notification?.body ?? "",
+    icon: "/rgc_fav.png",
+    data: payload.data ?? {},
+  };
+
+  // Prefer SW-backed showNotification (required for notificationclick to fire)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready
+      .then((reg) => reg.showNotification(title, options))
+      .catch(() => {
+        // SW showNotification failed — fall back to direct Notification API
+        if (Notification.permission === "granted") {
+          new Notification(title, options);
+        }
+      });
+  } else if (Notification.permission === "granted") {
+    new Notification(title, options);
   }
+}
+
+async function registerToken(uid: string): Promise<void> {
+  if (!messaging || !VAPID_KEY) return;
   try {
-    // Explicitly register the service worker so we can hand it to getToken().
-    // This avoids a race where Firebase's auto-registration hasn't finished, and
-    // also forces the browser to pick up any updated SW file immediately.
     let swReg: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
       swReg = await navigator.serviceWorker.register(
         "/firebase-messaging-sw.js",
         { scope: "/" },
       );
-      // Wait for the SW to activate before requesting a token
       await navigator.serviceWorker.ready;
     }
 
@@ -130,12 +124,7 @@ async function registerToken(uid: string): Promise<void> {
       ...(swReg ? { serviceWorkerRegistration: swReg } : {}),
     });
 
-    if (!token) {
-      console.warn(
-        "[FCM] getToken returned empty — check VAPID key and service worker",
-      );
-      return;
-    }
+    if (!token) return;
 
     // Truncated base64 of the token → stable doc ID; idempotent on repeat calls.
     const tokenId = btoa(token)
