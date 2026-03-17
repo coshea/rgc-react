@@ -57,6 +57,8 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   const requestPermission = useCallback(async () => {
     if (!uid) return;
     setShouldPrompt(false);
+    // Clear any previous dismissal so the user can always re-enable from Settings
+    localStorage.removeItem(DISMISSED_KEY);
     try {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {

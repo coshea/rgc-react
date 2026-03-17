@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Card, CardHeader, CardBody, Button } from "@heroui/react";
+import { useState, useEffect, type FormEvent } from "react";
+import { Card, CardHeader, CardBody, Button, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -9,6 +9,7 @@ import {
   resolvePreferences,
   DEFAULT_NOTIFICATION_PREFERENCES,
 } from "@/utils/notificationPreferences";
+import { useFCMToken } from "@/hooks/useFCMToken";
 import SwitchCell from "@/components/switch-cell";
 import { addToast } from "@/providers/toast";
 import BackButton from "@/components/back-button";
@@ -18,6 +19,18 @@ export default function NotificationSettingsPage() {
   usePageTracking("Notification Settings");
   const { user } = useAuth();
   const { userProfile, isLoading } = useUserProfile();
+  const { requestPermission } = useFCMToken(user?.uid ?? null);
+
+  // Track browser-level push permission state
+  const [pushPermission, setPushPermission] =
+    useState<NotificationPermission | null>(null);
+  const [requestingPush, setRequestingPush] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setPushPermission(Notification.permission);
+    }
+  }, []);
 
   const stored = resolvePreferences(userProfile?.notificationPreferences);
 
@@ -78,6 +91,82 @@ export default function NotificationSettingsPage() {
           </p>
         </CardHeader>
         <CardBody>
+          {/* Push permission status */}
+          {pushPermission !== null && (
+            <>
+              <div className="flex items-center justify-between gap-3 py-2 mb-1">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      pushPermission === "granted"
+                        ? "bg-success/10"
+                        : pushPermission === "denied"
+                          ? "bg-danger/10"
+                          : "bg-default-100"
+                    }`}
+                  >
+                    <Icon
+                      icon={
+                        pushPermission === "granted"
+                          ? "lucide:bell-ring"
+                          : pushPermission === "denied"
+                            ? "lucide:bell-off"
+                            : "lucide:bell"
+                      }
+                      className={`text-xl ${
+                        pushPermission === "granted"
+                          ? "text-success"
+                          : pushPermission === "denied"
+                            ? "text-danger"
+                            : "text-default-400"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {pushPermission === "granted"
+                        ? "Push notifications enabled"
+                        : pushPermission === "denied"
+                          ? "Push notifications blocked"
+                          : "Push notifications off"}
+                    </p>
+                    <p className="text-xs text-default-400">
+                      {pushPermission === "granted"
+                        ? "You'll receive alerts even when the app is in the background."
+                        : pushPermission === "denied"
+                          ? "Unblock in your browser's site settings to enable."
+                          : "Enable to receive alerts when the app is in the background."}
+                    </p>
+                  </div>
+                </div>
+                {pushPermission === "default" && (
+                  <Button
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                    className="shrink-0"
+                    isLoading={requestingPush}
+                    startContent={
+                      !requestingPush && (
+                        <Icon icon="lucide:bell" className="text-sm" />
+                      )
+                    }
+                    onPress={async () => {
+                      setRequestingPush(true);
+                      await requestPermission();
+                      if ("Notification" in window) {
+                        setPushPermission(Notification.permission);
+                      }
+                      setRequestingPush(false);
+                    }}
+                  >
+                    Enable
+                  </Button>
+                )}
+              </div>
+              <Divider className="my-3" />
+            </>
+          )}
           <form className="flex flex-col gap-2" onSubmit={handleSave}>
             <SwitchCell
               label="Tournament Registration"
