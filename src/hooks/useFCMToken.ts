@@ -5,6 +5,8 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
 const DISMISSED_KEY = "rgc_notif_prompt_dismissed";
+/** localStorage key storing the tokenId registered on the current device. */
+export const FCM_TOKEN_ID_KEY = "rgc_fcm_token_id";
 
 export interface UseFCMTokenReturn {
   /** True when permission is 'default' and the user hasn't dismissed the prompt. */
@@ -137,6 +139,8 @@ async function registerToken(uid: string): Promise<void> {
       createdAt: serverTimestamp(),
       userAgent: navigator.userAgent.slice(0, 256),
     });
+    // Track the current device's tokenId so logout can remove only this doc.
+    localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
   } catch (err) {
     console.warn("[FCM] Token registration failed:", err);
   }

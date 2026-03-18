@@ -1,5 +1,5 @@
 import { auth, withAuthPersistenceRetry } from "@/config/firebase";
-import { useFCMToken } from "@/hooks/useFCMToken";
+import { useFCMToken, FCM_TOKEN_ID_KEY } from "@/hooks/useFCMToken";
 import { NotificationPermissionPrompt } from "@/components/notification-permission-prompt";
 import { getUserProfile } from "@/api/users";
 import { getAnalyticsInstance } from "@/config/firebase";
@@ -294,20 +294,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      // Clean up FCM tokens before signing out (best-effort, non-blocking on failure)
+      // Remove only the current device's FCM token (best-effort, non-blocking).
+      // Deleting the whole subcollection would silently stop push notifications
+      // on other still-active devices; stale tokens on other devices are pruned
+      // by the Cloud Function's send failure handling.
       if (user) {
-        try {
-          const [{ db }, { collection, getDocs, deleteDoc }] =
-            await Promise.all([
+        const tokenId = localStorage.getItem(FCM_TOKEN_ID_KEY);
+        if (tokenId) {
+          try {
+            const [{ db }, { deleteDoc, doc }] = await Promise.all([
               import("@/config/firebase"),
               import("firebase/firestore"),
             ]);
-          const tokenSnap = await getDocs(
-            collection(db, "users", user.uid, "fcmTokens"),
-          );
-          await Promise.all(tokenSnap.docs.map((d) => deleteDoc(d.ref)));
-        } catch {
-          // Non-fatal — proceed with logout even if token cleanup fails
+            await deleteDoc(doc(db, "users", user.uid, "fcmTokens", tokenId));
+          } catch {
+            // Non-fatal — proceed with logout even if token cleanup fails
+          } finally {
+            localStorage.removeItem(FCM_TOKEN_ID_KEY);
+          }
         }
       }
       await withAuthPersistenceRetry(() => signOut(auth));

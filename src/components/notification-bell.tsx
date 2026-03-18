@@ -99,7 +99,7 @@ export function NotificationBell() {
       )}
 
       {open && (
-        <div style={dropdownStyle} className="z-9999 origin-top-right">
+        <div style={dropdownStyle} className="z-[9999] origin-top-right">
           <div className="w-full bg-background border border-default-200 rounded-xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-default-100">
