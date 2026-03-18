@@ -225,7 +225,11 @@ function NotificationItem({
         aria-label={`Notification: ${n.title}`}
         onClick={handleActivate}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") handleActivate();
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            handleActivate();
+          }
         }}
       >
         <p
