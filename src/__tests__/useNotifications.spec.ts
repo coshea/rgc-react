@@ -162,7 +162,7 @@ describe("useNotifications", () => {
     expect(deleteDoc).toHaveBeenCalledWith(docRef);
   });
 
-  it("clearAll calls batch.update for each unread notification then commit", async () => {
+  it("markAllRead calls batch.update for each unread notification then commit", async () => {
     const batchUpdate = vi.fn();
     const batchCommit = vi.fn().mockResolvedValue(undefined);
     const batch = { update: batchUpdate, commit: batchCommit };
