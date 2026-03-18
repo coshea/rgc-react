@@ -38,6 +38,7 @@ export function useNotifications(
   useEffect(() => {
     if (!uid) {
       setNotifications([]);
+      setLoading(false);
       return;
     }
 
