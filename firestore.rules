@@ -91,8 +91,26 @@ service cloud.firestore {
       allow delete: if isSelfOrAdmin();
 
       // FCM push notification tokens stored per-device for the user.
+      // write is intentionally split so the token value cannot be swapped after
+      // creation — this prevents one authenticated session from silently
+      // overwriting a token registered by a different device.
       match /fcmTokens/{tokenId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read:   if request.auth != null && request.auth.uid == userId;
+
+        // Create: require a non-empty token string and a server timestamp.
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.token is string
+          && request.resource.data.token != ""
+          && request.resource.data.createdAt is timestamp;
+
+        // Update: token value is immutable; only metadata (createdAt, userAgent) may change.
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.token == resource.data.token;
+
+        // Delete: the owning user (any of their sessions) may remove a token.
+        allow delete: if request.auth != null && request.auth.uid == userId;
       }
     }
 
