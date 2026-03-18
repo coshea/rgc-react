@@ -430,8 +430,10 @@ service cloud.firestore {
     // - Only admins / Cloud Functions (Admin SDK — bypasses rules) may create notifications.
     match /notifications/{notificationId} {
       allow read:   if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
-      allow update: if request.auth != null && request.auth.uid == resource.data.uid
-                       && request.resource.data.uid == resource.data.uid;
+      allow update: if request.auth != null
+                       && request.auth.uid == resource.data.uid
+                       && request.resource.data.uid == resource.data.uid
+                       && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
       allow delete: if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
       allow create: if isAdmin();
     }
