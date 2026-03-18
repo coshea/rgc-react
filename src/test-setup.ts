@@ -45,9 +45,54 @@ vi.mock("@iconify/react", () => {
   return { Icon, default: Icon };
 });
 
+// Mock framer-motion so that LazyMotion (used internally by HeroUI) never
+// schedules async feature-loading work that can fire after jsdom teardown.
+vi.mock("framer-motion", () => {
+  const passthrough = ({ children }: { children?: React.ReactNode }) =>
+    children ?? null;
+
+  const el = (tag: string) =>
+    React.forwardRef<
+      Element,
+      React.HTMLAttributes<Element> & { children?: React.ReactNode }
+    >(({ children, ...props }, ref) =>
+      React.createElement(tag, { ...props, ref }, children),
+    );
+
+  const motionProxy = new Proxy({} as Record<string, unknown>, {
+    get: (_t, tag: string | symbol) =>
+      typeof tag === "string" ? el(tag) : undefined,
+  });
+
+  return {
+    LazyMotion: passthrough,
+    AnimatePresence: passthrough,
+    MotionConfig: passthrough,
+    LayoutGroup: passthrough,
+    motion: motionProxy,
+    m: motionProxy,
+    domAnimation: {},
+    domMax: {},
+    useMotionValue: (initial = 0) => ({
+      get: () => initial,
+      set: vi.fn(),
+      onChange: vi.fn(),
+    }),
+    useTransform: () => ({ get: () => 0 }),
+    useSpring: (initial = 0) => ({ get: () => initial, set: vi.fn() }),
+    useReducedMotion: () => false,
+    useAnimationControls: () => ({ start: vi.fn(), stop: vi.fn() }),
+    useInView: () => false,
+    useIsPresent: () => true,
+    usePresence: () => [true, vi.fn()],
+    useScroll: () => ({
+      scrollX: { get: () => 0 },
+      scrollY: { get: () => 0 },
+    }),
+  };
+});
+
 // Cleanup after each test to prevent memory leaks and unhandled promises
 afterEach(() => {
   cleanup();
-  // Flush microtasks to let framer-motion complete pending state updates
-  return new Promise((resolve) => setImmediate(resolve));
 });

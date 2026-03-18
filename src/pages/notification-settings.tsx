@@ -32,18 +32,19 @@ export default function NotificationSettingsPage() {
     }
   }, []);
 
-  const stored = resolvePreferences(userProfile?.notificationPreferences);
-
-  const [prefs, setPrefs] = useState<NotificationPreferences>(stored);
+  const [prefs, setPrefs] = useState<NotificationPreferences>(
+    DEFAULT_NOTIFICATION_PREFERENCES,
+  );
   const [saving, setSaving] = useState(false);
 
   // Keep local state in sync when the profile finishes loading
   // (only on first successful load, not on every render)
-  const [synced, setSynced] = useState(false);
-  if (!isLoading && !synced && userProfile) {
-    setPrefs(resolvePreferences(userProfile.notificationPreferences));
-    setSynced(true);
-  }
+  useEffect(() => {
+    if (!isLoading && userProfile) {
+      setPrefs(resolvePreferences(userProfile.notificationPreferences));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, userProfile]);
 
   function toggle(key: keyof NotificationPreferences) {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
