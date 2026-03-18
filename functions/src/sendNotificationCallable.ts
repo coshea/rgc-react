@@ -184,10 +184,11 @@ export const send_notification = onCall(async (request) => {
     });
 
     if (eligibleUids.length === 0) {
-      logger.info(
-        "send_notification: all tournament registrants opted out",
-        { callerUid, targetTournamentId, type },
-      );
+      logger.info("send_notification: all tournament registrants opted out", {
+        callerUid,
+        targetTournamentId,
+        type,
+      });
       return { success: true, count: 0 };
     }
 
@@ -218,23 +219,28 @@ export const send_notification = onCall(async (request) => {
     return { success: true, count };
   }
 
-  // Broadcast — create one notification doc per non-migrated user
-  const usersSnap = await db
-    .collection("users")
-    .where("isMigrated", "!=", true)
-    .get();
+  // Broadcast — create one notification doc per non-migrated user.
+  // Firestore's `!=` operator excludes docs where the field is absent, so
+  // we fetch all users and filter in-memory to include users who never had
+  // `isMigrated` set (which is the norm for most members).
+  const usersSnap = await db.collection("users").get();
 
   if (usersSnap.empty) {
     return { success: true, count: 0 };
   }
+
+  const activeUserDocs = usersSnap.docs.filter(
+    (d) => d.data().isMigrated !== true,
+  );
 
   // Firestore batch writes are capped at 500 operations
   const BATCH_SIZE = 499;
   let count = 0;
   let batch = db.batch();
 
-  for (const userDoc of usersSnap.docs) {
-    const prefs = (userDoc.data() as UserPrefsData).notificationPreferences;
+  for (const userDoc of activeUserDocs) {
+    const prefs = (userDoc.data() as UserPrefsData | undefined)
+      ?.notificationPreferences;
     if (!userWantsType(prefs, type)) continue;
 
     const ref = db.collection("notifications").doc();
