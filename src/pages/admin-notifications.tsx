@@ -7,6 +7,8 @@ import {
   where,
   limit,
   getDocs,
+  deleteDoc,
+  doc,
   Timestamp,
 } from "firebase/firestore";
 import {
@@ -146,6 +148,23 @@ export default function AdminNotificationsPage() {
     AppNotification[]
   >([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDeleteNotification(id: string) {
+    setDeletingId(id);
+    try {
+      await deleteDoc(doc(db, "notifications", id));
+      setRecentNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      addToast({
+        title: "Failed to delete",
+        description: err instanceof Error ? err.message : "Unknown error",
+        color: "danger",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function refreshRecent() {
     setLoadingRecent(true);
@@ -433,13 +452,26 @@ export default function AdminNotificationsPage() {
                     {n.body}
                   </p>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="text-right shrink-0 flex flex-col items-end gap-1">
                   <p className="text-[10px] text-default-300 whitespace-nowrap">
                     {formatSentAt(n.createdAt)}
                   </p>
                   <p className="text-[10px] text-default-300 truncate max-w-[120px]">
                     {n.uid}
                   </p>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    isIconOnly
+                    isLoading={deletingId === n.id}
+                    aria-label="Delete notification"
+                    onPress={() => handleDeleteNotification(n.id)}
+                  >
+                    {deletingId !== n.id && (
+                      <Icon icon="lucide:trash-2" className="text-sm" />
+                    )}
+                  </Button>
                 </div>
               </div>
             ))}
