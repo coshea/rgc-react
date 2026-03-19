@@ -32,7 +32,17 @@ export const ProfileDropdown = () => {
               color={isAdmin ? "secondary" : "default"}
               className="transition-transform"
               size="sm"
-              user={userProfile ?? user ?? undefined}
+              user={
+                userProfile ??
+                (user
+                  ? {
+                      id: user.uid,
+                      displayName: user.displayName ?? undefined,
+                      email: user.email ?? undefined,
+                      photoURL: user.photoURL ?? undefined,
+                    }
+                  : undefined)
+              }
               role="button"
               tabIndex={0}
             />

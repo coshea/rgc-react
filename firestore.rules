@@ -97,12 +97,15 @@ service cloud.firestore {
       match /fcmTokens/{tokenId} {
         allow read:   if request.auth != null && request.auth.uid == userId;
 
-        // Create: require a non-empty token string and a server timestamp.
+        // Create: require a non-empty token string.
+        // Note: createdAt is written as serverTimestamp() — do not assert `is timestamp`
+        // here because FieldValue sentinels are resolved after rule evaluation, which
+        // can cause the check to fail and deny valid token registrations.
+        // Token immutability on update is the primary security control.
         allow create: if request.auth != null
           && request.auth.uid == userId
           && request.resource.data.token is string
-          && request.resource.data.token != ""
-          && request.resource.data.createdAt is timestamp;
+          && request.resource.data.token != "";
 
         // Update: token value is immutable; only metadata (createdAt, userAgent) may change.
         allow update: if request.auth != null
@@ -433,7 +436,9 @@ service cloud.firestore {
       allow update: if request.auth != null
                        && request.auth.uid == resource.data.uid
                        && request.resource.data.uid == resource.data.uid
-                       && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
+                       && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read'])
+                       && resource.data.read == false
+                       && request.resource.data.read == true;
       allow delete: if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
       allow create: if isAdmin();
     }

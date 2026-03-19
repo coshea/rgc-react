@@ -51,6 +51,12 @@ export const dispatch_push_notification = onDocumentCreated(
     const message: admin.messaging.MulticastMessage = {
       tokens,
       notification: { title, body: body ?? "" },
+      // FCM data payload (string map) — read by both the SW background handler
+      // and the in-app foreground handler to resolve deep-link on click.
+      data: {
+        ...(data?.link ? { link: data.link } : {}),
+        ...(data?.tournamentId ? { tournamentId: data.tournamentId } : {}),
+      },
       webpush: {
         notification: { icon: "/rgc_fav.png" },
         ...(data?.link ? { fcmOptions: { link: data.link } } : {}),
