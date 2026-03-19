@@ -353,14 +353,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
  *   - "full"       → paid full member
  *   - "handicap"   → paid handicap-only member
  *   - "non_paying" → authenticated but no active membership
+ *
+ * Polls for the analytics instance so that membership_tier is set even when
+ * consent is granted after initial page load. Short-circuits the Firestore
+ * profile read until analytics is actually enabled.
  */
 function AnalyticsUserTagger({ uid }: { uid: string }) {
   useEffect(() => {
     let cancelled = false;
-    void getUserProfile(uid).then((profile) => {
-      if (cancelled) return;
+
+    async function tag() {
       const instance = getAnalyticsInstance();
-      if (!instance) return; // analytics not enabled (no consent yet)
+      if (!instance) return false; // not ready yet
+
+      const profile = await getUserProfile(uid);
+      if (cancelled) return true;
+
       const tier =
         profile?.membershipType === MEMBERSHIP_TYPES.FULL
           ? MEMBERSHIP_TYPES.FULL
@@ -368,7 +376,22 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
             ? MEMBERSHIP_TYPES.HANDICAP
             : "non_paying";
       setUserProperties(instance, { membership_tier: tier });
+      return true; // done
+    }
+
+    // Try immediately; if analytics isn't ready yet, poll until it is.
+    tag().then((done) => {
+      if (done || cancelled) return;
+      const interval = setInterval(() => {
+        tag().then((done) => {
+          if (done || cancelled) clearInterval(interval);
+        });
+      }, 2000);
+      // Safety clean-up so the interval doesn't outlive the component.
+      // (cancelled flag also stops the async work inside tag())
+      return () => clearInterval(interval);
     });
+
     return () => {
       cancelled = true;
     };
