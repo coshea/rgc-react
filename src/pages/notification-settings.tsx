@@ -91,7 +91,7 @@ export default function NotificationSettingsPage() {
             Manage your notification preferences
           </p>
         </CardHeader>
-        <CardBody>
+        <CardBody className="overflow-visible">
           {/* Push permission status */}
           {pushPermission !== null && (
             <>
