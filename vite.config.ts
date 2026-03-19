@@ -23,6 +23,7 @@ export default defineConfig({
           "vendor-firebase-auth": ["firebase/auth"],
           "vendor-firebase-firestore": ["firebase/firestore"],
           "vendor-firebase-storage": ["firebase/storage"],
+          "vendor-firebase-messaging": ["firebase/messaging"],
           // Core react and router
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           // UI libs

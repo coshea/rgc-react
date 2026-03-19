@@ -239,3 +239,7 @@ logger.fatal("Database connection pool exhausted", {
   activeConnections: 100,
 });
 ```
+
+## Commit messages
+
+Use conventional commits: feat/fix/refactor/chore/test. Keep subject ≤72 chars. No period at end.

@@ -1,4 +1,10 @@
 import { auth, withAuthPersistenceRetry } from "@/config/firebase";
+import { useFCMToken, FCM_TOKEN_ID_KEY } from "@/hooks/useFCMToken";
+import { NotificationPermissionPrompt } from "@/components/notification-permission-prompt";
+import { getUserProfile } from "@/api/users";
+import { getAnalyticsInstance } from "@/config/firebase";
+import { setUserProperties } from "firebase/analytics";
+import { MEMBERSHIP_TYPES } from "@@/types";
 import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
@@ -288,6 +294,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      // Remove only the current device's FCM token (best-effort, non-blocking).
+      // Deleting the whole subcollection would silently stop push notifications
+      // on other still-active devices; stale tokens on other devices are pruned
+      // by the Cloud Function's send failure handling.
+      if (user) {
+        const tokenId = localStorage.getItem(FCM_TOKEN_ID_KEY);
+        if (tokenId) {
+          try {
+            const [{ db }, { deleteDoc, doc }] = await Promise.all([
+              import("@/config/firebase"),
+              import("firebase/firestore"),
+            ]);
+            await deleteDoc(doc(db, "users", user.uid, "fcmTokens", tokenId));
+          } catch {
+            // Non-fatal — proceed with logout even if token cleanup fails
+          } finally {
+            localStorage.removeItem(FCM_TOKEN_ID_KEY);
+          }
+        }
+      }
       await withAuthPersistenceRetry(() => signOut(auth));
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
     } catch (err) {
@@ -312,5 +338,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {user && <FCMTokenRegistrar uid={user.uid} />}
+      {user && <AnalyticsUserTagger uid={user.uid} />}
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+/**
+ * Tags the current user in Google Analytics with their membership tier so
+ * GA audiences / reports can segment by member type:
+ *   - "full"       → paid full member
+ *   - "handicap"   → paid handicap-only member
+ *   - "non_paying" → authenticated but no active membership
+ *
+ * Polls for the analytics instance so that membership_tier is set even when
+ * consent is granted after initial page load. Short-circuits the Firestore
+ * profile read until analytics is actually enabled.
+ */
+function AnalyticsUserTagger({ uid }: { uid: string }) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function tag() {
+      const instance = getAnalyticsInstance();
+      if (!instance) return false; // not ready yet
+
+      const profile = await getUserProfile(uid);
+      if (cancelled) return true;
+
+      const tier =
+        profile?.membershipType === MEMBERSHIP_TYPES.FULL
+          ? MEMBERSHIP_TYPES.FULL
+          : profile?.membershipType === MEMBERSHIP_TYPES.HANDICAP
+            ? MEMBERSHIP_TYPES.HANDICAP
+            : "non_paying";
+      setUserProperties(instance, { membership_tier: tier });
+      return true; // done
+    }
+
+    // Try immediately; if analytics isn't ready yet, poll until it is.
+    tag().then((done) => {
+      if (done || cancelled) return;
+      const interval = setInterval(() => {
+        tag().then((done) => {
+          if (done || cancelled) clearInterval(interval);
+        });
+      }, 2000);
+      // Safety clean-up so the interval doesn't outlive the component.
+      // (cancelled flag also stops the async work inside tag())
+      return () => clearInterval(interval);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+  return null;
+}
+
+/** Thin component so useFCMToken is only called when a user is present. */
+function FCMTokenRegistrar({ uid }: { uid: string }) {
+  const { shouldPrompt, requestPermission, dismissPrompt } = useFCMToken(uid);
+  if (!shouldPrompt) return null;
+  return (
+    <NotificationPermissionPrompt
+      onAllow={requestPermission}
+      onDismiss={dismissPrompt}
+    />
+  );
 }

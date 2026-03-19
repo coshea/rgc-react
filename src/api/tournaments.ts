@@ -118,6 +118,8 @@ export async function fetchUserRegistration(tournamentId: string, uid: string) {
 export interface RegistrationMember {
   id: string;
   displayName: string;
+  /** When true, this player will play from the gold (senior) tees */
+  goldTee?: boolean;
 }
 export interface RegistrationPayload {
   team: RegistrationMember[];

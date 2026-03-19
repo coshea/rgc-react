@@ -449,4 +449,81 @@ describe("TournamentDetailPage", () => {
     expect(screen.getByText("3 / 2")).toBeInTheDocument();
     expect(screen.getAllByText(/Waitlist/i).length).toBeGreaterThan(0);
   });
+
+  it("shows gold tee badge on team members with goldTee flag", async () => {
+    renderWithRoute("gold1");
+    emitDoc("tournaments/gold1", { ...baseTournament, players: 2 });
+    emitCollection("tournaments/gold1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "u1",
+          team: [
+            { id: "u1", displayName: "Alice", goldTee: false },
+            { id: "u2", displayName: "Bob", goldTee: true },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+    // Gold tee badge should appear for Bob but not for Alice
+    expect(screen.getByLabelText("Gold tees")).toBeInTheDocument();
+  });
+
+  it("CSV export includes goldTee columns per member", async () => {
+    // Capture CSV content by spying on the Blob constructor
+    let capturedCsv = "";
+    const OrigBlob = globalThis.Blob;
+    vi.spyOn(globalThis, "Blob").mockImplementationOnce(
+      (parts: any, opts: any) => {
+        capturedCsv = (parts as string[]).join("");
+        return new OrigBlob(parts, opts);
+      },
+    );
+    URL.createObjectURL = () => "blob:fake";
+    URL.revokeObjectURL = () => {};
+
+    isAdminMock = true;
+    renderWithRoute("csv1");
+    emitDoc("tournaments/csv1", { ...baseTournament, players: 2 });
+    emitCollection("tournaments/csv1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "u1",
+          team: [
+            { id: "u1", displayName: "Alice", goldTee: false },
+            { id: "u2", displayName: "Bob", goldTee: true },
+          ],
+          registeredAt: { toDate: () => new Date("2026-03-01T00:00:00Z") },
+        }),
+      },
+    ]);
+
+    await screen.findByText("Club Championship");
+
+    // Click the Export button (admin-only)
+    const exportBtns = await screen.findAllByRole("button", {
+      name: /Export registrations/i,
+    });
+    act(() => {
+      exportBtns[0].click();
+    });
+
+    vi.restoreAllMocks();
+
+    // Header row should contain goldTee columns
+    expect(capturedCsv).toContain("member1_goldTee");
+    expect(capturedCsv).toContain("member2_goldTee");
+    // Bob's goldTee cell should be "Gold"
+    expect(capturedCsv).toContain('"Gold"');
+    // Parse to verify column positions
+    const lines = capturedCsv.split("\n");
+    const dataLine = lines[1];
+    // Format: date,member1,member1_goldTee,member2,member2_goldTee
+    const cells = dataLine.split(",").map((c) => c.replace(/"/g, ""));
+    expect(cells[2]).toBe(""); // Alice goldTee empty
+    expect(cells[4]).toBe("Gold"); // Bob goldTee is Gold
+  });
 });

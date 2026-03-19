@@ -15,6 +15,7 @@ import {
 } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getFunctions, type Functions } from "firebase/functions";
+import { getMessaging, type Messaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -123,4 +124,15 @@ export function getAnalyticsInstance(): Analytics | undefined {
   return analytics;
 }
 
-export { auth, db, analytics, storage, functions };
+// FCM Messaging — only available in browser environments with service worker support.
+// Skipped in Vitest environments where the Messaging API is unavailable.
+let messaging: Messaging | null = null;
+if (!import.meta.env.VITEST && typeof window !== "undefined") {
+  try {
+    messaging = getMessaging(app);
+  } catch {
+    // Messaging may not be supported in all environments; fail silently.
+  }
+}
+
+export { auth, db, analytics, storage, functions, messaging };

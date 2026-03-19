@@ -33,6 +33,8 @@ import { BlogEditorPage } from "@/pages/blog-editor";
 import { PolicyPage } from "@/pages/policy";
 import { PolicyEditorPage } from "@/pages/policy-editor";
 import { PoliciesListPage } from "@/pages/policies-list";
+import AdminNotificationsPage from "@/pages/admin-notifications";
+import NotificationSettingsPage from "@/pages/notification-settings";
 import RequireAuth from "@/components/require-auth";
 import RequireAdmin from "@/components/require-admin";
 import ProfileCompletionGate from "@/components/profile-completion-gate";
@@ -166,6 +168,24 @@ function App() {
                 </RequireAdmin>
               }
               path="/admin/policies/:type/edit"
+            />
+
+            <Route
+              element={
+                <RequireAdmin>
+                  <AdminNotificationsPage />
+                </RequireAdmin>
+              }
+              path={siteConfig.pages.adminNotifications.link}
+            />
+
+            <Route
+              element={
+                <RequireAuth>
+                  <NotificationSettingsPage />
+                </RequireAuth>
+              }
+              path={siteConfig.pages.notificationSettings.link}
             />
 
             <Route element={<NotFoundPage />} path="*" />

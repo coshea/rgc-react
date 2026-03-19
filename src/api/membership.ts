@@ -415,11 +415,10 @@ export async function confirmMembershipPaymentGroup(params: {
   snap.docs.forEach((docSnap) => {
     const data = docSnap.data() as MembershipPayment;
     if (data.status !== "confirmed") {
-      batch.set(
-        docSnap.ref,
-        { status: "confirmed", paidAt: serverTimestamp() },
-        { merge: true },
-      );
+      batch.update(docSnap.ref, {
+        status: "confirmed",
+        paidAt: serverTimestamp(),
+      });
       updatedCount += 1;
     }
     const purpose = data.purpose ?? "dues";

@@ -40,6 +40,7 @@ const TournamentRegister: React.FC = () => {
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
   const [submitting, setSubmitting] = React.useState(false);
+  const [goldTees, setGoldTees] = React.useState<string[]>([]);
   const { user } = useAuth();
   const [registrationId, setRegistrationId] = React.useState<string | null>(
     null,
@@ -241,6 +242,17 @@ const TournamentRegister: React.FC = () => {
               .map((id) => (typeof id === "string" ? id : ""))
               .filter(Boolean);
             setTeammates(cleaned.length ? cleaned : [""]);
+            // Restore gold tee selections
+            const goldTeeIds = maybeTeam
+              .filter(
+                (m) =>
+                  typeof m === "object" &&
+                  m !== null &&
+                  (m as Record<string, unknown>).goldTee === true,
+              )
+              .map((m) => (m as Record<string, unknown>).id as string)
+              .filter(Boolean);
+            setGoldTees(goldTeeIds);
           }
         }
       } catch (err) {
@@ -382,6 +394,7 @@ const TournamentRegister: React.FC = () => {
       return {
         id,
         displayName: u?.displayName || u?.email || id,
+        ...(goldTees.includes(id) ? { goldTee: true } : {}),
       };
     });
 
@@ -462,6 +475,7 @@ const TournamentRegister: React.FC = () => {
       setRegistrationId(null);
       setTeammates([""]);
       setOpenSpotsOptIn(false);
+      setGoldTees([]);
       setConfirmOpen(false);
       // Navigate back to the tournament details page after successful cancellation
       navigate(`/tournaments/${tournament.firestoreId}`, { replace: true });
@@ -541,6 +555,8 @@ const TournamentRegister: React.FC = () => {
                   maxSize={maxTeamSize}
                   labels={{ leader: "Team Leader / You" }}
                   disabled={!user?.uid}
+                  goldTees={goldTees}
+                  onGoldTeesChange={setGoldTees}
                 />
 
                 {maxTeamSize > 1 && openSlotsCount > 0 ? (

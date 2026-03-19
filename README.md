@@ -1,6 +1,6 @@
 # Ridgefield Golf Club — React App
 
-**Production:** [https://ridgefieldgolfclub.org/](https://ridgefieldgolfclub.org/)
+**Production:** [https://ridgefieldgolfclub.org/](https://ridgefieldgolfclub.org/?utm_source=github&utm_medium=readme&utm_campaign=repo_link)
 
 A comprehensive, production-grade web application serving the Ridgefield Golf Club community. Built with modern React architecture and Firebase backend, this platform handles everything from public content delivery to secure member-only features including tournament management, real-time registrations, payment processing, and social coordination.
 

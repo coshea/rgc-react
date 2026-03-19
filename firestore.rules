@@ -89,6 +89,32 @@ service cloud.firestore {
         && request.auth.uid == userId
         && boardFieldsUnchanged(request.resource.data, resource.data);
       allow delete: if isSelfOrAdmin();
+
+      // FCM push notification tokens stored per-device for the user.
+      // write is intentionally split so the token value cannot be swapped after
+      // creation — this prevents one authenticated session from silently
+      // overwriting a token registered by a different device.
+      match /fcmTokens/{tokenId} {
+        allow read:   if request.auth != null && request.auth.uid == userId;
+
+        // Create: require a non-empty token string.
+        // Note: createdAt is written as serverTimestamp() — do not assert `is timestamp`
+        // here because FieldValue sentinels are resolved after rule evaluation, which
+        // can cause the check to fail and deny valid token registrations.
+        // Token immutability on update is the primary security control.
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.token is string
+          && request.resource.data.token != "";
+
+        // Update: token value is immutable; only metadata (createdAt, userAgent) may change.
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.token == resource.data.token;
+
+        // Delete: the owning user (any of their sessions) may remove a token.
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
@@ -399,6 +425,22 @@ service cloud.firestore {
       
       // Only admins can delete policies (but should be rare)
       allow delete: if isAdmin();
+    }
+
+    // User notifications: /notifications/{notificationId}
+    // Shape: { uid, title, body, type, read, createdAt, data? }
+    // - Only the target user may read, update (mark read), or delete (dismiss) their own notifications.
+    // - Only admins / Cloud Functions (Admin SDK — bypasses rules) may create notifications.
+    match /notifications/{notificationId} {
+      allow read:   if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
+      allow update: if request.auth != null
+                       && request.auth.uid == resource.data.uid
+                       && request.resource.data.uid == resource.data.uid
+                       && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read'])
+                       && resource.data.read == false
+                       && request.resource.data.read == true;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.uid || isAdmin());
+      allow create: if isAdmin();
     }
 
     // Default: deny everything else
