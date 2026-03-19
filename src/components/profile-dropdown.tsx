@@ -31,13 +31,8 @@ export const ProfileDropdown = () => {
               isBordered
               color={isAdmin ? "secondary" : "default"}
               className="transition-transform"
-              name={userProfile?.displayName || user?.displayName || "User"}
               size="sm"
-              src={
-                (userProfile?.photoURL as string | undefined) ||
-                (user?.photoURL as string | undefined)
-              }
-              alt={userProfile?.displayName || user?.displayName || "User"}
+              user={userProfile ?? user ?? undefined}
               role="button"
               tabIndex={0}
             />
