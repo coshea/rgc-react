@@ -29,11 +29,24 @@ export default function NotificationSettingsPage() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
+
+    let cancelled = false;
+
     messagingIsSupported()
       .then((supported) => {
-        if (supported) setPushPermission(Notification.permission);
+        if (supported && !cancelled) {
+          setPushPermission(Notification.permission);
+        }
       })
-      .catch(() => {});
+      .catch((error) => {
+        // Firebase messaging support detection failed. Push notifications are optional,
+        // so we ignore this for the user experience but log it for debugging.
+        console.error("Failed to detect Firebase messaging support", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(
