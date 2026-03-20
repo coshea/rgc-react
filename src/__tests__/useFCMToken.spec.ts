@@ -197,7 +197,23 @@ describe("useFCMToken — requestPermission", () => {
       getToken,
       isSupported: vi.fn().mockResolvedValue(true),
     }));
+    vi.doMock("firebase/firestore", () => ({
+      doc: vi.fn(() => ({})),
+      setDoc,
+      serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
+    }));
+    vi.stubEnv("VITE_FCM_VAPID_KEY", "test-vapid-key");
 
+    const { renderHook, act } = await import("@testing-library/react");
+    const { useFCMToken } = await import("@/hooks/useFCMToken");
+
+    const { result } = renderHook(() => useFCMToken("user-123"));
+
+    await act(async () => {
+      await result.current.requestPermission();
+    });
+
+    expect(window.Notification.requestPermission).toHaveBeenCalled();
     expect(getToken).not.toHaveBeenCalled();
     expect(setDoc).not.toHaveBeenCalled();
   });
