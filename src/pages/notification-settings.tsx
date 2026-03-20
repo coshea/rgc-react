@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
+import { isSupported as messagingIsSupported } from "firebase/messaging";
 import { Card, CardHeader, CardBody, Button, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -27,9 +28,12 @@ export default function NotificationSettingsPage() {
   const [requestingPush, setRequestingPush] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPushPermission(Notification.permission);
-    }
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    messagingIsSupported()
+      .then((supported) => {
+        if (supported) setPushPermission(Notification.permission);
+      })
+      .catch(() => {});
   }, []);
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(
