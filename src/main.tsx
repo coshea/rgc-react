@@ -83,6 +83,12 @@ function installChunkLoadRecovery(): void {
 
 installChunkLoadRecovery();
 
+// If we previously reloaded to recover from a chunk load failure, clear the
+// guard now that the main bundle has loaded successfully. This ensures that a
+// second deployment during the same browser session still gets a recovery
+// reload instead of silently failing.
+window.sessionStorage.removeItem(CHUNK_RELOAD_GUARD_KEY);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

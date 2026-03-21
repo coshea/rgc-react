@@ -16,7 +16,11 @@ const TournamentSection = lazy(() =>
 );
 
 const PastChampions = lazy(() => import("./past-champions"));
-const ContactPage = lazy(() => import("./contact"));
+const ContactForm = lazy(() =>
+  import("@/components/contact-form").then((module) => ({
+    default: module.ContactForm,
+  })),
+);
 
 function BlogSectionSkeleton() {
   return (
@@ -115,13 +119,13 @@ export default function HomePage() {
 
       <div id="home-past-champions-section" className="w-full">
         <Suspense fallback={<PastChampionsSectionSkeleton />}>
-          <PastChampions showAllYears={false} />
+          <PastChampions showAllYears={false} skipTracking />
         </Suspense>
       </div>
 
       <div id="home-contact-section" className="w-full">
         <Suspense fallback={<ContactSectionSkeleton />}>
-          <ContactPage />
+          <ContactForm />
         </Suspense>
       </div>
     </section>
