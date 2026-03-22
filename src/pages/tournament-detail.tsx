@@ -808,8 +808,10 @@ const TournamentDetailPage: React.FC = () => {
                                     tournament.registrationStart,
                                   )}`
                                 : "Opens TBD"}
+                            </p>
+                            <p>
                               {tournament.registrationEnd
-                                ? ` • Closes ${formatLocalDateTime(
+                                ? `Closes ${formatLocalDateTime(
                                     tournament.registrationEnd,
                                   )}`
                                 : ""}

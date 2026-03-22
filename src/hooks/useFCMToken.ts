@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { db, messaging } from "@/config/firebase";
-import { getToken, onMessage } from "firebase/messaging";
+import { getToken, onMessage, isSupported } from "firebase/messaging";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
@@ -33,24 +33,35 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     if (!uid || !messaging || !VAPID_KEY) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
-    const permission = Notification.permission;
-    const dismissed = localStorage.getItem(DISMISSED_KEY);
+    let cancelled = false;
 
-    if (permission === "granted") {
-      // Already granted — register/refresh token silently
-      registerToken(uid);
-      // Forward foreground (app-focused) FCM messages to the OS notification tray.
-      // Background messages are handled by firebase-messaging-sw.js.
-      unsubscribeRef.current?.();
-      unsubscribeRef.current = onMessage(messaging, (payload) => {
-        showForegroundNotification(payload);
+    isSupported()
+      .then((supported) => {
+        if (!supported || cancelled || !messaging) return;
+
+        const permission = Notification.permission;
+        const dismissed = localStorage.getItem(DISMISSED_KEY);
+
+        if (permission === "granted") {
+          // Already granted — register/refresh token silently
+          registerToken(uid);
+          // Forward foreground (app-focused) FCM messages to the OS notification tray.
+          // Background messages are handled by firebase-messaging-sw.js.
+          unsubscribeRef.current?.();
+          unsubscribeRef.current = onMessage(messaging, (payload) => {
+            showForegroundNotification(payload);
+          });
+        } else if (permission === "default" && !dismissed) {
+          setShouldPrompt(true);
+        }
+        // If "denied", nothing we can do — don't bother the user
+      })
+      .catch(() => {
+        // Browser does not support FCM — silently skip
       });
-    } else if (permission === "default" && !dismissed) {
-      setShouldPrompt(true);
-    }
-    // If "denied", nothing we can do — don't bother the user
 
     return () => {
+      cancelled = true;
       unsubscribeRef.current?.();
       unsubscribeRef.current = null;
     };
@@ -62,6 +73,9 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     // Clear any previous dismissal so the user can always re-enable from Settings
     localStorage.removeItem(DISMISSED_KEY);
     try {
+      const supported = await isSupported();
+      if (!supported) return;
+
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         await registerToken(uid);
@@ -114,6 +128,7 @@ function showForegroundNotification(payload: MessagePayload): void {
 async function registerToken(uid: string): Promise<void> {
   if (!messaging || !VAPID_KEY) return;
   try {
+    if (!(await isSupported())) return;
     let swReg: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
       swReg = await navigator.serviceWorker.register(

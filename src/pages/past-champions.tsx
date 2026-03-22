@@ -13,12 +13,14 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 
 interface PastChampionsProps {
   showAllYears?: boolean;
+  skipTracking?: boolean;
 }
 
 export default function PastChampions({
   showAllYears = false,
+  skipTracking = false,
 }: PastChampionsProps) {
-  usePageTracking("Past Champions");
+  usePageTracking("Past Champions", skipTracking);
   const { user } = useAuth();
   const { isAdmin } = useDocAdminFlag(user);
 

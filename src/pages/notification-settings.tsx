@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from "react";
+import { isSupported as messagingIsSupported } from "firebase/messaging";
 import { Card, CardHeader, CardBody, Button, Divider } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -27,9 +28,25 @@ export default function NotificationSettingsPage() {
   const [requestingPush, setRequestingPush] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPushPermission(Notification.permission);
-    }
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+
+    let cancelled = false;
+
+    messagingIsSupported()
+      .then((supported) => {
+        if (supported && !cancelled) {
+          setPushPermission(Notification.permission);
+        }
+      })
+      .catch((error) => {
+        // Firebase messaging support detection failed. Push notifications are optional,
+        // so we ignore this for the user experience but log it for debugging.
+        console.error("Failed to detect Firebase messaging support", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(
