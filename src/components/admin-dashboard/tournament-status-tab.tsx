@@ -12,7 +12,7 @@ import {
 import { Icon } from "@iconify/react";
 
 import {
-  fetchAllRegistrations,
+  fetchRegistrationCount,
   mapTournamentDoc,
   onAllTournaments,
 } from "@/api/tournaments";
@@ -58,14 +58,12 @@ interface TournamentCardProps {
 }
 
 function TournamentCard({ tournament }: TournamentCardProps) {
-  const { data: registrations, isLoading } = useQuery({
-    queryKey: ["registrations", tournament.firestoreId],
-    queryFn: () => fetchAllRegistrations(tournament.firestoreId!),
+  const { data: teamCount = 0, isLoading } = useQuery({
+    queryKey: ["registrationCount", tournament.firestoreId],
+    queryFn: () => fetchRegistrationCount(tournament.firestoreId!),
     enabled: Boolean(tournament.firestoreId),
     staleTime: 60_000,
   });
-
-  const teamCount = registrations?.length ?? 0;
   const cap = tournament.maxTeams;
   const fillPct = cap && cap > 0 ? Math.min((teamCount / cap) * 100, 100) : 0;
   const isFull = cap !== undefined && teamCount >= cap;

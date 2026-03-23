@@ -246,7 +246,8 @@ export function MemberOverviewTab() {
             size="sm"
             variant="flat"
             isIconOnly
-            onPress={() => setYear((y) => y - 1)}
+            onPress={() => setYear((y) => Math.max(y - 1, 2024))}
+            isDisabled={year <= 2024}
             aria-label="Previous year"
           >
             <Icon icon="lucide:chevron-left" className="w-4 h-4" />
