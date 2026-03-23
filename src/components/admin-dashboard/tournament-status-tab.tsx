@@ -150,7 +150,10 @@ function TournamentCard({ tournament }: TournamentCardProps) {
             );
           }
           if (
-            registrationWindowInfo.state === RegistrationWindowState.Upcoming
+            registrationWindowInfo.state === RegistrationWindowState.Upcoming &&
+            registrationWindowInfo.start != null &&
+            registrationWindowInfo.start.getTime() - Date.now() <=
+              7 * 24 * 60 * 60 * 1000
           ) {
             return (
               <Chip
