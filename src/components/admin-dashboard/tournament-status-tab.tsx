@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Button,
   Card,
   CardBody,
   CardHeader,
@@ -305,26 +304,15 @@ export function TournamentStatusTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-default-500">
-          {loading
-            ? "Loading…"
-            : tournaments.length === 0
-              ? "No upcoming tournaments."
-              : `${tournaments.length} upcoming or in-progress tournament${
-                  tournaments.length !== 1 ? "s" : ""
-                }.`}
-        </p>
-        <Button
-          size="sm"
-          variant="flat"
-          startContent={<Icon icon="lucide:refresh-cw" className="w-4 h-4" />}
-          onPress={() => window.location.reload()}
-          aria-label="Refresh tournament data"
-        >
-          Refresh
-        </Button>
-      </div>
+      <p className="text-sm text-default-500">
+        {loading
+          ? "Loading…"
+          : tournaments.length === 0
+            ? "No upcoming tournaments."
+            : `${tournaments.length} upcoming or in-progress tournament${
+                tournaments.length !== 1 ? "s" : ""
+              }.`}
+      </p>
 
       {loading ? (
         <div className="flex justify-center py-12">

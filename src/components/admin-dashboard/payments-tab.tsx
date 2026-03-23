@@ -93,7 +93,7 @@ function paymentPurpose(purpose?: string | null) {
 }
 
 export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
-  usePageTracking("Membership Dashboard");
+  usePageTracking("Payments Tab");
 
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [filter, setFilter] = useState<Filter>("all");

@@ -51,4 +51,10 @@ describe("AdminDashboardPage — tab routing", () => {
     });
     expect(tournamentsTab).toHaveAttribute("aria-selected", "true");
   });
+
+  it("falls back to Members tab for an unrecognised ?tab value", async () => {
+    renderPage("?tab=foo");
+    const membersTab = await screen.findByRole("tab", { name: /Members/i });
+    expect(membersTab).toHaveAttribute("aria-selected", "true");
+  });
 });

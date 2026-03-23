@@ -10,11 +10,19 @@ import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-sta
 
 type TabKey = "overview" | "payments" | "tournaments";
 
+const VALID_TABS = new Set<TabKey>(["overview", "payments", "tournaments"]);
+
+function toTabKey(value: string | null): TabKey {
+  return value !== null && VALID_TABS.has(value as TabKey)
+    ? (value as TabKey)
+    : "overview";
+}
+
 export default function AdminDashboardPage() {
   usePageTracking("Admin Dashboard");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get("tab") as TabKey) ?? "overview";
+  const activeTab = toTabKey(searchParams.get("tab"));
 
   const handleTabChange = useCallback(
     (key: string | number) => {
