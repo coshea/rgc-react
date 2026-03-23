@@ -259,7 +259,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     if (windowInfo.state === RegistrationWindowState.Upcoming) {
       return (
         <Chip color="default" size="sm" variant="flat">
-          Registration Opens Soon
+          Opens Soon
         </Chip>
       );
     }

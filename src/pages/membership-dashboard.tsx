@@ -92,7 +92,11 @@ function paymentPurpose(purpose?: string | null) {
   return purpose === "donation" ? "donation" : "dues";
 }
 
-export default function MembershipDashboardPage() {
+export default function MembershipDashboardPage({
+  isEmbedded = false,
+}: {
+  isEmbedded?: boolean;
+}) {
   usePageTracking("Membership Dashboard");
 
   const [year, setYear] = useState(() => new Date().getFullYear());
@@ -445,17 +449,53 @@ export default function MembershipDashboardPage() {
 
   const isLoading = loadingMembers || loadingPayments;
 
+  function exportPaymentsCsv() {
+    const allRows = [...rows.duesRows, ...rows.donationOnlyRows];
+    const headers = [
+      "Name",
+      "Email",
+      "Membership Type",
+      "Payment",
+      "Donation",
+      "Paid",
+    ];
+    const dataRows = allRows.map((r) => [
+      r.name,
+      r.email,
+      typeLabel(r.membershipType),
+      r.paymentAmount != null ? String(r.paymentAmount) : "",
+      r.donationAmount > 0 ? String(r.donationAmount) : "",
+      formatDate(r.paidAt),
+    ]);
+    const csv = [headers, ...dataRows]
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rgc-payments-${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
-    <div className="min-h-screen px-4 py-12 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-4">
-          <BackButton />
-        </div>
-        <h1 className="text-3xl font-bold">Membership Dashboard</h1>
-        <p className="mt-2 text-default-500">
-          Payments recorded for {year}. Donations are tracked as separate
-          transactions.
-        </p>
+    <div className={isEmbedded ? "" : "min-h-screen px-4 py-12 sm:px-6"}>
+      <div className={isEmbedded ? "" : "mx-auto max-w-6xl"}>
+        {!isEmbedded && (
+          <>
+            <div className="mb-4">
+              <BackButton />
+            </div>
+            <h1 className="text-3xl font-bold">Membership Dashboard</h1>
+            <p className="mt-2 text-default-500">
+              Payments recorded for {year}. Donations are tracked as separate
+              transactions.
+            </p>
+          </>
+        )}
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
           <Card shadow="sm">
@@ -498,6 +538,14 @@ export default function MembershipDashboardPage() {
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              variant="flat"
+              size="sm"
+              startContent={<Icon icon="lucide:download" className="w-4 h-4" />}
+              onPress={exportPaymentsCsv}
+            >
+              Export CSV
+            </Button>
             <Input
               placeholder="Search by name or email"
               value={search}

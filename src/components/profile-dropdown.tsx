@@ -113,17 +113,17 @@ export const ProfileDropdown = () => {
                 Send Notifications
               </DropdownItem>
               <DropdownItem
-                key="admin-membership"
+                key="admin-dashboard"
                 as={Link}
-                href={siteConfig.pages.membershipDashboard.link}
+                href={siteConfig.pages.adminDashboard.link}
                 startContent={
                   <Icon
-                    icon="lucide:users"
+                    icon="lucide:layout-dashboard"
                     className="text-base text-default-500"
                   />
                 }
               >
-                Membership Dashboard
+                Admin Dashboard
               </DropdownItem>
             </DropdownSection>
           ) : null}

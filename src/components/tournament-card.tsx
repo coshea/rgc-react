@@ -173,7 +173,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
                       />
                     }
                   >
-                    Registration Opens Soon
+                    Opens Soon
                   </Chip>
                 );
               }
