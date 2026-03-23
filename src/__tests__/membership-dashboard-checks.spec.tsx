@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import MembershipDashboardPage from "@/pages/membership-dashboard";
+import { PaymentsTab as MembershipDashboardPage } from "@/components/admin-dashboard/payments-tab";
 
 const confirmMembershipPaymentGroupMock = vi.fn();
 const addToastMock = vi.fn();

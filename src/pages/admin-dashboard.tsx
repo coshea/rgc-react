@@ -4,14 +4,14 @@ import { Tabs, Tab } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
-import MembershipDashboardPage from "@/pages/membership-dashboard";
+import { PaymentsTab } from "@/components/admin-dashboard/payments-tab";
 import { MemberOverviewTab } from "@/components/admin-dashboard/member-overview-tab";
 import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-status-tab";
 
 type TabKey = "overview" | "payments" | "tournaments";
 
 export default function AdminDashboardPage() {
-  usePageTracking();
+  usePageTracking("Admin Dashboard");
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as TabKey) ?? "overview";
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
               </div>
             }
           >
-            <MembershipDashboardPage isEmbedded />
+            <PaymentsTab isEmbedded />
           </Tab>
 
           <Tab

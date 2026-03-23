@@ -92,11 +92,7 @@ function paymentPurpose(purpose?: string | null) {
   return purpose === "donation" ? "donation" : "dues";
 }
 
-export default function MembershipDashboardPage({
-  isEmbedded = false,
-}: {
-  isEmbedded?: boolean;
-}) {
+export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   usePageTracking("Membership Dashboard");
 
   const [year, setYear] = useState(() => new Date().getFullYear());
