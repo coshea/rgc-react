@@ -21,6 +21,7 @@ import {
   addDoc,
   setDoc,
   serverTimestamp,
+  getCountFromServer,
 } from "firebase/firestore";
 
 // Real-time listener for a single tournament document.
@@ -179,4 +180,14 @@ export async function fetchAllRegistrations(tournamentId: string) {
   const colRef = collection(db, "tournaments", tournamentId, "registrations");
   const snaps = await getDocs(colRef);
   return snaps.docs.map((d) => ({ id: d.id, ...(d.data() ?? {}) }));
+}
+
+// Fetch only the registration count for a tournament using Firestore count aggregation.
+// Much cheaper than fetchAllRegistrations — reads zero document fields.
+export async function fetchRegistrationCount(
+  tournamentId: string,
+): Promise<number> {
+  const colRef = collection(db, "tournaments", tournamentId, "registrations");
+  const snap = await getCountFromServer(colRef);
+  return snap.data().count;
 }

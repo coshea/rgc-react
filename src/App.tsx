@@ -22,7 +22,7 @@ import TournamentRegister from "@/pages/tournament-register";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import MembershipDirectoryPage from "@/pages/membership-directory";
 import MembershipPage from "@/pages/membership";
-import MembershipDashboardPage from "@/pages/membership-dashboard";
+import AdminDashboardPage from "@/pages/admin-dashboard";
 import VerifyEmailPage from "@/pages/verify-email";
 import BoardOfGovernorsPage from "@/pages/board-of-governors";
 import MoneyListPage from "@/pages/money-list";
@@ -113,10 +113,10 @@ function App() {
             <Route
               element={
                 <RequireAdmin>
-                  <MembershipDashboardPage />
+                  <AdminDashboardPage />
                 </RequireAdmin>
               }
-              path={siteConfig.pages.membershipDashboard.link}
+              path={siteConfig.pages.adminDashboard.link}
             />
             <Route
               element={

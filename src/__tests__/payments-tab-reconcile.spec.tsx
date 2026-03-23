@@ -4,7 +4,7 @@ import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import MembershipDashboardPage from "@/pages/membership-dashboard";
+import { PaymentsTab as MembershipDashboardPage } from "@/components/admin-dashboard/payments-tab";
 
 const reconcilePayPalMembershipOrdersMock = vi.fn();
 const confirmMembershipPaymentGroupMock = vi.fn();

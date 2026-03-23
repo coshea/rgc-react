@@ -780,7 +780,7 @@ const TournamentDetailPage: React.FC = () => {
                                 registrationWindowInfo.state ===
                                 RegistrationWindowState.Upcoming
                               ) {
-                                return "Registration Opens Soon";
+                                return "Opens Soon";
                               }
                               if (
                                 registrationWindowInfo.state ===

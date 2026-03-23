@@ -86,7 +86,7 @@ export default function MembershipPage() {
               variant="flat"
               size="sm"
               onPress={() =>
-                navigate(siteConfig.pages.membershipDashboard.link)
+                navigate(`${siteConfig.pages.membershipDashboard.link}?tab=payments`)
               }
               startContent={
                 <Icon
