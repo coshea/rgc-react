@@ -158,3 +158,38 @@ describe("MembershipDashboard - check payments", () => {
     expect(screen.getByText("$20.00")).toBeInTheDocument();
   });
 });
+
+describe("PaymentsTab — embedded mode", () => {
+  function renderWith(isEmbedded: boolean) {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    return render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <MembershipDashboardPage isEmbedded={isEmbedded} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("shows Membership Dashboard heading and Back button when not embedded", async () => {
+    renderWith(false);
+    expect(
+      await screen.findByRole("heading", { name: /Membership Dashboard/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Back/i })).toBeInTheDocument();
+  });
+
+  it("hides Membership Dashboard heading and Back button when embedded", async () => {
+    renderWith(true);
+    // Wait for the main content to settle before making negative assertions
+    await screen.findByText(/Paid Members/i);
+    expect(
+      screen.queryByRole("heading", { name: /Membership Dashboard/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Back/i }),
+    ).not.toBeInTheDocument();
+  });
+});
