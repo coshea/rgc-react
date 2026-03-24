@@ -6,7 +6,16 @@ import {
   CardHeader,
   Chip,
   Spinner,
+  cn,
 } from "@heroui/react";
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Icon } from "@iconify/react";
 
 import { useMembers } from "@/hooks/useMembers";
@@ -45,93 +54,81 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
-// ─── Growth bar chart (pure CSS, no Chart.js dependency) ─────────────────────
+// ─── Growth area chart (recharts + HeroUI theming) ───────────────────────────
 
 interface GrowthLineChartProps {
   data: { year: number; count: number }[];
 }
 
 function GrowthLineChart({ data }: GrowthLineChartProps) {
-  const W = 600;
-  const H = 120;
-  const padX = 24;
-  const padY = 16;
-  const innerW = W - padX * 2;
-  const innerH = H - padY * 2;
-
-  const max = Math.max(...data.map((d) => d.count), 1);
-  const n = data.length;
-
-  const x = (i: number) =>
-    padX + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
-  const y = (count: number) => padY + innerH - (count / max) * innerH;
-
-  const points = data.map((d, i) => ({ ...d, cx: x(i), cy: y(d.count) }));
-
-  // SVG polyline points string
-  const linePoints = points.map((p) => `${p.cx},${p.cy}`).join(" ");
-
-  // Filled area path: line down then back along bottom
-  const areaPath =
-    `M${points[0].cx},${y(0)} ` +
-    points.map((p) => `L${p.cx},${p.cy}`).join(" ") +
-    ` L${points[points.length - 1].cx},${y(0)} Z`;
+  const chartData = data.map((d) => ({ year: d.year, value: d.count }));
 
   return (
-    <div role="img" aria-label="Membership growth by year">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
-        style={{ height: 120 }}
-        overflow="visible"
+    <div
+      role="img"
+      aria-label="Membership growth by year"
+      className="w-full"
+      style={{ height: 160 }}
+    >
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        className="[&_.recharts-surface]:outline-hidden"
       >
-        {/* Filled area under the line */}
-        <path d={areaPath} className="fill-primary/10" />
-        {/* Line */}
-        <polyline
-          points={linePoints}
-          className="fill-none stroke-primary"
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {/* Data points with tooltips via <title> */}
-        {points.map((p) => (
-          <g key={p.year}>
-            <circle
-              cx={p.cx}
-              cy={p.cy}
-              r={5}
-              className="fill-primary stroke-background"
-              strokeWidth={2}
-            />
-            <title>{`${p.year}: ${p.count} member${p.count !== 1 ? "s" : ""}`}</title>
-            {/* Value label above point */}
-            <text
-              x={p.cx}
-              y={p.cy - 10}
-              textAnchor="middle"
-              className="fill-default-500"
-              fontSize={11}
-              fontWeight={500}
-            >
-              {p.count}
-            </text>
-            {/* Year label below chart */}
-            <text
-              x={p.cx}
-              y={H + 14}
-              textAnchor="middle"
-              className="fill-default-400"
-              fontSize={10}
-            >
-              {p.year}
-            </text>
-          </g>
-        ))}
-      </svg>
-      {/* Spacer for year labels rendered outside the SVG viewBox */}
-      <div style={{ height: 18 }} />
+        <AreaChart
+          data={chartData}
+          margin={{ top: 16, right: 8, left: 8, bottom: 24 }}
+        >
+          <defs>
+            <linearGradient id="growthGradient" x1="0" x2="0" y1="0" y2="1">
+              <stop
+                offset="10%"
+                stopColor="hsl(var(--heroui-primary))"
+                stopOpacity={0.3}
+              />
+              <stop
+                offset="100%"
+                stopColor="hsl(var(--heroui-primary))"
+                stopOpacity={0.05}
+              />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="year"
+            tick={{ fontSize: 11, fill: "hsl(var(--heroui-default-400))" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis hide allowDecimals={false} domain={[0, "auto"]} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "hsl(var(--heroui-content1))",
+              border: "1px solid hsl(var(--heroui-default-200))",
+              borderRadius: 8,
+              fontSize: 12,
+            }}
+            formatter={(value) => {
+              const n = typeof value === "number" ? value : 0;
+              return [`${n} member${n !== 1 ? "s" : ""}`, "Members"];
+            }}
+            labelFormatter={(label) => `Year: ${label}`}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={cn("hsl(var(--heroui-primary))")}
+            fill="url(#growthGradient)"
+            strokeWidth={2}
+            dot={{
+              r: 4,
+              fill: "hsl(var(--heroui-primary))",
+              stroke: "hsl(var(--heroui-background))",
+              strokeWidth: 2,
+            }}
+            activeDot={{ r: 6 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
