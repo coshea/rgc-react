@@ -6,6 +6,9 @@ import {
   mapTournamentDoc,
   deleteTournament as apiDeleteTournament,
 } from "@/api/tournaments";
+import { onBracket } from "@/api/brackets";
+import { BracketView } from "@/components/bracket/BracketView";
+import type { TournamentBracket } from "@/types/bracket";
 import {
   Card,
   CardBody,
@@ -126,6 +129,7 @@ const TournamentDetailPage: React.FC = () => {
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -246,6 +250,20 @@ const TournamentDetailPage: React.FC = () => {
     );
     return () => unsub();
   }, [tournament?.previousTournamentId]);
+
+  // Load bracket (real-time) when the tournament ID is available
+  React.useEffect(() => {
+    if (!firestoreId) {
+      setBracket(null);
+      return;
+    }
+    const unsub = onBracket(
+      firestoreId,
+      (b) => setBracket(b),
+      (err) => console.error("Failed to load bracket", err),
+    );
+    return unsub;
+  }, [firestoreId]);
 
   // Users are now loaded globally via React Query (useUsersMap)
 
@@ -1207,6 +1225,94 @@ const TournamentDetailPage: React.FC = () => {
                 </CardBody>
               </Card>
             </div>
+
+            {/* Tournament Bracket */}
+            {bracket && (
+              <div className="mb-12">
+                <Card shadow="sm">
+                  <CardHeader className="pb-0 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        icon="lucide:git-branch"
+                        className="w-5 h-5 text-primary"
+                      />
+                      <h2 className="text-lg font-semibold">
+                        Tournament Bracket
+                      </h2>
+                    </div>
+                    {(() => {
+                      const finalMatch = bracket.matches.find(
+                        (m) => m.nextMatchId === null,
+                      );
+                      const champion = finalMatch?.winnerId
+                        ? bracket.teams.find(
+                            (t) => t.id === finalMatch.winnerId,
+                          )
+                        : null;
+                      const runnerUp = finalMatch?.winnerId
+                        ? bracket.teams.find(
+                            (t) =>
+                              t.id !== finalMatch.winnerId &&
+                              (t.id === finalMatch.team1Id ||
+                                t.id === finalMatch.team2Id),
+                          )
+                        : null;
+                      if (!champion) return null;
+                      return (
+                        <div className="flex flex-col items-end gap-1.5">
+                          <div className="flex flex-col items-end">
+                            <Chip
+                              color="warning"
+                              variant="flat"
+                              startContent={
+                                <Icon
+                                  icon="lucide:trophy"
+                                  className="w-3.5 h-3.5 ml-1"
+                                />
+                              }
+                            >
+                              Champion: {champion.name}
+                            </Chip>
+                            {champion.memberNames &&
+                              champion.memberNames.length > 1 && (
+                                <p className="text-xs text-default-400 mt-0.5 pr-1">
+                                  {champion.memberNames.join(" · ")}
+                                </p>
+                              )}
+                          </div>
+                          {runnerUp && (
+                            <div className="flex flex-col items-end">
+                              <Chip
+                                color="default"
+                                variant="flat"
+                                startContent={
+                                  <Icon
+                                    icon="lucide:medal"
+                                    className="w-3.5 h-3.5 ml-1"
+                                  />
+                                }
+                              >
+                                Runner-up: {runnerUp.name}
+                              </Chip>
+                              {runnerUp.memberNames &&
+                                runnerUp.memberNames.length > 1 && (
+                                  <p className="text-xs text-default-400 mt-0.5 pr-1">
+                                    {runnerUp.memberNames.join(" · ")}
+                                  </p>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="pt-4 overflow-x-auto">
+                    <BracketView bracket={bracket} />
+                  </CardBody>
+                </Card>
+              </div>
+            )}
           </>
         )}
         {isAdmin && editOpen && (

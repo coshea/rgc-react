@@ -447,5 +447,13 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+
+    // Tournament brackets: stored at brackets/{tournamentId}
+    // Any authenticated user can read the bracket (to view standings).
+    // Only admins can create/update/delete brackets.
+    match /brackets/{tournamentId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
