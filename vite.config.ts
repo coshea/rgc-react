@@ -6,6 +6,9 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  optimizeDeps: {
+    include: ["deepmerge", "prop-types"],
+  },
   plugins: [
     react(),
     tsconfigPaths(),
@@ -17,6 +20,11 @@ export default defineConfig({
   ],
   build: {
     rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress sourcemap warnings from third-party packages with missing source files
+        if (warning.code === "SOURCEMAP_ERROR") return;
+        warn(warning);
+      },
       output: {
         manualChunks: {
           // Split Firebase SDK modules so they don't bloat the main bundle
