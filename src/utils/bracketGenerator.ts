@@ -48,65 +48,42 @@ export function roundLabel(round: number, totalRounds: number): string {
 // ── Slot arrangement ─────────────────────────────────────────────────────────
 
 /**
- * Assigns `size` bracket slots (power-of-2), interleaving teams and byes.
+ * Returns the canonical seed numbers for each slot position using standard
+ * single-elimination seeding (recursive NCAA-style):
  *
- * - Slot 0 is always the first team in the ordered list (top seed).
- * - If byes exist, slot 1 is a bye paired with the top seed.
- * - Remaining byes are distributed randomly across other pairs.
+ *   size 2  → [1, 2]
+ *   size 4  → [1, 4, 2, 3]          matches: (1v4), (2v3)
+ *   size 8  → [1, 8, 4, 5, 2, 7, 3, 6]  matches: (1v8), (4v5), (2v7), (3v6)
+ *
+ * Guarantees:
+ *   - Seed 1 plays the lowest seed, seed 2 plays the second-lowest, etc.
+ *   - Seeds 1 and 2 cannot meet before the final.
+ *   - Seeds 1–4 cannot meet before the semis.
+ */
+function standardSeedPositions(size: number): number[] {
+  if (size === 2) return [1, 2];
+  const half = standardSeedPositions(size / 2);
+  const result: number[] = [];
+  for (const s of half) {
+    result.push(s);
+    result.push(size + 1 - s);
+  }
+  return result;
+}
+
+/**
+ * Assigns `size` bracket slots using standard single-elimination seeding.
+ * Seed numbers beyond the actual team count become BYEs (null), so top seeds
+ * automatically receive the first-round byes.
  */
 function arrangeSlots(
   orderedTeams: BracketTeam[],
   size: number,
 ): (BracketTeam | null)[] {
-  const numByes = size - orderedTeams.length;
-  const topSeed = orderedTeams[0] ?? null;
-  const rest = orderedTeams.slice(1);
-
-  const slots: (BracketTeam | null)[] = new Array(size).fill(null);
-
-  if (numByes === 0) {
-    // Full bracket – preserve input order
-    orderedTeams.forEach((t, i) => (slots[i] = t));
-    return slots;
-  }
-
-  let slotIdx = 0;
-  let teamIdx = 0;
-  let byesLeft = numByes;
-
-  // Reserve the first pair: [top seed, BYE]
-  if (topSeed) {
-    slots[0] = topSeed;
-    slots[1] = null; // BYE
-    byesLeft--;
-    slotIdx = 2;
-  }
-
-  // Distribute remaining byes among the remaining pairs
-  const remainingPairs = (size - slotIdx) / 2;
-  const pairByeFlags = shuffle([
-    ...Array<true>(byesLeft).fill(true),
-    ...Array<false>(remainingPairs - byesLeft).fill(false),
-  ]);
-
-  for (const hasBye of pairByeFlags) {
-    if (hasBye) {
-      // Randomly decide whether the bye is first or second in the pair
-      if (Math.random() < 0.5) {
-        slots[slotIdx] = rest[teamIdx++];
-        slots[slotIdx + 1] = null;
-      } else {
-        slots[slotIdx] = null;
-        slots[slotIdx + 1] = rest[teamIdx++];
-      }
-    } else {
-      slots[slotIdx] = rest[teamIdx++];
-      slots[slotIdx + 1] = rest[teamIdx++];
-    }
-    slotIdx += 2;
-  }
-
-  return slots;
+  const positions = standardSeedPositions(size);
+  return positions.map((seedNum) =>
+    seedNum <= orderedTeams.length ? (orderedTeams[seedNum - 1] ?? null) : null,
+  );
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────

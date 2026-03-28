@@ -40,6 +40,9 @@ interface SlotProps {
   isRunnerUp: boolean;
   slotHeight: number;
   onPress?: () => void;
+  seed?: number;
+  /** uid → photo URL, for resolving member profile pictures */
+  userPhotoMap?: Map<string, string>;
 }
 
 function TeamSlot({
@@ -51,6 +54,8 @@ function TeamSlot({
   isRunnerUp,
   slotHeight,
   onPress,
+  seed,
+  userPhotoMap,
 }: SlotProps) {
   const base =
     "relative px-3 py-2 transition-colors flex flex-col justify-center";
@@ -74,16 +79,40 @@ function TeamSlot({
     );
   }
 
-  const names =
-    team.memberNames && team.memberNames.length > 0
-      ? team.memberNames
-      : [team.name];
+  // Build rows from memberIds so that index i always maps to the correct
+  // memberId for avatar resolution. Fall back to [team.name] only when there
+  // are no memberIds at all.
+  const rows: Array<{ id: string | undefined; label: string }> =
+    team.memberIds.length > 0
+      ? team.memberIds.map((id, i) => ({
+          id,
+          label: team.memberNames?.[i] ?? (i === 0 ? team.name : id),
+        }))
+      : [{ id: undefined, label: team.name }];
 
   const content = (
     <>
-      {names.map((name, i) => (
-        <div key={`${name}-${i}`} className="flex items-center gap-2 min-w-0">
-          <UserAvatar name={name} size="sm" className="shrink-0" />
+      {rows.map(({ id, label }, i) => (
+        <div
+          key={`${id ?? label}-${i}`}
+          className={`flex items-center gap-2 min-w-0${onPress ? " pr-6" : ""}`}
+        >
+          {i === 0 && seed !== undefined ? (
+            <span
+              className="shrink-0 text-[10px] font-bold w-2 text-center text-default-400"
+              aria-label={`Seed ${seed}`}
+            >
+              {seed}
+            </span>
+          ) : (
+            <span className="shrink-0 w-2" aria-hidden="true" />
+          )}
+          <UserAvatar
+            name={label}
+            size="sm"
+            className="shrink-0"
+            src={id ? (userPhotoMap?.get(id) ?? undefined) : undefined}
+          />
           <span
             className={[
               "text-xs min-w-0 truncate",
@@ -95,9 +124,9 @@ function TeamSlot({
             ]
               .filter(Boolean)
               .join(" ")}
-            title={name}
+            title={label}
           >
-            {name}
+            {label}
           </span>
           {i === 0 && isChampion && (
             <Icon
@@ -147,7 +176,7 @@ function TeamSlot({
           .join(" ")}
         style={{ height: slotHeight }}
         onClick={onPress}
-        aria-label={`View team info: ${names.join(", ")}`}
+        aria-label={`View team info: ${rows.map((r) => r.label).join(", ")}`}
       >
         {content}
       </button>
@@ -185,6 +214,8 @@ interface BracketMatchCardProps {
   slotHeight: number;
   /** Called when the user presses a team slot; receives the BracketTeam. */
   onTeamPress?: (team: BracketTeam) => void;
+  /** uid → photo URL for resolving member profile pictures */
+  userPhotoMap?: Map<string, string>;
 }
 
 export function BracketMatchCard({
@@ -193,6 +224,7 @@ export function BracketMatchCard({
   width,
   slotHeight,
   onTeamPress,
+  userPhotoMap,
 }: BracketMatchCardProps) {
   const team1 = match.team1Id ? (teamMap.get(match.team1Id) ?? null) : null;
   const team2 = match.team2Id ? (teamMap.get(match.team2Id) ?? null) : null;
@@ -224,6 +256,8 @@ export function BracketMatchCard({
         isRunnerUp={isRunnerUp1}
         slotHeight={slotHeight}
         onPress={team1 && onTeamPress ? () => onTeamPress(team1) : undefined}
+        seed={team1?.seed}
+        userPhotoMap={userPhotoMap}
       />
       <div className="border-t border-default-200" />
       <TeamSlot
@@ -235,6 +269,8 @@ export function BracketMatchCard({
         isRunnerUp={isRunnerUp2}
         slotHeight={slotHeight}
         onPress={team2 && onTeamPress ? () => onTeamPress(team2) : undefined}
+        seed={team2?.seed}
+        userPhotoMap={userPhotoMap}
       />
     </div>
   );
