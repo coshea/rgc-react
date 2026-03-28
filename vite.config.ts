@@ -6,9 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  optimizeDeps: {
-    include: ["deepmerge", "prop-types"],
-  },
+  optimizeDeps: {},
   plugins: [
     react(),
     tsconfigPaths(),

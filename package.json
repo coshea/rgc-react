@@ -25,7 +25,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@emailjs/browser": "^4.4.1",
-    "@g-loot/react-tournament-brackets": "^1.0.31-rc",
     "@heroicons/react": "^2.2.0",
     "@heroui/avatar": "^2.2.21",
     "@heroui/button": "^2.2.25",
