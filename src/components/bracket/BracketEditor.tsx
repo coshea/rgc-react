@@ -294,6 +294,15 @@ export function BracketEditor({
     return map;
   }, [allUsers]);
 
+  const seedData = useMemo(() => {
+    let includedCount = 0;
+    return seedOrder.map((id) => {
+      const isExcluded = excludedIds.has(id);
+      if (!isExcluded) includedCount++;
+      return { id, isExcluded, seed: isExcluded ? 0 : includedCount };
+    });
+  }, [seedOrder, excludedIds]);
+
   // ── Generate ──────────────────────────────────────────────────────────────────
 
   const toggleExclude = useCallback((id: string) => {
@@ -404,6 +413,10 @@ export function BracketEditor({
       </div>
     );
   }
+
+  const includedTeamCount = seedOrder.filter(
+    (id) => !excludedIds.has(id),
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -799,23 +812,16 @@ export function BracketEditor({
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-1.5">
-                      {seedOrder.map((id, index) => {
-                        const isExcluded = excludedIds.has(id);
-                        // Seed number counts only included teams
-                        const includedSeed = seedOrder
-                          .slice(0, index + 1)
-                          .filter((sid) => !excludedIds.has(sid)).length;
-                        return (
-                          <SortableTeamRow
-                            key={id}
-                            id={id}
-                            label={regLabelMap.get(id) ?? id}
-                            seed={isExcluded ? 0 : includedSeed}
-                            excluded={isExcluded}
-                            onToggleExclude={toggleExclude}
-                          />
-                        );
-                      })}
+                      {seedData.map(({ id, isExcluded, seed }) => (
+                        <SortableTeamRow
+                          key={id}
+                          id={id}
+                          label={regLabelMap.get(id) ?? id}
+                          seed={seed}
+                          excluded={isExcluded}
+                          onToggleExclude={toggleExclude}
+                        />
+                      ))}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -827,16 +833,13 @@ export function BracketEditor({
                   }
                   onPress={handleGenerate}
                   isLoading={generating}
-                  isDisabled={
-                    seedOrder.filter((id) => !excludedIds.has(id)).length < 2
-                  }
+                  isDisabled={includedTeamCount < 2}
                   className="mt-2"
                 >
                   Generate Bracket
                   {excludedIds.size > 0 && (
                     <span className="ml-1 text-xs opacity-70">
-                      ({seedOrder.filter((id) => !excludedIds.has(id)).length}{" "}
-                      teams)
+                      ({includedTeamCount} teams)
                     </span>
                   )}
                 </Button>

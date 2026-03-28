@@ -88,6 +88,7 @@ export type UserProfilePayload = {
   phone?: string;
   ghinNumber?: string;
   photoURL?: string | null;
+  profileURL?: string | null;
   boardMember?: boolean;
   role?: string | null;
   membershipType?: MembershipType;

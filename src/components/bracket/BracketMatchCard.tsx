@@ -79,16 +79,22 @@ function TeamSlot({
     );
   }
 
-  const names =
-    team.memberNames && team.memberNames.length > 0
-      ? team.memberNames
-      : [team.name];
+  // Build rows from memberIds so that index i always maps to the correct
+  // memberId for avatar resolution. Fall back to [team.name] only when there
+  // are no memberIds at all.
+  const rows: Array<{ id: string | undefined; label: string }> =
+    team.memberIds.length > 0
+      ? team.memberIds.map((id, i) => ({
+          id,
+          label: team.memberNames?.[i] ?? (i === 0 ? team.name : id),
+        }))
+      : [{ id: undefined, label: team.name }];
 
   const content = (
     <>
-      {names.map((name, i) => (
+      {rows.map(({ id, label }, i) => (
         <div
-          key={`${name}-${i}`}
+          key={`${id ?? label}-${i}`}
           className={`flex items-center gap-2 min-w-0${onPress ? " pr-6" : ""}`}
         >
           {i === 0 && seed !== undefined ? (
@@ -102,10 +108,10 @@ function TeamSlot({
             <span className="shrink-0 w-2" aria-hidden="true" />
           )}
           <UserAvatar
-            name={name}
+            name={label}
             size="sm"
             className="shrink-0"
-            src={userPhotoMap?.get(team.memberIds[i]) ?? undefined}
+            src={id ? (userPhotoMap?.get(id) ?? undefined) : undefined}
           />
           <span
             className={[
@@ -118,9 +124,9 @@ function TeamSlot({
             ]
               .filter(Boolean)
               .join(" ")}
-            title={name}
+            title={label}
           >
-            {name}
+            {label}
           </span>
           {i === 0 && isChampion && (
             <Icon
@@ -170,7 +176,7 @@ function TeamSlot({
           .join(" ")}
         style={{ height: slotHeight }}
         onClick={onPress}
-        aria-label={`View team info: ${names.join(", ")}`}
+        aria-label={`View team info: ${rows.map((r) => r.label).join(", ")}`}
       >
         {content}
       </button>
