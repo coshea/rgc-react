@@ -279,10 +279,10 @@ export function BracketTab() {
 
   const handleSaveResults = useCallback(async () => {
     if (!selectedId || !bracket) return;
-    // Only include entries that actually change the stored state
     const effectiveUpdates: Record<string, string> = {};
+    const matchMap = new Map(bracket.matches.map((m) => [m.id, m]));
     for (const [matchId, winnerId] of Object.entries(pendingWinners)) {
-      const current = bracket.matches.find((m) => m.id === matchId);
+      const current = matchMap.get(matchId);
       if (!current) continue;
       const savedWinner = current.winnerId ?? "";
       if (winnerId !== savedWinner) {
