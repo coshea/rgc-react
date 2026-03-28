@@ -36,6 +36,8 @@ interface SlotProps {
   isBye: boolean;
   isWinner: boolean;
   isLoser: boolean;
+  isChampion: boolean;
+  isRunnerUp: boolean;
   slotHeight: number;
   onPress?: () => void;
 }
@@ -45,6 +47,8 @@ function TeamSlot({
   isBye,
   isWinner,
   isLoser,
+  isChampion,
+  isRunnerUp,
   slotHeight,
   onPress,
 }: SlotProps) {
@@ -83,9 +87,11 @@ function TeamSlot({
           <span
             className={[
               "text-xs min-w-0 truncate",
-              isWinner
-                ? "font-semibold text-success-700 dark:text-success-400"
-                : "text-foreground",
+              isChampion
+                ? "font-semibold text-warning-700 dark:text-warning-400"
+                : isWinner
+                  ? "font-semibold text-success-700 dark:text-success-400"
+                  : "text-foreground",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -93,7 +99,19 @@ function TeamSlot({
           >
             {name}
           </span>
-          {isWinner && i === 0 && (
+          {i === 0 && isChampion && (
+            <Icon
+              icon="lucide:trophy"
+              className="w-3.5 h-3.5 text-warning-500 shrink-0 ml-auto"
+            />
+          )}
+          {i === 0 && isRunnerUp && (
+            <Icon
+              icon="lucide:medal"
+              className="w-3.5 h-3.5 text-default-400 shrink-0 ml-auto"
+            />
+          )}
+          {i === 0 && !isChampion && !isRunnerUp && isWinner && (
             <Icon
               icon="lucide:check"
               className="w-3.5 h-3.5 text-success-600 shrink-0 ml-auto"
@@ -118,10 +136,12 @@ function TeamSlot({
         className={[
           base,
           "group gap-1 w-full text-left cursor-pointer hover:bg-default-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
-          isWinner
-            ? "bg-success-50 dark:bg-success-900/20 hover:bg-success-100 dark:hover:bg-success-900/30"
-            : "",
-          isLoser ? "opacity-40" : "",
+          isChampion
+            ? "bg-warning-50 dark:bg-warning-900/20 hover:bg-warning-100 dark:hover:bg-warning-900/30"
+            : isWinner
+              ? "bg-success-50 dark:bg-success-900/20 hover:bg-success-100 dark:hover:bg-success-900/30"
+              : "",
+          isLoser && !isRunnerUp ? "opacity-40" : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -139,8 +159,12 @@ function TeamSlot({
       className={[
         base,
         "gap-1",
-        isWinner ? "bg-success-50 dark:bg-success-900/20" : "",
-        isLoser ? "opacity-40" : "",
+        isChampion
+          ? "bg-warning-50 dark:bg-warning-900/20"
+          : isWinner
+            ? "bg-success-50 dark:bg-success-900/20"
+            : "",
+        isLoser && !isRunnerUp ? "opacity-40" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -180,6 +204,11 @@ export function BracketMatchCard({
   const isWinner2 = match.winnerId !== null && match.winnerId === match.team2Id;
   const isLoser1 = match.winnerId !== null && !isWinner1 && team1 !== null;
   const isLoser2 = match.winnerId !== null && !isWinner2 && team2 !== null;
+  const isFinal = match.nextMatchId === null;
+  const isChampion1 = isFinal && isWinner1;
+  const isChampion2 = isFinal && isWinner2;
+  const isRunnerUp1 = isFinal && isLoser1;
+  const isRunnerUp2 = isFinal && isLoser2;
 
   return (
     <div
@@ -191,6 +220,8 @@ export function BracketMatchCard({
         isBye={isBye1}
         isWinner={isWinner1}
         isLoser={isLoser1}
+        isChampion={isChampion1}
+        isRunnerUp={isRunnerUp1}
         slotHeight={slotHeight}
         onPress={team1 && onTeamPress ? () => onTeamPress(team1) : undefined}
       />
@@ -200,6 +231,8 @@ export function BracketMatchCard({
         isBye={isBye2}
         isWinner={isWinner2}
         isLoser={isLoser2}
+        isChampion={isChampion2}
+        isRunnerUp={isRunnerUp2}
         slotHeight={slotHeight}
         onPress={team2 && onTeamPress ? () => onTeamPress(team2) : undefined}
       />
