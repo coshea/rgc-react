@@ -28,9 +28,6 @@ import { TeeBadge } from "@/components/tee-badge";
 
 interface TournamentListProps {
   tournaments: Tournament[];
-  onEdit: (tournament: Tournament) => void;
-  onDelete: (id?: string | number) => Promise<void> | void;
-  isAdmin?: boolean;
 }
 
 type FilterStatus =
@@ -42,9 +39,6 @@ type FilterStatus =
 
 export const TournamentList: React.FC<TournamentListProps> = ({
   tournaments,
-  onEdit,
-  onDelete,
-  isAdmin = false,
 }) => {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = React.useState<FilterStatus>("all");
@@ -152,27 +146,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
     return counts;
   }, [yearFilteredTournaments]);
-
-  // In-app confirmation modal state
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
-
-  const selectedTournament = React.useMemo(() => {
-    return tournaments.find((t) => t.firestoreId === deletingId) || null;
-  }, [tournaments, deletingId]);
-
-  const openConfirm = (id?: string | number) => {
-    if (!id) return;
-    setDeletingId(String(id));
-    setConfirmOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (!deletingId) return;
-    onDelete(deletingId);
-    setConfirmOpen(false);
-    setDeletingId(null);
-  };
 
   // Card winners summary: simple first-place line from the lowest-order winner group
   const renderWinners = (tournament: Tournament) => {
@@ -289,23 +262,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       }
     };
 
-    const stopPropagationIfPossible = (event: unknown) => {
-      if (
-        typeof event === "object" &&
-        event !== null &&
-        "stopPropagation" in event &&
-        typeof (event as { stopPropagation?: unknown }).stopPropagation ===
-          "function"
-      ) {
-        (event as { stopPropagation: () => void }).stopPropagation();
-      }
-    };
-
     return (
       <Card
         key={tournament.firestoreId}
-        isPressable={!isAdmin}
-        onPress={!isAdmin ? goToDetails : undefined}
+        isPressable
+        onPress={goToDetails}
         aria-label={`View details for ${tournament.title}`}
         className="mb-4 border border-default-200 hover:bg-content2 transition-colors"
       >
@@ -343,47 +304,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   {tournament.players}
                 </div>
               </div>
-              {isAdmin && (
-                <div className="flex gap-1 mt-1">
-                  <Button
-                    size="sm"
-                    variant="light"
-                    isIconOnly
-                    onPress={(e: unknown) => {
-                      stopPropagationIfPossible(e);
-                      goToDetails();
-                    }}
-                    aria-label="View tournament details"
-                  >
-                    <Icon icon="lucide:eye" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    isIconOnly
-                    onPress={(e: unknown) => {
-                      stopPropagationIfPossible(e);
-                      onEdit(tournament);
-                    }}
-                    aria-label="Edit tournament"
-                  >
-                    <Icon icon="lucide:edit" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    isIconOnly
-                    onPress={(e: unknown) => {
-                      stopPropagationIfPossible(e);
-                      openConfirm(tournament.firestoreId);
-                    }}
-                    aria-label="Delete tournament"
-                  >
-                    <Icon icon="lucide:trash-2" />
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </CardBody>
@@ -611,53 +531,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           </TableBody>
         </Table>
       </div>
-
-      {/* Confirmation modal (in-app) */}
-      {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => {
-              setConfirmOpen(false);
-              setDeletingId(null);
-            }}
-          />
-          <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
-            <h3 className="text-lg font-medium mb-2">Delete tournament</h3>
-            <p className="text-sm text-foreground-500 mb-4">
-              Are you sure you want to delete this tournament? This cannot be
-              undone.
-            </p>
-            {selectedTournament && (
-              <div className="text-sm text-foreground-500 mb-4">
-                <p className="font-medium">Tournament:</p>
-                <p>{selectedTournament.title}</p>
-                <p className="font-medium mt-2">Date:</p>
-                <p>{formatDate(selectedTournament.date)}</p>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="flat"
-                onPress={() => {
-                  setConfirmOpen(false);
-                  setDeletingId(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                color="danger"
-                onPress={() => {
-                  confirmDelete();
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

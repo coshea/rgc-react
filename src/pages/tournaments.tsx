@@ -101,11 +101,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setCreateModeOpen(true);
   };
 
-  const handleEditTournament = (tournament: Tournament) => {
-    setEditingTournament(tournament);
-    setIsCreating(false);
-  };
-
   const handleSaveTournament = async (tournament: Tournament) => {
     setIsLoading(true);
     try {
@@ -143,31 +138,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     setEditingTournament(null);
     setIsCreating(false);
     setInitialValues(undefined);
-  };
-
-  const handleDeleteTournament = async (id?: string | number) => {
-    setIsLoading(true);
-    try {
-      if (typeof id === "string") {
-        const { deleteTournament } = await import("@/api/tournaments");
-        await deleteTournament(id);
-        // Don't manually update state - let the real-time listener handle it
-      }
-      addToast({
-        title: "Tournament Deleted",
-        description: "The tournament has been successfully deleted.",
-        color: "danger",
-      });
-    } catch (error) {
-      console.error("Error deleting tournament:", error);
-      addToast({
-        title: "Error",
-        description: "Failed to delete tournament",
-        color: "danger",
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const onContinueCreate = () => {
@@ -345,12 +315,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               </div>
             </div>
           ) : (
-            <TournamentList
-              tournaments={tournaments}
-              onEdit={handleEditTournament}
-              onDelete={handleDeleteTournament}
-              isAdmin={isAdmin}
-            />
+            <TournamentList tournaments={tournaments} />
           )}
         </div>
       )}
