@@ -65,6 +65,12 @@ export interface RegistrationDoc {
 interface BracketEditorProps {
   tournamentId: string;
   registrations: RegistrationDoc[];
+  /** Optional user list for resolving profile pictures in the bracket view */
+  allUsers?: Array<{
+    id: string;
+    photoURL?: string | null;
+    profileURL?: string | null;
+  }>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,9 +105,17 @@ interface SortableTeamRowProps {
   id: string;
   label: string;
   seed: number;
+  excluded: boolean;
+  onToggleExclude: (id: string) => void;
 }
 
-function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
+function SortableTeamRow({
+  id,
+  label,
+  seed,
+  excluded,
+  onToggleExclude,
+}: SortableTeamRowProps) {
   const {
     attributes,
     listeners,
@@ -121,27 +135,66 @@ function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg px-3 py-2 border border-default-200 bg-content1 select-none"
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 border select-none transition-colors ${
+        excluded
+          ? "border-default-100 bg-default-50 dark:bg-default-900/30 opacity-50"
+          : "border-default-200 bg-content1"
+      }`}
     >
+      {!excluded && (
+        <button
+          type="button"
+          className="touch-none cursor-grab active:cursor-grabbing text-default-400 hover:text-default-600 shrink-0 p-0.5"
+          aria-label="Drag to reorder"
+          {...attributes}
+          {...listeners}
+        >
+          <Icon icon="lucide:grip-vertical" className="w-4 h-4" />
+        </button>
+      )}
+      {excluded && <span className="shrink-0 w-5" aria-hidden="true" />}
+
+      {!excluded && (
+        <Chip
+          size="sm"
+          variant="flat"
+          color={seed === 1 ? "warning" : "default"}
+          className="shrink-0 min-w-10 justify-center"
+        >
+          #{seed}
+        </Chip>
+      )}
+      {excluded && (
+        <Chip
+          size="sm"
+          variant="flat"
+          color="default"
+          className="shrink-0 min-w-10 justify-center line-through"
+        >
+          —
+        </Chip>
+      )}
+
+      <span
+        className={`text-sm flex-1 min-w-0 truncate ${excluded ? "line-through text-default-400" : ""}`}
+      >
+        {label}
+      </span>
+
       <button
-        className="touch-none cursor-grab active:cursor-grabbing text-default-400 hover:text-default-600 shrink-0 p-0.5"
-        aria-label="Drag to reorder"
-        {...attributes}
-        {...listeners}
+        type="button"
+        className="shrink-0 p-1 rounded text-default-400 hover:text-default-700 transition-colors"
+        aria-label={
+          excluded ? "Include team in bracket" : "Exclude team from bracket"
+        }
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => onToggleExclude(id)}
       >
-        <Icon icon="lucide:grip-vertical" className="w-4 h-4" />
+        <Icon
+          icon={excluded ? "lucide:plus-circle" : "lucide:x-circle"}
+          className="w-4 h-4"
+        />
       </button>
-
-      <Chip
-        size="sm"
-        variant="flat"
-        color={seed === 1 ? "warning" : "default"}
-        className="shrink-0 min-w-10 justify-center"
-      >
-        #{seed}
-      </Chip>
-
-      <span className="text-sm flex-1 min-w-0 truncate">{label}</span>
     </div>
   );
 }
@@ -151,12 +204,15 @@ function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
 export function BracketEditor({
   tournamentId,
   registrations,
+  allUsers,
 }: BracketEditorProps) {
   const [bracket, setBracket] = useState<TournamentBracket | null>(null);
   const [bracketLoading, setBracketLoading] = useState(true);
 
   // Seeding order (array of reg IDs; index 0 = seed #1)
   const [seedOrder, setSeedOrder] = useState<string[]>([]);
+  // IDs excluded from bracket generation
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
 
   // Action states
   const [generating, setGenerating] = useState(false);
@@ -197,6 +253,7 @@ export function BracketEditor({
           (t) => t.id,
         ),
       );
+      setExcludedIds(new Set());
     }
   }, [bracket, registrations]);
 
@@ -228,7 +285,28 @@ export function BracketEditor({
     return map;
   }, [registrations]);
 
+  const userPhotoMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of allUsers ?? []) {
+      const photo = u.profileURL || u.photoURL;
+      if (u.id && photo) map.set(u.id, photo);
+    }
+    return map;
+  }, [allUsers]);
+
   // ── Generate ──────────────────────────────────────────────────────────────────
+
+  const toggleExclude = useCallback((id: string) => {
+    setExcludedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (registrations.length < 2) return;
@@ -236,6 +314,7 @@ export function BracketEditor({
     try {
       const regMap = new Map(registrations.map((r) => [r.id, r]));
       const orderedTeams = seedOrder
+        .filter((id) => !excludedIds.has(id))
         .map((id) => regMap.get(id))
         .filter((r): r is RegistrationDoc => r !== undefined)
         .map((r) => registrationToTeam(r));
@@ -250,7 +329,7 @@ export function BracketEditor({
       setGenerating(false);
       setShowRegenConfirm(false);
     }
-  }, [tournamentId, registrations, seedOrder]);
+  }, [tournamentId, registrations, seedOrder, excludedIds]);
 
   // ── Save results ──────────────────────────────────────────────────────────────
 
@@ -408,8 +487,8 @@ export function BracketEditor({
                   ` · ${bracket.size - bracket.teams.length} bye${bracket.size - bracket.teams.length !== 1 ? "s" : ""}`}
               </p>
             </CardHeader>
-            <CardBody className="overflow-x-auto touch-pan-x">
-              <BracketView bracket={bracket} />
+            <CardBody>
+              <BracketView bracket={bracket} userPhotoMap={userPhotoMap} />
             </CardBody>
           </Card>
 
@@ -720,14 +799,23 @@ export function BracketEditor({
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-1.5">
-                      {seedOrder.map((id, index) => (
-                        <SortableTeamRow
-                          key={id}
-                          id={id}
-                          label={regLabelMap.get(id) ?? id}
-                          seed={index + 1}
-                        />
-                      ))}
+                      {seedOrder.map((id, index) => {
+                        const isExcluded = excludedIds.has(id);
+                        // Seed number counts only included teams
+                        const includedSeed = seedOrder
+                          .slice(0, index + 1)
+                          .filter((sid) => !excludedIds.has(sid)).length;
+                        return (
+                          <SortableTeamRow
+                            key={id}
+                            id={id}
+                            label={regLabelMap.get(id) ?? id}
+                            seed={isExcluded ? 0 : includedSeed}
+                            excluded={isExcluded}
+                            onToggleExclude={toggleExclude}
+                          />
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -739,10 +827,18 @@ export function BracketEditor({
                   }
                   onPress={handleGenerate}
                   isLoading={generating}
-                  isDisabled={registrations.length < 2}
+                  isDisabled={
+                    seedOrder.filter((id) => !excludedIds.has(id)).length < 2
+                  }
                   className="mt-2"
                 >
                   Generate Bracket
+                  {excludedIds.size > 0 && (
+                    <span className="ml-1 text-xs opacity-70">
+                      ({seedOrder.filter((id) => !excludedIds.has(id)).length}{" "}
+                      teams)
+                    </span>
+                  )}
                 </Button>
               </>
             )}

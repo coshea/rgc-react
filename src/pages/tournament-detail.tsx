@@ -133,6 +133,15 @@ const TournamentDetailPage: React.FC = () => {
   >(new Map());
   const { usersMap } = useUsersMap();
 
+  const bracketUserPhotoMap = React.useMemo(() => {
+    const m = new Map<string, string>();
+    usersMap.forEach((u, id) => {
+      const photo = u.photoURL;
+      if (photo) m.set(id, photo);
+    });
+    return m;
+  }, [usersMap]);
+
   // When the bracket team modal opens, fetch team members directly by UID
   // so we get full profile data even for users excluded from the bulk
   // getUsers() query (which omits docs without a displayName field).
@@ -1066,6 +1075,7 @@ const TournamentDetailPage: React.FC = () => {
                     <BracketView
                       bracket={bracket}
                       onTeamPress={(team) => setBracketTeamModal(team)}
+                      userPhotoMap={bracketUserPhotoMap}
                     />
                   </CardBody>
                 </Card>

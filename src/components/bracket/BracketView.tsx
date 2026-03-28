@@ -46,9 +46,15 @@ interface BracketViewProps {
   bracket: TournamentBracket;
   /** Called when the user clicks a team slot in the bracket. */
   onTeamPress?: (team: BracketTeam) => void;
+  /** uid → photo URL for resolving member profile pictures */
+  userPhotoMap?: Map<string, string>;
 }
 
-export function BracketView({ bracket, onTeamPress }: BracketViewProps) {
+export function BracketView({
+  bracket,
+  onTeamPress,
+  userPhotoMap,
+}: BracketViewProps) {
   const { teams, matches, size } = bracket;
   const numRounds = Math.log2(size);
   const n1 = size / 2;
@@ -119,8 +125,14 @@ export function BracketView({ bracket, onTeamPress }: BracketViewProps) {
     }
   }
 
+  // Setting an explicit height on the scroll container prevents overflow-y: auto
+  // (implicitly set when overflow-x: auto is used) from creating a vertical scrollbar.
+  // 8px accounts for pb-2.
   return (
-    <div className="w-full overflow-x-auto pb-2 touch-pan-x">
+    <div
+      className="w-full overflow-x-auto touch-pan-x"
+      style={{ height: totalHeight + 16 }}
+    >
       <div
         style={{ position: "relative", width: totalWidth, height: totalHeight }}
       >
@@ -188,6 +200,7 @@ export function BracketView({ bracket, onTeamPress }: BracketViewProps) {
                   width={MATCH_WIDTH}
                   slotHeight={slotH}
                   onTeamPress={onTeamPress}
+                  userPhotoMap={userPhotoMap}
                 />
               </div>
             );

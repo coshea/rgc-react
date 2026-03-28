@@ -1073,6 +1073,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               <BracketEditor
                 tournamentId={tournament.firestoreId}
                 registrations={registrations}
+                allUsers={allUsers}
               />
             </div>
           )}

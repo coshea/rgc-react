@@ -40,6 +40,9 @@ interface SlotProps {
   isRunnerUp: boolean;
   slotHeight: number;
   onPress?: () => void;
+  seed?: number;
+  /** uid → photo URL, for resolving member profile pictures */
+  userPhotoMap?: Map<string, string>;
 }
 
 function TeamSlot({
@@ -51,6 +54,8 @@ function TeamSlot({
   isRunnerUp,
   slotHeight,
   onPress,
+  seed,
+  userPhotoMap,
 }: SlotProps) {
   const base =
     "relative px-3 py-2 transition-colors flex flex-col justify-center";
@@ -82,8 +87,26 @@ function TeamSlot({
   const content = (
     <>
       {names.map((name, i) => (
-        <div key={`${name}-${i}`} className="flex items-center gap-2 min-w-0">
-          <UserAvatar name={name} size="sm" className="shrink-0" />
+        <div
+          key={`${name}-${i}`}
+          className={`flex items-center gap-2 min-w-0${onPress ? " pr-6" : ""}`}
+        >
+          {i === 0 && seed !== undefined ? (
+            <span
+              className="shrink-0 text-[10px] font-bold w-2 text-center text-default-400"
+              aria-label={`Seed ${seed}`}
+            >
+              {seed}
+            </span>
+          ) : (
+            <span className="shrink-0 w-2" aria-hidden="true" />
+          )}
+          <UserAvatar
+            name={name}
+            size="sm"
+            className="shrink-0"
+            src={userPhotoMap?.get(team.memberIds[i]) ?? undefined}
+          />
           <span
             className={[
               "text-xs min-w-0 truncate",
@@ -185,6 +208,8 @@ interface BracketMatchCardProps {
   slotHeight: number;
   /** Called when the user presses a team slot; receives the BracketTeam. */
   onTeamPress?: (team: BracketTeam) => void;
+  /** uid → photo URL for resolving member profile pictures */
+  userPhotoMap?: Map<string, string>;
 }
 
 export function BracketMatchCard({
@@ -193,6 +218,7 @@ export function BracketMatchCard({
   width,
   slotHeight,
   onTeamPress,
+  userPhotoMap,
 }: BracketMatchCardProps) {
   const team1 = match.team1Id ? (teamMap.get(match.team1Id) ?? null) : null;
   const team2 = match.team2Id ? (teamMap.get(match.team2Id) ?? null) : null;
@@ -224,6 +250,8 @@ export function BracketMatchCard({
         isRunnerUp={isRunnerUp1}
         slotHeight={slotHeight}
         onPress={team1 && onTeamPress ? () => onTeamPress(team1) : undefined}
+        seed={team1?.seed}
+        userPhotoMap={userPhotoMap}
       />
       <div className="border-t border-default-200" />
       <TeamSlot
@@ -235,6 +263,8 @@ export function BracketMatchCard({
         isRunnerUp={isRunnerUp2}
         slotHeight={slotHeight}
         onPress={team2 && onTeamPress ? () => onTeamPress(team2) : undefined}
+        seed={team2?.seed}
+        userPhotoMap={userPhotoMap}
       />
     </div>
   );
