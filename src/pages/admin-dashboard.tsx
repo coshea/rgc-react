@@ -7,16 +7,10 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { PaymentsTab } from "@/components/admin-dashboard/payments-tab";
 import { MemberOverviewTab } from "@/components/admin-dashboard/member-overview-tab";
 import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-status-tab";
-import { BracketTab } from "@/components/admin-dashboard/bracket-tab";
 
-type TabKey = "overview" | "payments" | "tournaments" | "brackets";
+type TabKey = "overview" | "payments" | "tournaments";
 
-const VALID_TABS = new Set<TabKey>([
-  "overview",
-  "payments",
-  "tournaments",
-  "brackets",
-]);
+const VALID_TABS = new Set<TabKey>(["overview", "payments", "tournaments"]);
 
 function toTabKey(value: string | null): TabKey {
   return value !== null && VALID_TABS.has(value as TabKey)
@@ -95,18 +89,6 @@ export default function AdminDashboardPage() {
             }
           >
             <TournamentStatusTab />
-          </Tab>
-
-          <Tab
-            key="brackets"
-            title={
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:git-branch" className="w-4 h-4" />
-                <span>Brackets</span>
-              </div>
-            }
-          >
-            <BracketTab />
           </Tab>
         </Tabs>
       </div>

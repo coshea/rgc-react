@@ -27,6 +27,7 @@ import { parseDate, parseDateTime, DateValue } from "@internationalized/date";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
+import { BracketEditor } from "@/components/bracket/BracketEditor";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -1063,6 +1064,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   }}
                 />
               )}
+            </div>
+          )}
+          {isEditing && tournament?.firestoreId && (
+            <div className="pt-6">
+              <Divider className="my-4" />
+              <h3 className="text-lg font-medium mb-4">Tournament Bracket</h3>
+              <BracketEditor
+                tournamentId={tournament.firestoreId}
+                registrations={registrations}
+              />
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4">
