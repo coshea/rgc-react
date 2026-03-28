@@ -134,11 +134,12 @@ export async function saveMatchResults(
   const matches = currentBracket.matches.map((m) => ({ ...m }));
 
   // Process rounds in ascending order so propagation is correct
-  const sortedMatchIds = Object.keys(updates).sort((a, b) => {
-    const ra = matches.find((m) => m.id === a)?.round ?? 0;
-    const rb = matches.find((m) => m.id === b)?.round ?? 0;
-    return ra - rb;
-  });
+    const matchMap = new Map(matches.map((m) => [m.id, m]));
+    const sortedMatchIds = Object.keys(updates).sort((a, b) => {
+      const ra = matchMap.get(a)?.round ?? 0;
+      const rb = matchMap.get(b)?.round ?? 0;
+      return ra - rb;
+    });
 
   for (const matchId of sortedMatchIds) {
     // Empty string means "clear this match's result"
