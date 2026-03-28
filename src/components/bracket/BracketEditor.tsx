@@ -257,8 +257,9 @@ export function BracketEditor({
   const handleSaveResults = useCallback(async () => {
     if (!bracket) return;
     const effectiveUpdates: Record<string, string> = {};
+    const matchMap = new Map(bracket.matches.map((m) => [m.id, m]));
     for (const [matchId, winnerId] of Object.entries(pendingWinners)) {
-      const current = bracket.matches.find((m) => m.id === matchId);
+      const current = matchMap.get(matchId);
       if (!current) continue;
       if (winnerId !== (current.winnerId ?? "")) {
         effectiveUpdates[matchId] = winnerId;
