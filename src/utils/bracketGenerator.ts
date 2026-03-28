@@ -52,8 +52,8 @@ export function roundLabel(round: number, totalRounds: number): string {
  * single-elimination seeding (recursive NCAA-style):
  *
  *   size 2  → [1, 2]
- *   size 4  → [1, 4, 3, 2]          matches: (1v4), (3v2)
- *   size 8  → [1, 8, 4, 5, 3, 6, 2, 7]  matches: (1v8), (4v5), (3v6), (2v7)
+ *   size 4  → [1, 4, 2, 3]          matches: (1v4), (2v3)
+ *   size 8  → [1, 8, 4, 5, 2, 7, 3, 6]  matches: (1v8), (4v5), (2v7), (3v6)
  *
  * Guarantees:
  *   - Seed 1 plays the lowest seed, seed 2 plays the second-lowest, etc.
