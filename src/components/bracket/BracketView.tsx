@@ -127,7 +127,6 @@ export function BracketView({
 
   // Setting an explicit height on the scroll container prevents overflow-y: auto
   // (implicitly set when overflow-x: auto is used) from creating a vertical scrollbar.
-  // 8px accounts for pb-2.
   return (
     <div
       className="w-full overflow-x-auto touch-pan-x"
