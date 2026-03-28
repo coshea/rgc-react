@@ -64,7 +64,10 @@ vi.mock("firebase/firestore", () => {
     collection: (...args: any[]) => ({ _path: args.slice(1).join("/") }),
     addDoc: vi.fn(async () => ({ id: "new123" })),
     updateDoc: vi.fn(async () => {}),
-    doc: vi.fn(() => ({})),
+    doc: vi.fn((...args: any[]) => ({
+      _isDoc: true,
+      _path: args.slice(1).join("/"),
+    })),
     orderBy: vi.fn(() => ({})),
     query: (col: any, ..._args: any[]) => ({ _path: col._path + "/query" }),
     serverTimestamp: vi.fn(() => new Date()),
@@ -78,12 +81,17 @@ vi.mock("firebase/firestore", () => {
               data: () => ({
                 displayName: "Admin User",
                 email: "admin@example.com",
+                membershipType: "full",
+                lastPaidYear: new Date().getFullYear(),
               }),
             },
           ],
         });
+      } else if (ref && ref._isDoc) {
+        // Document snapshot (e.g. bracket doc) — return empty doc with exists() = false
+        cb({ exists: () => false, data: () => undefined });
       } else {
-        // registrations -> empty
+        // Collection query (registrations) -> empty
         cb({ docs: [] });
       }
       return () => {};

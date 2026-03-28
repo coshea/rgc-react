@@ -6,6 +6,9 @@ import {
   mapTournamentDoc,
   deleteTournament as apiDeleteTournament,
 } from "@/api/tournaments";
+import { onBracket } from "@/api/brackets";
+import { BracketView } from "@/components/bracket/BracketView";
+import type { TournamentBracket, BracketTeam } from "@/types/bracket";
 import {
   Card,
   CardBody,
@@ -45,7 +48,8 @@ const TournamentEditor = React.lazy(() =>
   })),
 );
 import GroupedWinners from "@/components/grouped-winners";
-// User types consumed indirectly; no direct import needed after hook migration
+import { getUsersByIds } from "@/api/users";
+import type { User } from "@/api/users";
 import { useUsersMap } from "@/hooks/useUsers";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
@@ -122,10 +126,33 @@ const TournamentDetailPage: React.FC = () => {
     team: Array<{ id: string; displayName?: string }>;
     openSpots: number;
   } | null>(null);
+  const [bracketTeamModal, setBracketTeamModal] =
+    React.useState<BracketTeam | null>(null);
+  const [bracketMemberUsers, setBracketMemberUsers] = React.useState<
+    Map<string, User>
+  >(new Map());
   const { usersMap } = useUsersMap();
+
+  // When the bracket team modal opens, fetch team members directly by UID
+  // so we get full profile data even for users excluded from the bulk
+  // getUsers() query (which omits docs without a displayName field).
+  React.useEffect(() => {
+    if (!bracketTeamModal) return;
+    let cancelled = false;
+    getUsersByIds(bracketTeamModal.memberIds).then((users) => {
+      if (cancelled) return;
+      const m = new Map<string, User>();
+      for (const u of users) m.set(u.id, u);
+      setBracketMemberUsers(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [bracketTeamModal]);
   const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -246,6 +273,20 @@ const TournamentDetailPage: React.FC = () => {
     );
     return () => unsub();
   }, [tournament?.previousTournamentId]);
+
+  // Load bracket (real-time) when the tournament ID is available
+  React.useEffect(() => {
+    if (!firestoreId) {
+      setBracket(null);
+      return;
+    }
+    const unsub = onBracket(
+      firestoreId,
+      (b) => setBracket(b),
+      (err) => console.error("Failed to load bracket", err),
+    );
+    return unsub;
+  }, [firestoreId]);
 
   // Users are now loaded globally via React Query (useUsersMap)
 
@@ -434,37 +475,35 @@ const TournamentDetailPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Tooltip content="Add to calendar">
-                      <Dropdown placement="bottom-end">
-                        <DropdownTrigger>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            startContent={<Icon icon="lucide:calendar-plus" />}
-                            aria-label="Add tournament to calendar"
-                          >
-                            Calendar
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          aria-label="Calendar options"
-                          onAction={handleCalendarAction}
+                    <Dropdown placement="bottom-end">
+                      <DropdownTrigger>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          startContent={<Icon icon="lucide:calendar-plus" />}
+                          aria-label="Add tournament to calendar"
                         >
-                          <DropdownItem
-                            key="google"
-                            startContent={<Icon icon="lucide:calendar" />}
-                          >
-                            Add to Google Calendar
-                          </DropdownItem>
-                          <DropdownItem
-                            key="ics"
-                            startContent={<Icon icon="lucide:download" />}
-                          >
-                            Download calendar file (.ics)
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
-                    </Tooltip>
+                          Calendar
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label="Calendar options"
+                        onAction={handleCalendarAction}
+                      >
+                        <DropdownItem
+                          key="google"
+                          startContent={<Icon icon="lucide:calendar" />}
+                        >
+                          Add to Google Calendar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="ics"
+                          startContent={<Icon icon="lucide:download" />}
+                        >
+                          Download calendar file (.ics)
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
                     <Tooltip content="Share tournament">
                       <Button
                         size="sm"
@@ -527,37 +566,35 @@ const TournamentDetailPage: React.FC = () => {
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Tooltip content="Add to calendar">
-                    <Dropdown placement="bottom-end">
-                      <DropdownTrigger>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<Icon icon="lucide:calendar-plus" />}
-                          aria-label="Add tournament to calendar"
-                        >
-                          Calendar
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        aria-label="Calendar options"
-                        onAction={handleCalendarAction}
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        startContent={<Icon icon="lucide:calendar-plus" />}
+                        aria-label="Add tournament to calendar"
                       >
-                        <DropdownItem
-                          key="google"
-                          startContent={<Icon icon="lucide:calendar" />}
-                        >
-                          Add to Google Calendar
-                        </DropdownItem>
-                        <DropdownItem
-                          key="ics"
-                          startContent={<Icon icon="lucide:download" />}
-                        >
-                          Download calendar file (.ics)
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </Tooltip>
+                        Calendar
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Calendar options"
+                      onAction={handleCalendarAction}
+                    >
+                      <DropdownItem
+                        key="google"
+                        startContent={<Icon icon="lucide:calendar" />}
+                      >
+                        Add to Google Calendar
+                      </DropdownItem>
+                      <DropdownItem
+                        key="ics"
+                        startContent={<Icon icon="lucide:download" />}
+                      >
+                        Download calendar file (.ics)
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"
@@ -1015,6 +1052,26 @@ const TournamentDetailPage: React.FC = () => {
               </Card>
             </div>
 
+            {/* Tournament Bracket */}
+            {bracket && (
+              <div className="mb-12">
+                <Card shadow="sm">
+                  <CardHeader className="pb-0 flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">
+                      Tournament Bracket
+                    </h2>
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="pt-4">
+                    <BracketView
+                      bracket={bracket}
+                      onTeamPress={(team) => setBracketTeamModal(team)}
+                    />
+                  </CardBody>
+                </Card>
+              </div>
+            )}
+
             <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
               {/* Full Width: Registered Teams (Improved readability) */}
               <Card className="md:col-span-3" shadow="sm">
@@ -1379,12 +1436,140 @@ const TournamentDetailPage: React.FC = () => {
                 )}
               </ModalBody>
               <ModalFooter>
+                {openTeamModalData &&
+                  (() => {
+                    const emails = openTeamModalData.team
+                      .map((m) => usersMap.get(m.id)?.email)
+                      .filter((e): e is string => !!e);
+                    return emails.length > 0 ? (
+                      <Button
+                        as="a"
+                        href={`mailto:${emails.join(",")}`}
+                        variant="flat"
+                        color="primary"
+                        startContent={
+                          <Icon icon="lucide:mail" className="w-4 h-4" />
+                        }
+                      >
+                        Email team
+                      </Button>
+                    ) : null;
+                  })()}
                 <Button variant="light" color="default" onPress={onClose}>
                   Close
                 </Button>
               </ModalFooter>
             </>
           )}
+        </ModalContent>
+      </Modal>
+
+      {/* Bracket team info modal */}
+      <Modal
+        isOpen={!!bracketTeamModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setBracketTeamModal(null);
+            setBracketMemberUsers(new Map());
+          }
+        }}
+        size="md"
+      >
+        <ModalContent>
+          {(onClose) => {
+            const team = bracketTeamModal;
+            if (!team) return null;
+
+            const memberRows = team.memberIds.map((uid, i) => {
+              // Prefer the directly-fetched user (not subject to orderBy exclusion)
+              const memberUser =
+                bracketMemberUsers.get(uid) ?? usersMap.get(uid);
+              const name = (
+                team.memberNames?.[i] ||
+                memberUser?.displayName ||
+                memberUser?.email ||
+                uid
+              )
+                .toString()
+                .trim();
+              return { uid, memberUser, name };
+            });
+
+            const emails = memberRows
+              .map((r) => r.memberUser?.email)
+              .filter((e): e is string => !!e);
+            const mailtoHref =
+              emails.length > 0 ? `mailto:${emails.join(",")}` : undefined;
+
+            return (
+              <>
+                <ModalHeader className="flex flex-col gap-0.5">
+                  <span>{team.name}</span>
+                  <span className="text-sm font-normal text-foreground-500">
+                    Team contact info
+                  </span>
+                </ModalHeader>
+                <ModalBody>
+                  <div className="space-y-2">
+                    {memberRows.map(({ uid, memberUser, name }) => (
+                      <div
+                        key={uid}
+                        className="flex items-center justify-between gap-3 rounded-md border border-default-200 bg-content2/60 p-2"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <UserAvatar
+                            size="sm"
+                            user={memberUser}
+                            name={memberUser ? undefined : name}
+                            alt={name}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">
+                              {name}
+                            </div>
+                            {memberUser?.email ? (
+                              <div className="text-[11px] text-foreground-500 truncate">
+                                {memberUser.email}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => {
+                            onClose();
+                            navigate(`/profile/${uid}`);
+                          }}
+                          aria-label={`View profile for ${name}`}
+                        >
+                          View profile
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ModalBody>
+                <ModalFooter>
+                  {mailtoHref && (
+                    <Button
+                      as="a"
+                      href={mailtoHref}
+                      variant="flat"
+                      color="primary"
+                      startContent={
+                        <Icon icon="lucide:mail" className="w-4 h-4" />
+                      }
+                    >
+                      Email team
+                    </Button>
+                  )}
+                  <Button variant="light" color="default" onPress={onClose}>
+                    Close
+                  </Button>
+                </ModalFooter>
+              </>
+            );
+          }}
         </ModalContent>
       </Modal>
     </>

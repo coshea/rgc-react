@@ -287,6 +287,22 @@ export async function getUserProfile(
   return data as unknown as UserProfilePayload;
 }
 
+/**
+ * Fetch one or more user documents directly by UID, bypassing the
+ * `orderBy("displayName")` query used by `getUsers()`.
+ * Firestore's orderBy silently excludes docs without that field, so this
+ * is the right approach when you have a known set of UIDs.
+ */
+export async function getUsersByIds(uids: string[]): Promise<User[]> {
+  if (uids.length === 0) return [];
+  const snaps = await Promise.all(
+    uids.map((uid) => getDoc(doc(db, "users", uid))),
+  );
+  return snaps
+    .filter((s) => s.exists())
+    .map((s) => ({ id: s.id, ...s.data() }) as User);
+}
+
 export async function getUsers(): Promise<User[]> {
   const usersCol = collection(db, "users");
   // Return users ordered by displayName

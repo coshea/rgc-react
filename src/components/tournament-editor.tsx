@@ -22,10 +22,12 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useDocAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
+import { isActiveFullMember } from "@/utils/membership";
 import { parseDate, parseDateTime, DateValue } from "@internationalized/date";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
+import { BracketEditor } from "@/components/bracket/BracketEditor";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -101,6 +103,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [assignedTeeTimes, setAssignedTeeTimes] = React.useState<boolean>(
     Boolean(seed.assignedTeeTimes),
   );
+  const [goldTeesEnabled, setGoldTeesEnabled] = React.useState<boolean>(
+    Boolean(seed.goldTeesEnabled),
+  );
   const [date, setDate] = React.useState<DateValue | null>(
     seed.date ? parseDate(seed.date.toISOString().split("T")[0]) : null,
   );
@@ -120,6 +125,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [regsLoading, setRegsLoading] = React.useState(false);
   const [editingRegId, setEditingRegId] = React.useState<string | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
+  const activeUsers = React.useMemo(
+    () => allUsers.filter((u) => !u.isMigrated && isActiveFullMember(u)),
+    [allUsers],
+  );
   const [allTournaments, setAllTournaments] = React.useState<Tournament[]>([]);
   const [addOpen, setAddOpen] = React.useState(false);
   const [newMembers, setNewMembers] = React.useState<string[]>([""]); // start with one slot
@@ -277,6 +286,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         date: date ? new Date(date.toString()) : new Date(),
         tee,
         assignedTeeTimes,
+        goldTeesEnabled,
       };
 
       const parsedStart = parseDateTimeInputValue(registrationStartInput);
@@ -339,6 +349,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         date: date ? new Date(date.toString()) : new Date(),
         tee,
         assignedTeeTimes,
+        goldTeesEnabled,
         maxTeams:
           typeof maxTeams === "number" &&
           Number.isFinite(maxTeams) &&
@@ -802,6 +813,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               >
                 Assigned tee times
               </Checkbox>
+              {isAdmin && (
+                <Checkbox
+                  isSelected={goldTeesEnabled}
+                  onValueChange={setGoldTeesEnabled}
+                >
+                  Allow gold tee selection during registration
+                </Checkbox>
+              )}
               <Select
                 label="Previous Year's Tournament (Optional)"
                 placeholder="Link to previous tournament"
@@ -1047,6 +1066,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               )}
             </div>
           )}
+          {isEditing && tournament?.firestoreId && (
+            <div className="pt-6">
+              <Divider className="my-4" />
+              <h3 className="text-lg font-medium mb-4">Tournament Bracket</h3>
+              <BracketEditor
+                tournamentId={tournament.firestoreId}
+                registrations={registrations}
+              />
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-4">
             <Button color="default" variant="flat" onPress={onCancel}>
               Cancel
@@ -1077,7 +1106,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               <RegistrationEditor
                 value={newMembers}
                 onChange={setNewMembers}
-                users={allUsers}
+                users={activeUsers}
                 maxSize={players}
                 disableAutoSelect={true}
               />

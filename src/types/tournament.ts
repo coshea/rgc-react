@@ -32,6 +32,8 @@ export interface Tournament {
   previousTournamentId?: string;
   // Weather data for the tournament day
   weather?: TournamentWeather;
+  // When true, players may select gold (senior) tees during registration
+  goldTeesEnabled?: boolean;
 }
 
 export interface TournamentWeather {
