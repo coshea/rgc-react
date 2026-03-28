@@ -136,7 +136,7 @@ const TournamentDetailPage: React.FC = () => {
   const bracketUserPhotoMap = React.useMemo(() => {
     const m = new Map<string, string>();
     usersMap.forEach((u, id) => {
-      const photo = u.photoURL;
+      const photo = u.profileURL || u.photoURL;
       if (photo) m.set(id, photo);
     });
     return m;
