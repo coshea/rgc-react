@@ -94,6 +94,7 @@ export function mapTournamentDoc(d: any) {
     maxTeams: typeof data.maxTeams === "number" ? data.maxTeams : undefined,
     previousTournamentId: data.previousTournamentId,
     weather: data.weather,
+    goldTeesEnabled: Boolean(data.goldTeesEnabled),
   };
 }
 

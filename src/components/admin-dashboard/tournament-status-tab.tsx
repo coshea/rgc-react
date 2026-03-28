@@ -11,6 +11,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
+import { TeeBadge } from "@/components/tee-badge";
 import {
   fetchRegistrationCount,
   mapTournamentDoc,
@@ -202,10 +203,13 @@ function TournamentCard({ tournament }: TournamentCardProps) {
             <Icon icon="lucide:users" className="w-3.5 h-3.5" />
             {tournament.players}-player teams
           </span>
-          {cap !== undefined && (
+          {tournament.tee && (
             <span className="flex items-center gap-1">
-              <Icon icon="lucide:flag" className="w-3.5 h-3.5" />
-              {cap} team cap
+              <TeeBadge
+                tee={tournament.tee}
+                size="xs"
+                ariaLabel={`Tee: ${tournament.tee}`}
+              />
             </span>
           )}
         </div>

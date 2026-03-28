@@ -44,9 +44,11 @@ function matchTopY(
 
 interface BracketViewProps {
   bracket: TournamentBracket;
+  /** Called when the user clicks a team slot in the bracket. */
+  onTeamPress?: (team: BracketTeam) => void;
 }
 
-export function BracketView({ bracket }: BracketViewProps) {
+export function BracketView({ bracket, onTeamPress }: BracketViewProps) {
   const { teams, matches, size } = bracket;
   const numRounds = Math.log2(size);
   const n1 = size / 2;
@@ -118,7 +120,7 @@ export function BracketView({ bracket }: BracketViewProps) {
   }
 
   return (
-    <div className="w-full overflow-x-auto pb-2">
+    <div className="w-full overflow-x-auto pb-2 touch-pan-x">
       <div
         style={{ position: "relative", width: totalWidth, height: totalHeight }}
       >
@@ -185,6 +187,7 @@ export function BracketView({ bracket }: BracketViewProps) {
                   teamMap={teamMap}
                   width={MATCH_WIDTH}
                   slotHeight={slotH}
+                  onTeamPress={onTeamPress}
                 />
               </div>
             );

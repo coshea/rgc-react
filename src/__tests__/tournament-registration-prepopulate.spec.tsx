@@ -78,6 +78,8 @@ vi.mock("firebase/firestore", () => {
               data: () => ({
                 displayName: "Admin User",
                 email: "admin@example.com",
+                membershipType: "full",
+                lastPaidYear: new Date().getFullYear(),
               }),
             },
           ],

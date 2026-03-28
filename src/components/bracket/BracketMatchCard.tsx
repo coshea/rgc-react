@@ -37,9 +37,17 @@ interface SlotProps {
   isWinner: boolean;
   isLoser: boolean;
   slotHeight: number;
+  onPress?: () => void;
 }
 
-function TeamSlot({ team, isBye, isWinner, isLoser, slotHeight }: SlotProps) {
+function TeamSlot({
+  team,
+  isBye,
+  isWinner,
+  isLoser,
+  slotHeight,
+  onPress,
+}: SlotProps) {
   const base =
     "relative px-3 py-2 transition-colors flex flex-col justify-center";
 
@@ -67,18 +75,8 @@ function TeamSlot({ team, isBye, isWinner, isLoser, slotHeight }: SlotProps) {
       ? team.memberNames
       : [team.name];
 
-  return (
-    <div
-      className={[
-        base,
-        "gap-1",
-        isWinner ? "bg-success-50 dark:bg-success-900/20" : "",
-        isLoser ? "opacity-40" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      style={{ height: slotHeight }}
-    >
+  const content = (
+    <>
       {names.map((name, i) => (
         <div key={`${name}-${i}`} className="flex items-center gap-2 min-w-0">
           <UserAvatar name={name} size="sm" className="shrink-0" />
@@ -103,6 +101,52 @@ function TeamSlot({ team, isBye, isWinner, isLoser, slotHeight }: SlotProps) {
           )}
         </div>
       ))}
+      {onPress && (
+        <Icon
+          icon="lucide:info"
+          className="absolute top-2 right-2 w-3 h-3 text-default-300 group-hover:text-default-500 transition-colors"
+          aria-hidden="true"
+        />
+      )}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <button
+        type="button"
+        className={[
+          base,
+          "group gap-1 w-full text-left cursor-pointer hover:bg-default-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
+          isWinner
+            ? "bg-success-50 dark:bg-success-900/20 hover:bg-success-100 dark:hover:bg-success-900/30"
+            : "",
+          isLoser ? "opacity-40" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={{ height: slotHeight }}
+        onClick={onPress}
+        aria-label={`View team info: ${names.join(", ")}`}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className={[
+        base,
+        "gap-1",
+        isWinner ? "bg-success-50 dark:bg-success-900/20" : "",
+        isLoser ? "opacity-40" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ height: slotHeight }}
+    >
+      {content}
     </div>
   );
 }
@@ -115,6 +159,8 @@ interface BracketMatchCardProps {
   width: number;
   /** Pixel height for each team slot – passed from the layout engine. */
   slotHeight: number;
+  /** Called when the user presses a team slot; receives the BracketTeam. */
+  onTeamPress?: (team: BracketTeam) => void;
 }
 
 export function BracketMatchCard({
@@ -122,11 +168,11 @@ export function BracketMatchCard({
   teamMap,
   width,
   slotHeight,
+  onTeamPress,
 }: BracketMatchCardProps) {
   const team1 = match.team1Id ? (teamMap.get(match.team1Id) ?? null) : null;
   const team2 = match.team2Id ? (teamMap.get(match.team2Id) ?? null) : null;
 
-  // A "bye" slot is a null team in round 1 when the other slot has a team
   const isBye1 = match.round === 1 && team2 !== null && team1 === null;
   const isBye2 = match.round === 1 && team1 !== null && team2 === null;
 
@@ -146,6 +192,7 @@ export function BracketMatchCard({
         isWinner={isWinner1}
         isLoser={isLoser1}
         slotHeight={slotHeight}
+        onPress={team1 && onTeamPress ? () => onTeamPress(team1) : undefined}
       />
       <div className="border-t border-default-200" />
       <TeamSlot
@@ -154,6 +201,7 @@ export function BracketMatchCard({
         isWinner={isWinner2}
         isLoser={isLoser2}
         slotHeight={slotHeight}
+        onPress={team2 && onTeamPress ? () => onTeamPress(team2) : undefined}
       />
     </div>
   );

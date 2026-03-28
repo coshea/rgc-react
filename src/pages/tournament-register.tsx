@@ -556,7 +556,7 @@ const TournamentRegister: React.FC = () => {
                   labels={{ leader: "Team Leader / You" }}
                   disabled={!user?.uid}
                   goldTees={goldTees}
-                  onGoldTeesChange={setGoldTees}
+                  onGoldTeesChange={tournament.goldTeesEnabled ? setGoldTees : undefined}
                 />
 
                 {maxTeamSize > 1 && openSlotsCount > 0 ? (
