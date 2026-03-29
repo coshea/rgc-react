@@ -33,7 +33,7 @@ import {
 import { useMembershipPayments } from "@/hooks/useMembershipPayments";
 import { useMembers } from "@/hooks/useMembers";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 
 type Filter = "all" | "yearly" | "handicap" | "donation";
 
@@ -105,7 +105,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
   const qc = useQueryClient();
 
   const isMobileView = useMediaQuery("(max-width: 639px)");

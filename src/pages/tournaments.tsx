@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 const TournamentEditor = React.lazy(() =>
   import("@/components/tournament-editor").then((m) => ({
     default: m.TournamentEditor,
@@ -50,7 +50,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   >(undefined);
 
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   React.useEffect(() => {
     setIsLoading(true);

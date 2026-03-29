@@ -34,7 +34,8 @@ vi.mock("@/api/championships", () => ({
 
 // Mock admin hook
 vi.mock("@/components/membership/hooks", () => ({
-  useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
 }));
 
 // Mock championships hook

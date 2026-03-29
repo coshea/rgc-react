@@ -8,7 +8,7 @@ import { subscribeMembershipSettings } from "@/api/membership";
 import { addToast } from "@/providers/toast";
 import MembershipAdminModal from "@/components/membership-admin-modal";
 import MembershipPaymentsFlow from "@/components/membership/membership-payments-flow";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
@@ -17,7 +17,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 export default function MembershipPage() {
   usePageTracking("Membership");
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
   const navigate = useNavigate();
 
   const [settings, setSettings] = useState<MembershipSettings | null>(null);
@@ -86,7 +86,9 @@ export default function MembershipPage() {
               variant="flat"
               size="sm"
               onPress={() =>
-                navigate(`${siteConfig.pages.membershipDashboard.link}?tab=payments`)
+                navigate(
+                  `${siteConfig.pages.membershipDashboard.link}?tab=payments`,
+                )
               }
               startContent={
                 <Icon

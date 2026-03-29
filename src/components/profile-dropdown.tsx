@@ -10,7 +10,10 @@ import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import {
+  useAdminFlag,
+  useBoardMemberFlag,
+} from "@/components/membership/hooks";
 import { ThemeSwitch } from "./theme-switch";
 import { NotificationBell } from "./notification-bell";
 import { siteConfig } from "@/config/site";
@@ -18,7 +21,8 @@ import { siteConfig } from "@/config/site";
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth();
   const { userProfile } = useUserProfile();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
+  const { isBoardMember } = useBoardMemberFlag(user);
 
   return (
     <>
@@ -90,7 +94,7 @@ export const ProfileDropdown = () => {
             </div>
           </DropdownItem>
 
-          {isAdmin ? (
+          {isAdmin || isBoardMember ? (
             <DropdownSection
               title="Admin"
               showDivider

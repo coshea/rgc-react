@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import {
   useMembersSubscription,
-  useDocAdminFlag,
+  useAdminFlag,
 } from "@/components/membership/hooks";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -16,7 +16,7 @@ import { useAuth } from "@/providers/AuthProvider";
  */
 export function useMembers(year = new Date().getFullYear()) {
   const { user, userLoggedIn, loading: authLoading } = useAuth();
-  const { isAdmin, loadingAdmin } = useDocAdminFlag(user);
+  const { isAdmin, loadingAdmin } = useAdminFlag(user);
   const { members, loadingMembers, error } = useMembersSubscription(
     !!user && userLoggedIn,
   );

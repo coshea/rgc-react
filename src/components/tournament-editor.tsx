@@ -19,7 +19,7 @@ import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
@@ -141,7 +141,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [fetchingWeather, setFetchingWeather] = React.useState(false);
 
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   // Sync previousTournamentId state with tournament prop updates
   React.useEffect(() => {

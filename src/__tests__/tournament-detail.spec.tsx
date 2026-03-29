@@ -18,7 +18,8 @@ vi.mock("@/hooks/useUserProfile", () => ({
 // Control admin flag via membership hook (avoid Firestore admin doc mocks)
 let isAdminMock = false;
 vi.mock("@/components/membership/hooks", () => ({
-  useDocAdminFlag: () => ({ isAdmin: isAdminMock, loadingAdmin: false }),
+  useAdminFlag: () => ({ isAdmin: isAdminMock, loadingAdmin: false }),
+  useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
 }));
 
 // API-level listeners simulation

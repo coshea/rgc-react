@@ -23,7 +23,7 @@ import {
 import { type Mode } from "@/components/find-a-game/FindAGamePostModal";
 import PostsList from "@/components/find-a-game/PostsList";
 import FindAGamePostModal from "@/components/find-a-game/FindAGamePostModal";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 
 export default function FindAGamePage() {
   usePageTracking("Find A Game");
@@ -38,7 +38,7 @@ export default function FindAGamePage() {
   const [posts, setPosts] = useState<FindAGamePost[]>([]);
   const { user } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   // Edit modal state (separate from create)
   const [editOpen, setEditOpen] = useState(false);

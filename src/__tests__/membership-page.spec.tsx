@@ -23,7 +23,8 @@ vi.mock("@/hooks/useUserProfile", () => ({
 }));
 
 vi.mock("@/components/membership/hooks", () => ({
-  useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
 }));
 
 vi.mock("@/api/membership", () => ({

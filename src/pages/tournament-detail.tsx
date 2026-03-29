@@ -53,7 +53,7 @@ import type { User } from "@/api/users";
 import { useUsersMap } from "@/hooks/useUsers";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
 import { getWeatherIcon } from "@/utils/weather";
 import {
@@ -107,7 +107,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   usePageTracking(tournament?.title, !tournament);

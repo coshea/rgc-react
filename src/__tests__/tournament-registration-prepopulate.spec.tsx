@@ -20,7 +20,8 @@ vi.mock("@/hooks/useUserProfile", () => ({
 
 // Ensure admin gating inside TournamentEditor is true for test
 vi.mock("@/components/membership/hooks", () => ({
-  useDocAdminFlag: () => ({ isAdmin: true, loadingAdmin: false }),
+  useAdminFlag: () => ({ isAdmin: true, loadingAdmin: false }),
+  useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
 }));
 
 // Toast capture

@@ -5,13 +5,20 @@ import { ProfileDropdown } from "@/components/profile-dropdown";
 
 // Mock site config minimal
 vi.mock("@/config/site", () => ({
-  siteConfig: { pages: { profile: { link: "/profile" } } },
+  siteConfig: {
+    pages: {
+      profile: { link: "/profile" },
+      adminDashboard: { link: "/admin" },
+      adminNotifications: { link: "/admin/notifications" },
+    },
+  },
 }));
 
 // Mock hook useUserProfile to return displayName
 vi.mock("@/hooks/useUserProfile", () => ({
   useUserProfile: () => ({
     userProfile: { displayName: "Test User", admin: false },
+    isLoading: false,
   }),
 }));
 
@@ -26,6 +33,23 @@ vi.mock("@/providers/AuthProvider", () => ({
     },
     logout: vi.fn(),
   }),
+}));
+
+// Default: regular user (not admin, not board member).
+// Individual tests override via mockReturnValue where needed.
+const useAdminFlagMock = vi.fn((_user?: { uid?: string } | null) => ({
+  isAdmin: false,
+  loadingAdmin: false,
+}));
+const useBoardMemberFlagMock = vi.fn((_user?: { uid?: string } | null) => ({
+  isBoardMember: false,
+  loadingBoard: false,
+}));
+
+vi.mock("@/components/membership/hooks", () => ({
+  useAdminFlag: (user: { uid?: string } | null) => useAdminFlagMock(user),
+  useBoardMemberFlag: (user: { uid?: string } | null) =>
+    useBoardMemberFlagMock(user),
 }));
 
 // Mock HeroUI components that aren't essential to the test logic.
@@ -56,6 +80,11 @@ vi.mock("@heroui/react", async (importOriginal) => {
         </li>
       );
     },
+    DropdownSection: ({ children, title }: any) => (
+      <li role="group" aria-label={title}>
+        {children}
+      </li>
+    ),
     Link: ({ children, href }: any) => <a href={href}>{children}</a>,
     // Keep Avatar behavior close enough for click handling
     Avatar: ({
@@ -137,5 +166,50 @@ describe("ProfileDropdown accessibility", () => {
     expect(document.activeElement).toBe(avatarBtn);
     fireEvent.keyDown(avatarBtn, { key: "Enter" });
     expect(logoutItem).toBeInTheDocument();
+  });
+});
+
+describe("ProfileDropdown admin section visibility", () => {
+  it("hides admin section for a regular user", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: false, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: false,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/send notifications/i)).not.toBeInTheDocument();
+  });
+
+  it("shows admin section for an admin user", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: true, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: false,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
+    expect(screen.getByText(/send notifications/i)).toBeInTheDocument();
+  });
+
+  it("shows admin section for a board member", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: false, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: true,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
+    expect(screen.getByText(/send notifications/i)).toBeInTheDocument();
+  });
+
+  it("shows admin section when user is both admin and board member", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: true, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: true,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
   });
 });

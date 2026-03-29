@@ -15,7 +15,7 @@ import {
   DeleteMemberModal,
   MergeDuplicatesModal,
 } from "@/components/membership"; // barrel export
-import { useDocAdminFlag } from "@/components/membership/hooks"; // still used for immediate admin gating in header (retained until full migration)
+import { useAdminFlag } from "@/components/membership/hooks";
 import { useMembers } from "@/hooks/useMembers";
 import { Switch } from "@heroui/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -24,7 +24,7 @@ export default function MembershipDirectoryPage() {
   usePageTracking("Member Directory");
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
-  const { isAdmin } = useDocAdminFlag(user); // local check for early redirect logic unchanged
+  const { isAdmin } = useAdminFlag(user);
   const queryClient = useQueryClient(); // For invalidating queries after user operations
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
