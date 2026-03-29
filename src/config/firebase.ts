@@ -126,13 +126,28 @@ export function getAnalyticsInstance(): Analytics | undefined {
 
 // FCM Messaging — only available in browser environments with service worker support.
 // Skipped in Vitest environments where the Messaging API is unavailable.
+// isSupported() is checked asynchronously to avoid throwing on iOS Safari where
+// the Push/Service Worker APIs required by FCM are absent.
 let messaging: Messaging | null = null;
+let _messagingResolve: ((m: Messaging | null) => void) | null = null;
+const messagingReady: Promise<Messaging | null> = new Promise(
+  (resolve) => (_messagingResolve = resolve),
+);
+
 if (!import.meta.env.VITEST && typeof window !== "undefined") {
-  try {
-    messaging = getMessaging(app);
-  } catch {
-    // Messaging may not be supported in all environments; fail silently.
-  }
+  import("firebase/messaging")
+    .then(({ isSupported }) => isSupported())
+    .then((supported) => {
+      if (supported) {
+        messaging = getMessaging(app);
+      }
+      _messagingResolve!(messaging);
+    })
+    .catch(() => {
+      _messagingResolve!(null);
+    });
+} else {
+  _messagingResolve!(null);
 }
 
-export { auth, db, analytics, storage, functions, messaging };
+export { auth, db, analytics, storage, functions, messaging, messagingReady };

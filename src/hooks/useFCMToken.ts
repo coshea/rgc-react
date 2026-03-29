@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { db, messaging } from "@/config/firebase";
-import { getToken, onMessage, isSupported } from "firebase/messaging";
+import { db, messagingReady } from "@/config/firebase";
+import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
@@ -30,14 +30,14 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!uid || !messaging || !VAPID_KEY) return;
+    if (!uid || !VAPID_KEY) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     let cancelled = false;
 
-    isSupported()
-      .then((supported) => {
-        if (!supported || cancelled || !messaging) return;
+    messagingReady
+      .then((messaging) => {
+        if (!messaging || cancelled) return;
 
         const permission = Notification.permission;
         const dismissed = localStorage.getItem(DISMISSED_KEY);
@@ -73,19 +73,17 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     // Clear any previous dismissal so the user can always re-enable from Settings
     localStorage.removeItem(DISMISSED_KEY);
     try {
-      const supported = await isSupported();
-      if (!supported) return;
+      const messaging = await messagingReady;
+      if (!messaging) return;
 
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         await registerToken(uid);
         // Set up foreground listener for this session immediately after grant
-        if (messaging) {
-          unsubscribeRef.current?.();
-          unsubscribeRef.current = onMessage(messaging, (payload) => {
-            showForegroundNotification(payload);
-          });
-        }
+        unsubscribeRef.current?.();
+        unsubscribeRef.current = onMessage(messaging, (payload) => {
+          showForegroundNotification(payload);
+        });
       }
     } catch (err) {
       console.warn("[FCM] Permission request failed:", err);
@@ -126,9 +124,10 @@ function showForegroundNotification(payload: MessagePayload): void {
 }
 
 async function registerToken(uid: string): Promise<void> {
-  if (!messaging || !VAPID_KEY) return;
+  if (!VAPID_KEY) return;
   try {
-    if (!(await isSupported())) return;
+    const messaging = await messagingReady;
+    if (!messaging) return;
     let swReg: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
       swReg = await navigator.serviceWorker.register(
