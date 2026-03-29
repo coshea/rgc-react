@@ -19,7 +19,7 @@ export function DirectoryHeader({
         Membership Directory
       </h1>
       {isAdmin && (
-        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto justify-end">
           {onFindDuplicates && (
             <Button
               color="warning"

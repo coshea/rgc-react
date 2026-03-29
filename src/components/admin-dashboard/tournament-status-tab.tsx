@@ -266,29 +266,27 @@ function TournamentCard({ tournament }: TournamentCardProps) {
         )}
 
         {/* Registration window */}
-        {(tournament.registrationStart || tournament.registrationEnd) && (
+        {(registrationWindowInfo.start || registrationWindowInfo.end) && (
           <div className="text-xs text-default-400 flex items-center gap-1">
             <Icon icon="lucide:calendar" className="w-3 h-3" />
-            {tournament.registrationStart && (
+            {registrationWindowInfo.start && (
               <span>
                 Opens{" "}
-                {tournament.registrationStart.toLocaleDateString("en-US", {
+                {registrationWindowInfo.start.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
-                  timeZone: "UTC",
                 })}
               </span>
             )}
-            {tournament.registrationStart && tournament.registrationEnd && (
+            {registrationWindowInfo.start && registrationWindowInfo.end && (
               <span>·</span>
             )}
-            {tournament.registrationEnd && (
+            {registrationWindowInfo.end && (
               <span>
                 Closes{" "}
-                {tournament.registrationEnd.toLocaleDateString("en-US", {
+                {registrationWindowInfo.end.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
-                  timeZone: "UTC",
                 })}
               </span>
             )}
