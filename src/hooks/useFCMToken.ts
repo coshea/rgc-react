@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import * as Sentry from "@sentry/react";
 import { db, messagingReady } from "@/config/firebase";
 import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -86,6 +87,7 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
         });
       }
     } catch (err) {
+      Sentry.captureException(err);
       console.warn("[FCM] Permission request failed:", err);
     }
   }, [uid]);
@@ -130,11 +132,16 @@ async function registerToken(uid: string): Promise<void> {
     if (!messaging) return;
     let swReg: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
-      swReg = await navigator.serviceWorker.register(
-        "/firebase-messaging-sw.js",
-        { scope: "/" },
-      );
-      await navigator.serviceWorker.ready;
+      // Register the SW (idempotent), then use the *active* registration from
+      // `ready`. During a SW update, `register()` may return the incoming
+      // (installing) registration whose `.active` is null, while the old
+      // worker is still active — passing that to `getToken` would cause
+      // `pushManager.subscribe()` to fail. `ready` always resolves with the
+      // currently-active registration so getToken succeeds.
+      await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+        scope: "/",
+      });
+      swReg = await navigator.serviceWorker.ready;
     }
 
     const token = await getToken(messaging, {
@@ -156,6 +163,7 @@ async function registerToken(uid: string): Promise<void> {
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
   } catch (err) {
+    Sentry.captureException(err);
     console.warn("[FCM] Token registration failed:", err);
   }
 }

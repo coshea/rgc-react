@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
+// Sentry is imported by useFCMToken — mock it so captureException is a no-op
+vi.mock("@sentry/react", () => ({
+  captureException: vi.fn(),
+}));
+
 const DISMISSED_KEY = "rgc_notif_prompt_dismissed";
 
 afterEach(() => {
