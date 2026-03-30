@@ -7,6 +7,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
+import { addToast } from "@/providers/toast";
 import type { User } from "@/api/users";
 
 export type EmailScope =
@@ -55,10 +56,41 @@ export function EmailMembersButton({
   activeSet,
   currentYear,
 }: EmailMembersButtonProps) {
-  function openMailto(scope: EmailScope) {
+  async function openMailto(scope: EmailScope) {
     const emails = getEmailAddresses(members, activeSet, scope, currentYear);
-    if (!emails.length) return;
-    window.location.href = `mailto:${emails.join(",")}`;
+    if (!emails.length) {
+      addToast({
+        title: "No email addresses found",
+        description: "There are no members with email addresses in this group.",
+        color: "warning",
+      });
+      return;
+    }
+
+    const emailString = emails.join(",");
+    const isLarge = emailString.length > 2000;
+
+    if (isLarge && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(emailString);
+        addToast({
+          title: "Emails copied to clipboard",
+          description: `${emails.length} email addresses copied. Paste into your email client manually.`,
+          color: "success",
+        });
+        return;
+      } catch (error) {
+        console.error("Could not copy emails to clipboard:", error);
+        addToast({
+          title: "Clipboard copy failed",
+          description:
+            "Unable to copy long email list to clipboard. Trying mailto instead.",
+          color: "danger",
+        });
+      }
+    }
+
+    window.location.href = `mailto:${emailString}`;
   }
 
   return (
