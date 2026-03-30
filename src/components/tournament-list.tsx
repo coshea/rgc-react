@@ -6,7 +6,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Chip,
   Tooltip,
   Button,
   Card,
@@ -16,15 +15,10 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import {
-  getStatus,
-  statusText,
-  isRegistrationOpen,
-  getRegistrationWindowInfo,
-  RegistrationWindowState,
-} from "@/utils/tournamentStatus";
+import { getStatus, isRegistrationOpen } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
+import { TournamentStatusChip } from "@/components/tournament-status-chip";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -193,68 +187,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     );
   };
 
-  // New function to render status chips
-  const renderStatusChips = (tournament: Tournament) => {
-    const status = getStatus(tournament);
-    const windowInfo = getRegistrationWindowInfo(tournament);
-    if (status === TournamentStatus.Canceled) {
-      return (
-        <Chip color="danger" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (status === TournamentStatus.Completed) {
-      return (
-        <Chip color="success" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (status === TournamentStatus.InProgress) {
-      return (
-        <Chip color="primary" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (windowInfo.state === RegistrationWindowState.Open) {
-      return (
-        <Chip color="warning" size="sm" variant="flat">
-          Registration Open
-        </Chip>
-      );
-    }
-
-    if (windowInfo.state === RegistrationWindowState.Upcoming) {
-      return (
-        <Chip color="default" size="sm" variant="flat">
-          Opens Soon
-        </Chip>
-      );
-    }
-
-    if (
-      windowInfo.state === RegistrationWindowState.Closed ||
-      windowInfo.state === RegistrationWindowState.Invalid
-    ) {
-      return (
-        <Chip color="danger" size="sm" variant="bordered">
-          Registration Closed
-        </Chip>
-      );
-    }
-
-    return (
-      <Chip color="primary" size="sm" variant="flat">
-        {statusText(status)}
-      </Chip>
-    );
-  };
-
   const renderMobileCard = (tournament: Tournament) => {
     const goToDetails = () => {
       if (tournament.firestoreId) {
@@ -293,7 +225,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               {renderWinners(tournament)}
             </div>
             <div className="flex flex-col items-end gap-2">
-              {renderStatusChips(tournament)}
+              <TournamentStatusChip tournament={tournament} />
               <div className="text-right">
                 <p className="text-[11px] text-foreground-500">Prize:</p>
                 <p className="text-sm font-medium">
@@ -525,7 +457,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>
-                <TableCell>{renderStatusChips(tournament)}</TableCell>
+                <TableCell>
+                  <TournamentStatusChip tournament={tournament} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

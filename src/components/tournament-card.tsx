@@ -3,20 +3,14 @@ import {
   CardBody,
   CardHeader,
   Tooltip,
-  Chip,
   Divider,
   CardFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import {
-  getStatus,
-  statusText,
-  isRegistrationOpen,
-  getRegistrationWindowInfo,
-  RegistrationWindowState,
-} from "@/utils/tournamentStatus";
+import { getStatus, isRegistrationOpen } from "@/utils/tournamentStatus";
 import { useNavigate, Link } from "react-router-dom";
+import { TournamentStatusChip } from "@/components/tournament-status-chip";
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -30,7 +24,6 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
 
   const status = getStatus(tournament);
   const registrationOpen = isRegistrationOpen(tournament);
-  const registrationWindowInfo = getRegistrationWindowInfo(tournament);
 
   // Define styling based on tournament status
   const getCardStyles = () => {
@@ -106,122 +99,7 @@ export const TournamentCard = ({ tournament }: TournamentCardProps) => {
               ) : null}
             </div>
             {/* Right: Status Chip */}
-            {(() => {
-              const s = getStatus(tournament);
-              const label = statusText(s);
-              if (s === TournamentStatus.Canceled) {
-                return (
-                  <Chip
-                    color="danger"
-                    variant="solid"
-                    size="sm"
-                    startContent={
-                      <Icon icon="lucide:x-circle" className="w-3.5 h-3.5" />
-                    }
-                  >
-                    {label}
-                  </Chip>
-                );
-              }
-              if (s === TournamentStatus.Completed) {
-                return (
-                  <Chip
-                    color="success"
-                    variant="flat"
-                    size="sm"
-                    startContent={
-                      <Icon
-                        icon="lucide:check-circle"
-                        className="w-3.5 h-3.5"
-                      />
-                    }
-                  >
-                    {label}
-                  </Chip>
-                );
-              }
-              if (
-                registrationWindowInfo.state === RegistrationWindowState.Open
-              ) {
-                return (
-                  <Chip
-                    color="warning"
-                    variant="solid"
-                    size="sm"
-                    startContent={
-                      <Icon icon="lucide:user-plus" className="w-3.5 h-3.5" />
-                    }
-                    className="animate-pulse"
-                  >
-                    Registration Open
-                  </Chip>
-                );
-              }
-              if (
-                registrationWindowInfo.state ===
-                RegistrationWindowState.Upcoming
-              ) {
-                return (
-                  <Chip
-                    color="default"
-                    variant="flat"
-                    size="sm"
-                    startContent={
-                      <Icon
-                        icon="lucide:calendar-clock"
-                        className="w-3.5 h-3.5"
-                      />
-                    }
-                  >
-                    Opens Soon
-                  </Chip>
-                );
-              }
-              if (
-                registrationWindowInfo.state ===
-                  RegistrationWindowState.Closed ||
-                registrationWindowInfo.state === RegistrationWindowState.Invalid
-              ) {
-                return (
-                  <Chip
-                    color="danger"
-                    variant="bordered"
-                    size="sm"
-                    startContent={
-                      <Icon icon="lucide:lock" className="w-3.5 h-3.5" />
-                    }
-                  >
-                    Registration Closed
-                  </Chip>
-                );
-              }
-              if (s === TournamentStatus.InProgress) {
-                return (
-                  <Chip
-                    color="primary"
-                    variant="solid"
-                    size="sm"
-                    startContent={
-                      <Icon icon="lucide:play-circle" className="w-3.5 h-3.5" />
-                    }
-                  >
-                    {label}
-                  </Chip>
-                );
-              }
-              return (
-                <Chip
-                  color="default"
-                  variant="flat"
-                  size="sm"
-                  startContent={
-                    <Icon icon="lucide:calendar-days" className="w-3.5 h-3.5" />
-                  }
-                >
-                  {label}
-                </Chip>
-              );
-            })()}
+            <TournamentStatusChip tournament={tournament} />
           </div>
         </CardHeader>
         <Divider />
