@@ -1,4 +1,4 @@
-import { TournamentCard } from "./tournament-card";
+import { TournamentStatusCard } from "./tournament-status-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { Button, Card, CardBody, Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
@@ -97,9 +97,9 @@ export function TournamentSection() {
             View All
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {latestYearLoading || tournamentsLoading
-            ? Array.from({ length: isMobile ? 3 : 4 }).map((_, idx) => (
+            ? Array.from({ length: isMobile ? 3 : 3 }).map((_, idx) => (
                 <Card key={idx} className="w-full">
                   <CardBody className="p-4 space-y-3">
                     <Skeleton className="h-6 w-3/4 rounded-lg" />
@@ -114,7 +114,7 @@ export function TournamentSection() {
                 </Card>
               ))
             : displayTournaments.map((tournament) => (
-                <TournamentCard
+                <TournamentStatusCard
                   key={tournament.firestoreId || tournament.title}
                   tournament={tournament}
                 />

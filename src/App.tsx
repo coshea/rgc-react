@@ -37,6 +37,7 @@ import AdminNotificationsPage from "@/pages/admin-notifications";
 import NotificationSettingsPage from "@/pages/notification-settings";
 import RequireAuth from "@/components/require-auth";
 import RequireAdmin from "@/components/require-admin";
+import RequireAdminOrBoard from "@/components/require-admin-or-board";
 import ProfileCompletionGate from "@/components/profile-completion-gate";
 
 function App() {
@@ -112,9 +113,9 @@ function App() {
             />
             <Route
               element={
-                <RequireAdmin>
+                <RequireAdminOrBoard>
                   <AdminDashboardPage />
-                </RequireAdmin>
+                </RequireAdminOrBoard>
               }
               path={siteConfig.pages.adminDashboard.link}
             />

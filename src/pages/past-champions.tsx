@@ -7,7 +7,7 @@ import { ChampionshipsListSkeleton } from "@/components/championship-skeleton";
 import { ChampionshipEditorModal } from "@/components/championship-editor-modal";
 import { useInfiniteChampionships } from "@/hooks/useChampionships";
 import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 import type { UnifiedChampionship } from "@/types/championship";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
@@ -22,7 +22,7 @@ export default function PastChampions({
 }: PastChampionsProps) {
   usePageTracking("Past Champions", skipTracking);
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   // Start with undefined to discover all years, then narrow to latest year
   const currentYear = new Date().getFullYear();

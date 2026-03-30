@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { onAdminDoc, onUsersCollection } from "@/api/membershipData";
+import { onAdminDoc, onUserDoc, onUsersCollection } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
 import type {
   DocumentData,
@@ -27,15 +27,33 @@ export function useAdminFlag(user: { uid?: string } | null) {
           d?.isAdmin === true || d?.admin === true || d?.admin === "true";
         setIsAdmin(flag);
         setLoadingAdmin(false);
-      }
+      },
     );
     return () => unsub();
   }, [user?.uid]);
   return { isAdmin, loadingAdmin };
 }
 
-// Backward compatibility alias - will be removed in future version
-export const useDocAdminFlag = useAdminFlag;
+// Hook: useBoardMemberFlag - real-time subscription to the user's boardMember field.
+// The field is admin-write-only per Firestore rules, so this is safe to trust.
+export function useBoardMemberFlag(user: { uid?: string } | null) {
+  const [isBoardMember, setIsBoardMember] = useState(false);
+  const [loadingBoard, setLoadingBoard] = useState(!!user);
+  useEffect(() => {
+    if (!user?.uid) {
+      setIsBoardMember(false);
+      setLoadingBoard(false);
+      return;
+    }
+    const unsub = onUserDoc(user.uid, (snap) => {
+      const d = snap.data();
+      setIsBoardMember(d?.boardMember === true);
+      setLoadingBoard(false);
+    });
+    return () => unsub();
+  }, [user?.uid]);
+  return { isBoardMember, loadingBoard };
+}
 
 // Hook: useMembersSubscription - subscribes to users collection when enabled
 export function useMembersSubscription(enabled: boolean) {
@@ -79,7 +97,7 @@ export function useMembersSubscription(enabled: boolean) {
         setError(toError(err));
         setMembers([]);
         setLoadingMembers(false);
-      }
+      },
     );
     return () => unsub();
   }, [enabled]);
@@ -97,7 +115,7 @@ export function preflightCsv(rows: UserProfilePayload[]): CsvPreflightResult {
   if (!rows.length) return { ok: false, error: "No rows" };
   const invalidBoard = rows.some(
     (r) =>
-      r.boardMember === true || (typeof r.role === "string" && r.role.trim())
+      r.boardMember === true || (typeof r.role === "string" && r.role.trim()),
   );
   if (invalidBoard)
     return { ok: false, error: "Bulk upload cannot assign board roles" };

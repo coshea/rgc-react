@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
+// Sentry is imported by useFCMToken — mock it so captureException is a no-op
+vi.mock("@sentry/react", () => ({
+  captureException: vi.fn(),
+}));
+
 const DISMISSED_KEY = "rgc_notif_prompt_dismissed";
 
 afterEach(() => {
@@ -15,11 +20,13 @@ afterEach(() => {
 describe("useFCMToken — shouldPrompt", () => {
   beforeEach(() => {
     // Simulate a real messaging object so the hook doesn't bail out early
+    const mockMessaging = {
+      /* truthy */
+    };
     vi.doMock("@/config/firebase", () => ({
       db: {},
-      messaging: {
-        /* truthy */
-      },
+      messaging: mockMessaging,
+      messagingReady: Promise.resolve(mockMessaging),
     }));
     vi.doMock("firebase/messaging", () => ({
       getToken: vi.fn().mockResolvedValue("tok-abc"),
@@ -108,7 +115,12 @@ describe("useFCMToken — dismissPrompt", () => {
       configurable: true,
     });
 
-    vi.doMock("@/config/firebase", () => ({ db: {}, messaging: {} }));
+    const mockMessaging2 = {};
+    vi.doMock("@/config/firebase", () => ({
+      db: {},
+      messaging: mockMessaging2,
+      messagingReady: Promise.resolve(mockMessaging2),
+    }));
     vi.doMock("firebase/messaging", () => ({
       getToken: vi.fn(),
       isSupported: vi.fn().mockResolvedValue(true),
@@ -153,7 +165,12 @@ describe("useFCMToken — requestPermission", () => {
       configurable: true,
     });
 
-    vi.doMock("@/config/firebase", () => ({ db: {}, messaging: {} }));
+    const mockMsg1 = {};
+    vi.doMock("@/config/firebase", () => ({
+      db: {},
+      messaging: mockMsg1,
+      messagingReady: Promise.resolve(mockMsg1),
+    }));
     vi.doMock("firebase/messaging", () => ({
       getToken,
       isSupported: vi.fn().mockResolvedValue(true),
@@ -192,7 +209,12 @@ describe("useFCMToken — requestPermission", () => {
       configurable: true,
     });
 
-    vi.doMock("@/config/firebase", () => ({ db: {}, messaging: {} }));
+    const mockMsg2 = {};
+    vi.doMock("@/config/firebase", () => ({
+      db: {},
+      messaging: mockMsg2,
+      messagingReady: Promise.resolve(mockMsg2),
+    }));
     vi.doMock("firebase/messaging", () => ({
       getToken,
       isSupported: vi.fn().mockResolvedValue(true),

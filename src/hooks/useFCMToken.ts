@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { db, messaging } from "@/config/firebase";
-import { getToken, onMessage, isSupported } from "firebase/messaging";
+import * as Sentry from "@sentry/react";
+import { db, messagingReady } from "@/config/firebase";
+import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
@@ -30,14 +31,14 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!uid || !messaging || !VAPID_KEY) return;
+    if (!uid || !VAPID_KEY) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     let cancelled = false;
 
-    isSupported()
-      .then((supported) => {
-        if (!supported || cancelled || !messaging) return;
+    messagingReady
+      .then((messaging) => {
+        if (!messaging || cancelled) return;
 
         const permission = Notification.permission;
         const dismissed = localStorage.getItem(DISMISSED_KEY);
@@ -73,21 +74,20 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     // Clear any previous dismissal so the user can always re-enable from Settings
     localStorage.removeItem(DISMISSED_KEY);
     try {
-      const supported = await isSupported();
-      if (!supported) return;
+      const messaging = await messagingReady;
+      if (!messaging) return;
 
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         await registerToken(uid);
         // Set up foreground listener for this session immediately after grant
-        if (messaging) {
-          unsubscribeRef.current?.();
-          unsubscribeRef.current = onMessage(messaging, (payload) => {
-            showForegroundNotification(payload);
-          });
-        }
+        unsubscribeRef.current?.();
+        unsubscribeRef.current = onMessage(messaging, (payload) => {
+          showForegroundNotification(payload);
+        });
       }
     } catch (err) {
+      Sentry.captureException(err);
       console.warn("[FCM] Permission request failed:", err);
     }
   }, [uid]);
@@ -126,16 +126,22 @@ function showForegroundNotification(payload: MessagePayload): void {
 }
 
 async function registerToken(uid: string): Promise<void> {
-  if (!messaging || !VAPID_KEY) return;
+  if (!VAPID_KEY) return;
   try {
-    if (!(await isSupported())) return;
+    const messaging = await messagingReady;
+    if (!messaging) return;
     let swReg: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
-      swReg = await navigator.serviceWorker.register(
-        "/firebase-messaging-sw.js",
-        { scope: "/" },
-      );
-      await navigator.serviceWorker.ready;
+      // Register the SW (idempotent), then use the *active* registration from
+      // `ready`. During a SW update, `register()` may return the incoming
+      // (installing) registration whose `.active` is null, while the old
+      // worker is still active — passing that to `getToken` would cause
+      // `pushManager.subscribe()` to fail. `ready` always resolves with the
+      // currently-active registration so getToken succeeds.
+      await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
+        scope: "/",
+      });
+      swReg = await navigator.serviceWorker.ready;
     }
 
     const token = await getToken(messaging, {
@@ -157,6 +163,7 @@ async function registerToken(uid: string): Promise<void> {
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
   } catch (err) {
+    Sentry.captureException(err);
     console.warn("[FCM] Token registration failed:", err);
   }
 }

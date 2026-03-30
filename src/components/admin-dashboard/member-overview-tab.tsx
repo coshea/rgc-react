@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Spinner,
-  cn,
-} from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Spinner, cn } from "@heroui/react";
 import {
   Area,
   AreaChart,
@@ -22,6 +14,7 @@ import { useMembers } from "@/hooks/useMembers";
 import { useMembershipPayments } from "@/hooks/useMembershipPayments";
 import { toDate } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
+import { EmailMembersButton } from "@/components/membership";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -403,42 +396,16 @@ export function MemberOverviewTab() {
               <GrowthLineChart data={growthData} />
             </CardBody>
           </Card>
-
-          {/* Membership type breakdown */}
-          <Card shadow="sm">
-            <CardHeader>
-              <p className="font-semibold">Membership Type Breakdown</p>
-            </CardHeader>
-            <CardBody className="flex flex-wrap gap-3 pb-5">
-              <div className="flex items-center gap-2">
-                <Chip color="success" variant="flat" size="sm">
-                  Full
-                </Chip>
-                <span className="text-sm font-medium">{stats.fullMembers}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Chip color="primary" variant="flat" size="sm">
-                  Handicap Only
-                </Chip>
-                <span className="text-sm font-medium">
-                  {stats.handicapOnly}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Chip color="default" variant="flat" size="sm">
-                  No Type Set
-                </Chip>
-                <span className="text-sm font-medium">
-                  {stats.total - stats.fullMembers - stats.handicapOnly}
-                </span>
-              </div>
-            </CardBody>
-          </Card>
         </>
       )}
 
-      {/* Export action */}
-      <div className="flex justify-end">
+      {/* Toolbar actions */}
+      <div className="flex justify-end gap-2 flex-wrap">
+        <EmailMembersButton
+          members={allMembers}
+          activeSet={activeSet}
+          currentYear={year}
+        />
         <Button
           variant="flat"
           color="primary"

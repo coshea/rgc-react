@@ -15,9 +15,17 @@ import {
 export function onAdminDoc(
   uid: string,
   next: (snap: DocumentSnapshot<DocumentData>) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   return onSnapshot(doc(db, "admin", uid), next, error);
+}
+
+export function onUserDoc(
+  uid: string,
+  next: (snap: DocumentSnapshot<DocumentData>) => void,
+  error?: (error: FirestoreError) => void,
+) {
+  return onSnapshot(doc(db, "users", uid), next, error);
 }
 
 /**
@@ -29,7 +37,7 @@ export function onAdminDoc(
  */
 export function onUsersCollection(
   next: (snap: QuerySnapshot<DocumentData>) => void,
-  error?: (error: FirestoreError) => void
+  error?: (error: FirestoreError) => void,
 ) {
   // Return all users - filtering for isMigrated will happen client-side
   // This is because Firestore inequality queries exclude documents without the field

@@ -30,6 +30,7 @@ import {
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
 import BackButton from "@/components/back-button";
+import { TournamentStatusChip } from "@/components/tournament-status-chip";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import {
@@ -53,7 +54,7 @@ import type { User } from "@/api/users";
 import { useUsersMap } from "@/hooks/useUsers";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
-import { useDocAdminFlag } from "@/components/membership/hooks";
+import { useAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
 import { getWeatherIcon } from "@/utils/weather";
 import {
@@ -107,7 +108,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useDocAdminFlag(user);
+  const { isAdmin } = useAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   usePageTracking(tournament?.title, !tournament);
@@ -684,26 +685,7 @@ const TournamentDetailPage: React.FC = () => {
                   size="xs"
                   ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
                 />
-                {registrationOpen && (
-                  <Chip color="warning" size="sm" variant="flat">
-                    Registration Open
-                  </Chip>
-                )}
-                {currentStatus === TournamentStatus.Completed && (
-                  <Chip color="default" size="sm" variant="flat">
-                    Completed
-                  </Chip>
-                )}
-                {currentStatus === TournamentStatus.InProgress && (
-                  <Chip color="primary" size="sm" variant="flat">
-                    In Progress
-                  </Chip>
-                )}
-                {currentStatus === TournamentStatus.Canceled && (
-                  <Chip color="danger" size="sm" variant="flat">
-                    Canceled
-                  </Chip>
-                )}
+                <TournamentStatusChip tournament={tournament} />
               </div>
             </div>
 

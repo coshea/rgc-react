@@ -6,25 +6,18 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Chip,
   Tooltip,
   Button,
-  Card,
-  CardBody,
   Select,
   SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
-import {
-  getStatus,
-  statusText,
-  isRegistrationOpen,
-  getRegistrationWindowInfo,
-  RegistrationWindowState,
-} from "@/utils/tournamentStatus";
+import { getStatus, isRegistrationOpen } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
+import { TournamentStatusChip } from "@/components/tournament-status-chip";
+import { TournamentStatusCard } from "@/components/tournament-status-card";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -193,124 +186,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     );
   };
 
-  // New function to render status chips
-  const renderStatusChips = (tournament: Tournament) => {
-    const status = getStatus(tournament);
-    const windowInfo = getRegistrationWindowInfo(tournament);
-    if (status === TournamentStatus.Canceled) {
-      return (
-        <Chip color="danger" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (status === TournamentStatus.Completed) {
-      return (
-        <Chip color="success" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (status === TournamentStatus.InProgress) {
-      return (
-        <Chip color="primary" size="sm" variant="flat">
-          {statusText(status)}
-        </Chip>
-      );
-    }
-
-    if (windowInfo.state === RegistrationWindowState.Open) {
-      return (
-        <Chip color="warning" size="sm" variant="flat">
-          Registration Open
-        </Chip>
-      );
-    }
-
-    if (windowInfo.state === RegistrationWindowState.Upcoming) {
-      return (
-        <Chip color="default" size="sm" variant="flat">
-          Opens Soon
-        </Chip>
-      );
-    }
-
-    if (
-      windowInfo.state === RegistrationWindowState.Closed ||
-      windowInfo.state === RegistrationWindowState.Invalid
-    ) {
-      return (
-        <Chip color="danger" size="sm" variant="bordered">
-          Registration Closed
-        </Chip>
-      );
-    }
-
-    return (
-      <Chip color="primary" size="sm" variant="flat">
-        {statusText(status)}
-      </Chip>
-    );
-  };
-
-  const renderMobileCard = (tournament: Tournament) => {
-    const goToDetails = () => {
-      if (tournament.firestoreId) {
-        navigate(`/tournaments/${tournament.firestoreId}`);
-      }
-    };
-
-    return (
-      <Card
-        key={tournament.firestoreId}
-        isPressable
-        onPress={goToDetails}
-        aria-label={`View details for ${tournament.title}`}
-        className="mb-4 border border-default-200 hover:bg-content2 transition-colors"
-      >
-        <CardBody className="p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="font-medium text-foreground mb-1 flex items-center gap-2">
-                {tournament.title}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-foreground-500">
-                <span className="inline-flex items-center gap-1">
-                  <Icon icon="lucide:calendar" className="w-3.5 h-3.5" />
-                  {formatDate(tournament.date)}
-                </span>
-                <TeeBadge
-                  tee={tournament.tee || "Mixed"}
-                  size="xs"
-                  ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
-                />
-              </div>
-              <p className="text-xs text-foreground-500 mt-2 line-clamp-2">
-                {tournament.description}
-              </p>
-              {renderWinners(tournament)}
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              {renderStatusChips(tournament)}
-              <div className="text-right">
-                <p className="text-[11px] text-foreground-500">Prize:</p>
-                <p className="text-sm font-medium">
-                  {formatCurrency(tournament.prizePool)}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-xs text-foreground-500">
-                  <Icon icon="lucide:users" className="w-3.5 h-3.5" />
-                  {tournament.players}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-    );
-  };
-
   if (tournaments.length === 0) {
     return (
       <div className="text-center py-12 bg-content1 rounded-lg border border-default-200">
@@ -413,7 +288,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
       </div>
       {/* Mobile view (card-based layout) */}
       <div className="md:hidden space-y-2">
-        {filteredTournaments.map((tournament) => renderMobileCard(tournament))}
+        {filteredTournaments.map((tournament) => (
+          <TournamentStatusCard
+            key={tournament.firestoreId}
+            tournament={tournament}
+          />
+        ))}
       </div>
 
       {/* Desktop view (table layout) */}
@@ -525,7 +405,9 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>
-                <TableCell>{renderStatusChips(tournament)}</TableCell>
+                <TableCell>
+                  <TournamentStatusChip tournament={tournament} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

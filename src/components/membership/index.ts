@@ -1,5 +1,6 @@
 export * from "./DirectoryHeader";
 export * from "./DirectorySearchBar";
+export * from "./EmailMembersButton";
 export * from "./MembersList";
 export * from "./MemberRow";
 export * from "./MemberCardMobile";

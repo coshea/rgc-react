@@ -73,6 +73,8 @@ export function useYearlyTournaments({
           tee: data.tee,
           registrationStart,
           registrationEnd,
+          maxTeams:
+            typeof data.maxTeams === "number" ? data.maxTeams : undefined,
         });
       });
       return tournaments;

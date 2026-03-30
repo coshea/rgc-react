@@ -9,7 +9,8 @@ vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "u1" }, userLoggedIn: true, loading: false }),
 }));
 vi.mock("@/components/membership/hooks", () => ({
-  useDocAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useAdminFlag: () => ({ isAdmin: false, loadingAdmin: false }),
+  useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
   useMembersSubscription: () => ({
     members: [
       {
