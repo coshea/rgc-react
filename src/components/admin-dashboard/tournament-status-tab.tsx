@@ -72,6 +72,11 @@ function TournamentCard({ tournament }: TournamentCardProps) {
 
   const registrationWindowInfo = getRegistrationWindowInfo(tournament);
 
+  const showRegistrationCount =
+    tournament.status === TournamentStatus.InProgress ||
+    registrationWindowInfo.state === RegistrationWindowState.Open ||
+    registrationWindowInfo.state === RegistrationWindowState.Closed;
+
   const fillColor = isFull
     ? ("danger" as const)
     : isNearFull
@@ -100,7 +105,7 @@ function TournamentCard({ tournament }: TournamentCardProps) {
     >
       <CardHeader className="flex items-start justify-between gap-2 pb-2">
         <div className="min-w-0 flex-1">
-          <p className="font-semibold truncate">{tournament.title}</p>
+          <p className="font-semibold leading-snug">{tournament.title}</p>
           <p className="text-sm text-default-400 mt-0.5">{formattedDate}</p>
         </div>
         {(() => {
@@ -212,18 +217,36 @@ function TournamentCard({ tournament }: TournamentCardProps) {
               />
             </span>
           )}
+          {tournament.prizePool > 0 && (
+            <span className="flex items-center gap-1">
+              <Icon
+                icon="lucide:trophy"
+                className="w-3.5 h-3.5 text-warning-500"
+              />
+              ${tournament.prizePool.toLocaleString()}
+            </span>
+          )}
         </div>
+        {tournament.description && (
+          <p className="text-xs text-default-500 line-clamp-2">
+            {tournament.description}
+          </p>
+        )}
 
         {/* Registration fill rate */}
-        {isLoading ? (
+        {showRegistrationCount && isLoading ? (
           <div className="flex items-center gap-2 text-xs text-default-400">
             <Spinner size="sm" />
             Loading registrations…
           </div>
-        ) : (
+        ) : showRegistrationCount ? (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-default-600">Teams registered</span>
+              <span className="text-default-600">
+                {tournament.players === 1
+                  ? "Players registered"
+                  : "Teams registered"}
+              </span>
               <span className="font-semibold">
                 {teamCount}
                 {cap !== undefined && (
@@ -263,12 +286,13 @@ function TournamentCard({ tournament }: TournamentCardProps) {
               <p className="text-xs text-default-400">No team cap set</p>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Registration window */}
         {(registrationWindowInfo.start || registrationWindowInfo.end) && (
           <div className="text-xs text-default-400 flex items-center gap-1">
             <Icon icon="lucide:calendar" className="w-3 h-3" />
+            <span className="font-medium text-default-500">Registration:</span>
             {registrationWindowInfo.start && (
               <span>
                 Opens{" "}
