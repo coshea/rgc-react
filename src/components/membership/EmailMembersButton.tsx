@@ -31,17 +31,17 @@ export function getEmailAddresses(
             m.membershipType === "full" &&
             m.email?.trim(),
         )
-        .map((m) => m.email!);
+        .map((m) => m.email!.trim());
     case "paid-this-year":
       return members
         .filter((m) => m.lastPaidYear === currentYear && m.email?.trim())
-        .map((m) => m.email!);
+        .map((m) => m.email!.trim());
     case "active-last-2-years":
       return members
         .filter((m) => activeSet.has(m.id) && m.email?.trim())
-        .map((m) => m.email!);
+        .map((m) => m.email!.trim());
     case "all":
-      return members.filter((m) => m.email?.trim()).map((m) => m.email!);
+      return members.filter((m) => m.email?.trim()).map((m) => m.email!.trim());
   }
 }
 

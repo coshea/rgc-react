@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { isAdminUser } from "@/utils/admin";
+import {
+  useAdminFlag,
+  useBoardMemberFlag,
+} from "@/components/membership/hooks";
 
 /**
  * Route guard that allows access to admins OR board members.
@@ -11,34 +13,12 @@ export const RequireAdminOrBoard: React.FC<{
   children: React.ReactElement;
 }> = ({ children }) => {
   const { user } = useAuth();
-  const { userProfile, isLoading: loadingProfile } = useUserProfile();
-  const [docAdmin, setDocAdmin] = useState<boolean | null>(null);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const { isAdmin, loadingAdmin } = useAdminFlag(user);
+  const { isBoardMember, loadingBoard } = useBoardMemberFlag(user);
 
-  useEffect(() => {
-    let active = true;
-    setCheckingAdmin(true);
-    if (user?.uid) {
-      isAdminUser(user.uid)
-        .then((flag) => {
-          if (active) setDocAdmin(flag);
-        })
-        .finally(() => {
-          if (active) setCheckingAdmin(false);
-        });
-    } else {
-      setDocAdmin(false);
-      setCheckingAdmin(false);
-    }
-    return () => {
-      active = false;
-    };
-  }, [user?.uid]);
-
-  if (checkingAdmin || loadingProfile) return <div>Checking access...</div>;
-
-  const isAdmin = docAdmin === true;
-  const isBoardMember = !!userProfile?.boardMember;
+  if (loadingAdmin || loadingBoard) {
+    return <div>Checking access...</div>;
+  }
 
   if (!user || (!isAdmin && !isBoardMember)) {
     return <Navigate to="/" replace />;
