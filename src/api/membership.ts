@@ -3,6 +3,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   serverTimestamp,
   getDocs,
   collection,
@@ -558,6 +559,33 @@ export async function updateMembershipSettings(
     logFsSuccess("updateMembershipSettings");
   } catch (e) {
     logFsError("updateMembershipSettings", e);
+    throw e;
+  }
+}
+
+/** Delete all membership payment dues records for a user/year (admin). */
+export async function deleteMembershipPayment(params: {
+  userId: string;
+  year: number;
+}): Promise<void> {
+  const { userId, year } = params;
+  const q = query(
+    collection(db, "memberPayments"),
+    where("userId", "==", userId),
+    where("year", "==", year),
+    where("purpose", "==", "dues"),
+  );
+  logFsStart("deleteMembershipPayment", { userId, year });
+  try {
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    logFsSuccess("deleteMembershipPayment", {
+      userId,
+      year,
+      deleted: snap.size,
+    });
+  } catch (e) {
+    logFsError("deleteMembershipPayment", e, { userId, year });
     throw e;
   }
 }

@@ -36,10 +36,6 @@ export default function AdminDashboardPage() {
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Icon
-            icon="lucide:layout-dashboard"
-            className="w-7 h-7 text-primary"
-          />
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="mt-1 text-default-500 text-sm">
