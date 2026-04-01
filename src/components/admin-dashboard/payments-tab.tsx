@@ -10,7 +10,9 @@ import {
   Chip,
   Input,
   Spinner,
+  cn,
 } from "@heroui/react";
+import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 import { Icon } from "@iconify/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -291,6 +293,72 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
     );
     const totalAmount = yearlyAmount + handicapAmount + donationAmount;
 
+    // Build weekly chart data (cumulative by week of year)
+    const weeksInYear = 53;
+    const weeklyTotals = Array.from({ length: weeksInYear }, () => ({
+      total: 0,
+      yearly: 0,
+      handicap: 0,
+      donations: 0,
+    }));
+
+    function getWeekOfYear(date: Date): number {
+      const startOfYear = new Date(date.getFullYear(), 0, 1);
+      const dayOfYear =
+        Math.floor(
+          (date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24),
+        ) + 1;
+      return Math.min(Math.ceil(dayOfYear / 7), weeksInYear) - 1; // 0-indexed
+    }
+
+    for (const p of confirmedDues) {
+      const ms = toMillis(p.paidAt ?? p.createdAt);
+      if (!ms) continue;
+      const d = new Date(ms);
+      if (d.getFullYear() !== year) continue;
+      const w = getWeekOfYear(d);
+      weeklyTotals[w].total += p.amount ?? 0;
+      if (p.membershipType === MEMBERSHIP_TYPES.FULL) {
+        weeklyTotals[w].yearly += p.amount ?? 0;
+      } else if (p.membershipType === MEMBERSHIP_TYPES.HANDICAP) {
+        weeklyTotals[w].handicap += p.amount ?? 0;
+      }
+    }
+    for (const p of confirmedDonations) {
+      const ms = toMillis(p.paidAt ?? p.createdAt);
+      if (!ms) continue;
+      const d = new Date(ms);
+      if (d.getFullYear() !== year) continue;
+      const w = getWeekOfYear(d);
+      weeklyTotals[w].donations += p.amount ?? 0;
+      weeklyTotals[w].total += p.amount ?? 0;
+    }
+
+    // Cap to current week when viewing the current year
+    const currentWeek =
+      year === new Date().getFullYear()
+        ? getWeekOfYear(new Date())
+        : weeksInYear - 1;
+
+    // Cumulative
+    let cumTotal = 0,
+      cumYearly = 0,
+      cumHandicap = 0,
+      cumDonations = 0;
+    const chartData = Array.from({ length: currentWeek + 1 }, (_, i) => {
+      cumTotal += weeklyTotals[i].total;
+      cumYearly += weeklyTotals[i].yearly;
+      cumHandicap += weeklyTotals[i].handicap;
+      cumDonations += weeklyTotals[i].donations;
+      return {
+        week: `W${i + 1}`,
+        total: cumTotal,
+        yearly: cumYearly,
+        handicap: cumHandicap,
+        donations: cumDonations,
+      };
+    });
+
     return {
       total: rows.duesRows.length,
       yearly: rows.duesRows.filter(
@@ -304,8 +372,9 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       yearlyAmount,
       handicapAmount,
       donationAmount,
+      chartData,
     };
-  }, [rows, payments]);
+  }, [rows, payments, year]);
 
   const pendingChecks = useMemo(() => {
     const dues = (payments || []).filter(
@@ -493,44 +562,171 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           </>
         )}
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-          <Card shadow="sm">
-            <CardBody className="p-6">
-              <div className="text-sm text-default-500">Payments</div>
-              <div className="mt-2 text-2xl font-bold">{stats.total}</div>
-              <div className="mt-1 text-sm text-default-500">
-                Total: {currency(stats.totalAmount)}
-              </div>
-            </CardBody>
-          </Card>
-          <Card shadow="sm">
-            <CardBody className="p-6">
-              <div className="text-sm text-default-500">Full Membership</div>
-              <div className="mt-2 text-2xl font-bold">{stats.yearly}</div>
-              <div className="mt-1 text-sm text-default-500">
-                Total: {currency(stats.yearlyAmount)}
-              </div>
-            </CardBody>
-          </Card>
-          <Card shadow="sm">
-            <CardBody className="p-6">
-              <div className="text-sm text-default-500">Handicap</div>
-              <div className="mt-2 text-2xl font-bold">{stats.handicap}</div>
-              <div className="mt-1 text-sm text-default-500">
-                Total: {currency(stats.handicapAmount)}
-              </div>
-            </CardBody>
-          </Card>
-          <Card shadow="sm">
-            <CardBody className="p-6">
-              <div className="text-sm text-default-500">Donations</div>
-              <div className="mt-2 text-2xl font-bold">{stats.donations}</div>
-              <div className="mt-1 text-sm text-default-500">
-                Total: {currency(stats.donationAmount)}
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+        <dl className="mt-8 grid w-full grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
+          {[
+            {
+              title: "Payments",
+              subtitle: "All confirmed payments",
+              value: stats.total,
+              amount: currency(stats.totalAmount),
+              chartData: stats.chartData.map((d) => ({
+                week: d.week,
+                value: d.total,
+              })),
+              color: "primary" as const,
+              icon: "solar:wallet-bold",
+            },
+            {
+              title: "Full Membership",
+              subtitle: "Yearly dues collected",
+              value: stats.yearly,
+              amount: currency(stats.yearlyAmount),
+              chartData: stats.chartData.map((d) => ({
+                week: d.week,
+                value: d.yearly,
+              })),
+              color: "success" as const,
+              icon: "solar:user-check-bold",
+            },
+            {
+              title: "Handicap Only",
+              subtitle: "Handicap dues collected",
+              value: stats.handicap,
+              amount: currency(stats.handicapAmount),
+              chartData: stats.chartData.map((d) => ({
+                week: d.week,
+                value: d.handicap,
+              })),
+              color: "warning" as const,
+              icon: "solar:golf-bold",
+            },
+            {
+              title: "Donations",
+              subtitle: "Confirmed donations",
+              value: stats.donations,
+              amount: currency(stats.donationAmount),
+              chartData: stats.chartData.map((d) => ({
+                week: d.week,
+                value: d.donations,
+              })),
+              color: "secondary" as const,
+              icon: "solar:heart-bold",
+            },
+          ].map(
+            (
+              { title, subtitle, value, amount, chartData, color, icon },
+              index,
+            ) => (
+              <Card
+                key={index}
+                className="dark:border-default-100 relative border border-transparent"
+                shadow="sm"
+              >
+                <section className="flex flex-col flex-nowrap">
+                  <div className="flex flex-col justify-between gap-y-2 px-4 pt-4">
+                    <div className="flex flex-col gap-y-2">
+                      <div className="flex items-center gap-x-2">
+                        <Icon
+                          icon={icon}
+                          className={cn({
+                            "text-primary": color === "primary",
+                            "text-success": color === "success",
+                            "text-warning": color === "warning",
+                            "text-secondary": color === "secondary",
+                          })}
+                          width={18}
+                          height={18}
+                        />
+                        <div className="flex flex-col gap-y-0">
+                          <dt className="text-default-600 text-sm font-medium">
+                            {title}
+                          </dt>
+                          <dt className="text-tiny text-default-400 font-normal">
+                            {subtitle}
+                          </dt>
+                        </div>
+                      </div>
+                      <div className="flex items-baseline gap-x-2">
+                        <dd className="text-default-700 text-xl font-semibold">
+                          {value}
+                        </dd>
+                        <span className="text-sm text-default-500">
+                          {amount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="min-h-24 w-full">
+                    <ResponsiveContainer className="[&_.recharts-surface]:outline-hidden">
+                      <AreaChart
+                        accessibilityLayer
+                        className="translate-y-1 scale-105"
+                        data={chartData}
+                      >
+                        <defs>
+                          <linearGradient
+                            id={`kpiGradient${index}`}
+                            x1="0"
+                            x2="0"
+                            y1="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="10%"
+                              stopColor={cn({
+                                "hsl(var(--heroui-primary))":
+                                  color === "primary",
+                                "hsl(var(--heroui-success))":
+                                  color === "success",
+                                "hsl(var(--heroui-warning))":
+                                  color === "warning",
+                                "hsl(var(--heroui-secondary))":
+                                  color === "secondary",
+                              })}
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={cn({
+                                "hsl(var(--heroui-primary))":
+                                  color === "primary",
+                                "hsl(var(--heroui-success))":
+                                  color === "success",
+                                "hsl(var(--heroui-warning))":
+                                  color === "warning",
+                                "hsl(var(--heroui-secondary))":
+                                  color === "secondary",
+                              })}
+                              stopOpacity={0.1}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <YAxis
+                          domain={[
+                            Math.min(...chartData.map((d) => d.value)),
+                            "auto",
+                          ]}
+                          hide={true}
+                        />
+                        <Area
+                          dataKey="value"
+                          fill={`url(#kpiGradient${index})`}
+                          stroke={cn({
+                            "hsl(var(--heroui-primary))": color === "primary",
+                            "hsl(var(--heroui-success))": color === "success",
+                            "hsl(var(--heroui-warning))": color === "warning",
+                            "hsl(var(--heroui-secondary))":
+                              color === "secondary",
+                          })}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </section>
+              </Card>
+            ),
+          )}
+        </dl>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

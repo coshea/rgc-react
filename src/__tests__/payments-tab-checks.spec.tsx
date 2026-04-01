@@ -156,7 +156,7 @@ describe("MembershipDashboard - check payments", () => {
     renderDashboard();
 
     expect(await screen.findByText("Alice Member")).toBeInTheDocument();
-    expect(screen.getByText("$20.00")).toBeInTheDocument();
+    expect(screen.getAllByText("$20.00").length).toBeGreaterThan(0);
   });
 });
 
