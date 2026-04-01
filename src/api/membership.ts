@@ -4,11 +4,14 @@ import {
   setDoc,
   getDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   getDocs,
   collection,
   query,
   where,
+  orderBy,
+  limit,
   onSnapshot,
   Unsubscribe,
   writeBatch,
@@ -32,7 +35,7 @@ export type MembershipPayment = {
   createdAt?: any; // Firestore Timestamp
   paidAt: any; // Firestore Timestamp
   amount?: number | null;
-  method?: string | null; // 'stripe' | 'cash' | 'check' | 'comp'
+  method?: string | null; // 'paypal' | 'check'
   membershipType?: MembershipType | null;
   recordedBy?: string | null;
   status: "confirmed" | "pending" | "refunded";
@@ -563,7 +566,9 @@ export async function updateMembershipSettings(
   }
 }
 
-/** Delete all membership payment dues records for a user/year (admin). */
+/** Delete all membership payment dues records for a user/year (admin).
+ *  Also re-syncs the denormalized `lastPaidYear` and `membershipType` fields
+ *  on the user document so the "Already Paid" UI stays consistent. */
 export async function deleteMembershipPayment(params: {
   userId: string;
   year: number;
@@ -579,6 +584,55 @@ export async function deleteMembershipPayment(params: {
   try {
     const snap = await getDocs(q);
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+
+    // Re-sync denormalized user fields only when the deleted year could be
+    // the user's current lastPaidYear.
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.data() as
+      | { lastPaidYear?: number; membershipType?: string }
+      | undefined;
+
+    if (userData?.lastPaidYear === year) {
+      // Look for the most recent confirmed dues payment from a *different* year
+      const prevQ = query(
+        collection(db, "memberPayments"),
+        where("userId", "==", userId),
+        where("purpose", "==", "dues"),
+        where("status", "==", "confirmed"),
+        orderBy("year", "desc"),
+        limit(1),
+      );
+      const prevSnap = await getDocs(prevQ);
+
+      if (!prevSnap.empty) {
+        const prev = prevSnap.docs[0].data() as {
+          year: number;
+          membershipType?: string;
+        };
+        await setDoc(
+          userRef,
+          {
+            lastPaidYear: prev.year,
+            membershipType: prev.membershipType ?? deleteField(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } else {
+        // No remaining confirmed payments — clear both fields
+        await setDoc(
+          userRef,
+          {
+            lastPaidYear: deleteField(),
+            membershipType: deleteField(),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
+    }
+
     logFsSuccess("deleteMembershipPayment", {
       userId,
       year,
