@@ -641,9 +641,9 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                           <dt className="text-default-600 text-sm font-medium">
                             {title}
                           </dt>
-                          <dt className="text-tiny text-default-400 font-normal">
+                          <dd className="text-tiny text-default-400 font-normal">
                             {subtitle}
-                          </dt>
+                          </dd>
                         </div>
                       </div>
                       <div className="flex items-baseline gap-x-2">
