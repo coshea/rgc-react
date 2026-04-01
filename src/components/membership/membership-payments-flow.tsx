@@ -4,6 +4,7 @@ import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
 import { Spacer, addToast } from "@heroui/react";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
+import * as Sentry from "@sentry/react";
 import { logger } from "@/config/sentry";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
@@ -134,6 +135,12 @@ export default function MembershipPaymentsFlow({
   }`;
 
   function onStepperChange(next: number) {
+    logger.trace("Membership payment: stepper navigation", {
+      from: currentStepIndex,
+      to: next,
+      currentStepKind: step.kind,
+      uid: user?.uid ?? null,
+    });
     // Only allow moving backwards. Moving forward should happen via form actions.
     if (next >= currentStepIndex) return;
 
@@ -173,6 +180,12 @@ export default function MembershipPaymentsFlow({
     amount: number;
     returnTo: Step;
   }) {
+    logger.trace("Membership payment: navigating to PayPal step", {
+      purpose: params.purpose,
+      amount: params.amount,
+      uid: user?.uid ?? null,
+      year: currentYear,
+    });
     setStep({ kind: "paypal", ...params });
   }
 
@@ -180,6 +193,12 @@ export default function MembershipPaymentsFlow({
     _data,
     actions,
   ) => {
+    logger.trace("Membership payment: PayPal order creation started", {
+      purpose: step.kind === "paypal" ? step.purpose : null,
+      amount: step.kind === "paypal" ? step.amount : null,
+      uid: user?.uid ?? null,
+      year: currentYear,
+    });
     if (step.kind !== "paypal") {
       return actions.order.create({
         intent: "CAPTURE",
@@ -230,7 +249,13 @@ export default function MembershipPaymentsFlow({
     actions,
   ) => {
     if (!actions.order) {
-      console.error("PayPal order actions were unavailable", { step, user });
+      logger.error(
+        "Membership payment: PayPal order actions were unavailable",
+        {
+          stepKind: step.kind,
+          uid: user?.uid ?? null,
+        },
+      );
       addToast({
         title: "Payment error",
         description: "PayPal order actions were unavailable.",
@@ -334,6 +359,16 @@ export default function MembershipPaymentsFlow({
           }
 
           await refetchUserProfile();
+          logger.info("Membership payment: membership verified and recorded", {
+            orderId: data.orderID ?? null,
+            uid: user?.uid ?? null,
+            purpose: step.purpose,
+            membershipType:
+              step.purpose === "renew"
+                ? MEMBERSHIP_TYPES.FULL
+                : MEMBERSHIP_TYPES.HANDICAP,
+            year: currentYear,
+          });
         }
 
         if (step.purpose === "donation") {
@@ -350,15 +385,26 @@ export default function MembershipPaymentsFlow({
               `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
             );
           }
+          logger.info("Membership payment: donation verified and recorded", {
+            orderId: data.orderID ?? null,
+            uid: user?.uid ?? null,
+            year: currentYear,
+          });
         }
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Unknown recording error";
-        console.error("verifyAndRecordPayPal payment failed. " + message, {
-          error: e,
-          uid: user?.uid,
-          orderId: data?.orderID,
-        });
+        logger.error(
+          "Membership payment: verify/record failed after PayPal approval",
+          {
+            message,
+            uid: user?.uid ?? null,
+            orderId: data?.orderID ?? null,
+            purpose: step.purpose,
+            year: currentYear,
+          },
+        );
+        if (e instanceof Error) Sentry.captureException(e);
         addToast({
           title: "Payment captured, but not recorded",
           description:
@@ -392,7 +438,14 @@ export default function MembershipPaymentsFlow({
 
   const onPayPalError: PayPalButtonsComponentProps["onError"] = (err) => {
     const message = err instanceof Error ? err.message : "Unknown PayPal error";
-    console.error("PayPal error", { err });
+    logger.error("Membership payment: PayPal button error", {
+      message,
+      uid: user?.uid ?? null,
+      purpose: step.kind === "paypal" ? step.purpose : null,
+      amount: step.kind === "paypal" ? step.amount : null,
+      year: currentYear,
+    });
+    Sentry.captureException(err instanceof Error ? err : new Error(message));
     addToast({
       title: "Payment failed",
       description: message,
@@ -401,6 +454,12 @@ export default function MembershipPaymentsFlow({
   };
 
   function selectOption(option: MembershipOption) {
+    logger.trace("Membership payment: option selected", {
+      option,
+      uid: user?.uid ?? null,
+      isPaidForCurrentYear,
+      year: currentYear,
+    });
     // clear per-step errors handled by the steps themselves
 
     // If a signed-in member has already paid for the current year, prevent
@@ -452,6 +511,10 @@ export default function MembershipPaymentsFlow({
   }
 
   function onContinueRenewFromAnnualStart() {
+    logger.trace("Membership payment: proceeding to renew confirm", {
+      uid: user?.uid ?? null,
+      year: currentYear,
+    });
     if (!user) {
       addToast({
         title: "Login required",
@@ -753,6 +816,14 @@ export default function MembershipPaymentsFlow({
                 ? crypto.randomUUID()
                 : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
+            logger.trace("Membership payment: check payment initiated", {
+              purpose: step.purpose,
+              membershipType,
+              year: currentYear,
+              uid: user?.uid ?? null,
+              requestId,
+            });
+
             try {
               await requestCheckMembershipPayment({
                 user,
@@ -763,6 +834,17 @@ export default function MembershipPaymentsFlow({
                   requestId,
                 },
               });
+
+              logger.info(
+                "Membership payment: check payment request recorded",
+                {
+                  purpose: step.purpose,
+                  membershipType,
+                  year: currentYear,
+                  uid: user?.uid ?? null,
+                  requestId,
+                },
+              );
 
               addToast({
                 title: "Check option selected",
@@ -777,6 +859,13 @@ export default function MembershipPaymentsFlow({
             } catch (err) {
               const message =
                 err instanceof Error ? err.message : "Check request failed";
+              logger.error("Membership payment: check payment request failed", {
+                message,
+                uid: user?.uid ?? null,
+                purpose: step.purpose,
+                year: currentYear,
+              });
+              if (err instanceof Error) Sentry.captureException(err);
               addToast({
                 title: "Check request failed",
                 description: message,

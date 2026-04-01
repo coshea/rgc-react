@@ -1,8 +1,10 @@
 import { Button, Input, Select, SelectItem, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
 import {
   getMembershipPayment,
   updateMembershipPayment,
+  deleteMembershipPayment,
 } from "@/api/membership";
 import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
@@ -34,6 +36,8 @@ export function EditMemberModal({
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [paymentDirty, setPaymentDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState(false);
   const [payment, setPayment] = useState<{
     membershipType?: string;
     amount?: string;
@@ -44,6 +48,10 @@ export function EditMemberModal({
 
   // Load existing payment record when modal opens for an existing user
   useEffect(() => {
+    // Always reset confirmation state when the subject changes
+    setConfirmingDelete(false);
+    setDeletingPayment(false);
+
     if (open && editing && isAdmin) {
       setLoadingPayment(true);
       getMembershipPayment(editing.id, currentYear)
@@ -69,6 +77,34 @@ export function EditMemberModal({
       setPayment({});
     }
   }, [open, editing, isAdmin, currentYear]);
+
+  async function handleDeletePayment() {
+    if (!editing || deletingPayment) return;
+    setDeletingPayment(true);
+    try {
+      await deleteMembershipPayment({ userId: editing.id, year: currentYear });
+      qc.invalidateQueries({ queryKey: ["membershipPayments", currentYear] });
+      qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
+      qc.invalidateQueries({ queryKey: ["userProfile", editing.id] });
+      setPayment({});
+      setPaymentDirty(false);
+      setConfirmingDelete(false);
+      addToast({
+        title: "Payment deleted",
+        description: `${currentYear} payment record removed.`,
+        color: "success",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Delete failed";
+      addToast({
+        title: "Delete failed",
+        description: message,
+        color: "danger",
+      });
+    } finally {
+      setDeletingPayment(false);
+    }
+  }
 
   async function handleSave() {
     if (saving) return; // guard double submit
@@ -351,21 +387,73 @@ export function EditMemberModal({
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Input
+                  <Select
                     size="sm"
-                    placeholder="Method (cash / check / stripe / comp)"
-                    value={payment.method || ""}
+                    aria-label="Payment Method"
+                    placeholder="Method"
+                    selectedKeys={
+                      payment.method ? new Set([payment.method]) : new Set()
+                    }
                     isDisabled={saving}
-                    onChange={(e: any) => {
-                      setPayment((p) => ({ ...p, method: e.target.value }));
+                    onSelectionChange={(keys) => {
+                      const v = Array.from(keys as Set<string>)[0] ?? "";
+                      setPayment((p) => ({ ...p, method: v }));
                       setPaymentDirty(true);
                     }}
-                  />
+                  >
+                    <SelectItem key="paypal" textValue="PayPal">
+                      PayPal
+                    </SelectItem>
+                    <SelectItem key="check" textValue="Check">
+                      Check
+                    </SelectItem>
+                  </Select>
                 </div>
                 <p className="text-[11px] text-default-500 leading-snug">
                   Marking Paid will create/update a membership payment record
                   for {currentYear}. Leaving it unchecked keeps status pending.
                 </p>
+                {editing && payment.status && (
+                  <div className="pt-2 border-t border-default-200">
+                    {confirmingDelete ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-danger">
+                          Delete this payment record?
+                        </span>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          isLoading={deletingPayment}
+                          onPress={handleDeletePayment}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="light"
+                          isDisabled={deletingPayment}
+                          onPress={() => setConfirmingDelete(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        color="danger"
+                        variant="light"
+                        startContent={
+                          <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
+                        }
+                        isDisabled={saving}
+                        onPress={() => setConfirmingDelete(true)}
+                      >
+                        Delete Payment
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
