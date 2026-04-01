@@ -82,6 +82,7 @@ export function EditMemberModal({
       await deleteMembershipPayment({ userId: editing.id, year: currentYear });
       qc.invalidateQueries({ queryKey: ["membershipPayments", currentYear] });
       qc.invalidateQueries({ queryKey: ["activeMembers", currentYear] });
+      qc.invalidateQueries({ queryKey: ["userProfile", editing.id] });
       setPayment({});
       setPaymentDirty(false);
       setConfirmingDelete(false);
