@@ -48,6 +48,10 @@ export function EditMemberModal({
 
   // Load existing payment record when modal opens for an existing user
   useEffect(() => {
+    // Always reset confirmation state when the subject changes
+    setConfirmingDelete(false);
+    setDeletingPayment(false);
+
     if (open && editing && isAdmin) {
       setLoadingPayment(true);
       getMembershipPayment(editing.id, currentYear)
@@ -70,7 +74,6 @@ export function EditMemberModal({
         .finally(() => setLoadingPayment(false));
     } else if (!open) {
       setPaymentDirty(false);
-      setConfirmingDelete(false);
       setPayment({});
     }
   }, [open, editing, isAdmin, currentYear]);
