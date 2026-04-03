@@ -15,9 +15,12 @@ import {
   DeleteMemberModal,
   MergeDuplicatesModal,
 } from "@/components/membership"; // barrel export
-import { useAdminFlag } from "@/components/membership/hooks";
+import {
+  useAdminFlag,
+  useBoardMemberFlag,
+} from "@/components/membership/hooks";
 import { useMembers } from "@/hooks/useMembers";
-import { Switch } from "@heroui/react";
+
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function MembershipDirectoryPage() {
@@ -25,12 +28,16 @@ export default function MembershipDirectoryPage() {
   const { user, userLoggedIn, loading } = useAuth();
   const navigate = useNavigate();
   const { isAdmin } = useAdminFlag(user);
+  const { isBoardMember } = useBoardMemberFlag(user);
+  const isAdminOrBoard = isAdmin || isBoardMember;
   const queryClient = useQueryClient(); // For invalidating queries after user operations
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
   const members = membersHook.isAdmin
     ? membersHook.allMembers
     : membersHook.members;
+  const allMembers = membersHook.allMembers;
+  const activeSet = membersHook.activeSet;
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -44,7 +51,6 @@ export default function MembershipDirectoryPage() {
   // search filter
   const [filter, setFilter] = useState("");
   const [activeOnly, setActiveOnly] = useState(true);
-  const activeSet = membersHook.activeSet;
 
   // compute visible count for the header summary (matches MembersList predicate)
   const visibleCount = members.filter((m) => {
@@ -58,6 +64,48 @@ export default function MembershipDirectoryPage() {
   }).length;
 
   // Phone helpers moved to utils/phone.ts
+
+  // ── CSV export ────────────────────────────────────────────────────────────────
+
+  function downloadCsv(filename: string, rows: string[][]) {
+    const csv = rows
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportMemberList() {
+    const headers = [
+      "Name",
+      "Email",
+      "Phone",
+      "Membership Type",
+      "Last Paid Year",
+      "Status",
+    ];
+    const dataRows = allMembers.map((m) => [
+      m.displayName ||
+        [m.firstName, m.lastName].filter(Boolean).join(" ") ||
+        m.email ||
+        m.id,
+      m.email ?? "",
+      m.phone ?? "",
+      m.membershipType ?? "",
+      String(m.lastPaidYear ?? ""),
+      activeSet.has(m.id) ? "Active" : "Inactive",
+    ]);
+    downloadCsv(`rgc-members-${currentYear}.csv`, [headers, ...dataRows]);
+  }
 
   useEffect(() => {
     if (!loading && !userLoggedIn) {
@@ -216,8 +264,15 @@ export default function MembershipDirectoryPage() {
     >
       <DirectoryHeader
         isAdmin={isAdmin}
+        isAdminOrBoard={isAdminOrBoard}
         onAdd={openAdd}
         onFindDuplicates={() => setShowMergeModal(true)}
+        onExportMembers={exportMemberList}
+        members={allMembers}
+        activeSet={activeSet}
+        currentYear={currentYear}
+        activeOnly={activeOnly}
+        onActiveOnlyChange={setActiveOnly}
       />
       <DirectorySearchBar
         filter={filter}
@@ -225,18 +280,7 @@ export default function MembershipDirectoryPage() {
         count={visibleCount}
         total={members.length}
       />
-      {isAdmin && (
-        <div className="flex items-center justify-end mb-2">
-          <Switch
-            size="sm"
-            isSelected={activeOnly}
-            onValueChange={setActiveOnly}
-            aria-label="Toggle active members only"
-          >
-            Active Last 2 Years
-          </Switch>
-        </div>
-      )}
+
       <MembersList
         members={
           isAdmin && activeOnly

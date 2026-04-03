@@ -49,12 +49,14 @@ interface EmailMembersButtonProps {
   members: User[];
   activeSet: Set<string>;
   currentYear: number;
+  size?: "sm" | "md" | "lg";
 }
 
 export function EmailMembersButton({
   members,
   activeSet,
   currentYear,
+  size = "md",
 }: EmailMembersButtonProps) {
   async function openMailto(scope: EmailScope) {
     const emails = getEmailAddresses(members, activeSet, scope, currentYear);
@@ -99,6 +101,7 @@ export function EmailMembersButton({
         <Button
           color="secondary"
           variant="flat"
+          size={size}
           startContent={<Icon icon="lucide:mail" className="w-4 h-4" />}
           endContent={<Icon icon="lucide:chevron-down" className="w-4 h-4" />}
           className="font-medium"

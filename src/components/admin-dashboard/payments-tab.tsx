@@ -50,6 +50,17 @@ function typeLabel(type?: MembershipType | string | null) {
   }
 }
 
+function methodLabel(method?: string | null) {
+  switch (method) {
+    case "paypal":
+      return "PayPal";
+    case "check":
+      return "Check";
+    default:
+      return method ?? "—";
+  }
+}
+
 function typeColor(
   type?: MembershipType | string | null,
 ): "success" | "primary" | "default" {
@@ -197,6 +208,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           name,
           email: user?.email || "",
           membershipType: p.membershipType,
+          method: p.method ?? null,
           paymentAmount: p.amount ?? null,
           donationAmount,
           groupId: p.groupId ?? null,
@@ -226,6 +238,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           name,
           email: user?.email || "",
           membershipType: donation.membershipType,
+          method: donation.method ?? null,
           paymentAmount: null,
           donationAmount: donation.amount ?? 0,
           groupId: donation.groupId ?? null,
@@ -520,6 +533,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       "Name",
       "Email",
       "Membership Type",
+      "Method",
       "Payment",
       "Donation",
       "Paid",
@@ -528,6 +542,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       r.name,
       r.email,
       typeLabel(r.membershipType),
+      methodLabel(r.method),
       r.paymentAmount != null ? String(r.paymentAmount) : "",
       r.donationAmount > 0 ? String(r.donationAmount) : "",
       formatDate(r.paidAt),
@@ -828,6 +843,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                               {typeLabel(row.membershipType)}
                             </Chip>
                           </div>
+                          <div className="text-default-500">Method</div>
+                          <div>{methodLabel(row.method)}</div>
                           <div className="text-default-500">Payment</div>
                           <div>{currency(row.paymentAmount)}</div>
                           <div className="text-default-500">Donation</div>
@@ -848,11 +865,14 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                         Name
                       </th>
-                      <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                      <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4 sm:min-w-[220px] sm:pr-8">
                         Email
                       </th>
                       <th className="hidden px-4 py-3 font-medium sm:table-cell">
                         Membership Type
+                      </th>
+                      <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                        Method
                       </th>
                       <th className="hidden px-4 py-3 font-medium sm:table-cell">
                         Payment
@@ -871,7 +891,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="px-3 py-3 break-words sm:px-4">
                           {row.name}
                         </td>
-                        <td className="px-3 py-3 break-all sm:px-4">
+                        <td className="px-3 py-3 break-all sm:px-4 sm:pr-8">
                           {row.email || "—"}
                         </td>
                         <td className="hidden px-4 py-3 sm:table-cell">
@@ -882,6 +902,9 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                           >
                             {typeLabel(row.membershipType)}
                           </Chip>
+                        </td>
+                        <td className="hidden px-4 py-3 sm:table-cell">
+                          {methodLabel(row.method)}
                         </td>
                         <td className="hidden px-4 py-3 sm:table-cell">
                           {currency(row.paymentAmount)}
@@ -898,7 +921,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     {!isLoading && filteredRows.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={7}
                           className="px-4 py-10 text-center text-default-500"
                         >
                           No payments found.
@@ -925,7 +948,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                       Name
                     </th>
-                    <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
+                    <th className="w-3/5 px-3 py-3 font-medium sm:w-auto sm:px-4 sm:min-w-[220px] sm:pr-8">
                       Email
                     </th>
                     <th className="hidden px-4 py-3 font-medium sm:table-cell">
@@ -959,7 +982,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="px-3 py-3 break-words sm:px-4">
                           {name}
                         </td>
-                        <td className="px-3 py-3 break-all sm:px-4">
+                        <td className="px-3 py-3 break-all sm:px-4 sm:pr-8">
                           {user?.email || "—"}
                         </td>
                         <td className="hidden px-4 py-3 sm:table-cell">

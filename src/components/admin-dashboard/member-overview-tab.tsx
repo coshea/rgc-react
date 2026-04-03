@@ -1,130 +1,11 @@
 import { useMemo, useState } from "react";
-import { Button, Card, CardBody, CardHeader, Spinner, cn } from "@heroui/react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Button, Card, CardBody, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { useMembers } from "@/hooks/useMembers";
 import { useMembershipPayments } from "@/hooks/useMembershipPayments";
 import { toDate } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
-import { EmailMembersButton } from "@/components/membership";
-
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-function resolvedName(
-  m: ReturnType<typeof useMembers>["allMembers"][number],
-): string {
-  return (
-    m.displayName ||
-    [m.firstName, m.lastName].filter(Boolean).join(" ") ||
-    m.email ||
-    m.id
-  );
-}
-
-/** Simple in-browser CSV download – no external deps. */
-function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows
-    .map((row) =>
-      row
-        .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-        .join(","),
-    )
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ─── Growth area chart (recharts + HeroUI theming) ───────────────────────────
-
-interface GrowthLineChartProps {
-  data: { year: number; count: number }[];
-}
-
-function GrowthLineChart({ data }: GrowthLineChartProps) {
-  const chartData = data.map((d) => ({ year: d.year, value: d.count }));
-
-  return (
-    <div
-      role="img"
-      aria-label="Membership growth by year"
-      className="w-full"
-      style={{ height: 160 }}
-    >
-      <ResponsiveContainer
-        width="100%"
-        height="100%"
-        className="[&_.recharts-surface]:outline-hidden"
-      >
-        <AreaChart
-          data={chartData}
-          margin={{ top: 16, right: 8, left: 8, bottom: 24 }}
-        >
-          <defs>
-            <linearGradient id="growthGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop
-                offset="10%"
-                stopColor="hsl(var(--heroui-primary))"
-                stopOpacity={0.3}
-              />
-              <stop
-                offset="100%"
-                stopColor="hsl(var(--heroui-primary))"
-                stopOpacity={0.05}
-              />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="year"
-            tick={{ fontSize: 11, fill: "hsl(var(--heroui-default-400))" }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis hide allowDecimals={false} domain={[0, "auto"]} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--heroui-content1))",
-              border: "1px solid hsl(var(--heroui-default-200))",
-              borderRadius: 8,
-              fontSize: 12,
-            }}
-            formatter={(value) => {
-              const n = typeof value === "number" ? value : 0;
-              return [`${n} member${n !== 1 ? "s" : ""}`, "Members"];
-            }}
-            labelFormatter={(label) => `Year: ${label}`}
-          />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={cn("hsl(var(--heroui-primary))")}
-            fill="url(#growthGradient)"
-            strokeWidth={2}
-            dot={{
-              r: 4,
-              fill: "hsl(var(--heroui-primary))",
-              stroke: "hsl(var(--heroui-background))",
-              strokeWidth: 2,
-            }}
-            activeDot={{ r: 6 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
@@ -182,46 +63,6 @@ export function MemberOverviewTab() {
       handicapOnly: handicapOnly.length,
     };
   }, [allMembers, payments, activeSet, year]);
-
-  // ── growth chart data ─────────────────────────────────────────────────────────
-
-  const growthData = useMemo(() => {
-    const startYear = 2025;
-    const years: Record<number, number> = {};
-    for (const m of allMembers) {
-      const lpy = typeof m.lastPaidYear === "number" ? m.lastPaidYear : null;
-      if (lpy !== null && lpy >= startYear && lpy <= currentYear) {
-        years[lpy] = (years[lpy] ?? 0) + 1;
-      }
-    }
-    const length = currentYear - startYear + 1;
-    return Array.from({ length }, (_, i) => {
-      const y = startYear + i;
-      return { year: y, count: years[y] ?? 0 };
-    });
-  }, [allMembers, currentYear]);
-
-  // ── CSV export ────────────────────────────────────────────────────────────────
-
-  function exportMemberList() {
-    const headers = [
-      "Name",
-      "Email",
-      "Phone",
-      "Membership Type",
-      "Last Paid Year",
-      "Status",
-    ];
-    const dataRows = allMembers.map((m) => [
-      resolvedName(m),
-      m.email ?? "",
-      m.phone ?? "",
-      m.membershipType ?? "",
-      String(m.lastPaidYear ?? ""),
-      activeSet.has(m.id) ? "Active" : "Inactive",
-    ]);
-    downloadCsv(`rgc-members-${year}.csv`, [headers, ...dataRows]);
-  }
 
   return (
     <div className="space-y-6">
@@ -381,41 +222,8 @@ export function MemberOverviewTab() {
               </CardBody>
             </Card>
           </div>
-
-          {/* Growth chart */}
-          <Card shadow="sm">
-            <CardHeader className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold">Membership Growth</p>
-                <p className="text-xs text-default-400">
-                  Members active per year (by last paid year)
-                </p>
-              </div>
-            </CardHeader>
-            <CardBody className="px-6 pb-6">
-              <GrowthLineChart data={growthData} />
-            </CardBody>
-          </Card>
         </>
       )}
-
-      {/* Toolbar actions */}
-      <div className="flex justify-end gap-2 flex-wrap">
-        <EmailMembersButton
-          members={allMembers}
-          activeSet={activeSet}
-          currentYear={year}
-        />
-        <Button
-          variant="flat"
-          color="primary"
-          startContent={<Icon icon="lucide:download" className="w-4 h-4" />}
-          onPress={exportMemberList}
-          isDisabled={isLoading || allMembers.length === 0}
-        >
-          Export Member List
-        </Button>
-      </div>
     </div>
   );
 }
