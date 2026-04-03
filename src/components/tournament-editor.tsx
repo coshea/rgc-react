@@ -1012,7 +1012,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               ) : (
                 <RegistrationsList
                   registrations={registrations}
-                  users={allUsers}
+                  users={allUsers.filter((u) => !u.isMigrated)}
                   players={players}
                   editingId={editingRegId}
                   onStartEdit={(reg) => startEdit(reg)}
