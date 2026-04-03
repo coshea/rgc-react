@@ -72,6 +72,16 @@ function formatSentAt(ts: Timestamp | undefined): string {
   return ts.toDate().toLocaleString();
 }
 
+function formatShortDate(ts: Timestamp | undefined): string {
+  if (!ts) return "—";
+  return ts.toDate().toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function AdminNotificationsPage() {
   // ── Form state ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -425,34 +435,62 @@ export default function AdminNotificationsPage() {
         ) : (
           <div className="divide-y divide-default-100">
             {recentNotifications.map((n) => (
-              <div key={n.id} className="py-3 flex items-start gap-3">
-                <Chip
-                  size="sm"
-                  color={TYPE_COLORS[n.type as NotificationType] ?? "default"}
-                  variant="flat"
-                  className="shrink-0 mt-0.5"
-                  startContent={
-                    <Icon
-                      icon={
-                        NOTIFICATION_TYPES.find((t) => t.value === n.type)
-                          ?.icon ?? "lucide:bell"
-                      }
-                      className="text-xs"
-                    />
-                  }
-                >
-                  {NOTIFICATION_TYPES.find((t) => t.value === n.type)?.label ??
-                    n.type}
-                </Chip>
+              <div
+                key={n.id}
+                className="py-3 flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3"
+              >
+                {/* Mobile top row: chip + short date + delete */}
+                <div className="flex items-center justify-between gap-2 sm:contents">
+                  <Chip
+                    size="sm"
+                    color={TYPE_COLORS[n.type as NotificationType] ?? "default"}
+                    variant="flat"
+                    className="shrink-0 sm:mt-0.5"
+                    startContent={
+                      <Icon
+                        icon={
+                          NOTIFICATION_TYPES.find((t) => t.value === n.type)
+                            ?.icon ?? "lucide:bell"
+                        }
+                        className="text-xs"
+                      />
+                    }
+                  >
+                    {NOTIFICATION_TYPES.find((t) => t.value === n.type)
+                      ?.label ?? n.type}
+                  </Chip>
+                  <div className="flex items-center gap-0.5 sm:hidden">
+                    <span className="text-xs text-default-400 whitespace-nowrap">
+                      {formatShortDate(n.createdAt)}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      isIconOnly
+                      isLoading={deletingId === n.id}
+                      aria-label="Delete notification"
+                      onPress={() => handleDeleteNotification(n.id)}
+                    >
+                      {deletingId !== n.id && (
+                        <Icon icon="lucide:trash-2" className="text-sm" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Title + body */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-sm font-medium text-foreground">
                     {n.title}
                   </p>
-                  <p className="text-xs text-default-400 line-clamp-1">
+                  <p className="text-xs text-default-400 line-clamp-2 sm:line-clamp-1">
                     {n.body}
                   </p>
                 </div>
-                <div className="text-right shrink-0 flex flex-col items-end gap-1">
+
+                {/* Desktop-only: full date + uid + delete */}
+                <div className="hidden sm:flex text-right shrink-0 flex-col items-end gap-1">
                   <p className="text-[10px] text-default-300 whitespace-nowrap">
                     {formatSentAt(n.createdAt)}
                   </p>
