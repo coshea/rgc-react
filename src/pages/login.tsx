@@ -76,6 +76,7 @@ export default function LoginPage() {
     };
   }, []);
 
+  // Only runs on mount — sessionStorage state doesn't depend on email.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const storedSent = window.sessionStorage.getItem(MAGIC_LINK_SENT_KEY);
@@ -84,11 +85,18 @@ export default function LoginPage() {
         window.sessionStorage.getItem(MAGIC_LINK_EMAIL_KEY) || "";
       setLinkSent(true);
       setLinkSentEmail(storedEmail);
-      if (!email && storedEmail) {
+      if (storedEmail) {
         setEmail(storedEmail);
       }
     }
-  }, [email]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Whether the incoming sign-in link has already been used or expired,
+  // requiring the user to request a fresh one.
+  const [linkNeedsResend, setLinkNeedsResend] = React.useState(false);
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] =
+    React.useState(false);
 
   const completeMagicLinkSignIn = React.useCallback(
     async (emailAddress: string, link: string) => {
@@ -124,11 +132,25 @@ export default function LoginPage() {
       } catch (error: unknown) {
         handledMagicLink.current = false;
         console.error("Magic Link Sign-In failed:", error);
+        const firebaseError = extractFirebaseAuthError(error);
+        // Auth/expired-action-code and auth/invalid-action-code mean the link has
+        // already been consumed (e.g. by an email security scanner) or has expired.
+        // Retrying with the same URL will never succeed, so switch to the resend
+        // flow instead of leaving the user stuck in an error loop.
+        const isLinkExpiredOrInvalid =
+          firebaseError?.code === "auth/invalid-action-code" ||
+          firebaseError?.code === "auth/expired-action-code";
         const msg = getFirebaseAuthErrorMessage(error);
         if (isMountedRef.current) {
           setInlineError(msg);
-          setEmailConfirmationError(msg);
-          setPendingMagicLink(link);
+          if (isLinkExpiredOrInvalid) {
+            setLinkNeedsResend(true);
+            setPendingMagicLink(null);
+            setEmailConfirmationError(null);
+          } else {
+            setEmailConfirmationError(msg);
+            setPendingMagicLink(link);
+          }
           setEmailConfirmationModalOpen(true);
           setEmailConfirmationValue(emailAddress);
         }
@@ -182,10 +204,11 @@ export default function LoginPage() {
         return;
       }
 
+      // Don't pre-fill the email — on a different device/browser the user
+      // must type the address they used when requesting the link.
       setPendingMagicLink(currentUrl);
       setEmailConfirmationModalOpen(true);
       setEmailConfirmationError(null);
-      setEmailConfirmationValue(email.trim());
     };
 
     void checkMagicLink();
@@ -193,7 +216,10 @@ export default function LoginPage() {
     return () => {
       isCancelled = true;
     };
-  }, [completeMagicLinkSignIn, email]);
+    // `email` is intentionally excluded: the effect only needs to re-run when
+    // completeMagicLinkSignIn changes, not every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completeMagicLinkSignIn]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -360,6 +386,7 @@ export default function LoginPage() {
       setInlineError("Please enter your email address to reset your password.");
       return;
     }
+    setIsForgotPasswordLoading(true);
     try {
       await resetPassword(email);
       addToast({
@@ -371,6 +398,8 @@ export default function LoginPage() {
       console.error("Reset Password failed:", error);
       const msg = getFirebaseAuthErrorMessage(error);
       setInlineError(msg);
+    } finally {
+      setIsForgotPasswordLoading(false);
     }
   };
 
@@ -378,14 +407,42 @@ export default function LoginPage() {
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    if (!pendingMagicLink) {
-      setEmailConfirmationError(
-        "We couldn't find your sign-in link. Please click the link again.",
-      );
-      return;
-    }
+
     if (!emailConfirmationValue.trim()) {
       setEmailConfirmationError("Email address is required.");
+      return;
+    }
+
+    // Resend path: the original link is expired/consumed — send a fresh one.
+    if (linkNeedsResend) {
+      if (isMountedRef.current) setMagicLinkSubmitting(true);
+      try {
+        await sendLoginLink(emailConfirmationValue.trim());
+        setEmailConfirmationModalOpen(false);
+        setLinkNeedsResend(false);
+        setLinkSent(true);
+        setLinkSentEmail(emailConfirmationValue.trim());
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(MAGIC_LINK_SENT_KEY, "1");
+          window.sessionStorage.setItem(
+            MAGIC_LINK_EMAIL_KEY,
+            emailConfirmationValue.trim(),
+          );
+        }
+      } catch (error: unknown) {
+        const msg = getFirebaseAuthErrorMessage(error);
+        if (isMountedRef.current) setEmailConfirmationError(msg);
+      } finally {
+        if (isMountedRef.current) setMagicLinkSubmitting(false);
+      }
+      return;
+    }
+
+    // Normal confirm path: complete the sign-in with the pending link.
+    if (!pendingMagicLink) {
+      setEmailConfirmationError(
+        "We couldn't find your sign-in link. Please click the link in your email again.",
+      );
       return;
     }
     await completeMagicLinkSignIn(
@@ -401,8 +458,12 @@ export default function LoginPage() {
     setEmailConfirmationModalOpen(false);
     setEmailConfirmationError(null);
     setPendingMagicLink(null);
+    setLinkNeedsResend(false);
     handledMagicLink.current = true;
-    navigate(siteConfig.pages.home.link, { replace: true });
+    // Replace the current history entry to strip the oobCode params from the
+    // URL, but stay on the login page so the user can try again or request a
+    // new link — NOT redirect to home while unauthenticated.
+    navigate(siteConfig.pages.login.link, { replace: true });
   };
 
   return (
@@ -427,6 +488,31 @@ export default function LoginPage() {
                 {inlineError}
               </div>
             ) : null}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {/* Google Sign-In Button */}
+            <Button
+              startContent={
+                !isSubmitting && (
+                  <Icon icon="flat-color-icons:google" width={24} />
+                )
+              }
+              variant="bordered"
+              onPress={handleGoogleSignIn}
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
+            >
+              {authLoading || isSubmitting
+                ? "Signing in..."
+                : "Continue with Google"}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 py-2">
+            <Divider className="flex-1" />
+            <p className="shrink-0 text-tiny text-default-500">OR</p>
+            <Divider className="flex-1" />
           </div>
 
           <Form
@@ -479,7 +565,7 @@ export default function LoginPage() {
               />
             )}
 
-            {loginMode === "password" && (
+            {loginMode === "password" ? (
               <div className="flex w-full items-center justify-between px-1 py-2">
                 <Checkbox name="remember" size="sm">
                   Remember me
@@ -488,8 +574,20 @@ export default function LoginPage() {
                   className="text-default-500"
                   onPress={handleForgotPassword}
                   size="sm"
+                  aria-disabled={isForgotPasswordLoading}
                 >
-                  Forgot password?
+                  {isForgotPasswordLoading ? "Sending..." : "Forgot password?"}
+                </Link>
+              </div>
+            ) : (
+              <div className="flex w-full justify-end px-1 py-1">
+                <Link
+                  className="text-default-500"
+                  onPress={handleForgotPassword}
+                  size="sm"
+                  aria-disabled={isForgotPasswordLoading}
+                >
+                  {isForgotPasswordLoading ? "Sending..." : "Forgot password?"}
                 </Link>
               </div>
             )}
@@ -526,30 +624,6 @@ export default function LoginPage() {
               {loginMode === "magic-link"
                 ? "Sign in with password instead"
                 : "Sign in with email link instead"}
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
-          </div>
-          <div className="flex flex-col gap-2">
-            {/* Google Sign-In Button */}
-            <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
-              variant="bordered"
-              onPress={handleGoogleSignIn}
-              isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
-            >
-              {authLoading || isSubmitting
-                ? "Signing in..."
-                : "Continue with Google"}
             </Button>
           </div>
           <p className="text-center text-small">
@@ -615,12 +689,15 @@ export default function LoginPage() {
           {() => (
             <form onSubmit={handleEmailConfirmationSubmit}>
               <ModalHeader className="flex flex-col gap-1">
-                Confirm your email
+                {linkNeedsResend
+                  ? "Sign-in link no longer valid"
+                  : "Confirm your email"}
               </ModalHeader>
               <ModalBody className="flex flex-col gap-3">
                 <p className="text-small text-default-500">
-                  Enter the email address you used to request the sign-in link
-                  so we can complete your login.
+                  {linkNeedsResend
+                    ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
+                    : "Enter the email address you used to request the sign-in link so we can complete your login."}
                 </p>
                 <Input
                   autoFocus
@@ -652,9 +729,16 @@ export default function LoginPage() {
                 <Button
                   color="primary"
                   type="submit"
+                  isLoading={magicLinkSubmitting}
                   isDisabled={magicLinkSubmitting}
                 >
-                  {magicLinkSubmitting ? "Signing in..." : "Confirm"}
+                  {magicLinkSubmitting
+                    ? linkNeedsResend
+                      ? "Sending..."
+                      : "Signing in..."
+                    : linkNeedsResend
+                      ? "Send new link"
+                      : "Confirm"}
                 </Button>
               </ModalFooter>
             </form>

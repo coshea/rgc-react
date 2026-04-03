@@ -368,6 +368,30 @@ export default function SignUpPage() {
               {inlineError}
             </div>
           )}
+          <div className="flex flex-col gap-2">
+            <Button
+              startContent={
+                !isSubmitting && (
+                  <Icon icon="flat-color-icons:google" width={24} />
+                )
+              }
+              variant="bordered"
+              onPress={handleGoogleSignUp}
+              isDisabled={authLoading || isSubmitting}
+              isLoading={isSubmitting}
+            >
+              {authLoading || isSubmitting
+                ? "Processing..."
+                : "Sign Up with Google"}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 py-2">
+            <Divider className="flex-1" />
+            <p className="shrink-0 text-tiny text-default-500">OR</p>
+            <Divider className="flex-1" />
+          </div>
+
           <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
             <div className="flex flex-col">
               <Input
@@ -536,29 +560,6 @@ export default function SignUpPage() {
               {signupMode === "magic-link"
                 ? "Sign up with password instead"
                 : "Sign up with email link instead"}
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
-              variant="bordered"
-              onPress={handleGoogleSignUp}
-              isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
-            >
-              {authLoading || isSubmitting
-                ? "Processing..."
-                : "Sign Up with Google"}
             </Button>
           </div>
           <p className="text-center text-small">
