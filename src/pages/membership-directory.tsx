@@ -20,7 +20,7 @@ import {
   useBoardMemberFlag,
 } from "@/components/membership/hooks";
 import { useMembers } from "@/hooks/useMembers";
-import { Switch } from "@heroui/react";
+
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function MembershipDirectoryPage() {
@@ -271,6 +271,8 @@ export default function MembershipDirectoryPage() {
         members={allMembers}
         activeSet={activeSet}
         currentYear={currentYear}
+        activeOnly={activeOnly}
+        onActiveOnlyChange={setActiveOnly}
       />
       <DirectorySearchBar
         filter={filter}
@@ -278,18 +280,7 @@ export default function MembershipDirectoryPage() {
         count={visibleCount}
         total={members.length}
       />
-      {isAdmin && (
-        <div className="flex items-center justify-end mb-2">
-          <Switch
-            size="sm"
-            isSelected={activeOnly}
-            onValueChange={setActiveOnly}
-            aria-label="Toggle active members only"
-          >
-            Active Last 2 Years
-          </Switch>
-        </div>
-      )}
+
       <MembersList
         members={
           isAdmin && activeOnly

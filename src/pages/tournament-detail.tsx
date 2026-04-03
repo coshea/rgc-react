@@ -163,6 +163,8 @@ const TournamentDetailPage: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
+  const [adminOpen, setAdminOpen] = React.useState(false);
+  const adminButtonsRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -485,35 +487,41 @@ const TournamentDetailPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Dropdown placement="bottom-end">
-                      <DropdownTrigger>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          startContent={<Icon icon="lucide:calendar-plus" />}
-                          aria-label="Add tournament to calendar"
-                        >
-                          Calendar
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        aria-label="Calendar options"
-                        onAction={handleCalendarAction}
-                      >
-                        <DropdownItem
-                          key="google"
-                          startContent={<Icon icon="lucide:calendar" />}
-                        >
-                          Add to Google Calendar
-                        </DropdownItem>
-                        <DropdownItem
-                          key="ics"
-                          startContent={<Icon icon="lucide:download" />}
-                        >
-                          Download calendar file (.ics)
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
+                    <Tooltip content="Add to calendar">
+                      <div>
+                        <Dropdown placement="bottom-end">
+                          <DropdownTrigger>
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              startContent={
+                                <Icon icon="lucide:calendar-plus" />
+                              }
+                              aria-label="Add tournament to calendar"
+                            >
+                              Calendar
+                            </Button>
+                          </DropdownTrigger>
+                          <DropdownMenu
+                            aria-label="Calendar options"
+                            onAction={handleCalendarAction}
+                          >
+                            <DropdownItem
+                              key="google"
+                              startContent={<Icon icon="lucide:calendar" />}
+                            >
+                              Add to Google Calendar
+                            </DropdownItem>
+                            <DropdownItem
+                              key="ics"
+                              startContent={<Icon icon="lucide:download" />}
+                            >
+                              Download calendar file (.ics)
+                            </DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      </div>
+                    </Tooltip>
                     <Tooltip content="Share tournament">
                       <Button
                         size="sm"
@@ -531,43 +539,79 @@ const TournamentDetailPage: React.FC = () => {
                 {/* Mobile Second row: Admin actions */}
                 {isAdmin && (
                   <div className="flex items-center justify-end gap-2">
-                    <Chip color="secondary" size="sm" variant="flat">
-                      Admin only
-                    </Chip>
-                    <Tooltip content="Export registrations (Admin only)">
-                      <Button
+                    <button
+                      onClick={() => setAdminOpen((o) => !o)}
+                      aria-expanded={adminOpen}
+                      aria-label="Toggle admin actions"
+                      className="focus:outline-none"
+                    >
+                      <Chip
+                        color="secondary"
                         size="sm"
                         variant="flat"
-                        onPress={exportRegistrations}
-                        startContent={<Icon icon="lucide:download" />}
-                        aria-label="Export registrations (Admin only)"
+                        className="cursor-pointer select-none"
+                        endContent={
+                          <Icon
+                            icon="lucide:chevron-right"
+                            className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                          />
+                        }
                       >
-                        Export
-                      </Button>
-                    </Tooltip>
-                    <Tooltip content="Edit tournament (Admin only)">
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        onPress={() => setEditOpen(true)}
-                        startContent={<Icon icon="lucide:edit" />}
-                        aria-label="Edit tournament (Admin only)"
+                        Admin only
+                      </Chip>
+                    </button>
+                    <div
+                      className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
+                      style={{
+                        maxWidth: adminOpen
+                          ? `${adminButtonsRef.current?.scrollWidth ?? 400}px`
+                          : "0px",
+                        opacity: adminOpen ? 1 : 0,
+                      }}
+                    >
+                      <div
+                        ref={adminButtonsRef}
+                        className="flex items-center gap-2"
                       >
-                        Edit
-                      </Button>
-                    </Tooltip>
-                    <Tooltip content="Delete tournament (Admin only)">
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        color="danger"
-                        onPress={() => setDeleteConfirm(true)}
-                        startContent={<Icon icon="lucide:trash-2" />}
-                        aria-label="Delete tournament (Admin only)"
-                      >
-                        Delete
-                      </Button>
-                    </Tooltip>
+                        <Tooltip content="Export registrations (Admin only)">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            onPress={exportRegistrations}
+                            startContent={<Icon icon="lucide:download" />}
+                            aria-label="Export registrations (Admin only)"
+                            className="whitespace-nowrap"
+                          >
+                            Export
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Edit tournament (Admin only)">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            onPress={() => setEditOpen(true)}
+                            startContent={<Icon icon="lucide:edit" />}
+                            aria-label="Edit tournament (Admin only)"
+                            className="whitespace-nowrap"
+                          >
+                            Edit
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Delete tournament (Admin only)">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="danger"
+                            onPress={() => setDeleteConfirm(true)}
+                            startContent={<Icon icon="lucide:trash-2" />}
+                            aria-label="Delete tournament (Admin only)"
+                            className="whitespace-nowrap"
+                          >
+                            Delete
+                          </Button>
+                        </Tooltip>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -576,35 +620,39 @@ const TournamentDetailPage: React.FC = () => {
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Dropdown placement="bottom-end">
-                    <DropdownTrigger>
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        startContent={<Icon icon="lucide:calendar-plus" />}
-                        aria-label="Add tournament to calendar"
-                      >
-                        Calendar
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Calendar options"
-                      onAction={handleCalendarAction}
-                    >
-                      <DropdownItem
-                        key="google"
-                        startContent={<Icon icon="lucide:calendar" />}
-                      >
-                        Add to Google Calendar
-                      </DropdownItem>
-                      <DropdownItem
-                        key="ics"
-                        startContent={<Icon icon="lucide:download" />}
-                      >
-                        Download calendar file (.ics)
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
+                  <Tooltip content="Add to calendar">
+                    <div>
+                      <Dropdown placement="bottom-end">
+                        <DropdownTrigger>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            startContent={<Icon icon="lucide:calendar-plus" />}
+                            aria-label="Add tournament to calendar"
+                          >
+                            Calendar
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="Calendar options"
+                          onAction={handleCalendarAction}
+                        >
+                          <DropdownItem
+                            key="google"
+                            startContent={<Icon icon="lucide:calendar" />}
+                          >
+                            Add to Google Calendar
+                          </DropdownItem>
+                          <DropdownItem
+                            key="ics"
+                            startContent={<Icon icon="lucide:download" />}
+                          >
+                            Download calendar file (.ics)
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
+                  </Tooltip>
                   <Tooltip content="Share tournament">
                     <Button
                       size="sm"
@@ -619,43 +667,79 @@ const TournamentDetailPage: React.FC = () => {
 
                   {isAdmin && (
                     <div className="flex items-center gap-2 pl-2 border-l border-divider">
-                      <Chip color="secondary" size="sm" variant="flat">
-                        Admin only
-                      </Chip>
-                      <Tooltip content="Export registrations (Admin only)">
-                        <Button
+                      <button
+                        onClick={() => setAdminOpen((o) => !o)}
+                        aria-expanded={adminOpen}
+                        aria-label="Toggle admin actions"
+                        className="focus:outline-none"
+                      >
+                        <Chip
+                          color="secondary"
                           size="sm"
                           variant="flat"
-                          onPress={exportRegistrations}
-                          startContent={<Icon icon="lucide:download" />}
-                          aria-label="Export registrations (Admin only)"
+                          className="cursor-pointer select-none"
+                          endContent={
+                            <Icon
+                              icon="lucide:chevron-right"
+                              className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                            />
+                          }
                         >
-                          Export
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="Edit tournament (Admin only)">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() => setEditOpen(true)}
-                          startContent={<Icon icon="lucide:edit" />}
-                          aria-label="Edit tournament (Admin only)"
+                          Admin only
+                        </Chip>
+                      </button>
+                      <div
+                        className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
+                        style={{
+                          maxWidth: adminOpen
+                            ? `${adminButtonsRef.current?.scrollWidth ?? 400}px`
+                            : "0px",
+                          opacity: adminOpen ? 1 : 0,
+                        }}
+                      >
+                        <div
+                          ref={adminButtonsRef}
+                          className="flex items-center gap-2"
                         >
-                          Edit
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content="Delete tournament (Admin only)">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          color="danger"
-                          onPress={() => setDeleteConfirm(true)}
-                          startContent={<Icon icon="lucide:trash-2" />}
-                          aria-label="Delete tournament (Admin only)"
-                        >
-                          Delete
-                        </Button>
-                      </Tooltip>
+                          <Tooltip content="Export registrations (Admin only)">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              onPress={exportRegistrations}
+                              startContent={<Icon icon="lucide:download" />}
+                              aria-label="Export registrations (Admin only)"
+                              className="whitespace-nowrap"
+                            >
+                              Export
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Edit tournament (Admin only)">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              onPress={() => setEditOpen(true)}
+                              startContent={<Icon icon="lucide:edit" />}
+                              aria-label="Edit tournament (Admin only)"
+                              className="whitespace-nowrap"
+                            >
+                              Edit
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Delete tournament (Admin only)">
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="danger"
+                              onPress={() => setDeleteConfirm(true)}
+                              startContent={<Icon icon="lucide:trash-2" />}
+                              aria-label="Delete tournament (Admin only)"
+                              className="whitespace-nowrap"
+                            >
+                              Delete
+                            </Button>
+                          </Tooltip>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
