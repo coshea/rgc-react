@@ -164,7 +164,8 @@ const TournamentDetailPage: React.FC = () => {
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const adminButtonsRef = React.useRef<HTMLDivElement>(null);
+  const mobileAdminButtonsRef = React.useRef<HTMLDivElement>(null);
+  const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -543,7 +544,7 @@ const TournamentDetailPage: React.FC = () => {
                       onClick={() => setAdminOpen((o) => !o)}
                       aria-expanded={adminOpen}
                       aria-label="Toggle admin actions"
-                      className="focus:outline-none"
+                      className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <Chip
                         color="secondary"
@@ -564,13 +565,13 @@ const TournamentDetailPage: React.FC = () => {
                       className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
                       style={{
                         maxWidth: adminOpen
-                          ? `${adminButtonsRef.current?.scrollWidth ?? 400}px`
+                          ? `${mobileAdminButtonsRef.current?.scrollWidth ?? 400}px`
                           : "0px",
                         opacity: adminOpen ? 1 : 0,
                       }}
                     >
                       <div
-                        ref={adminButtonsRef}
+                        ref={mobileAdminButtonsRef}
                         className="flex items-center gap-2"
                       >
                         <Tooltip content="Export registrations (Admin only)">
@@ -671,7 +672,7 @@ const TournamentDetailPage: React.FC = () => {
                         onClick={() => setAdminOpen((o) => !o)}
                         aria-expanded={adminOpen}
                         aria-label="Toggle admin actions"
-                        className="focus:outline-none"
+                        className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <Chip
                           color="secondary"
@@ -692,13 +693,13 @@ const TournamentDetailPage: React.FC = () => {
                         className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
                         style={{
                           maxWidth: adminOpen
-                            ? `${adminButtonsRef.current?.scrollWidth ?? 400}px`
+                            ? `${desktopAdminButtonsRef.current?.scrollWidth ?? 400}px`
                             : "0px",
                           opacity: adminOpen ? 1 : 0,
                         }}
                       >
                         <div
-                          ref={adminButtonsRef}
+                          ref={desktopAdminButtonsRef}
                           className="flex items-center gap-2"
                         >
                           <Tooltip content="Export registrations (Admin only)">

@@ -97,6 +97,19 @@ export default function LoginPage() {
   const [linkNeedsResend, setLinkNeedsResend] = React.useState(false);
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] =
     React.useState(false);
+  const [forgotPasswordCooldown, setForgotPasswordCooldown] =
+    React.useState(false);
+  const forgotPasswordCooldownTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (forgotPasswordCooldownTimerRef.current) {
+        clearTimeout(forgotPasswordCooldownTimerRef.current);
+      }
+    };
+  }, []);
 
   const completeMagicLinkSignIn = React.useCallback(
     async (emailAddress: string, link: string) => {
@@ -382,6 +395,7 @@ export default function LoginPage() {
   }
 
   const handleForgotPassword = async () => {
+    if (isForgotPasswordLoading || forgotPasswordCooldown) return;
     if (!email) {
       setInlineError("Please enter your email address to reset your password.");
       return;
@@ -389,6 +403,13 @@ export default function LoginPage() {
     setIsForgotPasswordLoading(true);
     try {
       await resetPassword(email);
+      setForgotPasswordCooldown(true);
+      if (forgotPasswordCooldownTimerRef.current) {
+        clearTimeout(forgotPasswordCooldownTimerRef.current);
+      }
+      forgotPasswordCooldownTimerRef.current = setTimeout(() => {
+        setForgotPasswordCooldown(false);
+      }, 60_000);
       addToast({
         title: "Reset email sent",
         description: "Check your email for password reset instructions.",
@@ -574,9 +595,13 @@ export default function LoginPage() {
                   className="text-default-500"
                   onPress={handleForgotPassword}
                   size="sm"
-                  aria-disabled={isForgotPasswordLoading}
+                  isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
                 >
-                  {isForgotPasswordLoading ? "Sending..." : "Forgot password?"}
+                  {isForgotPasswordLoading
+                    ? "Sending..."
+                    : forgotPasswordCooldown
+                      ? "Email sent"
+                      : "Forgot password?"}
                 </Link>
               </div>
             ) : (
@@ -585,9 +610,13 @@ export default function LoginPage() {
                   className="text-default-500"
                   onPress={handleForgotPassword}
                   size="sm"
-                  aria-disabled={isForgotPasswordLoading}
+                  isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
                 >
-                  {isForgotPasswordLoading ? "Sending..." : "Forgot password?"}
+                  {isForgotPasswordLoading
+                    ? "Sending..."
+                    : forgotPasswordCooldown
+                      ? "Email sent"
+                      : "Forgot password?"}
                 </Link>
               </div>
             )}
