@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionItem,
@@ -9,6 +9,8 @@ import {
   CardHeader,
   Chip,
   Input,
+  Select,
+  SelectItem,
   Spinner,
   cn,
 } from "@heroui/react";
@@ -26,7 +28,9 @@ import {
   confirmMembershipPaymentGroup,
   getMembershipSettings,
   reconcilePayPalMembershipOrders,
+  updateMembershipPayment,
 } from "@/api/membership";
+import UserSelect from "@/components/UserSelect";
 import {
   MEMBERSHIP_TYPES,
   type MembershipType,
@@ -117,6 +121,18 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
+
+  // Bulk check payment state
+  const [bulkQueue, setBulkQueue] = useState<
+    Array<{ userId: string; membershipType: MembershipType }>
+  >([]);
+  const [bulkSelectedUserId, setBulkSelectedUserId] = useState("");
+  const [bulkMembershipType, setBulkMembershipType] = useState<MembershipType>(
+    MEMBERSHIP_TYPES.FULL,
+  );
+  const [submittingBulk, setSubmittingBulk] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
   const qc = useQueryClient();
@@ -280,6 +296,18 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       return a.name.localeCompare(b.name);
     });
   }, [rows, filter, search]);
+
+  // Reset to page 1 whenever the filtered result set changes
+  const filteredRowsCount = filteredRows.length;
+  React.useEffect(() => {
+    setPage(1);
+  }, [filteredRowsCount]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredRows, page, PAGE_SIZE],
+  );
 
   const stats = useMemo(() => {
     const confirmedDonations = (payments || []).filter(
@@ -452,6 +480,24 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
     });
   }, [payments, userById, year]);
 
+  const alreadyPaidIds = useMemo(
+    () => new Set(rows.duesRows.map((r) => r.userId)),
+    [rows.duesRows],
+  );
+
+  const bulkQueueIds = useMemo(
+    () => new Set(bulkQueue.map((q) => q.userId)),
+    [bulkQueue],
+  );
+
+  const bulkEligibleMembers = useMemo(
+    () =>
+      allMembers.filter(
+        (m) => !alreadyPaidIds.has(m.id) && !bulkQueueIds.has(m.id),
+      ),
+    [allMembers, alreadyPaidIds, bulkQueueIds],
+  );
+
   async function handleConfirmCheck(
     groupId?: string | null,
     paymentId?: string,
@@ -481,6 +527,57 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
     } finally {
       setConfirmingGroupId(null);
     }
+  }
+
+  async function handleBulkSubmit() {
+    if (bulkQueue.length === 0) return;
+    setSubmittingBulk(true);
+    const failedNames: string[] = [];
+    let success = 0;
+    for (const item of bulkQueue) {
+      try {
+        const amount =
+          item.membershipType === MEMBERSHIP_TYPES.HANDICAP
+            ? handicapFee
+            : fullFee;
+        await updateMembershipPayment({
+          userId: item.userId,
+          year,
+          updates: {
+            method: "check",
+            status: "confirmed",
+            membershipType: item.membershipType,
+            amount,
+          },
+        });
+        success++;
+      } catch (err) {
+        const member = userById.get(item.userId);
+        const name =
+          member?.displayName ||
+          [member?.firstName, member?.lastName].filter(Boolean).join(" ") ||
+          member?.email ||
+          item.userId;
+        failedNames.push(name);
+      }
+    }
+    await qc.invalidateQueries({ queryKey: ["membershipPayments", year] });
+    await qc.invalidateQueries({ queryKey: ["activeMembers", year] });
+    if (failedNames.length === 0) {
+      addToast({
+        title: "Payments recorded",
+        description: `${success} check payment${success === 1 ? "" : "s"} recorded successfully.`,
+        color: "success",
+      });
+      setBulkQueue([]);
+    } else {
+      addToast({
+        title: "Some payments failed",
+        description: `${success} succeeded, ${failedNames.length} failed: ${failedNames.join(", ")}`,
+        color: "warning",
+      });
+    }
+    setSubmittingBulk(false);
   }
 
   async function handleReconcilePayPal() {
@@ -817,7 +914,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   </div>
                 ) : (
                   <Accordion selectionMode="multiple" variant="splitted">
-                    {filteredRows.map((row) => (
+                    {paginatedRows.map((row) => (
                       <AccordionItem
                         key={row.id}
                         aria-label={`Paid member ${row.name}`}
@@ -886,7 +983,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRows.map((row) => (
+                    {paginatedRows.map((row) => (
                       <tr key={row.id} className="border-t border-default-200">
                         <td className="px-3 py-3 break-words sm:px-4">
                           {row.name}
@@ -933,6 +1030,36 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               </div>
             )}
           </CardBody>
+          {filteredRows.length > PAGE_SIZE ? (
+            <div className="flex items-center justify-between border-t border-default-200 px-4 py-3">
+              <span className="text-sm text-default-500">
+                {(page - 1) * PAGE_SIZE + 1}–
+                {Math.min(page * PAGE_SIZE, filteredRows.length)} of{" "}
+                {filteredRows.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isDisabled={page === 1}
+                  onPress={() => setPage((p) => p - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isDisabled={page === totalPages}
+                  onPress={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </Card>
 
         <Card className="mt-8 overflow-hidden" shadow="sm">
@@ -1037,6 +1164,185 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             </div>
           </CardBody>
         </Card>
+
+        {isAdmin ? (
+          <Card className="mt-8" shadow="sm">
+            <CardHeader className="flex flex-col items-start gap-2">
+              <div className="font-semibold">Bulk Record Check Payments</div>
+              <div className="text-sm text-default-500">
+                Search for members and add them to the queue, then submit all at
+                once. Members already paid this year are excluded.
+              </div>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-4">
+              {/* Add member row */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1 min-w-0">
+                  <UserSelect
+                    users={bulkEligibleMembers}
+                    label="Search member"
+                    placeholder="Type name or email…"
+                    value={bulkSelectedUserId}
+                    onChange={(v) => {
+                      const id = typeof v === "string" ? v : "";
+                      setBulkSelectedUserId(id);
+                      if (id) {
+                        const member = allMembers.find((m) => m.id === id);
+                        if (member?.membershipType) {
+                          setBulkMembershipType(member.membershipType);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <Select
+                  aria-label="Membership type"
+                  placeholder="Type"
+                  className="sm:w-44"
+                  selectedKeys={new Set([bulkMembershipType])}
+                  onSelectionChange={(keys) => {
+                    const val = Array.from(
+                      keys as Set<string>,
+                    )[0] as MembershipType;
+                    if (val) setBulkMembershipType(val);
+                  }}
+                >
+                  <SelectItem
+                    key={MEMBERSHIP_TYPES.FULL}
+                    textValue="Full Membership"
+                  >
+                    Full Membership
+                  </SelectItem>
+                  <SelectItem
+                    key={MEMBERSHIP_TYPES.HANDICAP}
+                    textValue="Handicap Only"
+                  >
+                    Handicap Only
+                  </SelectItem>
+                </Select>
+                <Button
+                  color="primary"
+                  isDisabled={!bulkSelectedUserId}
+                  onPress={() => {
+                    if (!bulkSelectedUserId) return;
+                    setBulkQueue((prev) => [
+                      ...prev,
+                      {
+                        userId: bulkSelectedUserId,
+                        membershipType: bulkMembershipType,
+                      },
+                    ]);
+                    setBulkSelectedUserId("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+
+              {/* Queue table */}
+              {bulkQueue.length > 0 ? (
+                <div className="overflow-x-auto rounded-lg border border-default-200">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-default-100">
+                      <tr>
+                        <th className="px-4 py-2 font-medium">Name</th>
+                        <th className="px-4 py-2 font-medium">Email</th>
+                        <th className="px-4 py-2 font-medium">Type</th>
+                        <th className="px-4 py-2 font-medium">Amount</th>
+                        <th className="px-2 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bulkQueue.map((item) => {
+                        const member = userById.get(item.userId);
+                        const name =
+                          member?.displayName ||
+                          [member?.firstName, member?.lastName]
+                            .filter(Boolean)
+                            .join(" ") ||
+                          member?.email ||
+                          item.userId;
+                        const fee =
+                          item.membershipType === MEMBERSHIP_TYPES.HANDICAP
+                            ? handicapFee
+                            : fullFee;
+                        return (
+                          <tr
+                            key={item.userId}
+                            className="border-t border-default-200"
+                          >
+                            <td className="px-4 py-2">{name}</td>
+                            <td className="px-4 py-2 text-default-500">
+                              {member?.email || "—"}
+                            </td>
+                            <td className="px-4 py-2">
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color={typeColor(item.membershipType)}
+                              >
+                                {typeLabel(item.membershipType)}
+                              </Chip>
+                            </td>
+                            <td className="px-4 py-2">{currency(fee)}</td>
+                            <td className="px-2 py-2">
+                              <Button
+                                size="sm"
+                                variant="light"
+                                color="danger"
+                                isIconOnly
+                                aria-label={`Remove ${name}`}
+                                onPress={() =>
+                                  setBulkQueue((prev) =>
+                                    prev.filter(
+                                      (q) => q.userId !== item.userId,
+                                    ),
+                                  )
+                                }
+                              >
+                                <Icon icon="lucide:x" className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-default-300 py-8 text-center text-sm text-default-500">
+                  No members queued. Use the search above to add members.
+                </div>
+              )}
+
+              {/* Submit */}
+              <div className="flex items-center justify-between">
+                {bulkQueue.length > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="danger"
+                    onPress={() => setBulkQueue([])}
+                    isDisabled={submittingBulk}
+                  >
+                    Clear all
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <Button
+                  color="success"
+                  isDisabled={bulkQueue.length === 0}
+                  isLoading={submittingBulk}
+                  onPress={handleBulkSubmit}
+                >
+                  Submit {bulkQueue.length > 0 ? bulkQueue.length : ""}{" "}
+                  {bulkQueue.length === 1 ? "payment" : "payments"} by check
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        ) : null}
 
         {isAdmin ? (
           <Card className="mt-8" shadow="sm">

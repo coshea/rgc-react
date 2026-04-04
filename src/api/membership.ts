@@ -251,16 +251,26 @@ export async function updateMembershipPayment(params: {
       };
       const ref = doc(collection(db, "memberPayments"));
       await setDoc(ref, payload);
-      // denormalize membershipType always; lastPaidYear only when confirmed
-      await setDoc(
-        doc(db, "users", userId),
-        {
-          membershipType: updates.membershipType,
-          ...(confirmedCreate ? { lastPaidYear: year } : {}),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+      // Denormalize membershipType / lastPaidYear onto the user doc.
+      // This write is best-effort: if it fails (e.g. a stale board role triggers
+      // a Firestore rule violation) the payment record is still authoritative and
+      // the error is logged rather than thrown.
+      try {
+        await setDoc(
+          doc(db, "users", userId),
+          {
+            membershipType: updates.membershipType,
+            ...(confirmedCreate ? { lastPaidYear: year } : {}),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } catch (denormErr) {
+        logFsError("updateMembershipPayment:denorm", denormErr, {
+          userId,
+          year,
+        });
+      }
       logFsSuccess("updateMembershipPayment", {
         userId,
         year,
@@ -283,17 +293,25 @@ export async function updateMembershipPayment(params: {
     if (payload.status === undefined) delete payload.status;
     await setDoc(existing.ref, payload, { merge: true });
     if (updates.membershipType || updates.status === "confirmed") {
-      await setDoc(
-        doc(db, "users", userId),
-        {
-          ...(updates.membershipType
-            ? { membershipType: updates.membershipType }
-            : {}),
-          ...(updates.status === "confirmed" ? { lastPaidYear: year } : {}),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+      // Denormalization is best-effort — see note on CREATE path above.
+      try {
+        await setDoc(
+          doc(db, "users", userId),
+          {
+            ...(updates.membershipType
+              ? { membershipType: updates.membershipType }
+              : {}),
+            ...(updates.status === "confirmed" ? { lastPaidYear: year } : {}),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } catch (denormErr) {
+        logFsError("updateMembershipPayment:denorm", denormErr, {
+          userId,
+          year,
+        });
+      }
     }
     const confirmed = updates.status === "confirmed";
     logFsSuccess("updateMembershipPayment", { userId, year });

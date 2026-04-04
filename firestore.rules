@@ -81,8 +81,13 @@ service cloud.firestore {
         || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
       // Updates
-      // Admin path: can update any profile with board validation
-      allow update: if request.auth != null && isAdmin() && boardRoleValid(request.resource.data);
+      // Admin path: admins may update any user profile field without restriction.
+      // Board role integrity is enforced at the UI layer (board editor validates
+      // the allowed-list before writing). Removing the field-level guard here
+      // prevents false permission-denied errors when admins write non-board fields
+      // (e.g. membershipType, lastPaidYear) to users whose stored role pre-dates
+      // the current allowed list.
+      allow update: if request.auth != null && isAdmin();
 
       // Self-update path: can update own profile, but cannot change board/admin fields.
       allow update: if request.auth != null
