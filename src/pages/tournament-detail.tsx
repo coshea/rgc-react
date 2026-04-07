@@ -61,6 +61,7 @@ import {
   getTournamentGoogleCalendarUrl,
   downloadTournamentIcsFile,
 } from "@/utils/calendar";
+import { EmailRegistrantsButton } from "@/components/email-registrants-button";
 
 const formatLocalDateTime = (date?: Date) => {
   if (!date) return undefined;
@@ -164,7 +165,6 @@ const TournamentDetailPage: React.FC = () => {
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const mobileAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
   const currentStatus = tournament
@@ -539,80 +539,69 @@ const TournamentDetailPage: React.FC = () => {
 
                 {/* Mobile Second row: Admin actions */}
                 {isAdmin && (
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex flex-col gap-2">
+                    {/* Toggle row — full-width accordion header */}
                     <button
                       onClick={() => setAdminOpen((o) => !o)}
                       aria-expanded={adminOpen}
                       aria-label="Toggle admin actions"
-                      className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      <Chip
-                        color="secondary"
-                        size="sm"
-                        variant="flat"
-                        className="cursor-pointer select-none"
-                        endContent={
-                          <Icon
-                            icon="lucide:chevron-right"
-                            className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                          />
-                        }
-                      >
-                        Admin only
-                      </Chip>
+                      <span>Admin only</span>
+                      <Icon
+                        icon="lucide:chevron-down"
+                        className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                      />
                     </button>
-                    <div
-                      className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
-                      style={{
-                        maxWidth: adminOpen
-                          ? `${mobileAdminButtonsRef.current?.scrollWidth ?? 400}px`
-                          : "0px",
-                        opacity: adminOpen ? 1 : 0,
-                      }}
-                    >
-                      <div
-                        ref={mobileAdminButtonsRef}
-                        className="flex items-center gap-2"
-                      >
-                        <Tooltip content="Export registrations (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            onPress={exportRegistrations}
-                            startContent={<Icon icon="lucide:download" />}
-                            aria-label="Export registrations (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Export
-                          </Button>
-                        </Tooltip>
-                        <Tooltip content="Edit tournament (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            onPress={() => setEditOpen(true)}
-                            startContent={<Icon icon="lucide:edit" />}
-                            aria-label="Edit tournament (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Edit
-                          </Button>
-                        </Tooltip>
-                        <Tooltip content="Delete tournament (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            onPress={() => setDeleteConfirm(true)}
-                            startContent={<Icon icon="lucide:trash-2" />}
-                            aria-label="Delete tournament (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Delete
-                          </Button>
-                        </Tooltip>
+                    {/* Expanded: 2×2 button grid */}
+                    {adminOpen && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <EmailRegistrantsButton
+                          registrations={registrations}
+                          usersMap={usersMap}
+                          maxTeams={
+                            typeof tournament?.maxTeams === "number" &&
+                            Number.isFinite(tournament.maxTeams) &&
+                            tournament.maxTeams > 0
+                              ? tournament.maxTeams
+                              : undefined
+                          }
+                          size="sm"
+                          className="w-full"
+                        />
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={exportRegistrations}
+                          startContent={<Icon icon="lucide:download" />}
+                          aria-label="Export registrations (Admin only)"
+                          className="w-full"
+                        >
+                          Export
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => setEditOpen(true)}
+                          startContent={<Icon icon="lucide:edit" />}
+                          aria-label="Edit tournament (Admin only)"
+                          className="w-full"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          color="danger"
+                          onPress={() => setDeleteConfirm(true)}
+                          startContent={<Icon icon="lucide:trash-2" />}
+                          aria-label="Delete tournament (Admin only)"
+                          className="w-full"
+                        >
+                          Delete
+                        </Button>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -702,6 +691,22 @@ const TournamentDetailPage: React.FC = () => {
                           ref={desktopAdminButtonsRef}
                           className="flex items-center gap-2"
                         >
+                          <Tooltip content="Email registrants (Admin only)">
+                            <div>
+                              <EmailRegistrantsButton
+                                registrations={registrations}
+                                usersMap={usersMap}
+                                maxTeams={
+                                  typeof tournament?.maxTeams === "number" &&
+                                  Number.isFinite(tournament.maxTeams) &&
+                                  tournament.maxTeams > 0
+                                    ? tournament.maxTeams
+                                    : undefined
+                                }
+                                size="sm"
+                              />
+                            </div>
+                          </Tooltip>
                           <Tooltip content="Export registrations (Admin only)">
                             <Button
                               size="sm"

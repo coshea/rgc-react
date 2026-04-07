@@ -551,7 +551,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           },
         });
         success++;
-      } catch (err) {
+      } catch {
         const member = userById.get(item.userId);
         const name =
           member?.displayName ||

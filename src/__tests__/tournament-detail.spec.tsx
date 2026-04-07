@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  within,
+  fireEvent,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -251,6 +258,13 @@ describe("TournamentDetailPage", () => {
     isAdminMock = true;
     emitDoc("tournaments/admin1", baseTournament);
     await screen.findByText("Club Championship");
+
+    // Open the mobile admin toggle so mobile buttons are rendered
+    const toggleBtns = await screen.findAllByRole("button", {
+      name: /Toggle admin actions/i,
+    });
+    fireEvent.click(toggleBtns[0]);
+
     await waitFor(
       () =>
         expect(

@@ -11,6 +11,12 @@ interface SendNotificationData {
   targetUid?: string;
   /** Target all registrants of a specific tournament instead of a single user or all members. */
   targetTournamentId?: string;
+  /**
+   * When targeting tournament registrants, only notify the first N teams
+   * (ordered by registeredAt ascending). Teams beyond this index are
+   * considered waitlisted and are excluded. Omit to notify all registrants.
+   */
+  maxTeams?: number;
   data?: {
     link?: string;
     tournamentId?: string;
@@ -92,7 +98,7 @@ export const send_notification = onCall(async (request) => {
   }
 
   // 3. Validate payload
-  const { title, body, type, targetUid, targetTournamentId, data } =
+  const { title, body, type, targetUid, targetTournamentId, maxTeams, data } =
     request.data as SendNotificationData;
 
   if (!title?.trim() || !body?.trim()) {
@@ -155,13 +161,22 @@ export const send_notification = onCall(async (request) => {
   }
 
   if (targetTournamentId) {
-    // Send to all registrants of a specific tournament
+    // Send to registrants of a specific tournament.
+    // Order by registeredAt so that index-based waitlist exclusion is stable.
     const regsSnap = await db
       .collection(`tournaments/${targetTournamentId}/registrations`)
+      .orderBy("registeredAt", "asc")
       .get();
 
+    // When maxTeams is provided, only the first N registrations are "in tournament";
+    // the rest are waitlisted and are excluded.
+    const regDocs =
+      typeof maxTeams === "number" && maxTeams > 0
+        ? regsSnap.docs.slice(0, maxTeams)
+        : regsSnap.docs;
+
     const uidSet = new Set<string>();
-    for (const regDoc of regsSnap.docs) {
+    for (const regDoc of regDocs) {
       const team = regDoc.data().team;
       if (Array.isArray(team)) {
         team.forEach((m: { id?: string }) => {
