@@ -19,6 +19,7 @@ import {
 import type { User } from "firebase/auth";
 import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
 import { logFsStart, logFsSuccess, logFsError } from "@/utils/firestoreLogger";
+
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 import type {
@@ -182,7 +183,11 @@ export async function updateMembershipPayment(params: {
   updates: Partial<
     Pick<MembershipPayment, "amount" | "method" | "membershipType" | "status">
   >;
-}): Promise<{ created?: boolean; confirmed?: boolean }> {
+}): Promise<{
+  created?: boolean;
+  confirmed?: boolean;
+  denormWarning?: boolean;
+}> {
   const { userId, year, updates } = params;
   const paymentQuery = query(
     collection(db, "memberPayments"),
@@ -251,16 +256,37 @@ export async function updateMembershipPayment(params: {
       };
       const ref = doc(collection(db, "memberPayments"));
       await setDoc(ref, payload);
-      // denormalize membershipType always; lastPaidYear only when confirmed
-      await setDoc(
-        doc(db, "users", userId),
-        {
-          membershipType: updates.membershipType,
-          ...(confirmedCreate ? { lastPaidYear: year } : {}),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+      // Denormalize membershipType / lastPaidYear onto the user doc.
+      // This write is best-effort: if it fails (e.g. a stale board role triggers
+      // a Firestore rule violation) the payment record is still authoritative and
+      // the error is logged rather than thrown.
+      try {
+        await setDoc(
+          doc(db, "users", userId),
+          {
+            membershipType: updates.membershipType,
+            ...(confirmedCreate ? { lastPaidYear: year } : {}),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } catch (denormErr) {
+        logFsError("updateMembershipPayment:denorm", denormErr, {
+          userId,
+          year,
+        });
+        logFsSuccess("updateMembershipPayment", {
+          userId,
+          year,
+          created: true,
+          status,
+        });
+        return {
+          created: true,
+          confirmed: confirmedCreate,
+          denormWarning: true,
+        };
+      }
       logFsSuccess("updateMembershipPayment", {
         userId,
         year,
@@ -282,22 +308,32 @@ export async function updateMembershipPayment(params: {
     if (payload.membershipType === undefined) delete payload.membershipType;
     if (payload.status === undefined) delete payload.status;
     await setDoc(existing.ref, payload, { merge: true });
+    let denormWarning = false;
     if (updates.membershipType || updates.status === "confirmed") {
-      await setDoc(
-        doc(db, "users", userId),
-        {
-          ...(updates.membershipType
-            ? { membershipType: updates.membershipType }
-            : {}),
-          ...(updates.status === "confirmed" ? { lastPaidYear: year } : {}),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+      // Denormalization is best-effort — see note on CREATE path above.
+      try {
+        await setDoc(
+          doc(db, "users", userId),
+          {
+            ...(updates.membershipType
+              ? { membershipType: updates.membershipType }
+              : {}),
+            ...(updates.status === "confirmed" ? { lastPaidYear: year } : {}),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } catch (denormErr) {
+        logFsError("updateMembershipPayment:denorm", denormErr, {
+          userId,
+          year,
+        });
+        denormWarning = true;
+      }
     }
     const confirmed = updates.status === "confirmed";
     logFsSuccess("updateMembershipPayment", { userId, year });
-    return { confirmed };
+    return { confirmed, ...(denormWarning ? { denormWarning: true } : {}) };
   } catch (e) {
     logFsError("updateMembershipPayment", e, { userId, year });
     throw e;

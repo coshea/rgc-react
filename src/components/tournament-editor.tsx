@@ -2,6 +2,7 @@ import React from "react";
 import {
   Card,
   CardBody,
+  CardFooter,
   Input,
   Textarea,
   Button,
@@ -135,6 +136,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [newOpenSpotsOptIn, setNewOpenSpotsOptIn] = React.useState(false);
   const [adding, setAdding] = React.useState(false);
   const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
+  const [regsOpen, setRegsOpen] = React.useState(false);
+  const [bracketOpen, setBracketOpen] = React.useState(false);
   const [weather, setWeather] = React.useState<
     import("@/types/tournament").TournamentWeather | null
   >(seed.weather || null);
@@ -590,8 +593,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   };
 
   return (
-    <Card className="w-full">
-      <CardBody className="p-6">
+    <Card className="w-full h-full flex flex-col">
+      <CardBody className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-medium">
             {isEditing ? "Edit Tournament" : "Create New Tournament"}
@@ -606,7 +609,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
             <Icon icon="lucide:x" className="text-lg" />
           </Button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          id="tournament-editor-form"
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <Input
@@ -987,109 +994,129 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           {isEditing && (
             <div className="pt-6">
               <Divider className="my-4" />
-              <h3 className="text-lg font-medium mb-2">Registrations</h3>
-              {isAdmin && (
-                <div className="mb-4 flex items-center gap-3">
-                  <Button
-                    size="sm"
-                    color="primary"
-                    startContent={<PlusIcon className="w-4 h-4" />}
-                    onPress={() => setAddOpen(true)}
-                  >
-                    Add Registration
-                  </Button>
-                  <div className="text-xs text-foreground-500">
-                    Team size: {players}
-                  </div>
-                </div>
-              )}
-              {regsLoading ? (
-                <div>Loading registrations...</div>
-              ) : registrations.length === 0 ? (
-                <div className="text-sm text-foreground-500">
-                  No registrations yet.
-                </div>
-              ) : (
-                <RegistrationsList
-                  registrations={registrations}
-                  users={allUsers.filter((u) => !u.isMigrated)}
-                  players={players}
-                  editingId={editingRegId}
-                  onStartEdit={(reg) => startEdit(reg)}
-                  onCancelEdit={() => cancelEdit()}
-                  onSave={async (regId, ids, openSpotsOptIn, goldTees) => {
-                    const team = ids.map((id) => {
-                      const u = allUsers.find((x) => x.id === id);
-                      return {
-                        id,
-                        displayName: u?.displayName || u?.email || id,
-                        ...(goldTees.includes(id) ? { goldTee: true } : {}),
-                      };
-                    });
-                    try {
-                      const { doc, updateDoc } = await import(
-                        "firebase/firestore"
-                      );
-                      const { db } = await import("@/config/firebase");
-                      const regRef = doc(
-                        db,
-                        "tournaments",
-                        tournament!.firestoreId!,
-                        "registrations",
-                        regId,
-                      );
-                      await updateDoc(regRef, { team, openSpotsOptIn });
-                      setRegistrations((prev) =>
-                        prev.map((r) =>
-                          r.id === regId ? { ...r, team, openSpotsOptIn } : r,
-                        ),
-                      );
-                      addToast({
-                        title: "Saved",
-                        description: "Registration updated.",
-                        color: "success",
-                      });
-                      cancelEdit();
-                    } catch (err) {
-                      console.error("Failed to save registration", err);
-                      addToast({
-                        title: "Error",
-                        description: "Failed to save registration.",
-                        color: "danger",
-                      });
-                    }
-                  }}
-                  onDelete={async (regId) => {
-                    await deleteRegistration(regId);
-                  }}
+              <button
+                type="button"
+                onClick={() => setRegsOpen((o) => !o)}
+                aria-expanded={regsOpen}
+                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                <h3 className="text-lg font-medium">Registrations</h3>
+                <Icon
+                  icon="lucide:chevron-down"
+                  className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${regsOpen ? "rotate-180" : ""}`}
                 />
+              </button>
+              {regsOpen && (
+                <div className="pt-2">
+                  {isAdmin && (
+                    <div className="mb-4 flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        color="primary"
+                        startContent={<PlusIcon className="w-4 h-4" />}
+                        onPress={() => setAddOpen(true)}
+                      >
+                        Add Registration
+                      </Button>
+                      <div className="text-xs text-foreground-500">
+                        Team size: {players}
+                      </div>
+                    </div>
+                  )}
+                  {regsLoading ? (
+                    <div>Loading registrations...</div>
+                  ) : registrations.length === 0 ? (
+                    <div className="text-sm text-foreground-500">
+                      No registrations yet.
+                    </div>
+                  ) : (
+                    <RegistrationsList
+                      registrations={registrations}
+                      users={allUsers.filter((u) => !u.isMigrated)}
+                      players={players}
+                      editingId={editingRegId}
+                      onStartEdit={(reg) => startEdit(reg)}
+                      onCancelEdit={() => cancelEdit()}
+                      onSave={async (regId, ids, openSpotsOptIn, goldTees) => {
+                        const team = ids.map((id) => {
+                          const u = allUsers.find((x) => x.id === id);
+                          return {
+                            id,
+                            displayName: u?.displayName || u?.email || id,
+                            ...(goldTees.includes(id) ? { goldTee: true } : {}),
+                          };
+                        });
+                        try {
+                          const { doc, updateDoc } = await import(
+                            "firebase/firestore"
+                          );
+                          const { db } = await import("@/config/firebase");
+                          const regRef = doc(
+                            db,
+                            "tournaments",
+                            tournament!.firestoreId!,
+                            "registrations",
+                            regId,
+                          );
+                          await updateDoc(regRef, { team, openSpotsOptIn });
+                          setRegistrations((prev) =>
+                            prev.map((r) =>
+                              r.id === regId
+                                ? { ...r, team, openSpotsOptIn }
+                                : r,
+                            ),
+                          );
+                          addToast({
+                            title: "Saved",
+                            description: "Registration updated.",
+                            color: "success",
+                          });
+                          cancelEdit();
+                        } catch (err) {
+                          console.error("Failed to save registration", err);
+                          addToast({
+                            title: "Error",
+                            description: "Failed to save registration.",
+                            color: "danger",
+                          });
+                        }
+                      }}
+                      onDelete={async (regId) => {
+                        await deleteRegistration(regId);
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}
           {isEditing && tournament?.firestoreId && (
             <div className="pt-6">
               <Divider className="my-4" />
-              <h3 className="text-lg font-medium mb-4">Tournament Bracket</h3>
-              <BracketEditor
-                tournamentId={tournament.firestoreId}
-                registrations={registrations}
-                allUsers={allUsers}
-              />
+              <button
+                type="button"
+                onClick={() => setBracketOpen((o) => !o)}
+                aria-expanded={bracketOpen}
+                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                <h3 className="text-lg font-medium">Tournament Bracket</h3>
+                <Icon
+                  icon="lucide:chevron-down"
+                  className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {bracketOpen && (
+                <div className="pt-2">
+                  <BracketEditor
+                    tournamentId={tournament.firestoreId}
+                    registrations={registrations}
+                    allUsers={allUsers}
+                  />
+                </div>
+              )}
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button color="default" variant="flat" onPress={onCancel}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              type="submit"
-              isLoading={isSubmitting}
-              startContent={!isSubmitting && <Icon icon="lucide:save" />}
-            >
-              {isEditing ? "Update Tournament" : "Create Tournament"}
-            </Button>
-          </div>
+          <div className="pt-4" />
         </form>
         {addOpen && isAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1190,6 +1217,20 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           </div>
         )}
       </CardBody>
+      <CardFooter className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0">
+        <Button color="default" variant="flat" onPress={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          color="primary"
+          type="submit"
+          form="tournament-editor-form"
+          isLoading={isSubmitting}
+          startContent={!isSubmitting && <Icon icon="lucide:save" />}
+        >
+          {isEditing ? "Update Tournament" : "Create Tournament"}
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

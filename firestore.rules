@@ -69,7 +69,9 @@ service cloud.firestore {
       // Helper: ensure request doesn't change privileged board/admin fields
       // If field is not in newData, that's OK (merge won't change it)
       function boardFieldsUnchanged(newData, oldData) {
-        return (!('boardMember' in newData) || newData.boardMember == oldData.boardMember)
+        return (('boardMember' in newData) == ('boardMember' in oldData))
+          && (!('boardMember' in newData) || newData.boardMember == oldData.boardMember)
+          && (('role' in newData) == ('role' in oldData))
           && (!('role' in newData) || newData.role == oldData.role);
       }
       // Permit admins to create any user doc; permit non-admin authenticated users to create
@@ -81,8 +83,16 @@ service cloud.firestore {
         || (request.auth.uid == userId && request.resource.data.boardMember != true && !(request.resource.data.role is string))
       );
       // Updates
-      // Admin path: can update any profile with board validation
-      allow update: if request.auth != null && isAdmin() && boardRoleValid(request.resource.data);
+      // Admin path: admins may update any user profile field.
+      // If board fields (boardMember/role) are unchanged, the update is always
+      // permitted — this lets admins edit non-board fields (e.g. membershipType)
+      // for users whose stored role pre-dates the current allowed list.
+      // If board fields ARE changing, boardRoleValid() is enforced so invalid
+      // roles can never be written.
+      allow update: if request.auth != null && isAdmin() && (
+        boardFieldsUnchanged(request.resource.data, resource.data)
+        || boardRoleValid(request.resource.data)
+      );
 
       // Self-update path: can update own profile, but cannot change board/admin fields.
       allow update: if request.auth != null

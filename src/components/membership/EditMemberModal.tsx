@@ -165,9 +165,10 @@ export function EditMemberModal({
 
         addToast({
           title: "Member saved",
-          description:
-            "Member information and payment details have been updated.",
-          color: "success",
+          description: result?.denormWarning
+            ? "Member information and payment details have been updated, but the member's profile could not be fully synced. Please refresh and verify their membership status."
+            : "Member information and payment details have been updated.",
+          color: result?.denormWarning ? "warning" : "success",
         });
         onClose();
       } catch (paymentError) {
@@ -202,9 +203,16 @@ export function EditMemberModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">
-            {editing ? "Edit Member" : "Add Member"}
-          </h3>
+          <div>
+            <h3 className="text-lg font-medium">
+              {editing ? "Edit Member" : "Add Member"}
+            </h3>
+            {editing && (
+              <p className="text-xs text-default-400 mt-0.5 font-mono select-all">
+                {editing.id}
+              </p>
+            )}
+          </div>
           <Button
             isIconOnly
             size="sm"

@@ -61,6 +61,7 @@ import {
   getTournamentGoogleCalendarUrl,
   downloadTournamentIcsFile,
 } from "@/utils/calendar";
+import { EmailRegistrantsButton } from "@/components/email-registrants-button";
 
 const formatLocalDateTime = (date?: Date) => {
   if (!date) return undefined;
@@ -129,6 +130,7 @@ const TournamentDetailPage: React.FC = () => {
   } | null>(null);
   const [bracketTeamModal, setBracketTeamModal] =
     React.useState<BracketTeam | null>(null);
+  const [bracketExpanded, setBracketExpanded] = React.useState(false);
   const [bracketMemberUsers, setBracketMemberUsers] = React.useState<
     Map<string, User>
   >(new Map());
@@ -164,7 +166,6 @@ const TournamentDetailPage: React.FC = () => {
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const [adminOpen, setAdminOpen] = React.useState(false);
-  const mobileAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
   const currentStatus = tournament
@@ -539,80 +540,69 @@ const TournamentDetailPage: React.FC = () => {
 
                 {/* Mobile Second row: Admin actions */}
                 {isAdmin && (
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex flex-col gap-2">
+                    {/* Toggle row — full-width accordion header */}
                     <button
                       onClick={() => setAdminOpen((o) => !o)}
                       aria-expanded={adminOpen}
                       aria-label="Toggle admin actions"
-                      className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
-                      <Chip
-                        color="secondary"
-                        size="sm"
-                        variant="flat"
-                        className="cursor-pointer select-none"
-                        endContent={
-                          <Icon
-                            icon="lucide:chevron-right"
-                            className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                          />
-                        }
-                      >
-                        Admin only
-                      </Chip>
+                      <span>Admin only</span>
+                      <Icon
+                        icon="lucide:chevron-down"
+                        className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                      />
                     </button>
-                    <div
-                      className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
-                      style={{
-                        maxWidth: adminOpen
-                          ? `${mobileAdminButtonsRef.current?.scrollWidth ?? 400}px`
-                          : "0px",
-                        opacity: adminOpen ? 1 : 0,
-                      }}
-                    >
-                      <div
-                        ref={mobileAdminButtonsRef}
-                        className="flex items-center gap-2"
-                      >
-                        <Tooltip content="Export registrations (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            onPress={exportRegistrations}
-                            startContent={<Icon icon="lucide:download" />}
-                            aria-label="Export registrations (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Export
-                          </Button>
-                        </Tooltip>
-                        <Tooltip content="Edit tournament (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            onPress={() => setEditOpen(true)}
-                            startContent={<Icon icon="lucide:edit" />}
-                            aria-label="Edit tournament (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Edit
-                          </Button>
-                        </Tooltip>
-                        <Tooltip content="Delete tournament (Admin only)">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            onPress={() => setDeleteConfirm(true)}
-                            startContent={<Icon icon="lucide:trash-2" />}
-                            aria-label="Delete tournament (Admin only)"
-                            className="whitespace-nowrap"
-                          >
-                            Delete
-                          </Button>
-                        </Tooltip>
+                    {/* Expanded: 2×2 button grid */}
+                    {adminOpen && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <EmailRegistrantsButton
+                          registrations={registrations}
+                          usersMap={usersMap}
+                          maxTeams={
+                            typeof tournament?.maxTeams === "number" &&
+                            Number.isFinite(tournament.maxTeams) &&
+                            tournament.maxTeams > 0
+                              ? tournament.maxTeams
+                              : undefined
+                          }
+                          size="sm"
+                          className="w-full"
+                        />
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={exportRegistrations}
+                          startContent={<Icon icon="lucide:download" />}
+                          aria-label="Export registrations (Admin only)"
+                          className="w-full"
+                        >
+                          Export
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => setEditOpen(true)}
+                          startContent={<Icon icon="lucide:edit" />}
+                          aria-label="Edit tournament (Admin only)"
+                          className="w-full"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          color="danger"
+                          onPress={() => setDeleteConfirm(true)}
+                          startContent={<Icon icon="lucide:trash-2" />}
+                          aria-label="Delete tournament (Admin only)"
+                          className="w-full"
+                        >
+                          Delete
+                        </Button>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -702,6 +692,22 @@ const TournamentDetailPage: React.FC = () => {
                           ref={desktopAdminButtonsRef}
                           className="flex items-center gap-2"
                         >
+                          <Tooltip content="Email registrants (Admin only)">
+                            <div>
+                              <EmailRegistrantsButton
+                                registrations={registrations}
+                                usersMap={usersMap}
+                                maxTeams={
+                                  typeof tournament?.maxTeams === "number" &&
+                                  Number.isFinite(tournament.maxTeams) &&
+                                  tournament.maxTeams > 0
+                                    ? tournament.maxTeams
+                                    : undefined
+                                }
+                                size="sm"
+                              />
+                            </div>
+                          </Tooltip>
                           <Tooltip content="Export registrations (Admin only)">
                             <Button
                               size="sm"
@@ -1132,10 +1138,21 @@ const TournamentDetailPage: React.FC = () => {
             {bracket && (
               <div className="mb-12">
                 <Card shadow="sm">
-                  <CardHeader className="pb-0 flex items-center gap-2">
+                  <CardHeader className="pb-0 flex items-center justify-between">
                     <h2 className="text-lg font-semibold">
                       Tournament Bracket
                     </h2>
+                    <Tooltip content="Expand bracket">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        aria-label="Expand bracket"
+                        onPress={() => setBracketExpanded(true)}
+                      >
+                        <Icon icon="lucide:expand" className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
                   </CardHeader>
                   <Divider />
                   <CardBody className="pt-4">
@@ -1343,6 +1360,41 @@ const TournamentDetailPage: React.FC = () => {
             </div>
           </>
         )}
+        {/* Bracket fullscreen overlay */}
+        {bracket && bracketExpanded && (
+          <div
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bracket fullscreen"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-divider shrink-0">
+              <h2 className="text-lg font-semibold">Tournament Bracket</h2>
+              <Tooltip content="Close fullscreen">
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  aria-label="Close fullscreen bracket"
+                  onPress={() => setBracketExpanded(false)}
+                >
+                  <Icon icon="lucide:shrink" className="w-4 h-4" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <BracketView
+                bracket={bracket}
+                onTeamPress={(team) => {
+                  setBracketTeamModal(team);
+                  setBracketExpanded(false);
+                }}
+                userPhotoMap={bracketUserPhotoMap}
+              />
+            </div>
+          </div>
+        )}
+
         {isAdmin && editOpen && (
           <div
             className="fixed inset-0 z-50"
@@ -1357,7 +1409,7 @@ const TournamentDetailPage: React.FC = () => {
             {/* Wrapper: mobile fullscreen; desktop centered with max height */}
             <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
               <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:border-default-200 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-                <div className="flex-1 overflow-y-auto md:rounded-b-xl">
+                <div className="flex-1 flex flex-col min-h-0 md:rounded-b-xl overflow-hidden">
                   <React.Suspense
                     fallback={
                       <div className="p-8 flex flex-col items-center gap-3">
