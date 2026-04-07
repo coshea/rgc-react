@@ -533,14 +533,13 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
     if (bulkQueue.length === 0) return;
     setSubmittingBulk(true);
     const failedNames: string[] = [];
-    let success = 0;
-    for (const item of bulkQueue) {
-      try {
+    const results = await Promise.allSettled(
+      bulkQueue.map((item) => {
         const amount =
           item.membershipType === MEMBERSHIP_TYPES.HANDICAP
             ? handicapFee
             : fullFee;
-        await updateMembershipPayment({
+        return updateMembershipPayment({
           userId: item.userId,
           year,
           updates: {
@@ -550,17 +549,22 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             amount,
           },
         });
+      }),
+    );
+    let success = 0;
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") {
         success++;
-      } catch {
-        const member = userById.get(item.userId);
+      } else {
+        const member = userById.get(bulkQueue[i].userId);
         const name =
           member?.displayName ||
           [member?.firstName, member?.lastName].filter(Boolean).join(" ") ||
           member?.email ||
-          item.userId;
+          bulkQueue[i].userId;
         failedNames.push(name);
       }
-    }
+    });
     await qc.invalidateQueries({ queryKey: ["membershipPayments", year] });
     await qc.invalidateQueries({ queryKey: ["activeMembers", year] });
     if (failedNames.length === 0) {

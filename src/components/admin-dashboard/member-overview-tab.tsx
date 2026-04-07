@@ -9,6 +9,7 @@ import { toDate } from "@/api/users";
 import type { User } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
 import { siteConfig } from "@/config/site";
+import { copyOrMailtoEmails } from "@/utils/email";
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
@@ -315,9 +316,8 @@ export function MemberOverviewTab() {
                     onPress={() => {
                       const emails = stats.notPaidThisYearList
                         .map((m) => m.email)
-                        .filter(Boolean)
-                        .join(",");
-                      window.location.href = `mailto:?bcc=${encodeURIComponent(emails)}`;
+                        .filter((e): e is string => Boolean(e));
+                      void copyOrMailtoEmails(emails);
                     }}
                   >
                     Email all

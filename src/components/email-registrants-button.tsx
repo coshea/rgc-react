@@ -7,7 +7,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
-import { addToast } from "@/providers/toast";
+import { copyOrMailtoEmails } from "@/utils/email";
 import type { User } from "@/api/users";
 
 type TournamentEmailScope = "in-tournament" | "all";
@@ -61,35 +61,7 @@ export function EmailRegistrantsButton({
   async function openMailto(scope: TournamentEmailScope) {
     const subset = scope === "in-tournament" ? inTournament : registrations;
     const emails = collectEmails(subset, usersMap);
-
-    if (!emails.length) {
-      addToast({
-        title: "No email addresses found",
-        description:
-          "Could not find email addresses for the selected registrants.",
-        color: "warning",
-      });
-      return;
-    }
-
-    const emailString = emails.join(",");
-    const isLarge = emailString.length > 2000;
-
-    if (isLarge && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(emailString);
-        addToast({
-          title: "Emails copied to clipboard",
-          description: `${emails.length} email addresses copied. Paste into your email client manually.`,
-          color: "success",
-        });
-        return;
-      } catch {
-        // fall through to mailto
-      }
-    }
-
-    window.location.href = `mailto:${emailString}`;
+    await copyOrMailtoEmails(emails);
   }
 
   if (!registrations.length) return null;
