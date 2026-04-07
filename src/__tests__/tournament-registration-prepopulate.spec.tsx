@@ -133,6 +133,12 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
       </QueryClientProvider>,
     );
 
+    // Open the Registrations accordion so its contents render
+    const regsToggle = await screen.findByRole("button", {
+      name: /Registrations/i,
+    });
+    fireEvent.click(regsToggle);
+
     // Wait for the Add Registration button to appear (it requires isAdmin)
     const addBtn = await screen.findByRole("button", {
       name: /Add Registration/i,

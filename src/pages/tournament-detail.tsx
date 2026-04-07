@@ -1362,7 +1362,7 @@ const TournamentDetailPage: React.FC = () => {
             {/* Wrapper: mobile fullscreen; desktop centered with max height */}
             <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
               <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:border-default-200 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-                <div className="flex-1 overflow-y-auto md:rounded-b-xl">
+                <div className="flex-1 flex flex-col min-h-0 md:rounded-b-xl overflow-hidden">
                   <React.Suspense
                     fallback={
                       <div className="p-8 flex flex-col items-center gap-3">
