@@ -178,7 +178,6 @@ describe("ProfileDropdown admin section visibility", () => {
     });
     render(<ProfileDropdown />);
     expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/send notifications/i)).not.toBeInTheDocument();
   });
 
   it("shows admin section for an admin user", () => {
@@ -189,7 +188,6 @@ describe("ProfileDropdown admin section visibility", () => {
     });
     render(<ProfileDropdown />);
     expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
-    expect(screen.getByText(/send notifications/i)).toBeInTheDocument();
   });
 
   it("shows admin section for a board member", () => {
@@ -200,7 +198,6 @@ describe("ProfileDropdown admin section visibility", () => {
     });
     render(<ProfileDropdown />);
     expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
-    expect(screen.getByText(/send notifications/i)).toBeInTheDocument();
   });
 
   it("shows admin section when user is both admin and board member", () => {

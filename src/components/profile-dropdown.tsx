@@ -104,19 +104,6 @@ export const ProfileDropdown = () => {
               }}
             >
               <DropdownItem
-                key="admin-notifications"
-                as={Link}
-                href={siteConfig.pages.adminNotifications.link}
-                startContent={
-                  <Icon
-                    icon="lucide:bell"
-                    className="text-base text-default-500"
-                  />
-                }
-              >
-                Send Notifications
-              </DropdownItem>
-              <DropdownItem
                 key="admin-dashboard"
                 as={Link}
                 href={siteConfig.pages.adminDashboard.link}
