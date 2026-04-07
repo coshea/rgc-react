@@ -781,8 +781,13 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       </div>
                     </div>
                   </div>
-                  <div className="min-h-24 w-full">
-                    <ResponsiveContainer className="[&_.recharts-surface]:outline-hidden">
+                  <div className="h-24 w-full">
+                    <ResponsiveContainer
+                      width="100%"
+                      height={96}
+                      minWidth={0}
+                      className="[&_.recharts-surface]:outline-hidden"
+                    >
                       <AreaChart
                         accessibilityLayer
                         className="translate-y-1 scale-105"
