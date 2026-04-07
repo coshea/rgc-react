@@ -552,9 +552,11 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       }),
     );
     let success = 0;
+    let denormWarnings = 0;
     results.forEach((result, i) => {
       if (result.status === "fulfilled") {
         success++;
+        if (result.value?.denormWarning) denormWarnings++;
       } else {
         const member = userById.get(bulkQueue[i].userId);
         const name =
@@ -578,6 +580,13 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
       addToast({
         title: "Some payments failed",
         description: `${success} succeeded, ${failedNames.length} failed: ${failedNames.join(", ")}`,
+        color: "warning",
+      });
+    }
+    if (denormWarnings > 0) {
+      addToast({
+        title: "Profile sync failed",
+        description: `${denormWarnings} member profile${denormWarnings === 1 ? "" : "s"} could not be synced after payment. Please refresh and verify their membership status.`,
         color: "warning",
       });
     }

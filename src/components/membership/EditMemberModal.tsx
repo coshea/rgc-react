@@ -165,9 +165,10 @@ export function EditMemberModal({
 
         addToast({
           title: "Member saved",
-          description:
-            "Member information and payment details have been updated.",
-          color: "success",
+          description: result?.denormWarning
+            ? "Member information and payment details have been updated, but the member's profile could not be fully synced. Please refresh and verify their membership status."
+            : "Member information and payment details have been updated.",
+          color: result?.denormWarning ? "warning" : "success",
         });
         onClose();
       } catch (paymentError) {

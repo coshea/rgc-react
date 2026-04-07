@@ -19,7 +19,7 @@ import {
 import type { User } from "firebase/auth";
 import { getFirebaseFunctionsBaseUrl } from "@/api/functionsBase";
 import { logFsStart, logFsSuccess, logFsError } from "@/utils/firestoreLogger";
-import { addToast } from "@/providers/toast";
+
 import type { MembershipSettings } from "@/types/membershipSettings";
 import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 import type {
@@ -183,7 +183,11 @@ export async function updateMembershipPayment(params: {
   updates: Partial<
     Pick<MembershipPayment, "amount" | "method" | "membershipType" | "status">
   >;
-}): Promise<{ created?: boolean; confirmed?: boolean }> {
+}): Promise<{
+  created?: boolean;
+  confirmed?: boolean;
+  denormWarning?: boolean;
+}> {
   const { userId, year, updates } = params;
   const paymentQuery = query(
     collection(db, "memberPayments"),
@@ -271,11 +275,17 @@ export async function updateMembershipPayment(params: {
           userId,
           year,
         });
-        addToast({
-          title: "Profile sync failed",
-          description: `Payment recorded but the member's profile (userId: ${userId}) could not be updated. Please refresh and verify their membership status.`,
-          color: "warning",
+        logFsSuccess("updateMembershipPayment", {
+          userId,
+          year,
+          created: true,
+          status,
         });
+        return {
+          created: true,
+          confirmed: confirmedCreate,
+          denormWarning: true,
+        };
       }
       logFsSuccess("updateMembershipPayment", {
         userId,
@@ -298,6 +308,7 @@ export async function updateMembershipPayment(params: {
     if (payload.membershipType === undefined) delete payload.membershipType;
     if (payload.status === undefined) delete payload.status;
     await setDoc(existing.ref, payload, { merge: true });
+    let denormWarning = false;
     if (updates.membershipType || updates.status === "confirmed") {
       // Denormalization is best-effort — see note on CREATE path above.
       try {
@@ -317,16 +328,12 @@ export async function updateMembershipPayment(params: {
           userId,
           year,
         });
-        addToast({
-          title: "Profile sync failed",
-          description: `Payment updated but the member's profile (userId: ${userId}) could not be synced. Please refresh and verify their membership status.`,
-          color: "warning",
-        });
+        denormWarning = true;
       }
     }
     const confirmed = updates.status === "confirmed";
     logFsSuccess("updateMembershipPayment", { userId, year });
-    return { confirmed };
+    return { confirmed, ...(denormWarning ? { denormWarning: true } : {}) };
   } catch (e) {
     logFsError("updateMembershipPayment", e, { userId, year });
     throw e;

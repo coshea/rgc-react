@@ -314,9 +314,9 @@ export function MemberOverviewTab() {
                       <Icon icon="lucide:mail" className="w-4 h-4" />
                     }
                     onPress={() => {
-                      const emails = stats.notPaidThisYearList
-                        .map((m) => m.email)
-                        .filter((e): e is string => Boolean(e));
+                      const emails = stats.notPaidThisYearList.map(
+                        (m) => m.email ?? "",
+                      );
                       void copyOrMailtoEmails(emails);
                     }}
                   >

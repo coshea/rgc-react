@@ -69,7 +69,9 @@ service cloud.firestore {
       // Helper: ensure request doesn't change privileged board/admin fields
       // If field is not in newData, that's OK (merge won't change it)
       function boardFieldsUnchanged(newData, oldData) {
-        return (!('boardMember' in newData) || newData.boardMember == oldData.boardMember)
+        return (('boardMember' in newData) == ('boardMember' in oldData))
+          && (!('boardMember' in newData) || newData.boardMember == oldData.boardMember)
+          && (('role' in newData) == ('role' in oldData))
           && (!('role' in newData) || newData.role == oldData.role);
       }
       // Permit admins to create any user doc; permit non-admin authenticated users to create
