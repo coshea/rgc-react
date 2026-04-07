@@ -202,9 +202,16 @@ export function EditMemberModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">
-            {editing ? "Edit Member" : "Add Member"}
-          </h3>
+          <div>
+            <h3 className="text-lg font-medium">
+              {editing ? "Edit Member" : "Add Member"}
+            </h3>
+            {editing && (
+              <p className="text-xs text-default-400 mt-0.5 font-mono select-all">
+                {editing.id}
+              </p>
+            )}
+          </div>
           <Button
             isIconOnly
             size="sm"
