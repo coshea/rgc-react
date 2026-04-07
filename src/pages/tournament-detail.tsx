@@ -130,6 +130,7 @@ const TournamentDetailPage: React.FC = () => {
   } | null>(null);
   const [bracketTeamModal, setBracketTeamModal] =
     React.useState<BracketTeam | null>(null);
+  const [bracketExpanded, setBracketExpanded] = React.useState(false);
   const [bracketMemberUsers, setBracketMemberUsers] = React.useState<
     Map<string, User>
   >(new Map());
@@ -1137,10 +1138,21 @@ const TournamentDetailPage: React.FC = () => {
             {bracket && (
               <div className="mb-12">
                 <Card shadow="sm">
-                  <CardHeader className="pb-0 flex items-center gap-2">
+                  <CardHeader className="pb-0 flex items-center justify-between">
                     <h2 className="text-lg font-semibold">
                       Tournament Bracket
                     </h2>
+                    <Tooltip content="Expand bracket">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        aria-label="Expand bracket"
+                        onPress={() => setBracketExpanded(true)}
+                      >
+                        <Icon icon="lucide:expand" className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
                   </CardHeader>
                   <Divider />
                   <CardBody className="pt-4">
@@ -1348,6 +1360,41 @@ const TournamentDetailPage: React.FC = () => {
             </div>
           </>
         )}
+        {/* Bracket fullscreen overlay */}
+        {bracket && bracketExpanded && (
+          <div
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bracket fullscreen"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-divider shrink-0">
+              <h2 className="text-lg font-semibold">Tournament Bracket</h2>
+              <Tooltip content="Close fullscreen">
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  aria-label="Close fullscreen bracket"
+                  onPress={() => setBracketExpanded(false)}
+                >
+                  <Icon icon="lucide:shrink" className="w-4 h-4" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <BracketView
+                bracket={bracket}
+                onTeamPress={(team) => {
+                  setBracketTeamModal(team);
+                  setBracketExpanded(false);
+                }}
+                userPhotoMap={bracketUserPhotoMap}
+              />
+            </div>
+          </div>
+        )}
+
         {isAdmin && editOpen && (
           <div
             className="fixed inset-0 z-50"
