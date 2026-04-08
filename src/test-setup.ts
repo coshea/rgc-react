@@ -6,6 +6,16 @@ import { cleanup } from "@testing-library/react";
 // Polyfill CSS.escape used by @react-aria in jsdom
 vi.stubGlobal("CSS", { escape: (s: string) => s });
 
+// Polyfill ResizeObserver which jsdom does not implement (used by @heroui/tabs and others)
+vi.stubGlobal(
+  "ResizeObserver",
+  class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);
+
 // Node.js 25 introduces `--localstorage-file` which conflicts with jsdom's
 // localStorage implementation, causing `localStorage.getItem` to not be a
 // function. Stub out the Web Storage API with a simple in-memory Map.

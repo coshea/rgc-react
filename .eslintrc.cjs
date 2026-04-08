@@ -1,0 +1,53 @@
+/** @type {import("eslint").Linter.Config} */
+module.exports = {
+  root: true,
+  env: { browser: true, es2023: true, node: true },
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    project: ["tsconfig.json"],
+    tsconfigRootDir: __dirname,
+    ecmaFeatures: { jsx: true },
+  },
+  plugins: ["@typescript-eslint", "react", "react-hooks"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "prettier",
+  ],
+  settings: { react: { version: "detect" } },
+  overrides: [
+    {
+      files: ["*.ts", "*.tsx"],
+      rules: {
+        "react/prop-types": "off",
+      },
+    },
+  ],
+  rules: {
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector: "TSAsExpression[typeAnnotation.type='TSAnyKeyword']",
+        message:
+          "Do not use `as any`. Use a proper type, a type guard, or a typed utility function.",
+      },
+      {
+        selector: "TSTypeAssertion[typeAnnotation.type='TSAnyKeyword']",
+        message:
+          "Do not use `<any>` type assertions. Use a proper type, a type guard, or a typed utility function.",
+      },
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+    ],
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "react/no-unescaped-entities": "off",
+    "prefer-const": "off",
+    "react-hooks/exhaustive-deps": "off",
+  },
+};

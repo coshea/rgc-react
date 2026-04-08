@@ -1,15 +1,16 @@
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   optimizeDeps: {},
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [
     react(),
-    tsconfigPaths(),
     tailwindcss(),
     sentryVitePlugin({
       org: "ridgefield-golf-club",
@@ -17,35 +18,48 @@ export default defineConfig({
     }),
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       onwarn(warning, warn) {
         // Suppress sourcemap warnings from third-party packages with missing source files
         if (warning.code === "SOURCEMAP_ERROR") return;
         warn(warning);
       },
       output: {
-        manualChunks: {
-          // Split Firebase SDK modules so they don't bloat the main bundle
-          "vendor-firebase-auth": ["firebase/auth"],
-          "vendor-firebase-firestore": ["firebase/firestore"],
-          "vendor-firebase-storage": ["firebase/storage"],
-          "vendor-firebase-messaging": ["firebase/messaging"],
-          // Core react and router
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          // UI libs
-          "vendor-ui": [
-            "@heroui/react",
-            "@heroicons/react",
-            "@iconify/react",
-            "framer-motion",
+        codeSplitting: {
+          groups: [
+            {
+              test: /node_modules\/firebase\/auth/,
+              name: "vendor-firebase-auth",
+            },
+            {
+              test: /node_modules\/firebase\/firestore/,
+              name: "vendor-firebase-firestore",
+            },
+            {
+              test: /node_modules\/firebase\/storage/,
+              name: "vendor-firebase-storage",
+            },
+            {
+              test: /node_modules\/firebase\/messaging/,
+              name: "vendor-firebase-messaging",
+            },
+            {
+              test: /node_modules\/(react-markdown|remark-gfm)/,
+              name: "vendor-markdown",
+            },
+            {
+              test: /node_modules\/@tanstack\/react-query/,
+              name: "vendor-query",
+            },
+            {
+              test: /node_modules\/(@heroui\/react|@heroicons\/react|@iconify\/react|framer-motion)/,
+              name: "vendor-ui",
+            },
+            {
+              test: /node_modules\/(react|react-dom|react-router-dom)/,
+              name: "vendor-react",
+            },
           ],
-          // Data/query
-          "vendor-query": [
-            "@tanstack/react-query",
-            "@tanstack/react-query-devtools",
-          ],
-          // Markdown rendering
-          "vendor-markdown": ["react-markdown", "remark-gfm"],
         },
       },
     },
