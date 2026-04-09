@@ -213,12 +213,13 @@ dark:border-default-100/10"
         {/* Right Content */}
 
         {/* Search + Profile Dropdown */}
-        <NavbarContent justify="end" className="pr-3 sm:pr-5">
+        <NavbarContent justify="end" className="gap-1 pr-2 sm:pr-2">
           <NavbarItem className="flex">
             <Button
               isIconOnly
               variant="light"
               radius="full"
+              size="sm"
               aria-label="Search"
               className="text-default-500"
               onPress={() => setIsSearchOpen(true)}

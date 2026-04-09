@@ -29,7 +29,7 @@ export const ProfileDropdown = () => {
       <NotificationBell />
       <Dropdown placement="bottom-end">
         <DropdownTrigger>
-          <div className="relative inline-block" aria-label="Profile menu">
+          <div className="relative inline-block ml-3" aria-label="Profile menu">
             <UserAvatar
               as="button"
               isBordered
