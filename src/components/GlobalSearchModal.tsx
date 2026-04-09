@@ -113,6 +113,10 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
           }),
         );
       })
+      .catch((err) => {
+        console.error("Failed to fetch tournaments for search:", err);
+        // Consider showing a toast or an error message to the user.
+      })
       .finally(() => setLoading(false));
   }, [isOpen]);
 
