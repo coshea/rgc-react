@@ -225,6 +225,7 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("win1");
     emitDoc("tournaments/win1", {
       ...baseTournament,
+      status: TournamentStatus.Completed,
       winnerGroups: [
         {
           id: "overall",
