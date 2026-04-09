@@ -86,10 +86,17 @@ export const MainNavbar = (_props: NavbarProps) => {
 
   useEffect(() => {
     function onSearchKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
+      if (!(e.metaKey || e.ctrlKey) || e.key !== "k") return;
+      const target = e.target as HTMLElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.isContentEditable
+      )
+        return;
+      e.preventDefault();
+      setIsSearchOpen(true);
     }
     document.addEventListener("keydown", onSearchKey);
     return () => document.removeEventListener("keydown", onSearchKey);

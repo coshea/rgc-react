@@ -498,8 +498,11 @@ describe("TournamentDetailPage", () => {
       }
     }
     vi.stubGlobal("Blob", BlobCapture);
-    URL.createObjectURL = () => "blob:fake";
-    URL.revokeObjectURL = () => {};
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: () => "blob:fake",
+      revokeObjectURL: () => {},
+    });
 
     isAdminMock = true;
     renderWithRoute("csv1");

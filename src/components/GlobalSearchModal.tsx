@@ -13,14 +13,7 @@ import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { siteConfig } from "@/config/site";
-import {
-  collection,
-  query as buildQuery,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
-import { db } from "@/config/firebase";
-import { mapTournamentDoc } from "@/api/tournaments";
+import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { TournamentStatus } from "@/types/tournament";
 
 // Navigation-relevant pages to include in search
@@ -82,43 +75,29 @@ interface Props {
 
 export function GlobalSearchModal({ isOpen, onClose }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [tournamentResults, setTournamentResults] = useState<
-    TournamentResult[]
-  >([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const hasFetchedRef = useRef(false);
   const isMobile = useMediaQuery("(max-width: 640px)");
+  const currentYear = new Date().getFullYear();
 
-  // Fetch all tournaments once when the modal first opens
-  useEffect(() => {
-    if (!isOpen || hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-    setLoading(true);
-    const col = collection(db, "tournaments");
-    const q = buildQuery(col, orderBy("date", "desc"));
-    getDocs(q)
-      .then((snap) => {
-        setTournamentResults(
-          snap.docs.map((d) => {
-            const t = mapTournamentDoc(d);
-            return {
-              type: "tournament" as const,
-              firestoreId: t.firestoreId!,
-              title: t.title,
-              date: t.date,
-              status: t.status,
-            };
-          }),
-        );
-      })
-      .catch((err) => {
-        console.error("Failed to fetch tournaments for search:", err);
-        // Consider showing a toast or an error message to the user.
-      })
-      .finally(() => setLoading(false));
-  }, [isOpen]);
+  const { tournaments, isLoading: loading } = useYearlyTournaments({
+    year: currentYear,
+    enabled: isOpen,
+  });
+
+  const tournamentResults: TournamentResult[] = useMemo(
+    () =>
+      (tournaments ?? [])
+        .map((t) => ({
+          type: "tournament" as const,
+          firestoreId: t.firestoreId!,
+          title: t.title,
+          date: t.date,
+          status: t.status!,
+        }))
+        .sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [tournaments],
+  );
 
   // Reset query when closed
   useEffect(() => {
@@ -128,7 +107,10 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
   const trimmedQuery = searchQuery.trim().toLowerCase();
 
   const filteredPages = useMemo<PageResult[]>(() => {
-    const pages = SEARCHABLE_PAGES as unknown as PageResult[];
+    const pages: PageResult[] = SEARCHABLE_PAGES.map((p) => ({
+      ...p,
+      type: "page",
+    }));
     if (!trimmedQuery) return pages;
     return pages.filter(
       (p) =>
