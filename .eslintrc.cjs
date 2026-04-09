@@ -47,7 +47,7 @@ module.exports = {
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "react/no-unescaped-entities": "off",
-    "prefer-const": "off",
-    "react-hooks/exhaustive-deps": "off",
+    "prefer-const": "warn",
+    "react-hooks/exhaustive-deps": "warn",
   },
 };
