@@ -29,7 +29,7 @@ export const ProfileDropdown = () => {
       <NotificationBell />
       <Dropdown placement="bottom-end">
         <DropdownTrigger>
-          <div className="relative inline-block" aria-label="Profile menu">
+          <div className="relative inline-block ml-3" aria-label="Profile menu">
             <UserAvatar
               as="button"
               isBordered
@@ -103,19 +103,6 @@ export const ProfileDropdown = () => {
                   "text-tiny font-semibold uppercase text-default-400 px-1",
               }}
             >
-              <DropdownItem
-                key="admin-notifications"
-                as={Link}
-                href={siteConfig.pages.adminNotifications.link}
-                startContent={
-                  <Icon
-                    icon="lucide:bell"
-                    className="text-base text-default-500"
-                  />
-                }
-              >
-                Send Notifications
-              </DropdownItem>
               <DropdownItem
                 key="admin-dashboard"
                 as={Link}

@@ -78,6 +78,7 @@ export function NotificationBell() {
       <Button
         isIconOnly
         variant="light"
+        size="sm"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={open}
         aria-haspopup="true"

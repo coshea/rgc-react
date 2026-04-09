@@ -1,15 +1,16 @@
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   optimizeDeps: {},
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [
     react(),
-    tsconfigPaths(),
     tailwindcss(),
     sentryVitePlugin({
       org: "ridgefield-golf-club",
@@ -24,28 +25,27 @@ export default defineConfig({
         warn(warning);
       },
       output: {
-        manualChunks: {
-          // Split Firebase SDK modules so they don't bloat the main bundle
-          "vendor-firebase-auth": ["firebase/auth"],
-          "vendor-firebase-firestore": ["firebase/firestore"],
-          "vendor-firebase-storage": ["firebase/storage"],
-          "vendor-firebase-messaging": ["firebase/messaging"],
-          // Core react and router
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          // UI libs
-          "vendor-ui": [
-            "@heroui/react",
-            "@heroicons/react",
-            "@iconify/react",
-            "framer-motion",
-          ],
-          // Data/query
-          "vendor-query": [
-            "@tanstack/react-query",
-            "@tanstack/react-query-devtools",
-          ],
-          // Markdown rendering
-          "vendor-markdown": ["react-markdown", "remark-gfm"],
+        manualChunks: (id) => {
+          if (/node_modules\/firebase\/auth/.test(id))
+            return "vendor-firebase-auth";
+          if (/node_modules\/firebase\/firestore/.test(id))
+            return "vendor-firebase-firestore";
+          if (/node_modules\/firebase\/storage/.test(id))
+            return "vendor-firebase-storage";
+          if (/node_modules\/firebase\/messaging/.test(id))
+            return "vendor-firebase-messaging";
+          if (/node_modules\/(react-markdown|remark-gfm)/.test(id))
+            return "vendor-markdown";
+          if (/node_modules\/@tanstack\/react-query/.test(id))
+            return "vendor-query";
+          if (
+            /node_modules\/(@heroui\/react|@heroicons\/react|@iconify\/react|framer-motion)/.test(
+              id,
+            )
+          )
+            return "vendor-ui";
+          if (/node_modules\/(react\/|react-dom\/|react-router-dom\/)/.test(id))
+            return "vendor-react";
         },
       },
     },

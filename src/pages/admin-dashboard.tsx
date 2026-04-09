@@ -55,16 +55,17 @@ export default function AdminDashboardPage() {
           aria-label="Admin Dashboard"
           selectedKey={activeTab}
           onSelectionChange={handleTabChange}
-          classNames={{ tabList: "mb-2" }}
+          classNames={{ tabList: "mb-2 overflow-x-auto scrollbar-hide" }}
         >
           <Tab
             key="overview"
             title={
               <div className="flex items-center gap-2">
-                <Icon icon="lucide:users" className="w-4 h-4" />
-                <span>Members</span>
+                <Icon icon="lucide:users" className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Members</span>
               </div>
             }
+            aria-label="Members"
           >
             <MemberOverviewTab />
           </Tab>
@@ -73,10 +74,11 @@ export default function AdminDashboardPage() {
             key="payments"
             title={
               <div className="flex items-center gap-2">
-                <Icon icon="lucide:credit-card" className="w-4 h-4" />
-                <span>Payments</span>
+                <Icon icon="lucide:credit-card" className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Payments</span>
               </div>
             }
+            aria-label="Payments"
           >
             <PaymentsTab isEmbedded />
           </Tab>
@@ -85,10 +87,11 @@ export default function AdminDashboardPage() {
             key="tournaments"
             title={
               <div className="flex items-center gap-2">
-                <Icon icon="lucide:flag" className="w-4 h-4" />
-                <span>Tournaments</span>
+                <Icon icon="lucide:flag" className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Tournaments</span>
               </div>
             }
+            aria-label="Tournaments"
           >
             <TournamentStatusTab />
           </Tab>
@@ -97,10 +100,11 @@ export default function AdminDashboardPage() {
             key="notifications"
             title={
               <div className="flex items-center gap-2">
-                <Icon icon="lucide:bell" className="w-4 h-4" />
-                <span>Notifications</span>
+                <Icon icon="lucide:bell" className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Notifications</span>
               </div>
             }
+            aria-label="Notifications"
           >
             <NotificationsTab />
           </Tab>

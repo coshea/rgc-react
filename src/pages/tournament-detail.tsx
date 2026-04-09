@@ -1122,17 +1122,24 @@ const TournamentDetailPage: React.FC = () => {
               </div>
             ) : null}
 
-            <div className="mb-12">
-              <Card shadow="sm">
-                <CardHeader className="pb-0">
-                  <h2 className="text-lg font-semibold">Tournament Winners</h2>
-                </CardHeader>
-                <Divider />
-                <CardBody className="pt-4">
-                  <GroupedWinners groups={tournament.winnerGroups || []} />
-                </CardBody>
-              </Card>
-            </div>
+            {currentStatus === TournamentStatus.Completed &&
+              (tournament.winnerGroups ?? []).some(
+                (g) => (g.winners ?? []).length > 0,
+              ) && (
+                <div className="mb-12">
+                  <Card shadow="sm">
+                    <CardHeader className="pb-0">
+                      <h2 className="text-lg font-semibold">
+                        Tournament Winners
+                      </h2>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody className="pt-4">
+                      <GroupedWinners groups={tournament.winnerGroups || []} />
+                    </CardBody>
+                  </Card>
+                </div>
+              )}
 
             {/* Tournament Bracket */}
             {bracket && (

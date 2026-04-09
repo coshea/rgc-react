@@ -225,6 +225,7 @@ describe("TournamentDetailPage", () => {
     renderWithRoute("win1");
     emitDoc("tournaments/win1", {
       ...baseTournament,
+      status: TournamentStatus.Completed,
       winnerGroups: [
         {
           id: "overall",
@@ -487,17 +488,21 @@ describe("TournamentDetailPage", () => {
   });
 
   it("CSV export includes goldTee columns per member", async () => {
-    // Capture CSV content by spying on the Blob constructor
+    // Capture CSV content by replacing Blob with a subclass (vi.spyOn cannot mock constructors in Vitest 4)
     let capturedCsv = "";
     const OrigBlob = globalThis.Blob;
-    vi.spyOn(globalThis, "Blob").mockImplementationOnce(
-      (parts: any, opts: any) => {
+    class BlobCapture extends OrigBlob {
+      constructor(parts?: BlobPart[], opts?: BlobPropertyBag) {
         capturedCsv = (parts as string[]).join("");
-        return new OrigBlob(parts, opts);
-      },
-    );
-    URL.createObjectURL = () => "blob:fake";
-    URL.revokeObjectURL = () => {};
+        super(parts, opts);
+      }
+    }
+    vi.stubGlobal("Blob", BlobCapture);
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: () => "blob:fake",
+      revokeObjectURL: () => {},
+    });
 
     isAdminMock = true;
     renderWithRoute("csv1");
@@ -526,7 +531,7 @@ describe("TournamentDetailPage", () => {
       exportBtns[0].click();
     });
 
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 
     // Header row should contain goldTee columns
     expect(capturedCsv).toContain("member1_goldTee");

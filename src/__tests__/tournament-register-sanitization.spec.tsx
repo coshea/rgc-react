@@ -118,8 +118,8 @@ describe("TournamentRegister teammate selection sanitization", () => {
     });
 
     // Ensure no HeroUI missing key warnings were produced
-    const warns = warnSpy.mock.calls.map((c) => c.join(" "));
-    const hasSelectMissing = warns.some((w) => /Select: Keys/.test(w));
+    const warns = warnSpy.mock.calls.map((c: unknown[]) => c.join(" "));
+    const hasSelectMissing = warns.some((w: string) => /Select: Keys/.test(w));
     expect(hasSelectMissing).toBe(false);
   });
 });
