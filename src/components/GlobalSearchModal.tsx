@@ -1,0 +1,319 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import {
+  Modal,
+  ModalContent,
+  ModalBody,
+  Input,
+  Button,
+  Chip,
+  Divider,
+  Spinner,
+} from "@heroui/react";
+import { Icon } from "@iconify/react";
+import { useNavigate } from "react-router-dom";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { siteConfig } from "@/config/site";
+import {
+  collection,
+  query as buildQuery,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "@/config/firebase";
+import { mapTournamentDoc } from "@/api/tournaments";
+import { TournamentStatus } from "@/types/tournament";
+
+// Navigation-relevant pages to include in search
+const SEARCHABLE_PAGES = [
+  siteConfig.pages.home,
+  siteConfig.pages.tournaments,
+  siteConfig.pages.moneyList,
+  siteConfig.pages.pastchampions,
+  siteConfig.pages.membership,
+  siteConfig.pages.directory,
+  siteConfig.pages.findGame,
+  siteConfig.pages.board,
+  siteConfig.pages.blog,
+  siteConfig.pages.about,
+  siteConfig.pages.policies,
+  siteConfig.pages.handicapPolicy,
+  siteConfig.pages.localRules,
+  siteConfig.pages.contact,
+] as const;
+
+type PageResult = {
+  type: "page";
+  title: string;
+  description: string;
+  link: string;
+  icon: string;
+};
+
+type TournamentResult = {
+  type: "tournament";
+  firestoreId: string;
+  title: string;
+  date: Date;
+  status: TournamentStatus;
+};
+
+const STATUS_COLOR: Record<
+  TournamentStatus,
+  "success" | "warning" | "default" | "danger"
+> = {
+  [TournamentStatus.Upcoming]: "success",
+  [TournamentStatus.InProgress]: "warning",
+  [TournamentStatus.Completed]: "default",
+  [TournamentStatus.Canceled]: "danger",
+};
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function GlobalSearchModal({ isOpen, onClose }: Props) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [tournamentResults, setTournamentResults] = useState<
+    TournamentResult[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hasFetchedRef = useRef(false);
+  const isMobile = useMediaQuery("(max-width: 640px)");
+
+  // Fetch all tournaments once when the modal first opens
+  useEffect(() => {
+    if (!isOpen || hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    setLoading(true);
+    const col = collection(db, "tournaments");
+    const q = buildQuery(col, orderBy("date", "desc"));
+    getDocs(q)
+      .then((snap) => {
+        setTournamentResults(
+          snap.docs.map((d) => {
+            const t = mapTournamentDoc(d);
+            return {
+              type: "tournament" as const,
+              firestoreId: t.firestoreId!,
+              title: t.title,
+              date: t.date,
+              status: t.status,
+            };
+          }),
+        );
+      })
+      .finally(() => setLoading(false));
+  }, [isOpen]);
+
+  // Reset query when closed
+  useEffect(() => {
+    if (!isOpen) setSearchQuery("");
+  }, [isOpen]);
+
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredPages = useMemo<PageResult[]>(() => {
+    const pages = SEARCHABLE_PAGES as unknown as PageResult[];
+    if (!trimmedQuery) return pages;
+    return pages.filter(
+      (p) =>
+        p.title.toLowerCase().includes(trimmedQuery) ||
+        p.description.toLowerCase().includes(trimmedQuery),
+    );
+  }, [trimmedQuery]);
+
+  const filteredTournaments = useMemo<TournamentResult[]>(() => {
+    if (!trimmedQuery) return [];
+    return tournamentResults.filter((t) =>
+      t.title.toLowerCase().includes(trimmedQuery),
+    );
+  }, [trimmedQuery, tournamentResults]);
+
+  function handleSelect(href: string) {
+    navigate(href);
+    onClose();
+  }
+
+  const showPages = filteredPages.length > 0;
+  const showTournaments = filteredTournaments.length > 0;
+  const noResults =
+    trimmedQuery.length > 0 && !showPages && !showTournaments && !loading;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      size={isMobile ? "full" : "xl"}
+      hideCloseButton
+      classNames={{
+        base: isMobile ? "m-0 rounded-none" : "mt-[10vh]",
+        body: "p-0",
+      }}
+      motionProps={{
+        variants: {
+          enter: { y: 0, opacity: 1, transition: { duration: 0.15 } },
+          exit: { y: -8, opacity: 0, transition: { duration: 0.1 } },
+        },
+      }}
+    >
+      <ModalContent>
+        {() => (
+          <ModalBody className="flex flex-col h-full">
+            {/* Search input */}
+            <div className="flex items-center px-4 py-3 gap-3">
+              <Icon
+                icon="lucide:search"
+                className="text-default-400 shrink-0 text-xl"
+              />
+              <Input
+                ref={inputRef}
+                autoFocus
+                variant="flat"
+                classNames={{
+                  base: "flex-1",
+                  inputWrapper:
+                    "bg-transparent shadow-none border-none px-0 hover:bg-transparent data-[hover=true]:bg-transparent group-data-[focus=true]:bg-transparent",
+                  input: "text-base placeholder:text-default-400",
+                }}
+                placeholder="Search pages and tournaments…"
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    onClose();
+                  }
+                }}
+              />
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-default-200 bg-default-100 px-1.5 py-0.5 text-[11px] text-default-500 font-mono shrink-0">
+                <span className="text-sm">⌘</span>K
+              </kbd>
+              <Button
+                isIconOnly
+                variant="light"
+                radius="full"
+                size="sm"
+                aria-label="Close search"
+                className="sm:hidden text-default-400 shrink-0"
+                onPress={onClose}
+              >
+                <Icon icon="lucide:x" className="text-lg" />
+              </Button>
+            </div>
+
+            <Divider />
+
+            {/* Results */}
+            <div className="flex-1 overflow-y-auto pb-2 sm:max-h-[60vh]">
+              {loading && (
+                <div className="flex justify-center py-8">
+                  <Spinner size="sm" />
+                </div>
+              )}
+
+              {!loading && noResults && (
+                <p className="py-8 text-center text-sm text-default-400">
+                  No results for &ldquo;{searchQuery}&rdquo;
+                </p>
+              )}
+
+              {/* Pages section */}
+              {!loading && showPages && (
+                <section>
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                    Pages
+                  </p>
+                  {filteredPages.map((page) => (
+                    <button
+                      key={page.link}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      onClick={() => handleSelect(page.link)}
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                        <Icon
+                          icon={page.icon ?? "lucide:file"}
+                          className="text-default-500 text-base"
+                        />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium text-foreground">
+                          {page.title}
+                        </span>
+                        <span className="block truncate text-xs text-default-400">
+                          {page.description}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </section>
+              )}
+
+              {/* Divider between sections */}
+              {!loading && showPages && showTournaments && (
+                <Divider className="my-1" />
+              )}
+
+              {/* Tournaments section */}
+              {!loading && showTournaments && (
+                <section>
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                    Tournaments
+                  </p>
+                  {filteredTournaments.map((t) => (
+                    <button
+                      key={t.firestoreId}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      onClick={() =>
+                        handleSelect(`/tournaments/${t.firestoreId}`)
+                      }
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                        <Icon
+                          icon="lucide:calendar"
+                          className="text-default-500 text-base"
+                        />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium text-foreground">
+                          {t.title}
+                        </span>
+                        <span className="block text-xs text-default-400">
+                          {formatDate(t.date)}
+                        </span>
+                      </span>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        color={STATUS_COLOR[t.status]}
+                        className="shrink-0"
+                      >
+                        {t.status}
+                      </Chip>
+                    </button>
+                  ))}
+                </section>
+              )}
+
+              {/* Default state: hint when no query entered */}
+              {!loading && !trimmedQuery && !noResults && (
+                <p className="py-5 text-center text-xs text-default-400">
+                  Type to search pages and tournaments
+                </p>
+              )}
+            </div>
+          </ModalBody>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+}
