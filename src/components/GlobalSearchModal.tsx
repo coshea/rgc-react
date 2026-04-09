@@ -16,23 +16,25 @@ import { siteConfig } from "@/config/site";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { TournamentStatus } from "@/types/tournament";
 
-// Navigation-relevant pages to include in search
-const SEARCHABLE_PAGES = [
-  siteConfig.pages.home,
-  siteConfig.pages.tournaments,
-  siteConfig.pages.moneyList,
-  siteConfig.pages.pastchampions,
-  siteConfig.pages.membership,
-  siteConfig.pages.directory,
-  siteConfig.pages.findGame,
-  siteConfig.pages.board,
-  siteConfig.pages.blog,
-  siteConfig.pages.about,
-  siteConfig.pages.policies,
-  siteConfig.pages.handicapPolicy,
-  siteConfig.pages.localRules,
-  siteConfig.pages.contact,
-] as const;
+// Paths excluded from search (admin-only, auth flow, or settings pages)
+const EXCLUDED_SEARCH_PATHS = new Set([
+  siteConfig.pages.login.link,
+  siteConfig.pages.signup.link,
+  siteConfig.pages.profile.link,
+  siteConfig.pages.verifyEmail.link,
+  siteConfig.pages.adminDashboard.link,
+  siteConfig.pages.membershipDashboard.link,
+  siteConfig.pages.adminNotifications.link,
+  siteConfig.pages.notificationSettings.link,
+]);
+
+// Derived at module load from siteConfig — pages with an icon that aren't
+// admin/auth/settings routes. New siteConfig entries with an icon appear
+// automatically without editing this file.
+const SEARCHABLE_PAGES = Object.values(siteConfig.pages).filter(
+  (p): p is typeof p & { icon: string } =>
+    "icon" in p && !!p.icon && !EXCLUDED_SEARCH_PATHS.has(p.link),
+);
 
 type PageResult = {
   type: "page";
