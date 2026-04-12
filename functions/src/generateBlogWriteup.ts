@@ -47,6 +47,7 @@ const WinnerGroupSchema = z.object({
 const InputSchema = z.object({
   tournamentTitle: z.string(),
   date: z.string(),
+  description: z.string().optional(),
   format: z.string().optional(),
   tee: z.string(),
   prizePool: z.number(),
@@ -68,38 +69,35 @@ type BlogWriteupInput = z.infer<typeof InputSchema>;
 interface PromptData {
   tournamentTitle: string;
   date: string;
+  description: string;
   tee: string;
   prizePool: string;
   totalTeams: number;
-  weatherDescription: string;
+  weatherFacts: string;
   topThreeFormatted: string;
   closestToPinFormatted: string;
   hasScores: boolean;
 }
 
-function weatherPhrase(w: NonNullable<BlogWriteupInput["weather"]>): string {
-  const { temperature, condition, windSpeed } = w;
-  const tempAdj =
-    temperature >= 80
-      ? "hot"
-      : temperature >= 72
-        ? "warm"
-        : temperature >= 60
-          ? "mild"
-          : "cool";
-  const windAdj =
-    windSpeed <= 5
-      ? "calm"
+function weatherFacts(w: NonNullable<BlogWriteupInput["weather"]>): string {
+  const { temperature, condition, windSpeed, precipitation } = w;
+  const parts = [
+    `${temperature}°F`,
+    condition,
+    windSpeed <= 3
+      ? "calm winds"
       : windSpeed <= 12
-        ? "with a light breeze"
+        ? `light breeze (~${windSpeed} mph)`
         : windSpeed <= 20
-          ? "and breezy"
-          : "and quite windy";
-  return `${tempAdj}, ${condition.toLowerCase()} day (${temperature}°F, ${windAdj} at ${windSpeed} mph)`;
+          ? `steady breeze (~${windSpeed} mph)`
+          : `gusty winds (~${windSpeed} mph)`,
+  ];
+  if (precipitation > 0) parts.push(`${precipitation}" of rain`);
+  return parts.join(", ");
 }
 
 function buildPromptData(input: BlogWriteupInput): PromptData {
-  const weatherDescription = input.weather ? weatherPhrase(input.weather) : "";
+  const weatherFactsStr = input.weather ? weatherFacts(input.weather) : "";
 
   // Top 3 from the first overall group
   const overallGroup = input.winnerGroups
@@ -148,11 +146,12 @@ function buildPromptData(input: BlogWriteupInput): PromptData {
   return {
     tournamentTitle: input.tournamentTitle,
     date: input.date,
+    description: input.description ?? "",
     tee: input.tee,
     prizePool:
       input.prizePool > 0 ? `$${input.prizePool.toLocaleString()}` : "",
     totalTeams: input.totalTeams ?? 0,
-    weatherDescription,
+    weatherFacts: weatherFactsStr,
     topThreeFormatted,
     closestToPinFormatted,
     hasScores,

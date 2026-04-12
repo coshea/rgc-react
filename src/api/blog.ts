@@ -113,7 +113,8 @@ export async function getBlogPostsByCategory(
 
 // Get a single blog post by slug
 export async function getBlogPostBySlug(
-  slug: string
+  slug: string,
+  includeUnpublished = false
 ): Promise<BlogPost | null> {
   const col = collection(db, BLOG_COLLECTION);
   // Public-safe: only fetch published posts by slug.
@@ -125,8 +126,16 @@ export async function getBlogPostBySlug(
     limit(1)
   );
   const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return mapBlogPostDoc(snap.docs[0]);
+  if (!snap.empty) return mapBlogPostDoc(snap.docs[0]);
+
+  // Admins can preview unpublished posts by slug
+  if (includeUnpublished) {
+    const draftQ = query(col, where("slug", "==", slug), limit(1));
+    const draftSnap = await getDocs(draftQ);
+    if (!draftSnap.empty) return mapBlogPostDoc(draftSnap.docs[0]);
+  }
+
+  return null;
 }
 
 // Create a new blog post
