@@ -46,6 +46,7 @@ export const BlogEditorPage: React.FC = () => {
 
   const [loading, setLoading] = React.useState(isEditing);
   const [saving, setSaving] = React.useState(false);
+  const [generatingAi, setGeneratingAi] = React.useState(false);
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
 
   const [formData, setFormData] = React.useState<Partial<BlogPost>>({
@@ -205,6 +206,55 @@ export const BlogEditorPage: React.FC = () => {
     }
   };
 
+  const handleAiWriteup = async () => {
+    const tournament = tournaments.find(
+      (t) => t.firestoreId === selectedTournamentId,
+    );
+    if (!tournament) return;
+
+    setGeneratingAi(true);
+    try {
+      const { functions } = await import("@/config/firebase");
+      const { httpsCallable } = await import("firebase/functions");
+      const fn = httpsCallable<unknown, { content: string }>(
+        functions,
+        "generate_blog_writeup",
+      );
+      const result = await fn({
+        tournamentTitle: tournament.title,
+        date:
+          tournament.date instanceof Date
+            ? tournament.date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : String(tournament.date),
+        tee: tournament.tee ?? "Mixed",
+        prizePool: tournament.prizePool,
+        totalTeams: tournament.players,
+        winnerGroups: tournament.winnerGroups ?? [],
+        weather: tournament.weather,
+      });
+      setFormData((prev) => ({ ...prev, content: result.data.content }));
+      addToast({
+        title: "AI write-up generated",
+        description: "Review and edit the content below before publishing.",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("AI write-up failed", error);
+      addToast({
+        title: "Generation failed",
+        description:
+          "Could not generate write-up. Check the console for details.",
+        color: "danger",
+      });
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
   const applyTemplate = () => {
     if (!formData.templateType) return;
 
@@ -353,15 +403,37 @@ export const BlogEditorPage: React.FC = () => {
                       <SelectItem key={t.firestoreId!}>{t.title}</SelectItem>
                     ))}
                   </Select>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onPress={applyTemplate}
-                    isDisabled={!selectedTournamentId}
-                    startContent={<Icon icon="lucide:wand-2" />}
-                  >
-                    Apply Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={applyTemplate}
+                      isDisabled={!selectedTournamentId}
+                      startContent={<Icon icon="lucide:wand-2" />}
+                    >
+                      Apply Template
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="secondary"
+                      variant="flat"
+                      onPress={handleAiWriteup}
+                      isLoading={generatingAi}
+                      isDisabled={
+                        !selectedTournamentId ||
+                        !tournaments.find(
+                          (t) => t.firestoreId === selectedTournamentId,
+                        )?.winnerGroups?.length
+                      }
+                      startContent={
+                        !generatingAi && (
+                          <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                        )
+                      }
+                    >
+                      AI Write-Up
+                    </Button>
+                  </div>
                 </>
               )}
 

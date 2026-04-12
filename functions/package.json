@@ -13,9 +13,13 @@
     "test:watch": "vitest --watch"
   },
   "dependencies": {
+    "@genkit-ai/firebase": "^1.0.0",
+    "@genkit-ai/googleai": "^1.0.0",
     "cors": "^2.8.5",
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^7.1.1"
+    "firebase-functions": "^7.1.1",
+    "genkit": "^1.0.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",
