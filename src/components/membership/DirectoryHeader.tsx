@@ -35,12 +35,105 @@ export function DirectoryHeader({
   const buttonsRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="mb-4 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-2xl font-semibold leading-tight">
-        Membership Directory
-      </h1>
+    <div className="mb-4 flex flex-col gap-3">
+      {/* ── Title row ── */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold leading-tight">
+          Membership Directory
+        </h1>
+      </div>
+
+      {/* ── Mobile layout (hidden sm+) ── */}
       {(isAdminOrBoard || isAdmin) && (
-        <div className="flex flex-wrap gap-2 justify-end items-center">
+        <div className="flex flex-col gap-2 sm:hidden">
+          {/* Board actions: Email + Export */}
+          {isAdminOrBoard && (
+            <div className="flex gap-2">
+              <EmailMembersButton
+                members={members}
+                activeSet={activeSet}
+                currentYear={currentYear}
+                size="sm"
+              />
+              {onExportMembers && (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  startContent={
+                    <Icon icon="lucide:download" className="w-4 h-4" />
+                  }
+                  onPress={onExportMembers}
+                  isDisabled={members.length === 0}
+                  className="font-medium"
+                >
+                  Export
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Admin-only accordion row */}
+          {isAdmin && (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setAdminOpen((o) => !o)}
+                aria-expanded={adminOpen}
+                aria-label="Toggle admin actions"
+                className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <span>Admin only</span>
+                <Icon
+                  icon="lucide:chevron-down"
+                  className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {adminOpen && (
+                <div className="grid grid-cols-2 gap-2">
+                  {onActiveOnlyChange && (
+                    <div className="col-span-2 flex items-center gap-2 px-1">
+                      <Switch
+                        size="sm"
+                        isSelected={activeOnly}
+                        onValueChange={onActiveOnlyChange}
+                        aria-label="Toggle active members only"
+                      >
+                        Active Last 2 Years
+                      </Switch>
+                    </div>
+                  )}
+                  {onFindDuplicates && (
+                    <Button
+                      size="sm"
+                      color="warning"
+                      variant="flat"
+                      startContent={
+                        <Icon icon="lucide:users" className="w-4 h-4" />
+                      }
+                      onPress={onFindDuplicates}
+                      className="font-medium w-full"
+                    >
+                      Find Duplicates
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    color="primary"
+                    startContent={<PlusIcon className="w-4 h-4" />}
+                    onPress={onAdd}
+                    className="font-medium w-full"
+                  >
+                    Add Member
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Desktop layout (hidden on mobile) ── */}
+      {(isAdminOrBoard || isAdmin) && (
+        <div className="hidden sm:flex flex-wrap gap-2 justify-end items-center">
           {/* Admin or board: email + export */}
           {isAdminOrBoard && (
             <div className="flex gap-2 items-center">
@@ -72,7 +165,7 @@ export function DirectoryHeader({
               )}
             </div>
           )}
-          {/* Admin only: horizontal drawer triggered by the chip */}
+          {/* Admin only: horizontal sliding drawer */}
           {isAdmin && (
             <div className="flex items-center gap-2 pl-2 border-l border-divider">
               <button
@@ -96,7 +189,6 @@ export function DirectoryHeader({
                   Admin only
                 </Chip>
               </button>
-              {/* Horizontal sliding drawer */}
               <div
                 className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
                 style={{
