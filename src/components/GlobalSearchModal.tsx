@@ -145,7 +145,9 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
       size={isMobile ? "full" : "xl"}
       hideCloseButton
       classNames={{
-        base: isMobile ? "m-0 rounded-none" : "mt-[10vh]",
+        base: isMobile
+          ? "m-0 rounded-none h-[100dvh] max-h-[100dvh]"
+          : "mt-[10vh]",
         body: "p-0",
       }}
       motionProps={{
