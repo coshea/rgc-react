@@ -291,28 +291,17 @@ export const send_notification = onCall(async (request) => {
       }
     }
 
-    // All non-migrated members who are not in the registered set.
-    const usersSnap = await db.collection("users").get();
-    const eligibleDocs = usersSnap.docs.filter(
-      (d) => d.data().isMigrated !== true && !registeredUids.has(d.id),
-    );
-
-    if (eligibleDocs.length === 0) {
-      logger.info("send_notification: no non-registrants to notify", {
-        callerUid,
-        targetNonRegistrantsTournamentId,
-        type,
-      });
-      return { success: true, count: 0 };
-    }
-
+    // Stream all users sequentially to avoid loading the full collection
+    // into memory. Filter isMigrated and registeredUids inline.
     const BATCH_SIZE = 499;
     let count = 0;
     let batch = db.batch();
 
-    for (const userDoc of eligibleDocs) {
-      const prefs = (userDoc.data() as UserPrefsData | undefined)
-        ?.notificationPreferences;
+    const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+    for await (const userDoc of userStream) {
+      const data = userDoc.data();
+      if (data.isMigrated === true || registeredUids.has(userDoc.id)) continue;
+      const prefs = (data as UserPrefsData)?.notificationPreferences;
       if (!userWantsType(prefs, type)) continue;
 
       const ref = db.collection("notifications").doc();
@@ -327,6 +316,14 @@ export const send_notification = onCall(async (request) => {
       await batch.commit();
     }
 
+    if (count === 0) {
+      logger.info("send_notification: no non-registrants to notify", {
+        callerUid,
+        targetNonRegistrantsTournamentId,
+        type,
+      });
+    }
+
     logger.info("send_notification: non-registrant broadcast complete", {
       callerUid,
       targetNonRegistrantsTournamentId,
@@ -337,28 +334,19 @@ export const send_notification = onCall(async (request) => {
     return { success: true, count };
   }
 
-  // Broadcast — create one notification doc per non-migrated user.
-  // Firestore's `!=` operator excludes docs where the field is absent, so
-  // we fetch all users and filter in-memory to include users who never had
-  // `isMigrated` set (which is the norm for most members).
-  const usersSnap = await db.collection("users").get();
-
-  if (usersSnap.empty) {
-    return { success: true, count: 0 };
-  }
-
-  const activeUserDocs = usersSnap.docs.filter(
-    (d) => d.data().isMigrated !== true,
-  );
-
-  // Firestore batch writes are capped at 500 operations
+  // Broadcast — stream users sequentially to avoid loading the full collection
+  // into memory. Firestore's `!=` operator excludes docs where isMigrated is
+  // absent, so we filter in-stream to include users who never had isMigrated set.
+  // Firestore batch writes are capped at 500 operations.
   const BATCH_SIZE = 499;
   let count = 0;
   let batch = db.batch();
 
-  for (const userDoc of activeUserDocs) {
-    const prefs = (userDoc.data() as UserPrefsData | undefined)
-      ?.notificationPreferences;
+  const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+  for await (const userDoc of userStream) {
+    const data = userDoc.data();
+    if (data.isMigrated === true) continue;
+    const prefs = (data as UserPrefsData)?.notificationPreferences;
     if (!userWantsType(prefs, type)) continue;
 
     const ref = db.collection("notifications").doc();
