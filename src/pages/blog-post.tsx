@@ -303,7 +303,7 @@ export const BlogPostPage: React.FC = () => {
 
       {/* Tournament Results — shown as a separate section below content */}
       {post.category === BlogCategory.TournamentResults &&
-        tournament?.winnerGroups?.length && (
+        tournament?.winnerGroups?.length > 0 && (
           <Card className="mt-6" shadow="sm">
             <CardHeader className="pb-0">
               <div className="flex items-center gap-2">
