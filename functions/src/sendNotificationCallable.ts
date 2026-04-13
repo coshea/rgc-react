@@ -6,17 +6,32 @@ import { logger } from "./logger";
 interface SendNotificationData {
   title: string;
   body: string;
-  type: "announcement" | "tournament" | "new_features" | "tournament_canceled";
+  type:
+    | "announcement"
+    | "tournament"
+    | "new_features"
+    | "tournament_canceled"
+    | "registration_opening"
+    | "registration_closing_soon";
   /** Target user's UID. If omitted, broadcasts to all non-migrated members. */
   targetUid?: string;
   /** Target all registrants of a specific tournament instead of a single user or all members. */
   targetTournamentId?: string;
+  /**
+   * Target all non-migrated members who are NOT registered in this tournament.
+   */
+  targetNonRegistrantsTournamentId?: string;
   /**
    * When targeting tournament registrants, only notify the first N teams
    * (ordered by registeredAt ascending). Teams beyond this index are
    * considered waitlisted and are excluded. Omit to notify all registrants.
    */
   maxTeams?: number;
+  /**
+   * Optional ISO 8601 datetime string for the notification expiry.
+   * When omitted, defaults to 60 days from now.
+   */
+  expiresAt?: string;
   data?: {
     link?: string;
     tournamentId?: string;
@@ -43,6 +58,8 @@ function prefKeyForType(
       return "generalAnnouncements";
     case "tournament":
     case "tournament_canceled":
+    case "registration_opening":
+    case "registration_closing_soon":
       return "tournamentUpdates";
     case "new_features":
       return "newFeatures";
@@ -98,8 +115,17 @@ export const send_notification = onCall(async (request) => {
   }
 
   // 3. Validate payload
-  const { title, body, type, targetUid, targetTournamentId, maxTeams, data } =
-    request.data as SendNotificationData;
+  const {
+    title,
+    body,
+    type,
+    targetUid,
+    targetTournamentId,
+    targetNonRegistrantsTournamentId,
+    maxTeams,
+    expiresAt: expiresAtParam,
+    data,
+  } = request.data as SendNotificationData;
 
   if (!title?.trim() || !body?.trim()) {
     throw new HttpsError("invalid-argument", "title and body are required.");
@@ -110,6 +136,8 @@ export const send_notification = onCall(async (request) => {
     "tournament",
     "new_features",
     "tournament_canceled",
+    "registration_opening",
+    "registration_closing_soon",
   ];
   if (!validTypes.includes(type)) {
     throw new HttpsError("invalid-argument", "Invalid notification type.");
@@ -117,8 +145,20 @@ export const send_notification = onCall(async (request) => {
 
   // 4. Build notification doc payload (common fields)
   const TTL_DAYS = 60;
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + TTL_DAYS);
+  let expiresAt: Date;
+  if (expiresAtParam) {
+    const parsed = new Date(expiresAtParam);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid expiresAt. Expected a valid ISO 8601 datetime string.",
+      );
+    }
+    expiresAt = parsed;
+  } else {
+    expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + TTL_DAYS);
+  }
 
   const basePayload = {
     title: title.trim(),
@@ -234,28 +274,79 @@ export const send_notification = onCall(async (request) => {
     return { success: true, count };
   }
 
-  // Broadcast — create one notification doc per non-migrated user.
-  // Firestore's `!=` operator excludes docs where the field is absent, so
-  // we fetch all users and filter in-memory to include users who never had
-  // `isMigrated` set (which is the norm for most members).
-  const usersSnap = await db.collection("users").get();
+  if (targetNonRegistrantsTournamentId) {
+    // Collect all UIDs registered in the tournament.
+    const regsSnap = await db
+      .collection(
+        `tournaments/${targetNonRegistrantsTournamentId}/registrations`,
+      )
+      .get();
+    const registeredUids = new Set<string>();
+    for (const regDoc of regsSnap.docs) {
+      const team = regDoc.data().team;
+      if (Array.isArray(team)) {
+        team.forEach((m: { id?: string }) => {
+          if (m.id) registeredUids.add(m.id);
+        });
+      }
+    }
 
-  if (usersSnap.empty) {
-    return { success: true, count: 0 };
+    // Stream all users sequentially to avoid loading the full collection
+    // into memory. Filter isMigrated and registeredUids inline.
+    const BATCH_SIZE = 499;
+    let count = 0;
+    let batch = db.batch();
+
+    const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+    for await (const userDoc of userStream) {
+      const data = userDoc.data();
+      if (data.isMigrated === true || registeredUids.has(userDoc.id)) continue;
+      const prefs = (data as UserPrefsData)?.notificationPreferences;
+      if (!userWantsType(prefs, type)) continue;
+
+      const ref = db.collection("notifications").doc();
+      batch.set(ref, { ...basePayload, uid: userDoc.id });
+      count++;
+      if (count % BATCH_SIZE === 0) {
+        await batch.commit();
+        batch = db.batch();
+      }
+    }
+    if (count % BATCH_SIZE !== 0) {
+      await batch.commit();
+    }
+
+    if (count === 0) {
+      logger.info("send_notification: no non-registrants to notify", {
+        callerUid,
+        targetNonRegistrantsTournamentId,
+        type,
+      });
+    }
+
+    logger.info("send_notification: non-registrant broadcast complete", {
+      callerUid,
+      targetNonRegistrantsTournamentId,
+      count,
+      type,
+    });
+
+    return { success: true, count };
   }
 
-  const activeUserDocs = usersSnap.docs.filter(
-    (d) => d.data().isMigrated !== true,
-  );
-
-  // Firestore batch writes are capped at 500 operations
+  // Broadcast — stream users sequentially to avoid loading the full collection
+  // into memory. Firestore's `!=` operator excludes docs where isMigrated is
+  // absent, so we filter in-stream to include users who never had isMigrated set.
+  // Firestore batch writes are capped at 500 operations.
   const BATCH_SIZE = 499;
   let count = 0;
   let batch = db.batch();
 
-  for (const userDoc of activeUserDocs) {
-    const prefs = (userDoc.data() as UserPrefsData | undefined)
-      ?.notificationPreferences;
+  const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+  for await (const userDoc of userStream) {
+    const data = userDoc.data();
+    if (data.isMigrated === true) continue;
+    const prefs = (data as UserPrefsData)?.notificationPreferences;
     if (!userWantsType(prefs, type)) continue;
 
     const ref = db.collection("notifications").doc();

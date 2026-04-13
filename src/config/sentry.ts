@@ -137,6 +137,43 @@ if (enabled) {
     // Privacy: keep PII off unless explicitly enabled.
     sendDefaultPii: import.meta.env.VITE_SENTRY_SEND_DEFAULT_PII === "true",
 
+    // Suppress only the known non-actionable abort noise from Firebase's internal
+    // Firestore/webchannel transport when listeners are intentionally unsubscribed.
+    beforeSend(event, hint) {
+      const exceptionValues = event.exception?.values ?? [];
+      const exceptionText = exceptionValues
+        .flatMap((value) => [
+          value.type,
+          value.value,
+          ...(value.stacktrace?.frames?.flatMap((frame) => [
+            frame.module,
+            frame.filename,
+            frame.function,
+          ]) ?? []),
+        ])
+        .filter((part): part is string => typeof part === "string")
+        .join(" ");
+
+      const originalException = hint.originalException;
+      const originalExceptionText =
+        originalException instanceof Error ||
+        originalException instanceof DOMException
+          ? `${originalException.name} ${originalException.message}`
+          : "";
+
+      const combinedText = `${exceptionText} ${originalExceptionText}`;
+      const isAbortError = /\bAbortError\b/i.test(combinedText);
+      const isFirebaseWebchannelAbort =
+        /(firebase|firestore|webchannel|persistentstream|listen stream)/i.test(
+          combinedText,
+        );
+
+      if (isAbortError && isFirebaseWebchannelAbort) {
+        return null;
+      }
+
+      return event;
+    },
     integrations: [
       Sentry.reactRouterV6BrowserTracingIntegration({
         useEffect,

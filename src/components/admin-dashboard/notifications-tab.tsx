@@ -20,7 +20,10 @@ import {
   Chip,
   RadioGroup,
   Radio,
+  DatePicker,
 } from "@heroui/react";
+import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
+import type { DateValue } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { functions, db } from "@/config/firebase";
 import { addToast } from "@/providers/toast";
@@ -32,6 +35,7 @@ interface TournamentOption {
   id: string;
   title: string;
   maxTeams?: number;
+  registrationEnd?: Date;
 }
 
 interface SendNotificationPayload {
@@ -42,6 +46,10 @@ interface SendNotificationPayload {
   targetTournamentId?: string;
   /** When set, only the first N registrations (ordered by registeredAt) are notified. */
   maxTeams?: number;
+  /** Send to all non-migrated members NOT registered for this tournament. */
+  targetNonRegistrantsTournamentId?: string;
+  /** Optional ISO expiry datetime. Defaults to 60 days on the backend when omitted. */
+  expiresAt?: string;
   data?: { link?: string };
 }
 
@@ -87,6 +95,70 @@ function formatShortDate(ts: Timestamp | undefined): string {
   });
 }
 
+/** Notification types that auto-link expiration to a tournament's registration close date. */
+const REGISTRATION_LINKED_TYPES = new Set<NotificationType>([
+  "registration_opening",
+  "registration_closing_soon",
+]);
+
+/** Notification types that are associated with a specific tournament. */
+const TOURNAMENT_TYPES = new Set<NotificationType>([
+  "tournament",
+  "tournament_canceled",
+  "registration_opening",
+  "registration_closing_soon",
+]);
+
+/** Returns default title + body text for a given notification type and optional tournament name. */
+function getDefaultText(
+  type: NotificationType,
+  tournamentName?: string,
+): { title: string; body: string } {
+  const name = tournamentName ?? "the tournament";
+  switch (type) {
+    case "tournament":
+      return {
+        title: `${name}`,
+        body: `Check out the details and sign up for ${name}. We hope to see you there!`,
+      };
+    case "tournament_canceled":
+      return {
+        title: `${name} Canceled`,
+        body: `Unfortunately, ${name} has been canceled. We apologize for any inconvenience and hope to see you at a future event.`,
+      };
+    case "registration_opening":
+      return {
+        title: `Registration Open — ${name}`,
+        body: `Registration for ${name} is now open! Secure your spot before it fills up.`,
+      };
+    case "registration_closing_soon":
+      return {
+        title: `Registration Closing Soon — ${name}`,
+        body: `Registration for ${name} is closing soon. Don't miss your chance to sign up!`,
+      };
+    case "new_features":
+      return {
+        title: "New Features Available",
+        body: "We've made some improvements to the app. Check out what's new!",
+      };
+    case "announcement":
+    default:
+      return {
+        title: "Club Announcement",
+        body: "We have an important update to share with the club. Please check the app for details.",
+      };
+  }
+}
+
+/** Converts a Date to an ISO-like string compatible with parseDateTime (YYYY-MM-DDTHH:mm:ss). */
+function toDateTimeValue(date: Date): DateValue {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const str =
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  return parseDateTime(str);
+}
+
 export function NotificationsTab() {
   // ── Form state ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -94,6 +166,7 @@ export function NotificationsTab() {
   const [type, setType] = useState<NotificationType>("announcement");
   const [targetUid, setTargetUid] = useState<string>("__all__");
   const [link, setLink] = useState("");
+  const [expiresAt, setExpiresAt] = useState<DateValue | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
 
@@ -150,16 +223,22 @@ export function NotificationsTab() {
           ),
         );
         setTournaments(
-          snap.docs.map((d) => ({
-            id: d.id,
-            title: d.data().title || d.id,
-            maxTeams:
-              typeof d.data().maxTeams === "number" &&
-              Number.isFinite(d.data().maxTeams) &&
-              d.data().maxTeams > 0
-                ? (d.data().maxTeams as number)
-                : undefined,
-          })),
+          snap.docs.map((d) => {
+            const registrationEndRaw = d.data().registrationEnd as
+              | { toDate?: () => Date }
+              | undefined;
+            return {
+              id: d.id,
+              title: d.data().title || d.id,
+              maxTeams:
+                typeof d.data().maxTeams === "number" &&
+                Number.isFinite(d.data().maxTeams) &&
+                d.data().maxTeams > 0
+                  ? (d.data().maxTeams as number)
+                  : undefined,
+              registrationEnd: registrationEndRaw?.toDate?.(),
+            };
+          }),
         );
       } catch (err) {
         console.error("[AdminNotifications] Failed to load tournaments:", err);
@@ -223,7 +302,11 @@ export function NotificationsTab() {
     if (!title.trim()) newErrors.title = "Title is required.";
     if (!body.trim()) newErrors.body = "Body is required.";
     if (!type) newErrors.type = "Type is required.";
-    if (targetUid === "__tournament_registrants__" && !selectedTournamentId)
+    if (
+      (targetUid === "__tournament_registrants__" ||
+        targetUid === "__tournament_non_registrants__") &&
+      !selectedTournamentId
+    )
       newErrors.tournament = "Please select a tournament.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -256,10 +339,15 @@ export function NotificationsTab() {
                 ? { maxTeams: selectedTournament.maxTeams }
                 : {}),
             }
-          : targetUid !== "__all__"
-            ? { targetUid }
-            : {}),
+          : targetUid === "__tournament_non_registrants__"
+            ? { targetNonRegistrantsTournamentId: selectedTournamentId }
+            : targetUid !== "__all__"
+              ? { targetUid }
+              : {}),
         ...(link.trim() ? { data: { link: link.trim() } } : {}),
+        ...(expiresAt
+          ? { expiresAt: expiresAt.toDate(getLocalTimeZone()).toISOString() }
+          : {}),
       };
 
       const result = await sendNotification(payload);
@@ -282,6 +370,7 @@ export function NotificationsTab() {
       setSelectedTournamentId("");
       setTournamentScope("in-tournament");
       setLink("");
+      setExpiresAt(null);
       setErrors({});
 
       // Refresh recent list
@@ -328,13 +417,57 @@ export function NotificationsTab() {
             isRequired
           />
 
+          <div className="flex justify-end -mt-2">
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={() => {
+                const tournament = tournaments.find(
+                  (t) => t.id === selectedTournamentId,
+                );
+                const defaults = getDefaultText(type, tournament?.title);
+                setTitle(defaults.title);
+                setBody(defaults.body);
+              }}
+              startContent={<Icon icon="lucide:wand-2" className="text-sm" />}
+            >
+              Fill defaults
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Type"
               selectedKeys={[type]}
               onSelectionChange={(keys) => {
                 const val = Array.from(keys)[0] as NotificationType;
-                if (val) setType(val);
+                if (val) {
+                  setType(val);
+                  // When switching to a tournament-type, pre-fill link if a
+                  // tournament is already selected.
+                  if (TOURNAMENT_TYPES.has(val) && selectedTournamentId) {
+                    if (!link) setLink(`/tournaments/${selectedTournamentId}`);
+                    if (REGISTRATION_LINKED_TYPES.has(val)) {
+                      const tournament = tournaments.find(
+                        (t) => t.id === selectedTournamentId,
+                      );
+                      if (tournament?.registrationEnd) {
+                        setExpiresAt(
+                          toDateTimeValue(tournament.registrationEnd),
+                        );
+                      }
+                    }
+                  }
+                  // Clear tournament when switching away from tournament types
+                  // and no recipient-based targeting is active.
+                  if (
+                    !TOURNAMENT_TYPES.has(val) &&
+                    targetUid !== "__tournament_registrants__" &&
+                    targetUid !== "__tournament_non_registrants__"
+                  ) {
+                    setSelectedTournamentId("");
+                  }
+                }
               }}
               isInvalid={Boolean(errors.type)}
               errorMessage={errors.type}
@@ -357,10 +490,15 @@ export function NotificationsTab() {
                 const val = Array.from(keys)[0] as string;
                 if (val) {
                   setTargetUid(val);
-                  if (val !== "__tournament_registrants__") {
+                  const isTournamentTargeting =
+                    val === "__tournament_registrants__" ||
+                    val === "__tournament_non_registrants__";
+                  // Clear tournament selection when switching away from all
+                  // tournament-related contexts (type and recipient).
+                  if (!isTournamentTargeting && !TOURNAMENT_TYPES.has(type)) {
                     setSelectedTournamentId("");
-                    if (val !== "__all__") setLink("");
                   }
+                  if (val !== "__all__" && !isTournamentTargeting) setLink("");
                 }
               }}
             >
@@ -374,6 +512,14 @@ export function NotificationsTab() {
                 >
                   Tournament Registrants
                 </SelectItem>
+                <SelectItem
+                  key="__tournament_non_registrants__"
+                  startContent={
+                    <Icon icon="lucide:user-x" className="text-base" />
+                  }
+                >
+                  Non-Registrants
+                </SelectItem>
                 {members.map((m) => (
                   <SelectItem key={m.id}>
                     {m.displayName ?? m.email ?? m.id}
@@ -383,7 +529,9 @@ export function NotificationsTab() {
             </Select>
           </div>
 
-          {targetUid === "__tournament_registrants__" && (
+          {(TOURNAMENT_TYPES.has(type) ||
+            targetUid === "__tournament_registrants__" ||
+            targetUid === "__tournament_non_registrants__") && (
             <>
               <Select
                 label="Tournament"
@@ -397,7 +545,17 @@ export function NotificationsTab() {
                   if (val) {
                     setSelectedTournamentId(val);
                     setLink(`/tournaments/${val}`);
-                    setTournamentScope("in-tournament");
+                    if (targetUid === "__tournament_registrants__") {
+                      setTournamentScope("in-tournament");
+                    }
+                    if (REGISTRATION_LINKED_TYPES.has(type)) {
+                      const tournament = tournaments.find((t) => t.id === val);
+                      if (tournament?.registrationEnd) {
+                        setExpiresAt(
+                          toDateTimeValue(tournament.registrationEnd),
+                        );
+                      }
+                    }
                   }
                 }}
                 isInvalid={Boolean(errors.tournament)}
@@ -407,20 +565,21 @@ export function NotificationsTab() {
                   <SelectItem key={t.id}>{t.title}</SelectItem>
                 ))}
               </Select>
-              {selectedTournamentId && (
-                <RadioGroup
-                  label="Who to notify"
-                  value={tournamentScope}
-                  onValueChange={(v) =>
-                    setTournamentScope(v as "in-tournament" | "all")
-                  }
-                  orientation="horizontal"
-                  size="sm"
-                >
-                  <Radio value="in-tournament">In tournament</Radio>
-                  <Radio value="all">All (includes waitlist)</Radio>
-                </RadioGroup>
-              )}
+              {targetUid === "__tournament_registrants__" &&
+                selectedTournamentId && (
+                  <RadioGroup
+                    label="Who to notify"
+                    value={tournamentScope}
+                    onValueChange={(v) =>
+                      setTournamentScope(v as "in-tournament" | "all")
+                    }
+                    orientation="horizontal"
+                    size="sm"
+                  >
+                    <Radio value="in-tournament">In tournament</Radio>
+                    <Radio value="all">All (includes waitlist)</Radio>
+                  </RadioGroup>
+                )}
             </>
           )}
 
@@ -430,6 +589,14 @@ export function NotificationsTab() {
             value={link}
             onValueChange={setLink}
             description="Deep-link opened when user taps the notification."
+          />
+
+          <DatePicker
+            label="Expiration (optional)"
+            value={expiresAt}
+            onChange={(v: DateValue | null) => setExpiresAt(v)}
+            granularity="minute"
+            description="When to auto-delete this notification. Defaults to 60 days if left blank."
           />
 
           <div className="flex justify-end">

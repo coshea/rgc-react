@@ -46,6 +46,7 @@ export const BlogEditorPage: React.FC = () => {
 
   const [loading, setLoading] = React.useState(isEditing);
   const [saving, setSaving] = React.useState(false);
+  const [generatingAi, setGeneratingAi] = React.useState(false);
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
 
   const [formData, setFormData] = React.useState<Partial<BlogPost>>({
@@ -205,6 +206,56 @@ export const BlogEditorPage: React.FC = () => {
     }
   };
 
+  const handleAiWriteup = async () => {
+    const tournament = tournaments.find(
+      (t) => t.firestoreId === selectedTournamentId,
+    );
+    if (!tournament) return;
+
+    setGeneratingAi(true);
+    try {
+      const { functions } = await import("@/config/firebase");
+      const { httpsCallable } = await import("firebase/functions");
+      const fn = httpsCallable<unknown, { content: string }>(
+        functions,
+        "generate_blog_writeup",
+      );
+      const result = await fn({
+        tournamentTitle: tournament.title,
+        date:
+          tournament.date instanceof Date
+            ? tournament.date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : String(tournament.date),
+        tee: tournament.tee ?? "Mixed",
+        prizePool: tournament.prizePool,
+        totalTeams: tournament.players,
+        description: tournament.description ?? "",
+        winnerGroups: tournament.winnerGroups ?? [],
+        weather: tournament.weather,
+      });
+      setFormData((prev) => ({ ...prev, content: result.data.content }));
+      addToast({
+        title: "AI write-up generated",
+        description: "Review and edit the content below before publishing.",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("AI write-up failed", error);
+      addToast({
+        title: "Generation failed",
+        description:
+          "Could not generate write-up. Check the console for details.",
+        color: "danger",
+      });
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
   const applyTemplate = () => {
     if (!formData.templateType) return;
 
@@ -217,10 +268,19 @@ export const BlogEditorPage: React.FC = () => {
           if (tournament) {
             setFormData({
               ...formData,
-              title: `${tournament.date.getFullYear()} ${tournament.title} - Results`,
+              // Only set title if not already filled
+              title: formData.title?.trim()
+                ? formData.title
+                : `${tournament.date.getFullYear()} ${tournament.title} - Results`,
               category: BlogCategory.TournamentResults,
-              excerpt: `Check out the winners from this year's ${tournament.title}!`,
-              content: `The results for **${tournament.title}** are now available!\n\n[tournament-winners:${selectedTournamentId}]`,
+              // Only set excerpt if not already filled
+              excerpt: formData.excerpt?.trim()
+                ? formData.excerpt
+                : `Check out the winners from this year's ${tournament.title}!`,
+              // Only set content if empty — winners are shown as a separate section
+              content: formData.content?.trim()
+                ? formData.content
+                : `The results for **${tournament.title}** are now available!`,
             });
           }
         }
@@ -234,18 +294,24 @@ export const BlogEditorPage: React.FC = () => {
           if (tournament) {
             setFormData({
               ...formData,
-              title: `${tournament.title} - Tee Times Posted`,
+              title: formData.title?.trim()
+                ? formData.title
+                : `${tournament.title} - Tee Times Posted`,
               category: BlogCategory.TeeTimes,
-              excerpt: `Tee times are now available for the upcoming ${tournament.title}.`,
-              content: [
-                `Tee times for **${tournament.title}** are now available.`,
-                "",
-                "## Tournament Details",
-                `- **Date:** ${tournament.date instanceof Date ? tournament.date.toLocaleDateString() : "TBD"}`,
-                `- **Prize Pool:** $${tournament.prizePool.toLocaleString()}`,
-                "",
-                "Good luck to all participants!",
-              ].join("\n"),
+              excerpt: formData.excerpt?.trim()
+                ? formData.excerpt
+                : `Tee times are now available for the upcoming ${tournament.title}.`,
+              content: formData.content?.trim()
+                ? formData.content
+                : [
+                    `Tee times for **${tournament.title}** are now available.`,
+                    "",
+                    "## Tournament Details",
+                    `- **Date:** ${tournament.date instanceof Date ? tournament.date.toLocaleDateString() : "TBD"}`,
+                    `- **Prize Pool:** $${tournament.prizePool.toLocaleString()}`,
+                    "",
+                    "Good luck to all participants!",
+                  ].join("\n"),
             });
           }
         }
@@ -255,9 +321,12 @@ export const BlogEditorPage: React.FC = () => {
         setFormData({
           ...formData,
           category: BlogCategory.Announcement,
-          excerpt: "Important update for all club members.",
-          content:
-            "## Important Announcement\n\nYour announcement content here...",
+          excerpt: formData.excerpt?.trim()
+            ? formData.excerpt
+            : "Important update for all club members.",
+          content: formData.content?.trim()
+            ? formData.content
+            : "## Important Announcement\n\nYour announcement content here...",
         });
         break;
     }
@@ -279,7 +348,7 @@ export const BlogEditorPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto pt-4 pb-10 px-4">
       <div className="mb-4 flex items-center justify-between">
-        <BackButton />
+        <BackButton onPress={() => navigate("/announcements")} />
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -353,15 +422,40 @@ export const BlogEditorPage: React.FC = () => {
                       <SelectItem key={t.firestoreId!}>{t.title}</SelectItem>
                     ))}
                   </Select>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onPress={applyTemplate}
-                    isDisabled={!selectedTournamentId}
-                    startContent={<Icon icon="lucide:wand-2" />}
-                  >
-                    Apply Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={applyTemplate}
+                      isDisabled={!selectedTournamentId}
+                      startContent={<Icon icon="lucide:wand-2" />}
+                    >
+                      Apply Template
+                    </Button>
+                    {formData.templateType ===
+                      BlogTemplateType.TournamentResults && (
+                      <Button
+                        size="sm"
+                        color="secondary"
+                        variant="flat"
+                        onPress={handleAiWriteup}
+                        isLoading={generatingAi}
+                        isDisabled={
+                          !selectedTournamentId ||
+                          !tournaments.find(
+                            (t) => t.firestoreId === selectedTournamentId,
+                          )?.winnerGroups?.length
+                        }
+                        startContent={
+                          !generatingAi && (
+                            <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                          )
+                        }
+                      >
+                        AI Write-Up
+                      </Button>
+                    )}
+                  </div>
                 </>
               )}
 
@@ -378,6 +472,47 @@ export const BlogEditorPage: React.FC = () => {
               )}
             </div>
           )}
+
+          {/* AI Write-Up for editing tournament results posts */}
+          {isEditing &&
+            formData.templateType === BlogTemplateType.TournamentResults && (
+              <div className="space-y-3">
+                <Select
+                  label="Tournament"
+                  selectedKeys={
+                    selectedTournamentId ? [selectedTournamentId] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setSelectedTournamentId(value);
+                  }}
+                >
+                  {tournaments.map((t) => (
+                    <SelectItem key={t.firestoreId!}>{t.title}</SelectItem>
+                  ))}
+                </Select>
+                <Button
+                  size="sm"
+                  color="secondary"
+                  variant="flat"
+                  onPress={handleAiWriteup}
+                  isLoading={generatingAi}
+                  isDisabled={
+                    !selectedTournamentId ||
+                    !tournaments.find(
+                      (t) => t.firestoreId === selectedTournamentId,
+                    )?.winnerGroups?.length
+                  }
+                  startContent={
+                    !generatingAi && (
+                      <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                    )
+                  }
+                >
+                  AI Write-Up
+                </Button>
+              </div>
+            )}
 
           {/* Title */}
           <Input
@@ -471,14 +606,18 @@ export const BlogEditorPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      {/* Preview tournament winners if template */}
+      {/* Tournament winners — separate section shown below content in the published post */}
       {selectedTournamentId &&
         formData.templateType === BlogTemplateType.TournamentResults && (
           <Card className="mt-6">
             <CardHeader>
-              <h2 className="text-xl font-semibold">
-                Tournament Winners Preview
-              </h2>
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-xl font-semibold">Tournament Results</h2>
+                <p className="text-sm text-foreground-500">
+                  This section is automatically displayed below the post
+                  content. It does not need to be added to the text above.
+                </p>
+              </div>
             </CardHeader>
             <CardBody>
               {(() => {

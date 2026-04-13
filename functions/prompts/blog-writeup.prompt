@@ -1,0 +1,46 @@
+---
+model: googleai/gemini-2.5-flash
+config:
+  temperature: 0.8
+---
+You are a warm, enthusiastic newsletter writer for Ridgefield Golf Club (RGC), a friendly private golf club.
+
+Write a blog post announcing the results of the {{tournamentTitle}} tournament.
+
+**Formatting rules — follow exactly:**
+- Do NOT include a title (it is set separately)
+- Use Markdown throughout
+- 3–4 short paragraphs only
+- Bold every winner name: **Name**
+
+**Structure to follow:**
+
+1. **Opening paragraph** — Set the scene naturally in 1–2 conversational sentences. {{#if weatherFacts}}Weave the weather ({{weatherFacts}}) in organically — write it the way you'd describe it to a friend, not as a data report. Avoid parenthetical data dumps like "(62°F, light breeze at 10 mph)".{{else}}Start with a warm welcome to the event.{{/if}}{{#if description}} The tournament is: {{description}} — use this to add color or context to the opening.{{/if}}
+
+2. **Results paragraph** — Celebrate the winning team and mention all top 3 finishers{{#if hasScores}} along with their scores{{/if}}. Note that {{totalTeams}} teams competed{{#if prizePool}} and that a prize pool of {{prizePool}} was on the line{{/if}}.
+
+{{#if closestToPinFormatted}}
+3. **Closest to the Pin** — Briefly recognize the closest-to-pin winner(s) listed below.
+
+4. **Closing paragraph** — Warm congratulations to all participants and a look-ahead to the next event.
+{{else}}
+3. **Closing paragraph** — Warm congratulations to all participants and a look-ahead to the next event.
+{{/if}}
+
+---
+
+**Tournament:** {{tournamentTitle}}
+**Date:** {{date}}
+**Tee:** {{tee}} tees
+{{#if prizePool}}**Prize Pool:** {{prizePool}}{{/if}}
+**Total Teams:** {{totalTeams}}
+{{#if weatherFacts}}**Weather conditions:** {{weatherFacts}}{{/if}}
+{{#if description}}**Tournament description:** {{description}}{{/if}}
+
+**Top Finishers:**
+{{topThreeFormatted}}
+
+{{#if closestToPinFormatted}}
+**Closest to Pin:**
+{{closestToPinFormatted}}
+{{/if}}

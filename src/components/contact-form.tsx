@@ -15,6 +15,12 @@ import { EMAILJS_CONFIG, isEmailJSConfigured } from "@/config/emailjs";
 import golfBallHoleImage from "@/assets/golf_ball_hole.jpg";
 import { executeRecaptcha } from "@/utils/recaptcha";
 
+// Disable EmailJS's internal Web Storage usage to prevent SecurityError in
+// browsers where storage access is blocked (Safari private mode / strict
+// cross-site tracking prevention). Storage is only used for deduplication;
+// disabling it has no effect on reliable delivery.
+emailjs.init({ storageProvider: undefined });
+
 export const ContactForm = () => {
   const [submitted, setSubmitted] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);

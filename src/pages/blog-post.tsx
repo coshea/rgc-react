@@ -30,7 +30,7 @@ export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useAdminFlag(user);
+  const { isAdmin, loadingAdmin } = useAdminFlag(user);
 
   const [post, setPost] = React.useState<BlogPost | null>(null);
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
@@ -43,9 +43,12 @@ export const BlogPostPage: React.FC = () => {
   // Load blog post by slug
   React.useEffect(() => {
     if (!slug) return;
+    // Wait for admin status to resolve before fetching — avoids premature
+    // "not found" redirect for admins viewing unpublished drafts.
+    if (loadingAdmin) return;
 
     setLoading(true);
-    getBlogPostBySlug(slug)
+    getBlogPostBySlug(slug, isAdmin)
       .then((blogPost) => {
         if (!blogPost) {
           addToast({
@@ -68,7 +71,7 @@ export const BlogPostPage: React.FC = () => {
         });
         setLoading(false);
       });
-  }, [slug, navigate, isAdmin]);
+  }, [slug, navigate, isAdmin, loadingAdmin]);
 
   // Load tournament if referenced
   React.useEffect(() => {
@@ -124,47 +127,21 @@ export const BlogPostPage: React.FC = () => {
     });
   };
 
-  // Replace tournament winners placeholder with actual component
+  // Render post content. Legacy posts may contain a [tournament-winners:ID]
+  // placeholder — strip it out since winners are now always rendered as a
+  // separate section below the content card.
   const renderContent = () => {
     if (!post) return null;
 
-    const content = post.content;
+    const content = post.content
+      .replace(/\[tournament-winners:[^\]]+\]/g, "")
+      .trim();
 
-    // Check for tournament winners placeholder
-    const tournamentWinnersRegex = /\[tournament-winners:([^\]]+)\]/g;
-    const parts = content.split(tournamentWinnersRegex);
-
-    if (parts.length === 1) {
-      // No placeholders, just render markdown
-      return (
-        <div className="prose prose-lg max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-        </div>
-      );
-    }
-
-    // Render with tournament winners sections
-    return parts.map((part, index) => {
-      // Odd indices are tournament IDs from the regex capture groups
-      if (index % 2 === 1 && tournament && tournament.winnerGroups) {
-        return (
-          <div key={index} className="my-8">
-            <GroupedWinners groups={tournament.winnerGroups} />
-          </div>
-        );
-      }
-
-      // Even indices are regular content
-      if (part.trim()) {
-        return (
-          <div key={index} className="prose prose-lg max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{part}</ReactMarkdown>
-          </div>
-        );
-      }
-
-      return null;
-    });
+    return (
+      <div className="prose prose-lg max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      </div>
+    );
   };
 
   if (loading) {
@@ -323,6 +300,24 @@ export const BlogPostPage: React.FC = () => {
       <Card>
         <CardBody className="p-8">{renderContent()}</CardBody>
       </Card>
+
+      {/* Tournament Results — shown as a separate section below content */}
+      {post.category === BlogCategory.TournamentResults &&
+        tournament != null &&
+        (tournament.winnerGroups?.length ?? 0) > 0 && (
+          <Card className="mt-6" shadow="sm">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-2">
+                <Icon icon="lucide:trophy" className="w-5 h-5 text-warning" />
+                <h2 className="text-lg font-semibold">Tournament Results</h2>
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="pt-4">
+              <GroupedWinners groups={tournament.winnerGroups ?? []} />
+            </CardBody>
+          </Card>
+        )}
 
       {/* Navigation Footer */}
       <div className="mt-8 flex justify-center">

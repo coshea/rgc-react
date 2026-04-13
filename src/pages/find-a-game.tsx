@@ -53,17 +53,21 @@ export default function FindAGamePage() {
     // Keep create date clamped to today for the form, but list shows ALL future posts
     const today = toYMD(new Date());
     if (date < today) setDate(today);
+    let cancelled = false;
     let unsub: undefined | (() => void);
     (async () => {
-      unsub = await onFuturePosts(setPosts, (e) => {
+      const sub = await onFuturePosts(setPosts, (e) => {
         console.error(e);
       });
+      if (cancelled) {
+        sub();
+      } else {
+        unsub = sub;
+      }
     })();
     return () => {
-      // safely unsubscribe if listener was set
-      if (typeof unsub === "function") {
-        unsub();
-      }
+      cancelled = true;
+      unsub?.();
     };
   }, []);
 

@@ -3,8 +3,10 @@ import type { Timestamp } from "firebase/firestore";
 export type NotificationType =
   | "announcement"
   | "tournament"
-  | "new_features"
-  | "tournament_canceled";
+  | "tournament_canceled"
+  | "registration_opening"
+  | "registration_closing_soon"
+  | "new_features";
 
 export const NOTIFICATION_TYPE_META: Record<
   NotificationType,
@@ -35,6 +37,16 @@ export const NOTIFICATION_TYPE_META: Record<
     label: "Tournament Canceled",
     icon: "lucide:x-circle",
     color: "danger",
+  },
+  registration_opening: {
+    label: "Registration Opening",
+    icon: "lucide:calendar-check",
+    color: "success",
+  },
+  registration_closing_soon: {
+    label: "Registration Closing Soon",
+    icon: "lucide:calendar-clock",
+    color: "warning",
   },
 };
 
