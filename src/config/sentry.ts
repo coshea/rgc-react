@@ -137,6 +137,10 @@ if (enabled) {
     // Privacy: keep PII off unless explicitly enabled.
     sendDefaultPii: import.meta.env.VITE_SENTRY_SEND_DEFAULT_PII === "true",
 
+    // Suppress non-actionable errors from Firebase's internal webchannel transport.
+    // AbortError is thrown intentionally by Firebase when unsubscribing a Firestore listener.
+    ignoreErrors: ["AbortError"],
+
     integrations: [
       Sentry.reactRouterV6BrowserTracingIntegration({
         useEffect,
