@@ -432,26 +432,29 @@ export const BlogEditorPage: React.FC = () => {
                     >
                       Apply Template
                     </Button>
-                    <Button
-                      size="sm"
-                      color="secondary"
-                      variant="flat"
-                      onPress={handleAiWriteup}
-                      isLoading={generatingAi}
-                      isDisabled={
-                        !selectedTournamentId ||
-                        !tournaments.find(
-                          (t) => t.firestoreId === selectedTournamentId,
-                        )?.winnerGroups?.length
-                      }
-                      startContent={
-                        !generatingAi && (
-                          <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                        )
-                      }
-                    >
-                      AI Write-Up
-                    </Button>
+                    {formData.templateType ===
+                      BlogTemplateType.TournamentResults && (
+                      <Button
+                        size="sm"
+                        color="secondary"
+                        variant="flat"
+                        onPress={handleAiWriteup}
+                        isLoading={generatingAi}
+                        isDisabled={
+                          !selectedTournamentId ||
+                          !tournaments.find(
+                            (t) => t.firestoreId === selectedTournamentId,
+                          )?.winnerGroups?.length
+                        }
+                        startContent={
+                          !generatingAi && (
+                            <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                          )
+                        }
+                      >
+                        AI Write-Up
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
