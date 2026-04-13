@@ -148,13 +148,13 @@ export const send_notification = onCall(async (request) => {
   let expiresAt: Date;
   if (expiresAtParam) {
     const parsed = new Date(expiresAtParam);
-    expiresAt = isNaN(parsed.getTime())
-      ? (() => {
-          const d = new Date();
-          d.setDate(d.getDate() + TTL_DAYS);
-          return d;
-        })()
-      : parsed;
+    if (Number.isNaN(parsed.getTime())) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid expiresAt. Expected a valid ISO 8601 datetime string.",
+      );
+    }
+    expiresAt = parsed;
   } else {
     expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + TTL_DAYS);
