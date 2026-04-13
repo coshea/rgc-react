@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Button, Chip, Switch, Tooltip } from "@heroui/react";
+import { Button, Switch, Tooltip } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Icon } from "@iconify/react";
 
@@ -75,18 +75,23 @@ export function DirectoryHeader({
           {/* Admin-only accordion row */}
           {isAdmin && (
             <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setAdminOpen((o) => !o)}
+              <Button
+                size="sm"
+                color="secondary"
+                variant="flat"
+                onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
-                className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-full justify-between font-medium"
+                endContent={
+                  <Icon
+                    icon="lucide:chevron-down"
+                    className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                  />
+                }
               >
-                <span>Admin only</span>
-                <Icon
-                  icon="lucide:chevron-down"
-                  className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                />
-              </button>
+                Admin only
+              </Button>
               {adminOpen && (
                 <div className="grid grid-cols-2 gap-2">
                   {onActiveOnlyChange && (
@@ -168,27 +173,23 @@ export function DirectoryHeader({
           {/* Admin only: horizontal sliding drawer */}
           {isAdmin && (
             <div className="flex items-center gap-2 pl-2 border-l border-divider">
-              <button
-                onClick={() => setAdminOpen((o) => !o)}
+              <Button
+                size="sm"
+                color="secondary"
+                variant="flat"
+                onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
-                className="focus:outline-none"
+                className="font-medium"
+                endContent={
+                  <Icon
+                    icon="lucide:chevron-right"
+                    className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                  />
+                }
               >
-                <Chip
-                  color="secondary"
-                  size="sm"
-                  variant="flat"
-                  className="cursor-pointer select-none"
-                  endContent={
-                    <Icon
-                      icon="lucide:chevron-right"
-                      className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                    />
-                  }
-                >
-                  Admin only
-                </Chip>
-              </button>
+                Admin only
+              </Button>
               <div
                 className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
                 style={{

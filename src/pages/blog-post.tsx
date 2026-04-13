@@ -303,7 +303,8 @@ export const BlogPostPage: React.FC = () => {
 
       {/* Tournament Results — shown as a separate section below content */}
       {post.category === BlogCategory.TournamentResults &&
-        tournament?.winnerGroups?.length > 0 && (
+        tournament != null &&
+        (tournament.winnerGroups?.length ?? 0) > 0 && (
           <Card className="mt-6" shadow="sm">
             <CardHeader className="pb-0">
               <div className="flex items-center gap-2">
@@ -313,7 +314,7 @@ export const BlogPostPage: React.FC = () => {
             </CardHeader>
             <Divider />
             <CardBody className="pt-4">
-              <GroupedWinners groups={tournament.winnerGroups} />
+              <GroupedWinners groups={tournament.winnerGroups ?? []} />
             </CardBody>
           </Card>
         )}

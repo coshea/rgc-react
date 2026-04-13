@@ -22,7 +22,7 @@ import {
   Radio,
   DatePicker,
 } from "@heroui/react";
-import { parseDateTime } from "@internationalized/date";
+import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { functions, db } from "@/config/firebase";
@@ -346,7 +346,7 @@ export function NotificationsTab() {
               : {}),
         ...(link.trim() ? { data: { link: link.trim() } } : {}),
         ...(expiresAt
-          ? { expiresAt: expiresAt.toDate("local").toISOString() }
+          ? { expiresAt: expiresAt.toDate(getLocalTimeZone()).toISOString() }
           : {}),
       };
 
