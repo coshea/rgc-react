@@ -177,7 +177,7 @@ export const generate_blog_writeup = onCall(
       .doc(`admin/${request.auth.uid}`)
       .get();
     const adminData = adminDoc.data();
-    if (!adminData?.isAdmin && !adminData?.admin) {
+    if (adminData?.isAdmin !== true && adminData?.admin !== true && adminData?.admin !== "true") {
       throw new HttpsError("permission-denied", "Admin access required.");
     }
 
