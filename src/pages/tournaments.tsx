@@ -54,10 +54,12 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   React.useEffect(() => {
     setIsLoading(true);
+    let cancelled = false;
     let unsub: (() => void) | undefined;
     (async () => {
       try {
         const api = await import("@/api/tournaments");
+        if (cancelled) return;
         unsub = api.onAllTournaments(
           (snap: any) => {
             try {
@@ -87,9 +89,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       }
     })();
     return () => {
-      if (typeof unsub === "function") {
-        unsub();
-      }
+      cancelled = true;
+      unsub?.();
     };
   }, []);
 
