@@ -419,7 +419,11 @@ export const BlogEditorPage: React.FC = () => {
                     }}
                   >
                     {tournaments.map((t) => (
-                      <SelectItem key={t.firestoreId!}>{t.title}</SelectItem>
+                      <SelectItem key={t.firestoreId!}>
+                        {t.date instanceof Date
+                          ? `${t.date.getFullYear()} – ${t.title}`
+                          : t.title}
+                      </SelectItem>
                     ))}
                   </Select>
                   <div className="flex gap-2">
@@ -488,7 +492,11 @@ export const BlogEditorPage: React.FC = () => {
                   }}
                 >
                   {tournaments.map((t) => (
-                    <SelectItem key={t.firestoreId!}>{t.title}</SelectItem>
+                    <SelectItem key={t.firestoreId!}>
+                      {t.date instanceof Date
+                        ? `${t.date.getFullYear()} – ${t.title}`
+                        : t.title}
+                    </SelectItem>
                   ))}
                 </Select>
                 <Button
