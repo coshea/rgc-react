@@ -536,14 +536,17 @@ describe("TournamentDetailPage", () => {
     // Header row should contain goldTee columns
     expect(capturedCsv).toContain("member1_goldTee");
     expect(capturedCsv).toContain("member2_goldTee");
+    // Header row should contain ghin columns
+    expect(capturedCsv).toContain("member1_ghin");
+    expect(capturedCsv).toContain("member2_ghin");
     // Bob's goldTee cell should be "Gold"
     expect(capturedCsv).toContain('"Gold"');
     // Parse to verify column positions
     const lines = capturedCsv.split("\n");
     const dataLine = lines[1];
-    // Format: date,member1,member1_goldTee,member2,member2_goldTee
+    // Format: date,member1,member1_ghin,member1_goldTee,member2,member2_ghin,member2_goldTee
     const cells = dataLine.split(",").map((c) => c.replace(/"/g, ""));
-    expect(cells[2]).toBe(""); // Alice goldTee empty
-    expect(cells[4]).toBe("Gold"); // Bob goldTee is Gold
+    expect(cells[3]).toBe(""); // Alice goldTee empty
+    expect(cells[6]).toBe("Gold"); // Bob goldTee is Gold
   });
 });
