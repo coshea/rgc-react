@@ -76,7 +76,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   // Effective team size for winner assignment. Defaults to the max competitor count
   // already saved in the data (so reloading persists grouped teams), falling back to
   // the tournament's teamSize. Can be overridden by the user in the UI.
-  const initialEffectiveTeamSize = React.useMemo(() => {
+  const derivedTeamSize = React.useMemo(() => {
     let max = teamSize;
     for (const g of groups) {
       for (const w of g.winners || []) {
@@ -84,11 +84,28 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       }
     }
     return max;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally only on mount
+  }, [groups, teamSize]);
+
   const [effectiveTeamSize, setEffectiveTeamSize] = React.useState<number>(
-    initialEffectiveTeamSize,
+    () => derivedTeamSize,
   );
+
+  // Sync effectiveTeamSize when props arrive asynchronously (e.g. tournament data
+  // loaded after mount). Only overwrites if the user has not manually changed it
+  // from the last derived value — tracked via a ref.
+  const lastDerivedTeamSize = React.useRef(derivedTeamSize);
+  React.useEffect(() => {
+    if (derivedTeamSize !== lastDerivedTeamSize.current) {
+      setEffectiveTeamSize((prev) => {
+        // If the user hasn't diverged from the previous derived value, follow the update.
+        if (prev === lastDerivedTeamSize.current) {
+          return derivedTeamSize;
+        }
+        return prev;
+      });
+      lastDerivedTeamSize.current = derivedTeamSize;
+    }
+  }, [derivedTeamSize]);
 
   // Normalize: ensure every WinnerPlace has a unique id to support ties (duplicate place numbers)
   React.useEffect(() => {
@@ -329,7 +346,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
           onSelectionChange={(keys: any) => {
             const v = Array.from(keys as Set<string>)[0] as SourceMode;
             userChoseModeRef.current = true;
-            setSourceMode(v || "teams");
+            setSourceMode(v || (registrations.length > 0 ? "teams" : "users"));
           }}
           className="w-[260px]"
         >
@@ -559,10 +576,15 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                         (r) => r.id === key,
                                       );
                                       if (!reg) return [];
-                                      return reg.team.map((m) => ({
+                                      // Cap each individual team to effectiveTeamSize — ties
+                                      // across registrations are allowed (multiple teams per place).
+                                      const members = reg.team.map((m) => ({
                                         userId: m.id,
                                         displayName: m.displayName || m.id,
                                       }));
+                                      return effectiveTeamSize > 0
+                                        ? members.slice(0, effectiveTeamSize)
+                                        : members;
                                     });
                                   updatePlace(g.id, w.id || w.place, {
                                     competitors,
