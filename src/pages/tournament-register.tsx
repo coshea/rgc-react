@@ -25,6 +25,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import RegistrationEditor from "@/components/registration-editor";
 // Static import for registrations list to ensure test mocks attach
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
+import { Icon } from "@iconify/react";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -556,8 +557,24 @@ const TournamentRegister: React.FC = () => {
                   labels={{ leader: "Team Leader / You" }}
                   disabled={!user?.uid}
                   goldTees={goldTees}
-                  onGoldTeesChange={tournament.goldTeesEnabled ? setGoldTees : undefined}
+                  onGoldTeesChange={
+                    tournament.goldTeesEnabled ? setGoldTees : undefined
+                  }
                 />
+
+                {tournament.goldTeesEnabled && (
+                  <Alert color="default" variant="faded">
+                    <span className="text-sm">
+                      <strong>Gold tees</strong> are available for senior
+                      players. To opt a player in, click the{" "}
+                      <strong className="inline-flex items-center gap-0.5 text-warning">
+                        <Icon icon="lucide:flag" className="text-sm" />
+                        Gold
+                      </strong>{" "}
+                      button next to their name above.
+                    </span>
+                  </Alert>
+                )}
 
                 {maxTeamSize > 1 && openSlotsCount > 0 ? (
                   <Checkbox

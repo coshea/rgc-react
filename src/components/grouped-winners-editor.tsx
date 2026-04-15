@@ -59,11 +59,53 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
 }) => {
   const { users, isLoading: usersLoading } = useUsers();
 
-  // Winner source mode: registered teams (default when available) vs all users
+  // Winner source mode: "teams" when registrations are available, "users" otherwise.
+  // Auto-switches to "teams" when registrations load asynchronously, unless the user
+  // has already made a manual selection.
   type SourceMode = "teams" | "users";
   const [sourceMode, setSourceMode] = React.useState<SourceMode>(
-    registrations && registrations.length > 0 ? "teams" : "users"
+    registrations.length > 0 ? "teams" : "users",
   );
+  const userChoseModeRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!userChoseModeRef.current && registrations.length > 0) {
+      setSourceMode("teams");
+    }
+  }, [registrations.length]);
+
+  // Effective team size for winner assignment. Defaults to the max competitor count
+  // already saved in the data (so reloading persists grouped teams), falling back to
+  // the tournament's teamSize. Can be overridden by the user in the UI.
+  const derivedTeamSize = React.useMemo(() => {
+    let max = teamSize;
+    for (const g of groups) {
+      for (const w of g.winners || []) {
+        max = Math.max(max, (w.competitors || []).length);
+      }
+    }
+    return max;
+  }, [groups, teamSize]);
+
+  const [effectiveTeamSize, setEffectiveTeamSize] = React.useState<number>(
+    () => derivedTeamSize,
+  );
+
+  // Sync effectiveTeamSize when props arrive asynchronously (e.g. tournament data
+  // loaded after mount). Only overwrites if the user has not manually changed it
+  // from the last derived value — tracked via a ref.
+  const lastDerivedTeamSize = React.useRef(derivedTeamSize);
+  React.useEffect(() => {
+    if (derivedTeamSize !== lastDerivedTeamSize.current) {
+      setEffectiveTeamSize((prev) => {
+        // If the user hasn't diverged from the previous derived value, follow the update.
+        if (prev === lastDerivedTeamSize.current) {
+          return derivedTeamSize;
+        }
+        return prev;
+      });
+      lastDerivedTeamSize.current = derivedTeamSize;
+    }
+  }, [derivedTeamSize]);
 
   // Normalize: ensure every WinnerPlace has a unique id to support ties (duplicate place numbers)
   React.useEffect(() => {
@@ -85,7 +127,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     // Slow path: create normalized copy with generated ids for missing places.
     const normalized = groups.map((g) => {
       const winners = (g.winners || []).map((w) =>
-        w.id ? w : { ...w, id: crypto.randomUUID() }
+        w.id ? w : { ...w, id: crypto.randomUUID() },
       );
       return winners !== g.winners ? { ...g, winners } : g;
     });
@@ -93,16 +135,16 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups]);
 
-  // Ensure existing selections never exceed the team size when it changes
+  // Ensure existing selections never exceed the effective team size when it changes
   React.useEffect(() => {
     if (!groups?.length) return;
     let changed = false;
     const next = groups.map((g) => {
       const winners = (g.winners || []).map((w) => {
         const comps = w.competitors || [];
-        if (teamSize > 0 && comps.length > teamSize) {
+        if (effectiveTeamSize > 0 && comps.length > effectiveTeamSize) {
           changed = true;
-          return { ...w, competitors: comps.slice(0, teamSize) };
+          return { ...w, competitors: comps.slice(0, effectiveTeamSize) };
         }
         return w;
       });
@@ -110,7 +152,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     });
     if (changed) onChange(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamSize]);
+  }, [effectiveTeamSize]);
 
   const addGroup = (type: WinnerGroupType = "overall") => {
     const id = crypto.randomUUID();
@@ -184,7 +226,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
     const filtered = g.winners.filter((w) =>
-      typeof placeOrId === "string" ? w.id !== placeOrId : w.place !== placeOrId
+      typeof placeOrId === "string"
+        ? w.id !== placeOrId
+        : w.place !== placeOrId,
     );
     // Do not renumber automatically; keep explicit place values to preserve ties and gaps
     updateGroup(groupId, { winners: filtered });
@@ -194,7 +238,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
     const base = g.winners.find((w) =>
-      typeof placeOrId === "string" ? w.id === placeOrId : w.place === placeOrId
+      typeof placeOrId === "string"
+        ? w.id === placeOrId
+        : w.place === placeOrId,
     );
     const place =
       base?.place ?? (typeof placeOrId === "number" ? placeOrId : 1);
@@ -216,7 +262,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const updatePlace = (
     groupId: string,
     placeOrId: string | number,
-    patch: Partial<WinnerPlace>
+    patch: Partial<WinnerPlace>,
   ) => {
     const g = groups.find((x) => x.id === groupId);
     if (!g) return;
@@ -233,7 +279,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const setPlaceCompetitors = (
     groupId: string,
     placeOrId: number | string,
-    userIds: string[]
+    userIds: string[],
   ) => {
     const selected = users.filter((u) => userIds.includes(u.id));
     const competitors: Competitor[] = selected.map((u) => ({
@@ -292,14 +338,15 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       </div>
 
       {/* Source mode selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <Select
           size="sm"
           label="Winner selection source"
           selectedKeys={new Set([sourceMode])}
           onSelectionChange={(keys: any) => {
             const v = Array.from(keys as Set<string>)[0] as SourceMode;
-            setSourceMode(v || "users");
+            userChoseModeRef.current = true;
+            setSourceMode(v || (registrations.length > 0 ? "teams" : "users"));
           }}
           className="w-[260px]"
         >
@@ -314,6 +361,20 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
             All Users
           </SelectItem>
         </Select>
+        <NumberInput
+          size="sm"
+          label="Winners per place"
+          min={1}
+          max={20}
+          value={effectiveTeamSize}
+          onValueChange={(v) => setEffectiveTeamSize(Math.max(1, v || 1))}
+          description={
+            teamSize !== effectiveTeamSize
+              ? `Tournament default: ${teamSize}`
+              : undefined
+          }
+          className="w-[160px]"
+        />
       </div>
 
       {sorted.length === 0 ? (
@@ -342,7 +403,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       selectedKeys={new Set([g.type])}
                       onSelectionChange={(keys: any) => {
                         const v = Array.from(
-                          keys as Set<string>
+                          keys as Set<string>,
                         )[0] as WinnerGroupType;
                         updateGroup(g.id, { type: v });
                       }}
@@ -416,16 +477,6 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       const teamLabel = (r: {
                         team: Array<{ id: string; displayName: string }>;
                       }) => r.team.map((m) => m.displayName).join(", ");
-                      const isSameTeam = (
-                        w: WinnerPlace,
-                        r: { team: Array<{ id: string; displayName: string }> }
-                      ) => {
-                        const a = (w.competitors || []).map((c) => c.userId);
-                        const b = r.team.map((m) => m.id);
-                        if (a.length !== b.length) return false;
-                        const setA = new Set(a);
-                        return b.every((id) => setA.has(id));
-                      };
                       return sortedPlaces.map((w, index) => (
                         <div
                           key={w.id || `${w.place}-${index}`}
@@ -486,69 +537,97 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                             {sourceMode === "teams" ? (
                               <Select
                                 label={
-                                  teamSize > 1
-                                    ? "Registered Team"
+                                  effectiveTeamSize > 1
+                                    ? "Registered Teams"
                                     : "Registered Player"
                                 }
                                 placeholder={
                                   registrations.length > 0
-                                    ? "Choose a registration"
+                                    ? "Choose registration(s)"
                                     : "No registrations"
                                 }
+                                selectionMode="multiple"
                                 selectedKeys={
                                   new Set(
                                     registrations
-                                      .filter((r) => isSameTeam(w, r))
-                                      .map((r) => r.id)
+                                      .filter((r) => {
+                                        const competitorIds = new Set(
+                                          (w.competitors || []).map(
+                                            (c) => c.userId,
+                                          ),
+                                        );
+                                        return (
+                                          r.team.length > 0 &&
+                                          r.team.every((m) =>
+                                            competitorIds.has(m.id),
+                                          )
+                                        );
+                                      })
+                                      .map((r) => r.id),
                                   )
                                 }
                                 onSelectionChange={(keys: any) => {
-                                  const key = Array.from(
-                                    keys as Set<string>
-                                  )[0];
-                                  const reg = registrations.find(
-                                    (r) => r.id === key
+                                  const selectedIds = Array.from(
+                                    keys as Set<string>,
                                   );
-                                  if (reg) {
-                                    const ids = reg.team
-                                      .map((m) => m.id)
-                                      .slice(0, Math.max(1, teamSize));
-                                    setPlaceCompetitors(
-                                      g.id,
-                                      w.id || w.place,
-                                      ids
-                                    );
-                                  }
+                                  const competitors: Competitor[] =
+                                    selectedIds.flatMap((key) => {
+                                      const reg = registrations.find(
+                                        (r) => r.id === key,
+                                      );
+                                      if (!reg) return [];
+                                      // Cap each individual team to effectiveTeamSize — ties
+                                      // across registrations are allowed (multiple teams per place).
+                                      const members = reg.team.map((m) => ({
+                                        userId: m.id,
+                                        displayName: m.displayName || m.id,
+                                      }));
+                                      return effectiveTeamSize > 0
+                                        ? members.slice(0, effectiveTeamSize)
+                                        : members;
+                                    });
+                                  updatePlace(g.id, w.id || w.place, {
+                                    competitors,
+                                  });
                                 }}
                                 className="w-full"
                                 isDisabled={registrations.length === 0}
-                                disallowEmptySelection
                                 aria-label="Registered Team Selector"
                               >
-                                {registrations.map((r) => (
-                                  <SelectItem
-                                    key={r.id}
-                                    textValue={teamLabel(r)}
-                                  >
-                                    {teamLabel(r)}
-                                  </SelectItem>
-                                ))}
+                                {[...registrations]
+                                  .sort((a, b) =>
+                                    teamLabel(a).localeCompare(teamLabel(b)),
+                                  )
+                                  .map((r) => (
+                                    <SelectItem
+                                      key={r.id}
+                                      textValue={teamLabel(r)}
+                                    >
+                                      {teamLabel(r)}
+                                    </SelectItem>
+                                  ))}
                               </Select>
                             ) : (
                               <UserSelect
                                 users={users}
-                                label={teamSize > 1 ? "Team Members" : "Winner"}
+                                label={
+                                  effectiveTeamSize > 1
+                                    ? "Team Members"
+                                    : "Winner"
+                                }
                                 placeholder={
-                                  teamSize > 1
+                                  effectiveTeamSize > 1
                                     ? "Select team members"
                                     : "Select winner"
                                 }
-                                multiple={teamSize > 1}
+                                multiple={effectiveTeamSize > 1}
                                 maxSelected={
-                                  teamSize > 1 ? teamSize : undefined
+                                  effectiveTeamSize > 1
+                                    ? effectiveTeamSize
+                                    : undefined
                                 }
                                 value={
-                                  teamSize > 1
+                                  effectiveTeamSize > 1
                                     ? (w.competitors || []).map((c) => c.userId)
                                     : (w.competitors &&
                                         w.competitors[0]?.userId) ||
@@ -559,8 +638,8 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                     g.id,
                                     w.id || w.place,
                                     (Array.isArray(val) ? val : [val]).filter(
-                                      Boolean
-                                    ) as string[]
+                                      Boolean,
+                                    ) as string[],
                                   )
                                 }
                                 disabled={usersLoading}

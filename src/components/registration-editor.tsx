@@ -140,7 +140,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
                 } gold tees: ${
                   idx === 0 ? "team leader" : `teammate ${idx + 1}`
                 }`}
-                className="shrink-0"
+                className="shrink-0 px-2 min-w-0"
                 startContent={<Icon icon="lucide:flag" className="text-sm" />}
               >
                 Gold
@@ -152,6 +152,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               size="sm"
               variant="light"
               color="danger"
+              isIconOnly
               onPress={() => removeSlot(idx)}
               aria-label={
                 idx === 0 ? "Remove team leader" : `Remove teammate ${idx + 1}`

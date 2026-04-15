@@ -410,6 +410,7 @@ const TournamentDetailPage: React.FC = () => {
       "registeredDate",
       ...Array.from({ length: maxTeam }, (_, i) => [
         `member${i + 1}`,
+        `member${i + 1}_ghin`,
         `member${i + 1}_goldTee`,
       ]).flat(),
     ];
@@ -421,7 +422,9 @@ const TournamentDetailPage: React.FC = () => {
       const memberCols: string[] = [];
       for (let i = 0; i < maxTeam; i++) {
         const m = team[i];
+        const userProfile = m?.id ? usersMap.get(m.id) : undefined;
         memberCols.push(m?.displayName || m?.id || "");
+        memberCols.push(userProfile?.ghinNumber || "");
         memberCols.push(m?.goldTee ? "Gold" : "");
       }
       return [date, ...memberCols];
