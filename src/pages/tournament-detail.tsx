@@ -196,8 +196,7 @@ const TournamentDetailPage: React.FC = () => {
     if (!maxPlayers || !registrations.length) return false;
     return registrations.some((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
-      if (r.openSpotsOptIn !== true) return false;
-      return team.length < maxPlayers || (maxPlayers === 2 && team.length >= 2);
+      return r.openSpotsOptIn === true && team.length < maxPlayers;
     });
   }, [registrations, tournament?.players]);
 
@@ -1287,7 +1286,7 @@ const TournamentDetailPage: React.FC = () => {
                     </p>
                   ) : (
                     <>
-                      {hasOpenTeamSlots && (
+                      {(hasOpenTeamSlots || hasPartnerTeamSlots) && (
                         <div className="mb-3 text-xs text-foreground-500 flex items-start gap-2">
                           <Icon
                             icon="lucide:info"
