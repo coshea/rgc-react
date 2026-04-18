@@ -5,6 +5,11 @@ import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
 import { TournamentStatus } from "@/types/tournament";
 import { openRegistrationWindow } from "./tournament-utils";
+import type { RegistrationPayload } from "@/api/tournaments";
+
+type FetchUserRegistrationReturn =
+  | (RegistrationPayload & { id: string })
+  | null;
 
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));
@@ -22,8 +27,15 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-const { fetchTournamentMock, upsertRegistrationMock } = vi.hoisted(() => ({
+const {
+  fetchTournamentMock,
+  upsertRegistrationMock,
+  fetchUserRegistrationMock,
+} = vi.hoisted(() => ({
   upsertRegistrationMock: vi.fn(async () => "reg1"),
+  fetchUserRegistrationMock: vi.fn(
+    async (): Promise<FetchUserRegistrationReturn> => null,
+  ),
   fetchTournamentMock: vi.fn(async (_id: string) => ({
     ...openRegistrationWindow(),
     firestoreId: "t1",
@@ -41,7 +53,7 @@ const { fetchTournamentMock, upsertRegistrationMock } = vi.hoisted(() => ({
 // Mock tournaments API
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: fetchTournamentMock,
-  fetchUserRegistration: vi.fn(async () => null),
+  fetchUserRegistration: fetchUserRegistrationMock,
   fetchAllRegistrations: vi.fn(async () => []),
   upsertRegistration: upsertRegistrationMock,
   deleteRegistration: vi.fn(async () => {}),
@@ -173,16 +185,14 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
       tee: "Mixed",
     });
     // Pre-fill with 2 players so min is met and 2 slots remain open
-    vi.mocked(
-      (await import("@/api/tournaments")).fetchUserRegistration,
-    ).mockResolvedValueOnce({
+    fetchUserRegistrationMock.mockResolvedValueOnce({
       id: "reg1",
       team: [
         { id: "u1", displayName: "Alpha" },
         { id: "u2", displayName: "Beta" },
       ],
       ownerId: "u1",
-    } as any);
+    });
 
     renderPage();
     await screen.findByText(/Register for\s+Four Player Tourney/i);
@@ -231,9 +241,7 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
       tee: "Mixed",
     });
     // Pre-fill both slots so the team is full and partner-team card should show
-    vi.mocked(
-      (await import("@/api/tournaments")).fetchUserRegistration,
-    ).mockResolvedValueOnce({
+    fetchUserRegistrationMock.mockResolvedValueOnce({
       id: "reg2",
       team: [
         { id: "u1", displayName: "Alpha" },
@@ -241,7 +249,7 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
       ],
       ownerId: "u1",
       openSpotsOptIn: false,
-    } as any);
+    });
 
     renderPage();
     await screen.findByText(/Register for\s+Two Player Tourney/i);

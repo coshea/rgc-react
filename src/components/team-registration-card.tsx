@@ -30,7 +30,7 @@ export interface TeamRegistrationCardProps {
   maxPlayers: number;
   /** Map of uid → User for avatar lookups */
   usersMap: Map<string, User>;
-  /** Called when the card is pressed (open-spots teams only) */
+  /** Called when the card is pressed (open-spots teams and partner-team seeking teams) */
   onPress?: () => void;
 }
 

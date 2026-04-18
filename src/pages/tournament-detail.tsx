@@ -196,7 +196,12 @@ const TournamentDetailPage: React.FC = () => {
     if (!maxPlayers || !registrations.length) return false;
     return registrations.some((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
-      return r.openSpotsOptIn === true && team.length < maxPlayers;
+      const leaderId = r.ownerId || team[0]?.id;
+      const normalizedSize =
+        leaderId && !team.some((m) => m.id === leaderId)
+          ? team.length + 1
+          : team.length;
+      return r.openSpotsOptIn === true && normalizedSize < maxPlayers;
     });
   }, [registrations, tournament?.players]);
 
@@ -205,7 +210,12 @@ const TournamentDetailPage: React.FC = () => {
     if (maxPlayers !== 2 || !registrations.length) return false;
     return registrations.some((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
-      return r.openSpotsOptIn === true && team.length >= 2;
+      const leaderId = r.ownerId || team[0]?.id;
+      const normalizedSize =
+        leaderId && !team.some((m) => m.id === leaderId)
+          ? team.length + 1
+          : team.length;
+      return r.openSpotsOptIn === true && normalizedSize >= 2;
     });
   }, [registrations, tournament?.players]);
 
@@ -1314,15 +1324,21 @@ const TournamentDetailPage: React.FC = () => {
                                 : [];
                               const maxPlayers =
                                 tournament.players || team.length;
+                              const filterLeaderId = reg.ownerId || team[0]?.id;
+                              const normalizedSize =
+                                filterLeaderId &&
+                                !team.some((m) => m.id === filterLeaderId)
+                                  ? team.length + 1
+                                  : team.length;
                               const matchesOpen =
                                 showNeedingPlayers &&
                                 reg.openSpotsOptIn === true &&
-                                team.length < maxPlayers;
+                                normalizedSize < maxPlayers;
                               const matchesPartner =
                                 showPartnerTeams &&
                                 maxPlayers === 2 &&
                                 reg.openSpotsOptIn === true &&
-                                team.length >= 2;
+                                normalizedSize >= 2;
                               return matchesOpen || matchesPartner;
                             })
                             .map((reg) => {
