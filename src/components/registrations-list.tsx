@@ -309,7 +309,9 @@ export const RegistrationsList: React.FC<Props> = ({
                         isSelected={openSpotsValue}
                         onValueChange={(v) => updateOpenSpots(reg.id, v)}
                       >
-                        Let others contact this team to fill open spots
+                        {players === 2
+                          ? "Looking for a partner team / open to new players"
+                          : "Let others contact this team to fill open spots"}
                       </Checkbox>
                     </div>
                   ) : null}
