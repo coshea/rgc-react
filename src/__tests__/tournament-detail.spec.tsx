@@ -487,6 +487,37 @@ describe("TournamentDetailPage", () => {
     expect(screen.getByLabelText("Gold tees")).toBeInTheDocument();
   });
 
+  it("shows 'Show Partner Teams' button and 'Seeking a partner team' badge for legacy registrations where ownerId is absent from team array", async () => {
+    // Legacy doc: ownerId not stored inside reg.team — displayTeam normalization
+    // injects the owner, making the effective team size 2 (full for a 2-player tournament).
+    // hasPartnerTeamSlots and the filter must use that same normalized size.
+    renderWithRoute("legacy1");
+    emitDoc("tournaments/legacy1", { ...baseTournament, players: 2 });
+    emitCollection("tournaments/legacy1/registrations", [
+      {
+        id: "r1",
+        data: () => ({
+          ownerId: "legacy-owner",
+          openSpotsOptIn: true,
+          // owner is NOT in team array — the legacy format
+          team: [{ id: "member1", displayName: "Member One" }],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+    await screen.findByText("Club Championship");
+
+    // Filter button must be visible because normalized team size is 2
+    expect(
+      screen.getByRole("button", {
+        name: /Toggle show teams seeking a partner team/i,
+      }),
+    ).toBeInTheDocument();
+
+    // Card badge should show the partner-team indicator
+    expect(screen.getByText(/Seeking a partner team/i)).toBeInTheDocument();
+  });
+
   it("CSV export includes goldTee columns per member", async () => {
     // Capture CSV content by replacing Blob with a subclass (vi.spyOn cannot mock constructors in Vitest 4)
     let capturedCsv = "";

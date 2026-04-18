@@ -121,12 +121,14 @@ const TournamentDetailPage: React.FC = () => {
     [],
   );
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
+  const [showPartnerTeams, setShowPartnerTeams] = React.useState(false);
   const [openTeamModal, setOpenTeamModal] = React.useState(false);
   const [openTeamModalData, setOpenTeamModalData] = React.useState<{
     teamNumber: number;
     leaderId?: string;
     team: Array<{ id: string; displayName?: string }>;
     openSpots: number;
+    lookingForPartnerTeam?: boolean;
   } | null>(null);
   const [bracketTeamModal, setBracketTeamModal] =
     React.useState<BracketTeam | null>(null);
@@ -194,7 +196,26 @@ const TournamentDetailPage: React.FC = () => {
     if (!maxPlayers || !registrations.length) return false;
     return registrations.some((r) => {
       const team = Array.isArray(r.team) ? r.team : [];
-      return r.openSpotsOptIn === true && team.length < maxPlayers;
+      const leaderId = r.ownerId || team[0]?.id;
+      const normalizedSize =
+        leaderId && !team.some((m) => m.id === leaderId)
+          ? team.length + 1
+          : team.length;
+      return r.openSpotsOptIn === true && normalizedSize < maxPlayers;
+    });
+  }, [registrations, tournament?.players]);
+
+  const hasPartnerTeamSlots = React.useMemo(() => {
+    const maxPlayers = tournament?.players;
+    if (maxPlayers !== 2 || !registrations.length) return false;
+    return registrations.some((r) => {
+      const team = Array.isArray(r.team) ? r.team : [];
+      const leaderId = r.ownerId || team[0]?.id;
+      const normalizedSize =
+        leaderId && !team.some((m) => m.id === leaderId)
+          ? team.length + 1
+          : team.length;
+      return r.openSpotsOptIn === true && normalizedSize >= 2;
     });
   }, [registrations, tournament?.players]);
 
@@ -344,6 +365,7 @@ const TournamentDetailPage: React.FC = () => {
   };
 
   const toggleShowNeedingPlayers = () => setShowNeedingPlayers((prev) => !prev);
+  const toggleShowPartnerTeams = () => setShowPartnerTeams((prev) => !prev);
 
   // Share current tournament link
   const shareLink = async () => {
@@ -1209,6 +1231,21 @@ const TournamentDetailPage: React.FC = () => {
                           : "Show Open Teams"}
                       </Button>
                     )}
+                    {!regsLoading && hasPartnerTeamSlots && (
+                      <Button
+                        size="sm"
+                        variant={showPartnerTeams ? "solid" : "flat"}
+                        color={showPartnerTeams ? "warning" : "default"}
+                        onPress={toggleShowPartnerTeams}
+                        aria-pressed={showPartnerTeams}
+                        aria-label="Toggle show teams seeking a partner team"
+                        className="px-2 h-7 text-xs sm:text-tiny"
+                      >
+                        {showPartnerTeams
+                          ? "Showing Partner Teams"
+                          : "Show Partner Teams"}
+                      </Button>
+                    )}
                     {!regsLoading && registrations.length > 0 && (
                       <span
                         className="inline-flex items-center group relative"
@@ -1259,7 +1296,7 @@ const TournamentDetailPage: React.FC = () => {
                     </p>
                   ) : (
                     <>
-                      {hasOpenTeamSlots && (
+                      {(hasOpenTeamSlots || hasPartnerTeamSlots) && (
                         <div className="mb-3 text-xs text-foreground-500 flex items-start gap-2">
                           <Icon
                             icon="lucide:info"
@@ -1267,8 +1304,9 @@ const TournamentDetailPage: React.FC = () => {
                             aria-hidden="true"
                           />
                           <p>
-                            Want to join a team with an open spot? Contact the
-                            team members to be added.
+                            Some teams are open to new players or looking for a
+                            partner team. Click a highlighted team to see who to
+                            contact.
                           </p>
                         </div>
                       )}
@@ -1276,16 +1314,32 @@ const TournamentDetailPage: React.FC = () => {
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {registrations
                             .filter((reg) => {
-                              if (!showNeedingPlayers || !tournament)
+                              if (
+                                (!showNeedingPlayers && !showPartnerTeams) ||
+                                !tournament
+                              )
                                 return true;
                               const team = Array.isArray(reg.team)
                                 ? reg.team
                                 : [];
-                              return (
+                              const maxPlayers =
+                                tournament.players || team.length;
+                              const filterLeaderId = reg.ownerId || team[0]?.id;
+                              const normalizedSize =
+                                filterLeaderId &&
+                                !team.some((m) => m.id === filterLeaderId)
+                                  ? team.length + 1
+                                  : team.length;
+                              const matchesOpen =
+                                showNeedingPlayers &&
                                 reg.openSpotsOptIn === true &&
-                                team.length <
-                                  (tournament.players || team.length)
-                              );
+                                normalizedSize < maxPlayers;
+                              const matchesPartner =
+                                showPartnerTeams &&
+                                maxPlayers === 2 &&
+                                reg.openSpotsOptIn === true &&
+                                normalizedSize >= 2;
+                              return matchesOpen || matchesPartner;
                             })
                             .map((reg) => {
                               const originalIdx = registrations.findIndex(
@@ -1334,6 +1388,11 @@ const TournamentDetailPage: React.FC = () => {
                               );
                               const showOpenSpots =
                                 reg.openSpotsOptIn === true && openSpots > 0;
+                              const lookingForPartnerTeam =
+                                maxPlayers === 2 &&
+                                reg.openSpotsOptIn === true &&
+                                openSpots === 0 &&
+                                displayTeam.length >= 2;
 
                               const openTeamModalForTeam = () => {
                                 setOpenTeamModalData({
@@ -1341,6 +1400,7 @@ const TournamentDetailPage: React.FC = () => {
                                   leaderId,
                                   team: displayTeam,
                                   openSpots,
+                                  lookingForPartnerTeam,
                                 });
                                 setOpenTeamModal(true);
                               };
@@ -1354,6 +1414,7 @@ const TournamentDetailPage: React.FC = () => {
                                   isWaitlisted={isWaitlisted}
                                   openSpots={openSpots}
                                   showOpenSpots={showOpenSpots}
+                                  lookingForPartnerTeam={lookingForPartnerTeam}
                                   dateStr={dateStr}
                                   maxPlayers={maxPlayers}
                                   usersMap={usersMap}
@@ -1488,7 +1549,11 @@ const TournamentDetailPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Open spot</ModalHeader>
+              <ModalHeader>
+                {openTeamModalData?.lookingForPartnerTeam
+                  ? "Seeking a partner team"
+                  : "Open spot"}
+              </ModalHeader>
               <ModalBody>
                 {openTeamModalData ? (
                   <div className="space-y-3">
@@ -1497,9 +1562,11 @@ const TournamentDetailPage: React.FC = () => {
                         Team {openTeamModalData.teamNumber}
                       </div>
                       <div className="text-foreground-500">
-                        {openTeamModalData.openSpots === 1
-                          ? "1 spot open"
-                          : `${openTeamModalData.openSpots} spots open`}
+                        {openTeamModalData.lookingForPartnerTeam
+                          ? "Looking for a partner team to complete a foursome"
+                          : openTeamModalData.openSpots === 1
+                            ? "1 spot open"
+                            : `${openTeamModalData.openSpots} spots open`}
                       </div>
                     </div>
 

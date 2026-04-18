@@ -545,6 +545,20 @@ const TournamentRegister: React.FC = () => {
               </div>
             ) : (
               <>
+                {tournament.goldTeesEnabled && (
+                  <Alert color="default" variant="faded">
+                    <span className="text-sm">
+                      <strong>Gold tees</strong> are available for senior
+                      players. To opt a player in, click the{" "}
+                      <strong className="inline-flex items-center gap-0.5 text-warning">
+                        <Icon icon="lucide:flag" className="text-sm" />
+                        Gold
+                      </strong>{" "}
+                      button next to their name below.
+                    </span>
+                  </Alert>
+                )}
+
                 <RegistrationEditor
                   value={teammates}
                   onChange={(next) => {
@@ -562,27 +576,72 @@ const TournamentRegister: React.FC = () => {
                   }
                 />
 
-                {tournament.goldTeesEnabled && (
-                  <Alert color="default" variant="faded">
-                    <span className="text-sm">
-                      <strong>Gold tees</strong> are available for senior
-                      players. To opt a player in, click the{" "}
-                      <strong className="inline-flex items-center gap-0.5 text-warning">
-                        <Icon icon="lucide:flag" className="text-sm" />
-                        Gold
-                      </strong>{" "}
-                      button next to their name above.
-                    </span>
-                  </Alert>
-                )}
-
-                {maxTeamSize > 1 && openSlotsCount > 0 ? (
-                  <Checkbox
-                    isSelected={openSpotsOptIn}
-                    onValueChange={setOpenSpotsOptIn}
+                {maxTeamSize > 1 && openSlotsCount > 0 && hasMinTeamSize ? (
+                  <label
+                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      openSpotsOptIn
+                        ? "border-warning/60 bg-warning/5"
+                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                    }`}
                   >
-                    Let others contact me to fill open spots
-                  </Checkbox>
+                    <div
+                      className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
+                        openSpotsOptIn
+                          ? "bg-warning/15 text-warning"
+                          : "bg-default-100 text-foreground-400"
+                      }`}
+                    >
+                      <Icon icon="lucide:user-plus" className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
+                        Open to new players
+                      </div>
+                      <div className="text-xs text-foreground-500 mt-0.5">
+                        Let others know your team has open spots and contact you
+                        to join.
+                      </div>
+                    </div>
+                    <Checkbox
+                      isSelected={openSpotsOptIn}
+                      onValueChange={setOpenSpotsOptIn}
+                      aria-label="Let others contact me to fill open spots"
+                      className="mt-0.5 shrink-0"
+                    />
+                  </label>
+                ) : maxTeamSize === 2 && hasMinTeamSize ? (
+                  <label
+                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      openSpotsOptIn
+                        ? "border-warning/60 bg-warning/5"
+                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                    }`}
+                  >
+                    <div
+                      className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
+                        openSpotsOptIn
+                          ? "bg-warning/15 text-warning"
+                          : "bg-default-100 text-foreground-400"
+                      }`}
+                    >
+                      <Icon icon="lucide:users" className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">
+                        Looking for a partner team
+                      </div>
+                      <div className="text-xs text-foreground-500 mt-0.5">
+                        Advertise that your pair is looking for another team to
+                        form a foursome.
+                      </div>
+                    </div>
+                    <Checkbox
+                      isSelected={openSpotsOptIn}
+                      onValueChange={setOpenSpotsOptIn}
+                      aria-label="Looking for a partner team to join our foursome"
+                      className="mt-0.5 shrink-0"
+                    />
+                  </label>
                 ) : null}
 
                 {minTeamSize > 1 && !hasMinTeamSize ? (

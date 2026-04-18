@@ -5,6 +5,11 @@ import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
 import { TournamentStatus } from "@/types/tournament";
 import { openRegistrationWindow } from "./tournament-utils";
+import type { RegistrationPayload } from "@/api/tournaments";
+
+type FetchUserRegistrationReturn =
+  | (RegistrationPayload & { id: string })
+  | null;
 
 const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({ addToast: (a: any) => addToastMock(a) }));
@@ -22,8 +27,15 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
-const { fetchTournamentMock, upsertRegistrationMock } = vi.hoisted(() => ({
+const {
+  fetchTournamentMock,
+  upsertRegistrationMock,
+  fetchUserRegistrationMock,
+} = vi.hoisted(() => ({
   upsertRegistrationMock: vi.fn(async () => "reg1"),
+  fetchUserRegistrationMock: vi.fn(
+    async (): Promise<FetchUserRegistrationReturn> => null,
+  ),
   fetchTournamentMock: vi.fn(async (_id: string) => ({
     ...openRegistrationWindow(),
     firestoreId: "t1",
@@ -41,7 +53,7 @@ const { fetchTournamentMock, upsertRegistrationMock } = vi.hoisted(() => ({
 // Mock tournaments API
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: fetchTournamentMock,
-  fetchUserRegistration: vi.fn(async () => null),
+  fetchUserRegistration: fetchUserRegistrationMock,
   fetchAllRegistrations: vi.fn(async () => []),
   upsertRegistration: upsertRegistrationMock,
   deleteRegistration: vi.fn(async () => {}),
@@ -135,5 +147,115 @@ describe("TournamentRegister min team size", () => {
     });
 
     expect(upsertRegistrationMock).toHaveBeenCalled();
+  });
+});
+
+describe("TournamentRegister open-spots / partner-team checkbox visibility", () => {
+  it("hides 'Open to new players' card when min team size is not yet met (4-player tournament, leader only)", async () => {
+    fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
+      firestoreId: "t1",
+      title: "Four Player Tourney",
+      date: new Date(),
+      description: "d",
+      players: 4,
+      status: TournamentStatus.Upcoming,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    });
+
+    renderPage();
+    await screen.findByText(/Register for\s+Four Player Tourney/i);
+
+    expect(screen.queryByText(/Open to new players/i)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Open to new players' card when min team size is met and open slots remain (4-player, 2 pre-filled)", async () => {
+    fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
+      firestoreId: "t1",
+      title: "Four Player Tourney",
+      date: new Date(),
+      description: "d",
+      players: 4,
+      status: TournamentStatus.Upcoming,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    });
+    // Pre-fill with 2 players so min is met and 2 slots remain open
+    fetchUserRegistrationMock.mockResolvedValueOnce({
+      id: "reg1",
+      team: [
+        { id: "u1", displayName: "Alpha" },
+        { id: "u2", displayName: "Beta" },
+      ],
+      ownerId: "u1",
+    });
+
+    renderPage();
+    await screen.findByText(/Register for\s+Four Player Tourney/i);
+
+    await screen.findByText(/Open to new players/i);
+    expect(screen.getByText(/Open to new players/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Looking for a partner team/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides 'Looking for a partner team' card when 2-player tournament min is not met (leader only)", async () => {
+    fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
+      firestoreId: "t1",
+      title: "Two Player Tourney",
+      date: new Date(),
+      description: "d",
+      players: 2,
+      status: TournamentStatus.Upcoming,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    });
+
+    renderPage();
+    await screen.findByText(/Register for\s+Two Player Tourney/i);
+
+    expect(
+      screen.queryByText(/Looking for a partner team/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Open to new players/i)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Looking for a partner team' card when 2-player tournament is fully filled", async () => {
+    fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
+      firestoreId: "t1",
+      title: "Two Player Tourney",
+      date: new Date(),
+      description: "d",
+      players: 2,
+      status: TournamentStatus.Upcoming,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    });
+    // Pre-fill both slots so the team is full and partner-team card should show
+    fetchUserRegistrationMock.mockResolvedValueOnce({
+      id: "reg2",
+      team: [
+        { id: "u1", displayName: "Alpha" },
+        { id: "u2", displayName: "Beta" },
+      ],
+      ownerId: "u1",
+      openSpotsOptIn: false,
+    });
+
+    renderPage();
+    await screen.findByText(/Register for\s+Two Player Tourney/i);
+
+    await screen.findByText(/Looking for a partner team/i);
+    expect(screen.getByText(/Looking for a partner team/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Open to new players/i)).not.toBeInTheDocument();
   });
 });

@@ -117,26 +117,31 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
               disabled={disabled}
             />
           </div>
-          {onGoldTeesChange && uid && (
+          {onGoldTeesChange && (
             <Tooltip
-              content="Playing from the gold (senior) tees"
+              content={
+                uid
+                  ? "Playing from the gold (senior) tees"
+                  : "Select a player to set gold tees"
+              }
               placement="top"
               closeDelay={0}
             >
               <Button
                 size="sm"
-                variant={goldTees?.includes(uid) ? "flat" : "light"}
-                color={goldTees?.includes(uid) ? "warning" : "default"}
+                variant={uid && goldTees?.includes(uid) ? "flat" : "light"}
+                color={uid && goldTees?.includes(uid) ? "warning" : "default"}
                 onPress={() => {
+                  if (!uid) return;
                   const isGold = goldTees?.includes(uid) ?? false;
                   const next = isGold
                     ? (goldTees ?? []).filter((id) => id !== uid)
                     : [...(goldTees ?? []), uid];
                   onGoldTeesChange(next);
                 }}
-                isDisabled={disabled}
+                isDisabled={disabled || !uid}
                 aria-label={`${
-                  goldTees?.includes(uid) ? "Remove" : "Add"
+                  uid && goldTees?.includes(uid) ? "Remove" : "Add"
                 } gold tees: ${
                   idx === 0 ? "team leader" : `teammate ${idx + 1}`
                 }`}

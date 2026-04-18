@@ -22,13 +22,15 @@ export interface TeamRegistrationCardProps {
   openSpots: number;
   /** True when openSpotsOptIn is true and openSpots > 0 */
   showOpenSpots: boolean;
+  /** True when a full 2-person team is looking for a partner team to form a foursome */
+  lookingForPartnerTeam?: boolean;
   /** Formatted date string for registration timestamp */
   dateStr: string;
   /** Max players per team, used to show Leader chip */
   maxPlayers: number;
   /** Map of uid → User for avatar lookups */
   usersMap: Map<string, User>;
-  /** Called when the card is pressed (open-spots teams only) */
+  /** Called when the card is pressed (open-spots teams and partner-team seeking teams) */
   onPress?: () => void;
 }
 
@@ -39,17 +41,19 @@ export function TeamRegistrationCard({
   isWaitlisted,
   openSpots,
   showOpenSpots,
+  lookingForPartnerTeam = false,
   dateStr,
   maxPlayers,
   usersMap,
   onPress,
 }: TeamRegistrationCardProps) {
+  const isInteractive = showOpenSpots || lookingForPartnerTeam;
   const cardClassName = `rounded-md border transition-colors ${
-    showOpenSpots
+    isInteractive
       ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
       : "border-default-200 bg-content2/60 hover:bg-content2"
   }${
-    showOpenSpots
+    isInteractive
       ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-warning/60"
       : ""
   }`;
@@ -58,10 +62,14 @@ export function TeamRegistrationCard({
     <Card
       className={cardClassName}
       aria-label={
-        showOpenSpots ? `Open spot details for Team ${teamNumber}` : undefined
+        isInteractive
+          ? lookingForPartnerTeam
+            ? `Partner team search details for Team ${teamNumber}`
+            : `Open spot details for Team ${teamNumber}`
+          : undefined
       }
-      isPressable={showOpenSpots}
-      onPress={showOpenSpots ? onPress : undefined}
+      isPressable={isInteractive}
+      onPress={isInteractive ? onPress : undefined}
     >
       <CardBody className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
         {/* Header: team number + date + waitlist chip */}
@@ -151,6 +159,29 @@ export function TeamRegistrationCard({
                   aria-hidden="true"
                 />
                 {openSpots === 1 ? "1 Spot Open" : `${openSpots} Spots Open`}
+              </span>
+            </li>
+          )}
+          {lookingForPartnerTeam && (
+            <li className="flex items-center gap-2 min-w-0">
+              <div
+                className="w-7 h-7 shrink-0 rounded-full border border-dashed border-warning/60 flex items-center justify-center text-warning bg-warning/10"
+                aria-label="Looking for a partner team"
+                title="Looking for a partner team"
+              >
+                <Icon
+                  icon="lucide:users"
+                  className="w-3.5 h-3.5"
+                  aria-hidden="true"
+                />
+              </div>
+              <span className="text-[11px] font-medium text-warning flex items-center gap-1">
+                <Icon
+                  icon="lucide:search"
+                  className="w-3.5 h-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                Seeking a partner team
               </span>
             </li>
           )}

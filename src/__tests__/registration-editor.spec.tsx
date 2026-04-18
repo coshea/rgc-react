@@ -165,7 +165,7 @@ describe("RegistrationEditor gold tee toggle", () => {
     expect(onGoldTeesChange).toHaveBeenCalledWith([]);
   });
 
-  it("does not show gold tee button for empty (unselected) slots", () => {
+  it("shows gold tee button for empty slots but keeps it disabled", () => {
     render(
       <Wrapper
         users={initialUsers}
@@ -175,8 +175,11 @@ describe("RegistrationEditor gold tee toggle", () => {
         onGoldTeesChange={() => {}}
       />,
     );
-    // Only the filled slot (user-a) should have a button
+    // Both slots should have a button (empty slots still render it)
     const buttons = screen.getAllByRole("button", { name: /gold tee/i });
-    expect(buttons).toHaveLength(1);
+    expect(buttons).toHaveLength(2);
+    // The filled slot button is enabled; the empty slot button is disabled
+    expect(buttons[0]).not.toBeDisabled();
+    expect(buttons[1]).toBeDisabled();
   });
 });

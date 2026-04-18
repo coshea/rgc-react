@@ -143,10 +143,11 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
       isOpen={isOpen}
       onOpenChange={(open) => !open && onClose()}
       size={isMobile ? "full" : "xl"}
+      placement={isMobile ? "top" : "auto"}
       hideCloseButton
       classNames={{
         base: isMobile
-          ? "m-0 rounded-none h-[100dvh] max-h-[100dvh]"
+          ? "m-0 rounded-none rounded-b-xl max-h-[85dvh]"
           : "mt-[10vh]",
         body: "p-0",
       }}
@@ -159,7 +160,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
     >
       <ModalContent>
         {() => (
-          <ModalBody className="flex flex-col h-full">
+          <ModalBody className="flex flex-col">
             {/* Search input */}
             <div className="flex items-center px-4 py-3 gap-3">
               <Icon
@@ -204,7 +205,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
             <Divider />
 
             {/* Results */}
-            <div className="flex-1 overflow-y-auto pb-2 sm:max-h-[60vh]">
+            <div className="overflow-y-auto pb-2 max-h-[60dvh] sm:max-h-[60vh]">
               {loading && (
                 <div className="flex justify-center py-8">
                   <Spinner size="sm" />
