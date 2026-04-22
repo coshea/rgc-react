@@ -68,11 +68,21 @@ vi.mock("@/api/tournaments", () => ({
       apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
     };
   },
+  onLookingForTeam: (_id: string, next: any) => {
+    // Immediately resolve with an empty list so the section renders without hanging
+    next([]);
+    return () => {};
+  },
+  setLookingForTeamPost: vi.fn(async () => {}),
+  deleteLookingForTeamPost: vi.fn(async () => {}),
   mapTournamentDoc: (snap: any) => ({ firestoreId: snap.id, ...snap.data() }),
   deleteTournament: vi.fn(async () => {}),
 }));
 
-vi.mock("@/api/users", () => ({ getUsers: async () => [] }));
+vi.mock("@/api/users", () => ({
+  getUsers: async () => [],
+  getUserProfile: vi.fn(async () => null),
+}));
 
 // Avoid rendering markdown heavy component cost
 vi.mock("react-markdown", () => ({

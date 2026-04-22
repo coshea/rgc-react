@@ -6,6 +6,7 @@ import {
   mapTournamentDoc,
   deleteTournament as apiDeleteTournament,
 } from "@/api/tournaments";
+import { LookingForTeamSection } from "@/components/looking-for-team-section";
 import { onBracket } from "@/api/brackets";
 import { BracketView } from "@/components/bracket/BracketView";
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
@@ -1198,11 +1199,25 @@ const TournamentDetailPage: React.FC = () => {
               </div>
             )}
 
+            <LookingForTeamSection
+              tournamentId={tournament.firestoreId!}
+              currentUserId={userId ?? null}
+              registrationOpen={registrationOpen}
+              isUserRegistered={isUserRegistered}
+              maxTeamSize={tournament.players ?? 1}
+              isAdmin={isAdmin}
+            />
+
             <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
               {/* Full Width: Registered Teams (Improved readability) */}
               <Card className="md:col-span-3" shadow="sm">
                 <CardHeader className="pb-0 flex flex-wrap items-center justify-between gap-2 overflow-visible relative">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Icon
+                      icon="lucide:users"
+                      className="w-5 h-5 text-primary-500"
+                      aria-hidden="true"
+                    />
                     Registered Teams
                     {!regsLoading && registrations.length > 0 && (
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">

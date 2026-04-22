@@ -228,6 +228,17 @@ service cloud.firestore {
         // This broadens visibility from just owner/admin to all signed-in members.
         allow read: if request.auth != null;
       }
+
+      // lookingForTeam sub-collection: one doc per user (doc ID == uid).
+      // Members can read; users can manage only their own post; admins can delete any.
+      match /lookingForTeam/{userId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.ownerId == userId;
+        allow delete: if request.auth != null
+          && (request.auth.uid == userId || isAdmin());
+      }
     }
 
     // Season awards (e.g. hole in one bonuses) are visible to signed-in users,

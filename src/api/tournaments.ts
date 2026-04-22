@@ -183,6 +183,60 @@ export async function fetchAllRegistrations(tournamentId: string) {
   return snaps.docs.map((d) => ({ id: d.id, ...(d.data() ?? {}) }));
 }
 
+// ── Looking For Team ─────────────────────────────────────────────────────────
+// Sub-collection: tournaments/{tournamentId}/lookingForTeam/{uid}
+// One document per user. Document ID == the user's UID.
+
+export interface LookingForTeamPost {
+  /** Firestore document ID (== ownerId) */
+  id: string;
+  ownerId: string;
+  createdAt: Date;
+}
+
+/** Real-time listener for the lookingForTeam sub-collection. */
+export function onLookingForTeam(
+  tournamentId: string,
+  next: (posts: LookingForTeamPost[]) => void,
+  error?: (err: FirestoreError) => void,
+) {
+  const col = collection(db, "tournaments", tournamentId, "lookingForTeam");
+  const q = query(col, orderBy("createdAt", "asc"));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const posts: LookingForTeamPost[] = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ownerId: data.ownerId as string,
+          createdAt: data.createdAt?.toDate?.() ?? new Date(),
+        };
+      });
+      next(posts);
+    },
+    error,
+  );
+}
+
+/** Create or overwrite the current user's "looking for team" post. */
+export async function setLookingForTeamPost(tournamentId: string, uid: string) {
+  const ref = doc(db, "tournaments", tournamentId, "lookingForTeam", uid);
+  await setDoc(ref, {
+    ownerId: uid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+/** Delete the current user's "looking for team" post. */
+export async function deleteLookingForTeamPost(
+  tournamentId: string,
+  uid: string,
+) {
+  const ref = doc(db, "tournaments", tournamentId, "lookingForTeam", uid);
+  await deleteDoc(ref);
+}
+
 // Fetch only the registration count for a tournament using Firestore count aggregation.
 // Much cheaper than fetchAllRegistrations — reads zero document fields.
 export async function fetchRegistrationCount(
