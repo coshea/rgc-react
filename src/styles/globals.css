@@ -28,6 +28,13 @@ body {
     border-color: var(--color-gray-200, currentcolor);
   }
 
+  /* Prevent iOS Safari from auto-zooming when tapping inputs (triggered when font-size < 16px) */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
   /* Basic prose styles for markdown rendering */
   .prose h1,
   .prose h2,
