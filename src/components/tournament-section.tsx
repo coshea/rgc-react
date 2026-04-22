@@ -20,9 +20,8 @@ export function TournamentSection() {
     queryKey: ["latestTournamentYear"],
     queryFn: async () => {
       const { db } = await import("@/config/firebase");
-      const { collection, query, orderBy, limit, getDocs } = await import(
-        "firebase/firestore"
-      );
+      const { collection, query, orderBy, limit, getDocs } =
+        await import("firebase/firestore");
 
       const colRef = collection(db, "tournaments");
       const snap = await getDocs(
@@ -67,10 +66,10 @@ export function TournamentSection() {
 
     // Get most recent past tournament
     const recentPast = past.length > 0 ? [past[past.length - 1]] : [];
-    // Get next 2 upcoming tournaments
-    const nextTwo = upcoming.slice(0, 2);
+    // Get next 3 upcoming tournaments
+    const nextThree = upcoming.slice(0, 3);
 
-    return [...recentPast, ...nextTwo];
+    return [...recentPast, ...nextThree];
   };
 
   const displayTournaments = getDisplayTournaments();
