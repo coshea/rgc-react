@@ -122,10 +122,13 @@ export function WinnerDisplay({
         >
           {nameContent}
         </p>
-        <p className="text-[11px] text-default-500 text-center">
-          {score !== undefined ? `Score: ${score}` : "—"}
-          {prize && ` • ${formatPrize(prize)}`}
-        </p>
+        {(score !== undefined || prize) && (
+          <p className="text-[11px] text-default-500 text-center">
+            {score !== undefined ? `Score: ${score}` : ""}
+            {score !== undefined && prize ? " • " : ""}
+            {prize ? formatPrize(prize) : ""}
+          </p>
+        )}
       </div>
       {/* Desktop: names and info */}
       <div className="hidden sm:block flex-1 min-w-0">
@@ -138,10 +141,13 @@ export function WinnerDisplay({
         >
           {nameContent}
         </p>
-        <p className="text-[11px] text-default-500">
-          {score !== undefined ? `Score: ${score}` : "—"}
-          {prize && ` • ${formatPrize(prize)}`}
-        </p>
+        {(score !== undefined || prize) && (
+          <p className="text-[11px] text-default-500">
+            {score !== undefined ? `Score: ${score}` : ""}
+            {score !== undefined && prize ? " • " : ""}
+            {prize ? formatPrize(prize) : ""}
+          </p>
+        )}
       </div>
     </div>
   );
