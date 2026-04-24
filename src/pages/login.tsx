@@ -680,7 +680,7 @@ export default function LoginPage() {
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">
-                    noreply@ridgefield-golf-club.firebaseapp.com
+                    {siteConfig.notificationEmail}
                   </span>
                   .
                 </p>
