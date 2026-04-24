@@ -587,7 +587,7 @@ export default function SignUpPage() {
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">
-                    noreply@ridgefieldgolfclub.org
+                    {siteConfig.notificationEmail}
                   </span>
                   .
                 </p>

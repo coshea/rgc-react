@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Select, SelectItem, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { TournamentStatusCard } from "@/components/tournament-status-card";
-import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { mapTournamentDoc } from "@/api/tournaments";
+import { type Tournament } from "@/types/tournament";
+import { db } from "@/config/firebase";
+import {
+  collection,
+  query,
+  orderBy,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 
 // ─── Year options ─────────────────────────────────────────────────────────────
 
@@ -14,20 +23,51 @@ const YEAR_OPTIONS = Array.from(
   (_, i) => CURRENT_YEAR - i,
 );
 
+// ─── Hook: real-time tournaments for a given year ─────────────────────────────
+
+function useYearTournamentsRealtime(year: number) {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const col = collection(db, "tournaments");
+    const q = query(
+      col,
+      where("date", ">=", start),
+      where("date", "<", end),
+      orderBy("date", "asc"),
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setTournaments(snap.docs.map(mapTournamentDoc));
+        setLoading(false);
+      },
+      () => setLoading(false),
+    );
+    return unsub;
+  }, [year]);
+
+  return { tournaments, loading };
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function TournamentStatusTab() {
   const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
 
-  const { tournaments, isLoading } = useYearlyTournaments({
-    year: selectedYear,
-  });
+  const { tournaments, loading: isLoading } =
+    useYearTournamentsRealtime(selectedYear);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Select
           aria-label="Select year"
+          disallowEmptySelection
           selectedKeys={[String(selectedYear)]}
           onSelectionChange={(keys) => {
             const val = Array.from(keys)[0];
