@@ -27,7 +27,7 @@ const PlaceIndicator: React.FC<{ pos: number }> = ({ pos }) => {
   const meta = getPlaceMeta(pos);
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] font-semibold min-w-[40px]"
+      className="inline-flex items-center gap-1 text-[11px] font-semibold min-w-10"
       aria-label={`${ordinal(pos)} place`}
     >
       <Icon
@@ -115,7 +115,7 @@ export function WinnerDisplay({
         </div>
         <p
           className={
-            "text-sm leading-snug text-center break-words" +
+            "text-sm leading-snug text-center wrap-break-word" +
             (isChampion ? " font-semibold" : " font-medium")
           }
           title={nameList}
@@ -134,7 +134,7 @@ export function WinnerDisplay({
       <div className="hidden sm:block flex-1 min-w-0">
         <p
           className={
-            "text-sm leading-snug break-words" +
+            "text-sm leading-snug wrap-break-word" +
             (isChampion ? " font-semibold" : " font-medium")
           }
           title={nameList}
