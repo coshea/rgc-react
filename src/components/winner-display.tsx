@@ -115,7 +115,7 @@ export function WinnerDisplay({
         </div>
         <p
           className={
-            "text-sm leading-snug text-center wrap-break-word" +
+            "text-sm leading-snug text-center break-words" +
             (isChampion ? " font-semibold" : " font-medium")
           }
           title={nameList}
