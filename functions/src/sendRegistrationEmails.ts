@@ -22,7 +22,10 @@ export interface LeaderEmailParams {
   firstName: string;
   tournamentTitle: string;
   tournamentDate: string;
-  tournamentTeeInfo: string;
+  /** Tee color label, e.g. "White" or "Mixed". */
+  tournamentTee: string;
+  /** Tee times label matching the detail page, e.g. "Assigned" or "Get your own". */
+  tournamentTeeTimes: string;
   teamMembersHtml: string;
   tournamentUrl: string;
 }
@@ -44,6 +47,22 @@ function esc(s: string): string {
 }
 
 /**
+ * Appends UTM parameters to a tournament URL so clicks appear in GA4 under
+ * Acquisition → Traffic acquisition.
+ */
+function buildTrackedUrl(url: string, content: "leader" | "member"): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return (
+    url +
+    separator +
+    "utm_source=email" +
+    "&utm_medium=email" +
+    "&utm_campaign=tournament_registration" +
+    `&utm_content=${content}`
+  );
+}
+
+/**
  * Builds the team roster as `<tr>` rows for use inside the team table in
  * both email templates.
  */
@@ -56,7 +75,7 @@ export function buildTeamMembersHtml(
       const isLeader = member.id === ownerId;
       const name = esc(member.displayName || "Unknown Member");
       const goldLabel = member.goldTee
-        ? `<span style="font-size:12px;color:#71717a;font-family:${FONT};margin-left:6px;">· Gold tees</span>`
+        ? `<span style="display:inline-block;font-size:11px;font-weight:600;color:#854d0e;background-color:#fef9c3;border:1px solid #fde047;border-radius:4px;padding:1px 6px;font-family:${FONT};margin-left:8px;vertical-align:middle;line-height:1.5;">&#9733; Gold Tees</span>`
         : "";
       const leaderBadge = isLeader
         ? `<span style="font-size:12px;color:#71717a;font-family:${FONT};margin-left:8px;">(Team Leader)</span>`
@@ -83,10 +102,12 @@ export function buildLeaderEmailHtml(p: LeaderEmailParams): string {
     firstName,
     tournamentTitle,
     tournamentDate,
-    tournamentTeeInfo,
+    tournamentTee,
+    tournamentTeeTimes,
     teamMembersHtml,
     tournamentUrl,
   } = p;
+  const trackedUrl = buildTrackedUrl(tournamentUrl, "leader");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,7 +155,8 @@ export function buildLeaderEmailHtml(p: LeaderEmailParams): string {
                     <p style="margin:8px 0 0;font-size:17px;color:#11181c;font-family:${FONT};font-weight:700;line-height:1.4;">${esc(tournamentTitle)}</p>
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
                       <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128197; <strong>Date:</strong> ${esc(tournamentDate)}</p></td></tr>
-                      <tr><td><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#9971; <strong>Tee Times:</strong> ${esc(tournamentTeeInfo)}</p></td></tr>
+                      <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#9971; <strong>Tee:</strong> ${esc(tournamentTee)}</p></td></tr>
+                      <tr><td><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128336; <strong>Tee Times:</strong> ${esc(tournamentTeeTimes)}</p></td></tr>
                     </table>
                   </td>
                 </tr>
@@ -172,7 +194,7 @@ export function buildLeaderEmailHtml(p: LeaderEmailParams): string {
           <!-- CTA -->
           <tr>
             <td align="center" style="padding:28px 40px 0;">
-              <a href="${esc(tournamentUrl)}" target="_blank" style="display:inline-block;background-color:#006fee;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:10px;">View Tournament &#8594;</a>
+              <a href="${esc(trackedUrl)}" target="_blank" style="display:inline-block;background-color:#006fee;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:10px;">View Tournament &#8594;</a>
             </td>
           </tr>
 
@@ -211,10 +233,12 @@ export function buildMemberEmailHtml(p: MemberEmailParams): string {
     leaderName,
     tournamentTitle,
     tournamentDate,
-    tournamentTeeInfo,
+    tournamentTee,
+    tournamentTeeTimes,
     teamMembersHtml,
     tournamentUrl,
   } = p;
+  const trackedUrl = buildTrackedUrl(tournamentUrl, "member");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -262,7 +286,8 @@ export function buildMemberEmailHtml(p: MemberEmailParams): string {
                     <p style="margin:8px 0 0;font-size:17px;color:#11181c;font-family:${FONT};font-weight:700;line-height:1.4;">${esc(tournamentTitle)}</p>
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
                       <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128197; <strong>Date:</strong> ${esc(tournamentDate)}</p></td></tr>
-                      <tr><td><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#9971; <strong>Tee Times:</strong> ${esc(tournamentTeeInfo)}</p></td></tr>
+                      <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#9971; <strong>Tee:</strong> ${esc(tournamentTee)}</p></td></tr>
+                      <tr><td><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128336; <strong>Tee Times:</strong> ${esc(tournamentTeeTimes)}</p></td></tr>
                     </table>
                   </td>
                 </tr>
@@ -297,7 +322,7 @@ export function buildMemberEmailHtml(p: MemberEmailParams): string {
           <!-- CTA -->
           <tr>
             <td align="center" style="padding:28px 40px 0;">
-              <a href="${esc(tournamentUrl)}" target="_blank" style="display:inline-block;background-color:#006fee;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:10px;">View Tournament &#8594;</a>
+              <a href="${esc(trackedUrl)}" target="_blank" style="display:inline-block;background-color:#006fee;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:10px;">View Tournament &#8594;</a>
             </td>
           </tr>
 

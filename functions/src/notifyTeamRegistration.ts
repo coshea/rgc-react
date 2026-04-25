@@ -42,13 +42,22 @@ interface UserData {
   };
 }
 
-/** Returns true when the user has not explicitly opted out of registration emails. */
+/**
+ * Returns true when the user has not explicitly opted out of registration emails.
+ *
+ * Opt-out semantics: absent or undefined = eligible (send email).
+ * Only a stored value of `false` on the per-type flag blocks the email.
+ *
+ * NOTE: We intentionally do NOT check `emailEnabled` here. That field had a
+ * legacy default of `false`, so any user who saved notification settings before
+ * the defaults were corrected has `emailEnabled: false` stored — even if they
+ * never intentionally turned emails off. Checking `emailEnabled` would silently
+ * exclude those users. Instead, rely solely on the per-type flag which is only
+ * set to `false` when the user explicitly opts out via the new email-toggle UI.
+ */
 function isEmailEligible(data: UserData | undefined): boolean {
   const prefs = data?.notificationPreferences;
-  return (
-    prefs?.emailEnabled !== false &&
-    prefs?.emailTournamentRegistration !== false
-  );
+  return prefs?.emailTournamentRegistration !== false;
 }
 
 /** Returns the first whitespace-separated word of a string, or "". */
@@ -208,9 +217,10 @@ export const notify_team_registration = onDocumentCreated(
           timeZone: "America/New_York",
         })
       : "Date TBD";
-    const tournamentTeeInfo = tournament.tee
-      ? `${tournament.tee} tees${tournament.assignedTeeTimes ? " · Assigned" : ""}`
-      : "TBD";
+    const tournamentTee = tournament.tee ? `${tournament.tee} tees` : "TBD";
+    const tournamentTeeTimes = tournament.assignedTeeTimes
+      ? "Assigned"
+      : "Get your own";
     const teamMembersHtml = buildTeamMembersHtml(team, ownerId);
 
     // Leader confirmation email
@@ -230,7 +240,8 @@ export const notify_team_registration = onDocumentCreated(
           firstName,
           tournamentTitle,
           tournamentDate,
-          tournamentTeeInfo,
+          tournamentTee,
+          tournamentTeeTimes,
           teamMembersHtml,
           tournamentUrl,
         });
@@ -266,7 +277,8 @@ export const notify_team_registration = onDocumentCreated(
           leaderName: leaderDisplayName,
           tournamentTitle,
           tournamentDate,
-          tournamentTeeInfo,
+          tournamentTee,
+          tournamentTeeTimes,
           teamMembersHtml,
           tournamentUrl,
         });

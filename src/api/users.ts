@@ -32,11 +32,16 @@ export interface NotificationPreferences {
   generalAnnouncements: boolean;
   /** Receive in-app notifications for app feature updates and new functionality. */
   newFeatures: boolean;
-  // ── Future email channels (infrastructure ready, UI hidden until email is wired) ──
   /** Master switch: when false no email notifications are sent regardless of other flags. */
   emailEnabled: boolean;
   /** Email variant of tournamentRegistration. */
   emailTournamentRegistration: boolean;
+  /** Email variant of tournamentUpdates. */
+  emailTournamentUpdates: boolean;
+  /** Email variant of generalAnnouncements. */
+  emailGeneralAnnouncements: boolean;
+  /** Email variant of newFeatures. */
+  emailNewFeatures: boolean;
 }
 
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
