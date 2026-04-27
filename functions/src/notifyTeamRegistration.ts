@@ -100,7 +100,13 @@ export const notify_team_registration = onDocumentCreated(
     if (!ownerId || !Array.isArray(team) || team.length === 0) {
       logger.warn(
         `[notify_team_registration] Early exit — missing ownerId or empty team`,
-        { ownerId, team },
+        {
+          registrationId: event.params.registrationId,
+          tournamentId: event.params.tournamentId,
+          hasOwnerId: Boolean(ownerId),
+          teamSize: Array.isArray(team) ? team.length : 0,
+          memberIds: Array.isArray(team) ? team.map((member) => member.id) : [],
+        },
       );
       return;
     }
