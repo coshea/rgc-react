@@ -126,9 +126,10 @@ export const notify_team_registration = onDocumentCreated(
     const leaderDisplayName = leader?.displayName?.trim() || "Your team leader";
 
     // --- Fetch ALL user docs (for both in-app prefs and email fields) ---
-    const userSnaps = await Promise.all(
-      team.map((m) => db.doc(`users/${m.id}`).get()),
-    );
+    // db.getAll() fetches all docs in a single RPC request, more efficient than
+    // Promise.all() with individual get() calls.
+    const userRefs = team.map((m) => db.doc(`users/${m.id}`));
+    const userSnaps = await db.getAll(...userRefs);
     const userDataMap = new Map<string, UserData>();
     team.forEach((m, i) => {
       if (userSnaps[i].exists) {
