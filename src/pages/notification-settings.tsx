@@ -224,11 +224,9 @@ export default function NotificationSettingsPage() {
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
-                  isSelected={
-                    prefs.emailTournamentRegistration && prefs.emailEnabled
-                  }
+                  isSelected={prefs.emailTournamentRegistration}
                   onValueChange={() => toggle("emailTournamentRegistration")}
-                  isDisabled={isLoading || !prefs.emailEnabled}
+                  isDisabled={isLoading}
                   aria-label="Email: Tournament Registration"
                   classNames={{ wrapper: "shrink-0" }}
                 />
@@ -256,11 +254,9 @@ export default function NotificationSettingsPage() {
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
-                  isSelected={
-                    prefs.emailTournamentUpdates && prefs.emailEnabled
-                  }
+                  isSelected={prefs.emailTournamentUpdates}
                   onValueChange={() => toggle("emailTournamentUpdates")}
-                  isDisabled={isLoading || !prefs.emailEnabled}
+                  isDisabled={isLoading}
                   aria-label="Email: Tournament Updates"
                   classNames={{ wrapper: "shrink-0" }}
                 />
@@ -286,11 +282,9 @@ export default function NotificationSettingsPage() {
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
-                  isSelected={
-                    prefs.emailGeneralAnnouncements && prefs.emailEnabled
-                  }
+                  isSelected={prefs.emailGeneralAnnouncements}
                   onValueChange={() => toggle("emailGeneralAnnouncements")}
-                  isDisabled={isLoading || !prefs.emailEnabled}
+                  isDisabled={isLoading}
                   aria-label="Email: Announcements"
                   classNames={{ wrapper: "shrink-0" }}
                 />
@@ -316,32 +310,10 @@ export default function NotificationSettingsPage() {
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
-                  isSelected={prefs.emailNewFeatures && prefs.emailEnabled}
+                  isSelected={prefs.emailNewFeatures}
                   onValueChange={() => toggle("emailNewFeatures")}
-                  isDisabled={isLoading || !prefs.emailEnabled}
-                  aria-label="Email: New Features"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
-              </div>
-            </div>
-
-            <Divider className="my-1" />
-
-            {/* Email master switch */}
-            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-medium">Email Notifications</p>
-                <p className="text-small text-default-500">
-                  Master switch — disabling turns off all emails
-                </p>
-              </div>
-              <div className="w-16 flex justify-center" />
-              <div className="w-16 flex justify-center">
-                <Switch
-                  isSelected={prefs.emailEnabled}
-                  onValueChange={() => toggle("emailEnabled")}
                   isDisabled={isLoading}
-                  aria-label="Email Notifications master switch"
+                  aria-label="Email: New Features"
                   classNames={{ wrapper: "shrink-0" }}
                 />
               </div>
