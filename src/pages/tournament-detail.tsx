@@ -17,6 +17,7 @@ import {
   Chip,
   Button,
   Divider,
+  Input,
   Tooltip,
   Dropdown,
   DropdownTrigger,
@@ -123,6 +124,8 @@ const TournamentDetailPage: React.FC = () => {
   );
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const [showPartnerTeams, setShowPartnerTeams] = React.useState(false);
+  const [teamSearch, setTeamSearch] = React.useState("");
+  const normalizedSearchTerm = teamSearch.trim().toLowerCase();
   const [openTeamModal, setOpenTeamModal] = React.useState(false);
   const [openTeamModalData, setOpenTeamModalData] = React.useState<{
     teamNumber: number;
@@ -1232,6 +1235,24 @@ const TournamentDetailPage: React.FC = () => {
                   </h2>
                   <div className="flex items-center gap-3 flex-wrap pb-1">
                     {!regsLoading && registrations.length > 0 && (
+                      <Input
+                        size="sm"
+                        placeholder="Search players..."
+                        value={teamSearch}
+                        onValueChange={setTeamSearch}
+                        startContent={
+                          <Icon
+                            icon="lucide:search"
+                            className="text-foreground-400 w-3.5 h-3.5"
+                          />
+                        }
+                        isClearable
+                        onClear={() => setTeamSearch("")}
+                        className="w-44"
+                        aria-label="Search registered teams by player name"
+                      />
+                    )}
+                    {!regsLoading && registrations.length > 0 && (
                       <Button
                         size="sm"
                         variant={showNeedingPlayers ? "solid" : "flat"}
@@ -1329,6 +1350,27 @@ const TournamentDetailPage: React.FC = () => {
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {registrations
                             .filter((reg) => {
+                              if (normalizedSearchTerm) {
+                                const members = Array.isArray(reg.team)
+                                  ? reg.team
+                                  : [];
+                                const leaderProfile = reg.ownerId
+                                  ? usersMap.get(reg.ownerId)
+                                  : undefined;
+                                const leaderName = (
+                                  leaderProfile?.displayName ??
+                                  leaderProfile?.email ??
+                                  ""
+                                ).toLowerCase();
+                                const matchesSearch =
+                                  members.some((m) =>
+                                    m.displayName
+                                      ?.toLowerCase()
+                                      .includes(normalizedSearchTerm),
+                                  ) ||
+                                  leaderName.includes(normalizedSearchTerm);
+                                if (!matchesSearch) return false;
+                              }
                               if (
                                 (!showNeedingPlayers && !showPartnerTeams) ||
                                 !tournament
