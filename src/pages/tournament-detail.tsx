@@ -1350,25 +1350,25 @@ const TournamentDetailPage: React.FC = () => {
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {registrations
                             .filter((reg) => {
-                              const searchTerm = teamSearch
-                                .trim()
-                                .toLowerCase();
-                              if (searchTerm) {
+                              if (normalizedSearchTerm) {
                                 const members = Array.isArray(reg.team)
                                   ? reg.team
                                   : [];
-                                const leaderName = reg.ownerId
-                                  ? (usersMap.get(reg.ownerId)?.displayName ??
-                                    usersMap.get(reg.ownerId)?.email ??
-                                    "")
-                                  : "";
+                                const leaderProfile = reg.ownerId
+                                  ? usersMap.get(reg.ownerId)
+                                  : undefined;
+                                const leaderName = (
+                                  leaderProfile?.displayName ??
+                                  leaderProfile?.email ??
+                                  ""
+                                ).toLowerCase();
                                 const matchesSearch =
                                   members.some((m) =>
                                     m.displayName
                                       ?.toLowerCase()
-                                      .includes(searchTerm),
+                                      .includes(normalizedSearchTerm),
                                   ) ||
-                                  leaderName.toLowerCase().includes(searchTerm);
+                                  leaderName.includes(normalizedSearchTerm);
                                 if (!matchesSearch) return false;
                               }
                               if (
