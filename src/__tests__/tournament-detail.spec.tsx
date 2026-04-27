@@ -382,6 +382,52 @@ describe("TournamentDetailPage", () => {
     await screen.findByText(/Team 1/i);
   });
 
+  it("filters registered teams by player name using the search box", async () => {
+    renderWithRoute("search1");
+    emitDoc("tournaments/search1", baseTournament);
+    emitCollection("tournaments/search1/registrations", [
+      {
+        id: "team1",
+        data: () => ({
+          ownerId: "owner1",
+          team: [
+            { id: "p1", displayName: "Alice" },
+            { id: "p2", displayName: "Bob" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+      {
+        id: "team2",
+        data: () => ({
+          ownerId: "owner2",
+          team: [
+            { id: "p3", displayName: "Charlie" },
+            { id: "p4", displayName: "Denise" },
+          ],
+          registeredAt: { toDate: () => new Date() },
+        }),
+      },
+    ]);
+
+    await screen.findByText("Club Championship");
+    const searchInput = screen.getByPlaceholderText(/Search players.../i);
+    expect(searchInput).toBeInTheDocument();
+
+    expect(screen.getByText(/Team 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "Charlie" } });
+    await waitFor(() => expect(screen.queryByText(/Team 1/i)).toBeNull());
+    expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "" } });
+    await waitFor(() =>
+      expect(screen.getByText(/Team 1/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Team 2/i)).toBeInTheDocument();
+  });
+
   it("opens the open-spot modal when clicked", async () => {
     renderWithRoute("modal1");
     emitDoc("tournaments/modal1", { ...baseTournament, players: 4 });
