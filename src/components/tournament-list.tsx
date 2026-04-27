@@ -367,7 +367,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                       <p className="font-medium text-foreground text-left flex items-center gap-2">
                         {tournament.title}
                       </p>
-                      <p className="text-xs text-foreground-500 line-clamp-2 max-w-50">
+                      <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
                         {tournament.description}
                       </p>
                       {renderWinners(tournament)}
