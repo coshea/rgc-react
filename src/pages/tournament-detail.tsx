@@ -125,6 +125,7 @@ const TournamentDetailPage: React.FC = () => {
   const [showNeedingPlayers, setShowNeedingPlayers] = React.useState(false);
   const [showPartnerTeams, setShowPartnerTeams] = React.useState(false);
   const [teamSearch, setTeamSearch] = React.useState("");
+  const normalizedSearchTerm = teamSearch.trim().toLowerCase();
   const [openTeamModal, setOpenTeamModal] = React.useState(false);
   const [openTeamModalData, setOpenTeamModalData] = React.useState<{
     teamNumber: number;
