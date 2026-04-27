@@ -10,7 +10,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   tournamentUpdates: true,
   generalAnnouncements: true,
   newFeatures: true,
-  emailEnabled: true,
   emailTournamentRegistration: true,
   emailTournamentUpdates: true,
   emailGeneralAnnouncements: true,

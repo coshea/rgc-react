@@ -37,7 +37,6 @@ interface UserData {
   notificationPreferences?: {
     tournamentRegistration?: boolean;
     tournamentUpdates?: boolean;
-    emailEnabled?: boolean;
     emailTournamentRegistration?: boolean;
   };
 }
@@ -48,12 +47,6 @@ interface UserData {
  * Opt-out semantics: absent or undefined = eligible (send email).
  * Only a stored value of `false` on the per-type flag blocks the email.
  *
- * NOTE: We intentionally do NOT check `emailEnabled` here. That field had a
- * legacy default of `false`, so any user who saved notification settings before
- * the defaults were corrected has `emailEnabled: false` stored — even if they
- * never intentionally turned emails off. Checking `emailEnabled` would silently
- * exclude those users. Instead, rely solely on the per-type flag which is only
- * set to `false` when the user explicitly opts out via the new email-toggle UI.
  */
 function isEmailEligible(data: UserData | undefined): boolean {
   const prefs = data?.notificationPreferences;
@@ -64,6 +57,14 @@ function isEmailEligible(data: UserData | undefined): boolean {
 function firstWord(str: string | undefined): string {
   if (!str) return "";
   return str.trim().split(/\s+/)[0] || "";
+}
+
+/** Redacts an email address for safe logging — never log raw PII. */
+function maskEmail(email: string | undefined): string {
+  if (!email) return "MISSING";
+  const at = email.indexOf("@");
+  if (at < 1) return "[redacted]";
+  return `${email[0]}***@***`;
 }
 
 const TTL_DAYS = 60;
@@ -131,22 +132,22 @@ export const notify_team_registration = onDocumentCreated(
     const userRefs = team.map((m) => db.doc(`users/${m.id}`));
     const userSnaps = await db.getAll(...userRefs);
     const userDataMap = new Map<string, UserData>();
-    team.forEach((m, i) => {
-      if (userSnaps[i].exists) {
-        const data = userSnaps[i].data() as UserData;
-        userDataMap.set(m.id, data);
+    // Use snap.id (not index) to build the map — getAll() order is not guaranteed.
+    for (const snap of userSnaps) {
+      if (snap.exists) {
+        const data = snap.data() as UserData;
+        userDataMap.set(snap.id, data);
         logger.info(
-          `[notify_team_registration] User ${m.id}: email=${data.email ?? "MISSING"}, ` +
-            `emailEnabled=${data.notificationPreferences?.emailEnabled}, ` +
+          `[notify_team_registration] User ${snap.id}: email=${maskEmail(data.email)}, ` +
             `emailTournamentRegistration=${data.notificationPreferences?.emailTournamentRegistration}, ` +
             `inAppTournamentRegistration=${data.notificationPreferences?.tournamentRegistration}`,
         );
       } else {
         logger.warn(
-          `[notify_team_registration] No user doc found for id=${m.id} (${m.displayName})`,
+          `[notify_team_registration] No user doc found for id=${snap.id}`,
         );
       }
-    });
+    }
 
     // --- IN-APP NOTIFICATIONS (existing behaviour: non-leader members only) ---
     const membersToNotify = team.filter((m) => m.id !== ownerId);
@@ -228,7 +229,7 @@ export const notify_team_registration = onDocumentCreated(
     const leaderData = userDataMap.get(ownerId);
     const leaderEmail = leaderData?.email;
     logger.info(
-      `[notify_team_registration] Leader email check — email=${leaderEmail ?? "MISSING"}, eligible=${isEmailEligible(leaderData)}`,
+      `[notify_team_registration] Leader email check — userId=${ownerId}, email=${maskEmail(leaderEmail)}, eligible=${isEmailEligible(leaderData)}`,
     );
     if (leaderEmail && isEmailEligible(leaderData)) {
       const firstName =
@@ -247,11 +248,11 @@ export const notify_team_registration = onDocumentCreated(
           tournamentUrl,
         });
         logger.info(
-          `[notify_team_registration] Sent leader email to ${leaderEmail}`,
+          `[notify_team_registration] Sent leader email to userId=${ownerId}, email=${maskEmail(leaderEmail)}`,
         );
       } catch (err) {
         logger.error(
-          `[notify_team_registration] Failed to send leader email`,
+          `[notify_team_registration] Failed to send leader email to userId=${ownerId}, email=${maskEmail(leaderEmail)}`,
           err,
         );
       }
@@ -264,7 +265,7 @@ export const notify_team_registration = onDocumentCreated(
       const eligible = isEmailEligible(memberData);
       logger.info(
         `[notify_team_registration] Member ${member.id} (${member.displayName}) email check — ` +
-          `email=${memberEmail ?? "MISSING"}, eligible=${eligible}`,
+          `userId=${member.id}, email=${maskEmail(memberEmail)}, eligible=${eligible}`,
       );
       if (!memberEmail || !eligible) continue;
       const firstName =
@@ -284,11 +285,11 @@ export const notify_team_registration = onDocumentCreated(
           tournamentUrl,
         });
         logger.info(
-          `[notify_team_registration] Sent member email to ${memberEmail}`,
+          `[notify_team_registration] Sent member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
         );
       } catch (err) {
         logger.error(
-          `[notify_team_registration] Failed to send member email to ${memberEmail}`,
+          `[notify_team_registration] Failed to send member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
           err,
         );
       }
