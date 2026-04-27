@@ -411,7 +411,9 @@ describe("TournamentDetailPage", () => {
     ]);
 
     await screen.findByText("Club Championship");
-    const searchInput = screen.getByPlaceholderText(/Search players.../i);
+    const searchInput = screen.getByLabelText(
+      /Search registered teams by player name/i,
+    );
     expect(searchInput).toBeInTheDocument();
 
     expect(screen.getByText(/Team 1/i)).toBeInTheDocument();

@@ -141,6 +141,31 @@ All Firebase initialization is centralized in `src/config/firebase.ts`.
 - Local build + deploy via Firebase CLI is supported. GitHub Actions CI requires a `firebaseServiceAccount` secret (JSON service account) for deploys.
 - App Hosting config lives in `apphosting.yaml`.
 
+#### Firebase Functions parameters and secrets
+
+The Cloud Functions code separates runtime config into two kinds of parameters:
+
+- `defineSecret()` values, such as `PAYPAL_CLIENT_SECRET`, are stored in Google Cloud Secret Manager / Firebase Functions secrets.
+- `defineString()` values, such as `PAYPAL_CLIENT_ID` and `PAYPAL_ENVIRONMENT`, are stored as Firebase Functions params.
+
+This means the GitHub workflow does not need to pass these values as `env:` vars during `firebase deploy`.
+
+Set them before deploy using the Firebase CLI:
+
+```bash
+firebase functions:params:set PAYPAL_CLIENT_ID="your-paypal-client-id"
+firebase functions:params:set PAYPAL_ENVIRONMENT="SANDBOX"
+firebase functions:secrets:set PAYPAL_CLIENT_SECRET "your-paypal-client-secret"
+```
+
+Then deploy with:
+
+```bash
+firebase deploy --only functions:rgc-react --project ridgefield-golf-club
+```
+
+If `PAYPAL_CLIENT_ID` should be treated as sensitive, you can also migrate it to `defineSecret()` in `functions/src/paypalConfig.ts` and manage it through Secret Manager.
+
 #### Build-Time Environment Variables (Vite)
 
 The client bundle is built with Vite; only variables prefixed with `VITE_` are embedded into the production build. If a variable like `VITE_PAYPAL_CLIENT_ID` is missing at build time, PayPal will be disabled in production.
@@ -170,14 +195,12 @@ For GitHub Actions deployments to Firebase Hosting, configure these repository s
 Feature for members to post they need players or need a group for a given date.
 
 - API: `src/api/find-a-game.ts`
-
   - Collection name: `findAGame`
   - Fields: `type` ("needPlayers" | "needGroup"), `date` (Y-M-D), optional `time` (HH:mm), optional `openSpots` (1–3), `ownerId`, `createdAt`.
   - Streams: `onFuturePosts()` returns future-dated posts sorted by date asc, createdAt desc.
   - Create/Update enforce UID integrity and validation (open spots range). Time is optional.
 
 - UI: `src/pages/find-a-game.tsx`
-
   - Route is protected with `RequireAuth`.
   - Create and Edit use a single modal (`FindAGamePostModal`) with HeroUI Form, DatePicker, TimeInput.
   - Posts are grouped by type and rendered in a compact two-column layout via `PostsList`.

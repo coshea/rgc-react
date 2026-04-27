@@ -52,10 +52,14 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
 
       - name: Deploy Cloud Functions
-        # Secrets (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, etc.) are stored in
+        # Secret values like PAYPAL_CLIENT_SECRET and GOOGLE_GENAI_API_KEY are stored in
         # Google Cloud Secret Manager and referenced via defineSecret() in the function
-        # code — they are NOT passed as env vars here. The deployment service account
-        # needs roles/secretmanager.viewer on the GCP project so the Firebase CLI can
-        # verify the secrets exist before deploying.
+        # code. They are NOT passed as env vars here.
+        #
+        # Non-secret string params such as PAYPAL_CLIENT_ID and PAYPAL_ENVIRONMENT are
+        # defined via defineString() in the function code and must be configured in the
+        # Firebase functions parameter store (e.g. firebase functions:params:set).
+        # The deployment service account still needs roles/secretmanager.viewer so the
+        # Firebase CLI can verify any referenced Secret Manager secrets exist.
         run: |
           firebase deploy --only functions:rgc-react --project ridgefield-golf-club --non-interactive
