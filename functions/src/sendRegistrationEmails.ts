@@ -378,7 +378,37 @@ async function callResendApi(
   });
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Resend API error ${response.status}: ${text}`);
+
+    let errorCode: string | undefined;
+    let errorId: string | undefined;
+
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (parsed && typeof parsed === "object") {
+        const parsedRecord = parsed as Record<string, unknown>;
+        if (typeof parsedRecord.code === "string") {
+          errorCode = parsedRecord.code;
+        }
+        if (typeof parsedRecord.id === "string") {
+          errorId = parsedRecord.id;
+        }
+      }
+    } catch {
+      // Ignore parse failures and fall back to a status-only error message.
+    }
+
+    const details = [
+      errorCode ? `code=${errorCode}` : undefined,
+      errorId ? `id=${errorId}` : undefined,
+    ]
+      .filter((detail): detail is string => Boolean(detail))
+      .join(", ");
+
+    throw new Error(
+      details
+        ? `Resend API error ${response.status} (${details})`
+        : `Resend API error ${response.status}`,
+    );
   }
 }
 
