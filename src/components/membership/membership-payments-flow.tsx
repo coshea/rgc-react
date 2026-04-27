@@ -384,7 +384,7 @@ export default function MembershipPaymentsFlow({
               orderId: data.orderID,
               year: currentYear,
               membershipType: MEMBERSHIP_TYPES.FULL,
-              purpose: "renew",
+              purpose: step.purpose as "renew" | "new",
             },
           });
 
