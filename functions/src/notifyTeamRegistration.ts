@@ -209,7 +209,7 @@ export const notify_team_registration = onDocumentCreated(
     // --- EMAIL NOTIFICATIONS ---
     const apiKey = RESEND_API_KEY.value();
     if (!apiKey) {
-      logger.warn(
+      logger.error(
         `[notify_team_registration] RESEND_API_KEY not configured — skipping emails`,
       );
       return;
@@ -270,7 +270,7 @@ export const notify_team_registration = onDocumentCreated(
       const memberEmail = memberData?.email;
       const eligible = isEmailEligible(memberData);
       logger.info(
-        `[notify_team_registration] Member ${member.id} (${member.displayName}) email check — ` +
+        `[notify_team_registration] Member ${member.id} email check — ` +
           `userId=${member.id}, email=${maskEmail(memberEmail)}, eligible=${eligible}`,
       );
       if (!memberEmail || !eligible) continue;
