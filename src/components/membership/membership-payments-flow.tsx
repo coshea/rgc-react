@@ -371,6 +371,42 @@ export default function MembershipPaymentsFlow({
           });
         }
 
+        // New members pay the same full dues as renewing members. Verify and
+        // record server-side so the order is captured if still in APPROVED
+        // state (Venmo in particular can leave orders in an intermediate state
+        // that requires a server-side capture) and so the payment is persisted
+        // to Firestore. Without this, a failed client-side capture would
+        // silently show a success message with no actual charge.
+        if (step.purpose === "new") {
+          const verifyResp = await verifyAndRecordPayPalMembershipPayment({
+            user,
+            request: {
+              orderId: data.orderID,
+              year: currentYear,
+              membershipType: MEMBERSHIP_TYPES.FULL,
+              purpose: "renew",
+            },
+          });
+
+          if (!verifyResp.ok) {
+            throw new Error(
+              `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
+            );
+          }
+
+          await refetchUserProfile();
+          logger.info(
+            "Membership payment: new member dues verified and recorded",
+            {
+              orderId: data.orderID ?? null,
+              uid: user?.uid ?? null,
+              purpose: step.purpose,
+              membershipType: MEMBERSHIP_TYPES.FULL,
+              year: currentYear,
+            },
+          );
+        }
+
         if (step.purpose === "donation") {
           const verifyResp = await verifyAndRecordPayPalDonationPayment({
             user,
