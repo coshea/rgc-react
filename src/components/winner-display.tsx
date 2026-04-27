@@ -27,7 +27,7 @@ const PlaceIndicator: React.FC<{ pos: number }> = ({ pos }) => {
   const meta = getPlaceMeta(pos);
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] font-semibold min-w-10"
+      className="inline-flex items-center gap-1 text-[11px] font-semibold min-w-[40px]"
       aria-label={`${ordinal(pos)} place`}
     >
       <Icon
