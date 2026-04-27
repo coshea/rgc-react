@@ -3,16 +3,17 @@ import type { NotificationPreferences } from "@/api/users";
 /**
  * Defaults applied when a user has never saved preferences, or when a new
  * preference key is added and doesn't yet exist on their stored document.
- * All in-app types default to true (opt-in); email defaults to false until
- * email infrastructure is live.
+ * All notification types default to true (opt-in).
  */
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   tournamentRegistration: true,
   tournamentUpdates: true,
   generalAnnouncements: true,
   newFeatures: true,
-  emailEnabled: false,
-  emailTournamentRegistration: false,
+  emailTournamentRegistration: true,
+  emailTournamentUpdates: true,
+  emailGeneralAnnouncements: true,
+  emailNewFeatures: true,
 };
 
 /**

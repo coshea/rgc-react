@@ -83,11 +83,16 @@ export function useMembersSubscription(enabled: boolean) {
           arr.push({ id: d.id, ...userData });
         });
         arr.sort((a, b) => {
+          const lastA = (a.lastName || "").toLowerCase();
+          const lastB = (b.lastName || "").toLowerCase();
+          if (lastA !== lastB) return lastA < lastB ? -1 : 1;
+          const firstA = (a.firstName || "").toLowerCase();
+          const firstB = (b.firstName || "").toLowerCase();
+          if (firstA !== firstB) return firstA < firstB ? -1 : 1;
+          // fallback: displayName or email
           const A = (a.displayName || a.email || "").toLowerCase();
           const B = (b.displayName || b.email || "").toLowerCase();
-          if (A < B) return -1;
-          if (A > B) return 1;
-          return 0;
+          return A < B ? -1 : A > B ? 1 : 0;
         });
         setMembers(arr);
         setLoadingMembers(false);

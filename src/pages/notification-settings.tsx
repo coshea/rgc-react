@@ -1,6 +1,13 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { isSupported as messagingIsSupported } from "firebase/messaging";
-import { Card, CardHeader, CardBody, Button, Divider } from "@heroui/react";
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  Button,
+  Divider,
+  Switch,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -11,7 +18,6 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
 } from "@/utils/notificationPreferences";
 import { useFCMToken } from "@/hooks/useFCMToken";
-import SwitchCell from "@/components/switch-cell";
 import { addToast } from "@/providers/toast";
 import BackButton from "@/components/back-button";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -186,34 +192,132 @@ export default function NotificationSettingsPage() {
             </>
           )}
           <form className="flex flex-col gap-2" onSubmit={handleSave}>
-            <SwitchCell
-              label="Tournament Registration"
-              description="Get notified when you are added to a tournament team"
-              isSelected={prefs.tournamentRegistration}
-              onValueChange={() => toggle("tournamentRegistration")}
-              isDisabled={isLoading}
-            />
-            <SwitchCell
-              label="Tournament Updates & Cancellations"
-              description="Get notified when a tournament is canceled or has important updates"
-              isSelected={prefs.tournamentUpdates}
-              onValueChange={() => toggle("tournamentUpdates")}
-              isDisabled={isLoading}
-            />
-            <SwitchCell
-              label="Announcements"
-              description="Get notified about club news and general announcements"
-              isSelected={prefs.generalAnnouncements}
-              onValueChange={() => toggle("generalAnnouncements")}
-              isDisabled={isLoading}
-            />
-            <SwitchCell
-              label="New Features"
-              description="Get notified about new app features and improvements"
-              isSelected={prefs.newFeatures}
-              onValueChange={() => toggle("newFeatures")}
-              isDisabled={isLoading}
-            />
+            {/* Column headers */}
+            <div className="flex items-center gap-2 px-4 pb-0.5">
+              <div className="flex-1" />
+              <div className="flex items-center gap-1 w-16 justify-center text-xs text-default-400 font-medium">
+                <Icon icon="lucide:bell" className="text-sm" />
+                Push
+              </div>
+              <div className="flex items-center gap-1 w-16 justify-center text-xs text-default-400 font-medium">
+                <Icon icon="lucide:mail" className="text-sm" />
+                Email
+              </div>
+            </div>
+
+            {/* Tournament Registration */}
+            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-medium">Tournament Registration</p>
+                <p className="text-small text-default-500">
+                  When you are added to a tournament team
+                </p>
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.tournamentRegistration}
+                  onValueChange={() => toggle("tournamentRegistration")}
+                  isDisabled={isLoading}
+                  aria-label="Push: Tournament Registration"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.emailTournamentRegistration}
+                  onValueChange={() => toggle("emailTournamentRegistration")}
+                  isDisabled={isLoading}
+                  aria-label="Email: Tournament Registration"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+            </div>
+
+            {/* Tournament Updates */}
+            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-medium">
+                  Tournament Updates & Cancellations
+                </p>
+                <p className="text-small text-default-500">
+                  When a tournament is canceled or has important updates
+                </p>
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.tournamentUpdates}
+                  onValueChange={() => toggle("tournamentUpdates")}
+                  isDisabled={isLoading}
+                  aria-label="Push: Tournament Updates"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.emailTournamentUpdates}
+                  onValueChange={() => toggle("emailTournamentUpdates")}
+                  isDisabled={isLoading}
+                  aria-label="Email: Tournament Updates"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+            </div>
+
+            {/* Announcements */}
+            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-medium">Announcements</p>
+                <p className="text-small text-default-500">
+                  Club news and general announcements
+                </p>
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.generalAnnouncements}
+                  onValueChange={() => toggle("generalAnnouncements")}
+                  isDisabled={isLoading}
+                  aria-label="Push: Announcements"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.emailGeneralAnnouncements}
+                  onValueChange={() => toggle("emailGeneralAnnouncements")}
+                  isDisabled={isLoading}
+                  aria-label="Email: Announcements"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+            </div>
+
+            {/* New Features */}
+            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-medium">New Features</p>
+                <p className="text-small text-default-500">
+                  New app features and improvements
+                </p>
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.newFeatures}
+                  onValueChange={() => toggle("newFeatures")}
+                  isDisabled={isLoading}
+                  aria-label="Push: New Features"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+              <div className="w-16 flex justify-center">
+                <Switch
+                  isSelected={prefs.emailNewFeatures}
+                  onValueChange={() => toggle("emailNewFeatures")}
+                  isDisabled={isLoading}
+                  aria-label="Email: New Features"
+                  classNames={{ wrapper: "shrink-0" }}
+                />
+              </div>
+            </div>
 
             <div className="flex w-full justify-end gap-2 pt-4">
               <Button variant="bordered" onPress={handleReset}>

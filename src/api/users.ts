@@ -20,8 +20,7 @@ import type { MembershipType } from "@@/types";
  * Per-user notification opt-in preferences stored at users/{uid}.notificationPreferences.
  * Every key defaults to true (opt-in) when absent so new users receive all notifications.
  * New notification types can be added here and will default to enabled until a user
- * explicitly saves their preferences. An emailEnabled flag gates all future email
- * channels without requiring individual per-type email flags during the in-app phase.
+ * explicitly saves their preferences.
  */
 export interface NotificationPreferences {
   /** Receive in-app notifications when added to a tournament team. */
@@ -32,11 +31,14 @@ export interface NotificationPreferences {
   generalAnnouncements: boolean;
   /** Receive in-app notifications for app feature updates and new functionality. */
   newFeatures: boolean;
-  // ── Future email channels (infrastructure ready, UI hidden until email is wired) ──
-  /** Master switch: when false no email notifications are sent regardless of other flags. */
-  emailEnabled: boolean;
   /** Email variant of tournamentRegistration. */
   emailTournamentRegistration: boolean;
+  /** Email variant of tournamentUpdates. */
+  emailTournamentUpdates: boolean;
+  /** Email variant of generalAnnouncements. */
+  emailGeneralAnnouncements: boolean;
+  /** Email variant of newFeatures. */
+  emailNewFeatures: boolean;
 }
 
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
