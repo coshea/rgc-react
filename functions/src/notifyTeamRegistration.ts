@@ -222,7 +222,7 @@ export const notify_team_registration = onDocumentCreated(
           year: "numeric",
           month: "long",
           day: "numeric",
-          timeZone: "America/New_York",
+          timeZone: "UTC",
         })
       : "Date TBD";
     const tournamentTee = tournament.tee ? `${tournament.tee} tees` : "TBD";
