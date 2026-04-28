@@ -220,11 +220,16 @@ export default function MembershipPaymentsFlow({
 
     const customId =
       user &&
-      (step.purpose === "renew" || step.purpose === "handicap") &&
-      `${user.uid}:${currentYear}:${step.purpose === "renew" ? MEMBERSHIP_TYPES.FULL : MEMBERSHIP_TYPES.HANDICAP}:${step.purpose}`;
+      (step.purpose === "renew" ||
+        step.purpose === "new" ||
+        step.purpose === "handicap") &&
+      `${user.uid}:${currentYear}:${step.purpose === "handicap" ? MEMBERSHIP_TYPES.HANDICAP : MEMBERSHIP_TYPES.FULL}:${step.purpose}`;
 
     const invoiceId =
-      user && (step.purpose === "renew" || step.purpose === "handicap")
+      user &&
+      (step.purpose === "renew" ||
+        step.purpose === "new" ||
+        step.purpose === "handicap")
         ? `RGCM-${currentYear}-${user.uid}-${step.purpose}`
         : null;
 
@@ -438,15 +443,28 @@ export default function MembershipPaymentsFlow({
             orderId: data?.orderID ?? null,
             purpose: step.purpose,
             year: currentYear,
+            clientCaptureSucceeded: !clientCaptureErrorMessage,
           },
         );
         if (e instanceof Error) Sentry.captureException(e);
-        addToast({
-          title: "Payment captured, but not recorded",
-          description:
-            "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt. ",
-          color: "danger",
-        });
+        if (clientCaptureErrorMessage) {
+          // Venmo path: client capture failed and server capture+record also failed.
+          // The order may still be in APPROVED state — user may NOT have been charged.
+          addToast({
+            title: "Payment not completed",
+            description:
+              "We couldn't process your Venmo payment. You have not been charged. Please try again or contact the club.",
+            color: "danger",
+          });
+        } else {
+          // Credit card path: client capture succeeded but recording failed.
+          addToast({
+            title: "Payment captured, but not recorded",
+            description:
+              "Your PayPal payment succeeded, but we couldn't record it automatically. Please contact the club with your PayPal receipt.",
+            color: "danger",
+          });
+        }
         return;
       }
     } else if (clientCaptureErrorMessage) {
@@ -476,6 +494,9 @@ export default function MembershipPaymentsFlow({
     const message = err instanceof Error ? err.message : "Unknown PayPal error";
     logger.error("Membership payment: PayPal button error", {
       message,
+      // PayPal SDK passes a plain object, not an Error — log the raw value so
+      // it's visible in Sentry and helps diagnose Venmo / funding source errors.
+      errorDetail: !(err instanceof Error) ? err : undefined,
       uid: user?.uid ?? null,
       purpose: step.kind === "paypal" ? step.purpose : null,
       amount: step.kind === "paypal" ? step.amount : null,
@@ -510,6 +531,18 @@ export default function MembershipPaymentsFlow({
     }
 
     if (option === "renew" || option === "new") {
+      if (!user) {
+        addToast({
+          title: "Login required",
+          description:
+            "Please log in before making a membership payment so we can attach it to your account.",
+          color: "warning",
+        });
+        navigate(siteConfig.pages.login.link, {
+          state: { from: loginFromPath },
+        });
+        return;
+      }
       setStep({ kind: "annual_start" });
       return;
     }
