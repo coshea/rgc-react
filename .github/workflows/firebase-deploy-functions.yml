@@ -51,15 +51,20 @@ jobs:
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}' > "$RUNNER_TEMP/firebase-service-account.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
 
+      - name: Write non-secret function params to .env
+        # PAYPAL_CLIENT_ID and PAYPAL_ENVIRONMENT are defineString() params (non-secret).
+        # They must be available at deploy time. Store them as GitHub repository secrets
+        # (PAYPAL_CLIENT_ID, PAYPAL_ENVIRONMENT) and they will be written here.
+        # Alternatively, run `firebase functions:params:set` once locally instead and
+        # remove this step — the CLI will read from the parameter store automatically.
+        run: |
+          echo "PAYPAL_CLIENT_ID=${{ secrets.VITE_PAYPAL_CLIENT_ID }}" >> functions/.env
+          echo "PAYPAL_ENVIRONMENT=${{ secrets.VITE_PAYPAL_ENVIRONMENT }}" >> functions/.env
+
       - name: Deploy Cloud Functions
-        # Secret values like PAYPAL_CLIENT_SECRET and GOOGLE_GENAI_API_KEY are stored in
-        # Google Cloud Secret Manager and referenced via defineSecret() in the function
-        # code. They are NOT passed as env vars here.
-        #
-        # Non-secret string params such as PAYPAL_CLIENT_ID and PAYPAL_ENVIRONMENT are
-        # defined via defineString() in the function code and must be configured in the
-        # Firebase functions parameter store (e.g. firebase functions:params:set).
-        # The deployment service account still needs roles/secretmanager.viewer so the
-        # Firebase CLI can verify any referenced Secret Manager secrets exist.
+        # Secret values (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, RESEND_API_KEY) are
+        # stored in Google Cloud Secret Manager and referenced via defineSecret() — they
+        # are NOT passed here. Non-secret string params are supplied via functions/.env
+        # above (or pre-set via `firebase functions:params:set`).
         run: |
           firebase deploy --only functions:rgc-react --project ridgefield-golf-club --non-interactive
