@@ -52,9 +52,9 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
 
       - name: Write non-secret function params to .env
-        # PAYPAL_CLIENT_ID and PAYPAL_ENVIRONMENT are defineString() params (non-secret).
+        # VITE_PAYPAL_CLIENT_ID and VITE_PAYPAL_ENVIRONMENT are defineString() params (non-secret).
         # They must be available at deploy time. Store them as GitHub repository secrets
-        # (PAYPAL_CLIENT_ID, PAYPAL_ENVIRONMENT) and they will be written here.
+        # (VITE_PAYPAL_CLIENT_ID, VITE_PAYPAL_ENVIRONMENT) and they will be written here.
         # Alternatively, run `firebase functions:params:set` once locally instead and
         # remove this step — the CLI will read from the parameter store automatically.
         run: |

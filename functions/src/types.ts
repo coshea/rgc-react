@@ -5,7 +5,7 @@ export const MEMBERSHIP_TYPES = {
 
 export type MembershipType =
   (typeof MEMBERSHIP_TYPES)[keyof typeof MEMBERSHIP_TYPES];
-export type MembershipPurpose = "renew" | "handicap";
+export type MembershipPurpose = "renew" | "new" | "handicap";
 export type MembershipPaymentPurpose = "dues" | "donation";
 
 export type VerifyAndRecordPayPalRequest = {

@@ -9,7 +9,7 @@ export type RecordPayPalPaymentParams = {
   uid: string;
   year: number;
   membershipType: MembershipType;
-  purpose: "renew" | "handicap";
+  purpose: "renew" | "new" | "handicap";
   amount?: number;
   currency?: string;
   paypalStatus?: string;

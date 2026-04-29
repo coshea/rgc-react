@@ -342,11 +342,15 @@ export default function MembershipPaymentsFlow({
     // and then write memberPayments/users with admin privileges.
     if (user && data.orderID) {
       try {
-        if (step.purpose === "renew" || step.purpose === "handicap") {
+        if (
+          step.purpose === "renew" ||
+          step.purpose === "new" ||
+          step.purpose === "handicap"
+        ) {
           const membershipType =
-            step.purpose === "renew"
-              ? MEMBERSHIP_TYPES.FULL
-              : MEMBERSHIP_TYPES.HANDICAP;
+            step.purpose === "handicap"
+              ? MEMBERSHIP_TYPES.HANDICAP
+              : MEMBERSHIP_TYPES.FULL;
           const verifyResp = await verifyAndRecordPayPalMembershipPayment({
             user,
             request: {
@@ -368,48 +372,9 @@ export default function MembershipPaymentsFlow({
             orderId: data.orderID ?? null,
             uid: user?.uid ?? null,
             purpose: step.purpose,
-            membershipType:
-              step.purpose === "renew"
-                ? MEMBERSHIP_TYPES.FULL
-                : MEMBERSHIP_TYPES.HANDICAP,
+            membershipType,
             year: currentYear,
           });
-        }
-
-        // New members pay the same full dues as renewing members. Verify and
-        // record server-side so the order is captured if still in APPROVED
-        // state (Venmo in particular can leave orders in an intermediate state
-        // that requires a server-side capture) and so the payment is persisted
-        // to Firestore. Without this, a failed client-side capture would
-        // silently show a success message with no actual charge.
-        if (step.purpose === "new") {
-          const verifyResp = await verifyAndRecordPayPalMembershipPayment({
-            user,
-            request: {
-              orderId: data.orderID,
-              year: currentYear,
-              membershipType: MEMBERSHIP_TYPES.FULL,
-              purpose: "renew",
-            },
-          });
-
-          if (!verifyResp.ok) {
-            throw new Error(
-              `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
-            );
-          }
-
-          await refetchUserProfile();
-          logger.info(
-            "Membership payment: new member dues verified and recorded",
-            {
-              orderId: data.orderID ?? null,
-              uid: user?.uid ?? null,
-              purpose: step.purpose,
-              membershipType: MEMBERSHIP_TYPES.FULL,
-              year: currentYear,
-            },
-          );
         }
 
         if (step.purpose === "donation") {
@@ -448,12 +413,12 @@ export default function MembershipPaymentsFlow({
         );
         if (e instanceof Error) Sentry.captureException(e);
         if (clientCaptureErrorMessage) {
-          // Venmo path: client capture failed and server capture+record also failed.
-          // The order may still be in APPROVED state — user may NOT have been charged.
+          // Client capture failed and server capture+record also failed.
+          // The final payment status may still need to be verified.
           addToast({
             title: "Payment not completed",
             description:
-              "We couldn't process your Venmo payment. You have not been charged. Please try again or contact the club.",
+              "We couldn't confirm your payment was completed. Please check your PayPal or Venmo activity before trying again, or contact the club if you see a charge.",
             color: "danger",
           });
         } else {
