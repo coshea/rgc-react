@@ -10,9 +10,13 @@ import { DEFAULT_MEMBERSHIP_SETTINGS } from "@/types/membershipSettings";
 const addToastMock = vi.fn();
 
 let mockedSettings = DEFAULT_MEMBERSHIP_SETTINGS;
+let mockedUser: { uid: string; email: string } | null = {
+  uid: "u1",
+  email: "user@example.com",
+};
 
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: { uid: "u1", email: "user@example.com" } }),
+  useAuth: () => ({ user: mockedUser }),
 }));
 
 vi.mock("@/hooks/useUserProfile", () => ({
@@ -46,6 +50,7 @@ vi.mock("@heroui/react", async (orig) => {
 beforeEach(() => {
   addToastMock.mockClear();
   mockedSettings = DEFAULT_MEMBERSHIP_SETTINGS;
+  mockedUser = { uid: "u1", email: "user@example.com" };
 });
 
 function renderMembershipPage() {
@@ -175,5 +180,27 @@ describe("MembershipPage - renew", () => {
       expect(addToastMock).toHaveBeenCalled();
       expect(addToastMock.mock.calls[0][0].title).toMatch(/Payment Recorded/i);
     });
+  });
+});
+
+describe("MembershipPage - unauthenticated user", () => {
+  it("shows login-required toast when unauthenticated user clicks Join for current year", async () => {
+    mockedUser = null;
+    renderMembershipPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Join for \d{4}$/i }),
+    );
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalled();
+      expect(addToastMock.mock.calls[0][0].color).toBe("warning");
+      expect(addToastMock.mock.calls[0][0].title).toMatch(/Login required/i);
+    });
+
+    // Should NOT have advanced to the annual_start step
+    expect(
+      screen.queryByText(/Step 2: Confirm details/i),
+    ).not.toBeInTheDocument();
   });
 });

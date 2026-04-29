@@ -17,7 +17,7 @@ function isMembershipType(v: unknown): v is MembershipType {
 }
 
 function isMembershipPurpose(v: unknown): v is MembershipPurpose {
-  return v === "renew" || v === "handicap";
+  return v === "renew" || v === "new" || v === "handicap";
 }
 
 function isNonNegativeNumber(v: unknown): v is number {

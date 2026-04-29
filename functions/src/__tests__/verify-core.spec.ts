@@ -161,6 +161,84 @@ describe("verifyAndRecordMembershipPayment", () => {
     });
   });
 
+  it("records 'new' membership orders with membershipType 'full' and purpose 'new'", async () => {
+    recordPayPalMembershipPaymentMock.mockResolvedValue({ reused: false });
+
+    const fetchImpl: typeof fetch = async (url, init) => {
+      const requestUrl = String(url);
+
+      if (requestUrl.includes("/v1/oauth2/token")) {
+        return new Response(JSON.stringify({ access_token: "token" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (
+        requestUrl.includes("/v2/checkout/orders/ORDER456") &&
+        init?.method === "GET"
+      ) {
+        return new Response(
+          JSON.stringify({
+            id: "ORDER456",
+            status: "COMPLETED",
+            purchase_units: [
+              { amount: { currency_code: "USD", value: "150.00" } },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+
+      return new Response("not found", { status: 404 });
+    };
+
+    const now = new Date("2026-04-01T00:00:00.000Z");
+
+    const resp = await verifyAndRecordMembershipPayment({
+      uid: "uid2",
+      request: {
+        orderId: "ORDER456",
+        year: 2026,
+        membershipType: "full",
+        purpose: "new",
+      },
+      deps: {
+        db: {} as unknown as AdminFirestore.Firestore,
+        now,
+        paypal: {
+          env: "SANDBOX",
+          clientId: "id",
+          clientSecret: "secret",
+          fetchImpl,
+        },
+      },
+    });
+
+    expect(recordPayPalMembershipPaymentMock).toHaveBeenCalledWith({
+      db: expect.any(Object),
+      now,
+      payment: {
+        uid: "uid2",
+        year: 2026,
+        membershipType: "full",
+        purpose: "new",
+        amount: 150,
+        currency: "USD",
+        paypalStatus: "COMPLETED",
+        orderId: "ORDER456",
+      },
+    });
+
+    expect(resp).toEqual({
+      ok: true,
+      reused: false,
+      paypalStatus: "COMPLETED",
+      amount: 150,
+      currency: "USD",
+    });
+  });
+
   it("captures APPROVED membership orders and uses the captured COMPLETED status", async () => {
     const requestedUrls: string[] = [];
 

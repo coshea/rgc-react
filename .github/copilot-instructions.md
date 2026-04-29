@@ -113,7 +113,24 @@ Last generated: 2025-09-29
   - ❌ `(user as any).createdAt.toDate()`
   - ❌ `data as any`
 
-## 14. Avoid Magic Strings (Prefer Enums)
+## 15. Tournament Date Convention: Date-Only, Always UTC
+
+- `tournament.date` is a **date-only** value (no time component). It is stored in Firestore as a `Timestamp` at midnight UTC (e.g. `new Date("YYYY-MM-DD")` → midnight UTC).
+- **NEVER localize tournament dates to a local timezone** (no `timeZone: "America/New_York"` or similar). Doing so converts midnight UTC to 8pm the previous day in EDT, displaying the wrong date.
+- Always format tournament dates with `timeZone: "UTC"` to read the date exactly as stored:
+  ```ts
+  date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  ```
+- When saving a tournament date from the editor, always derive it from a calendar-date string (`"YYYY-MM-DD"`) — `new Date(calendarDate.toString())` — which JavaScript parses as midnight UTC. Do NOT use `new Date()` (local midnight) or add time components.
+- This applies to both the React frontend and Cloud Functions.
+
+## 16. Avoid Magic Strings (Prefer Enums)
 
 - Avoid hard-coded state strings (e.g. `"open"`, `"closed"`) when a typed enum/constant exists.
 - Prefer exporting an enum from a single utility/module and reusing it across UI and logic.
