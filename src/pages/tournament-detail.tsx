@@ -174,6 +174,7 @@ const TournamentDetailPage: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
+  const [downloadingPng, setDownloadingPng] = React.useState(false);
 
   const handlePrintBracket = React.useCallback(() => {
     if (!bracket) return;
@@ -182,10 +183,11 @@ const TournamentDetailPage: React.FC = () => {
 
     const { width: bracketW, height: bracketH } =
       calcBracketDimensions(bracket);
-    // A4 landscape at 96 dpi with 10mm margins ≈ 1046 × 718 px usable
-    const pageW = 1046;
-    const pageH = 718;
-    const scale = Math.min(pageW / bracketW, pageH / bracketH, 1).toFixed(4);
+    // 10 mm margin on each side ≈ 38 px at 96 dpi — size the page to fit the
+    // bracket exactly so no scaling / zoom is needed.
+    const marginPx = 38;
+    const pageW = bracketW + marginPx * 2;
+    const pageH = bracketH + marginPx * 2 + 16; // +16 for BracketView scroll-container
 
     // Collect all stylesheets from the current document so the cloned
     // bracket renders correctly (Tailwind / HeroUI classes, SVG colours, etc.)
@@ -198,28 +200,26 @@ const TournamentDetailPage: React.FC = () => {
       .map((s) => `<style>${s.textContent}</style>`)
       .join("\n");
 
-    // Carry the dark/light class so colours match what the user sees
-    const htmlClass = document.documentElement.className;
+    // Always print in light mode regardless of the user's dark mode preference.
+    const lightHtmlClass = document.documentElement.className
+      .replace(/\bdark\b/g, "")
+      .trim();
 
     const html = `<!DOCTYPE html>
-<html class="${htmlClass}">
+<html class="${lightHtmlClass}">
 <head>
 <meta charset="utf-8">
 ${linkTags}
 ${styleTags}
 <style>
-@page { size: landscape; margin: 10mm; }
-html, body { margin: 0; padding: 0; background: white; }
-/* zoom shrinks both visual size AND layout box, keeping it to one page */
-#bracket-wrapper {
-  zoom: ${scale};
-  transform-origin: top left;
-}
-/* let the bracket's overflow-x container expand fully when printed */
+/* Page sized to exact bracket dimensions — no scaling needed */
+@page { size: ${pageW}px ${pageH}px; margin: 10mm; }
+html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
+/* Expand the BracketView scroll container so the full bracket is visible */
 #bracket-wrapper > div {
   overflow: visible !important;
+  width: ${bracketW}px !important;
   height: auto !important;
-  width: auto !important;
 }
 </style>
 </head>
@@ -241,6 +241,90 @@ html, body { margin: 0; padding: 0; background: white; }
     }
     printWindow.document.write(html);
     printWindow.document.close();
+  }, [bracket]);
+
+  const handleDownloadBracketPng = React.useCallback(async () => {
+    if (!bracket) return;
+    const el = document.getElementById("bracket-print-root");
+    if (!el) return;
+
+    setDownloadingPng(true);
+    try {
+      const { toPng } = await import("html-to-image");
+
+      // calcBracketDimensions gives us the exact pixel size of the rendered
+      // bracket tree, regardless of the viewport width.
+      const { width: bracketW, height: bracketH } =
+        calcBracketDimensions(bracket);
+      // BracketView adds 16px to height on its scroll-container
+      const captureH = bracketH + 16;
+
+      // Always export in light mode — strip the dark class so dark-mode
+      // Tailwind utilities don't apply, regardless of user preference.
+      const htmlEl = document.documentElement;
+      const hadDark = htmlEl.classList.contains("dark");
+      if (hadDark) htmlEl.classList.remove("dark");
+
+      // BracketView's outermost div has overflow-x:auto which clips the bracket
+      // when the container is narrower than totalWidth. Temporarily expand it so
+      // html-to-image captures the full horizontal extent, then restore.
+      const scrollContainer = el.firstElementChild as HTMLElement | null;
+      const savedOverflow = scrollContainer?.style.overflow ?? "";
+      const savedWidth = scrollContainer?.style.width ?? "";
+      const savedHeight = scrollContainer?.style.height ?? "";
+      if (scrollContainer) {
+        scrollContainer.style.overflow = "visible";
+        scrollContainer.style.width = bracketW + "px";
+        scrollContainer.style.height = captureH + "px";
+      }
+
+      // Skip external <img> nodes (Firebase Storage avatars) — they fail CORS
+      // when html-to-image tries to fetch and embed them.
+      const skipExternalImages = (node: Node) => {
+        if (
+          node instanceof HTMLImageElement &&
+          node.src &&
+          !node.src.startsWith(window.location.origin) &&
+          !node.src.startsWith("data:")
+        ) {
+          return false;
+        }
+        return true;
+      };
+
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(el, {
+          pixelRatio: 2,
+          width: bracketW,
+          height: captureH,
+          backgroundColor: "#ffffff",
+          filter: skipExternalImages,
+        });
+      } finally {
+        // Always restore the scroll container styles and dark class
+        if (scrollContainer) {
+          scrollContainer.style.overflow = savedOverflow;
+          scrollContainer.style.width = savedWidth;
+          scrollContainer.style.height = savedHeight;
+        }
+        if (hadDark) htmlEl.classList.add("dark");
+      }
+
+      const link = document.createElement("a");
+      link.download = `bracket-${bracket.tournamentId}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export bracket PNG:", err);
+      addToast({
+        title: "Export failed",
+        description: "Could not generate the bracket image. Try again.",
+        color: "danger",
+      });
+    } finally {
+      setDownloadingPng(false);
+    }
   }, [bracket]);
 
   const [adminOpen, setAdminOpen] = React.useState(false);
@@ -1242,26 +1326,54 @@ html, body { margin: 0; padding: 0; background: white; }
                 </div>
               )}
 
-            {/* Tournament Bracket */}
-            {bracket && (
+            {/* Tournament Bracket — visible to admins always; to members only when published */}
+            {bracket && (isAdmin || tournament.bracketPublished) && (
               <div className="mb-12">
                 <Card shadow="sm">
                   <CardHeader className="pb-0 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">
-                      Tournament Bracket
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold">
+                        Tournament Bracket
+                      </h2>
+                      {isAdmin && !tournament.bracketPublished && (
+                        <Chip size="sm" color="warning" variant="flat">
+                          Unpublished
+                        </Chip>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
-                      <Tooltip content="Print / Save as PDF">
-                        <Button
-                          isIconOnly
-                          variant="light"
-                          size="sm"
-                          aria-label="Print bracket"
-                          onPress={handlePrintBracket}
-                        >
-                          <Icon icon="lucide:printer" className="w-4 h-4" />
-                        </Button>
-                      </Tooltip>
+                      {isAdmin && (
+                        <>
+                          <Tooltip content="Print / Save as PDF">
+                            <Button
+                              isIconOnly
+                              variant="light"
+                              size="sm"
+                              aria-label="Print bracket"
+                              onPress={handlePrintBracket}
+                            >
+                              <Icon icon="lucide:printer" className="w-4 h-4" />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Download bracket as PNG">
+                            <Button
+                              isIconOnly
+                              variant="light"
+                              size="sm"
+                              aria-label="Download bracket as PNG"
+                              isLoading={downloadingPng}
+                              onPress={handleDownloadBracketPng}
+                            >
+                              {!downloadingPng && (
+                                <Icon
+                                  icon="lucide:image-down"
+                                  className="w-4 h-4"
+                                />
+                              )}
+                            </Button>
+                          </Tooltip>
+                        </>
+                      )}
                       <Tooltip content="Expand bracket">
                         <Button
                           isIconOnly
@@ -1586,17 +1698,35 @@ html, body { margin: 0; padding: 0; background: white; }
             <div className="flex items-center justify-between px-4 py-3 border-b border-divider shrink-0">
               <h2 className="text-lg font-semibold">Tournament Bracket</h2>
               <div className="flex items-center gap-1">
-                <Tooltip content="Print / Save as PDF">
-                  <Button
-                    isIconOnly
-                    variant="light"
-                    size="sm"
-                    aria-label="Print bracket"
-                    onPress={handlePrintBracket}
-                  >
-                    <Icon icon="lucide:printer" className="w-4 h-4" />
-                  </Button>
-                </Tooltip>
+                {isAdmin && (
+                  <>
+                    <Tooltip content="Print / Save as PDF">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        aria-label="Print bracket"
+                        onPress={handlePrintBracket}
+                      >
+                        <Icon icon="lucide:printer" className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip content="Download bracket as PNG">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        size="sm"
+                        aria-label="Download bracket as PNG"
+                        isLoading={downloadingPng}
+                        onPress={handleDownloadBracketPng}
+                      >
+                        {!downloadingPng && (
+                          <Icon icon="lucide:image-down" className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
                 <Tooltip content="Close fullscreen">
                   <Button
                     isIconOnly

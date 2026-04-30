@@ -95,6 +95,7 @@ export function mapTournamentDoc(d: any) {
     previousTournamentId: data.previousTournamentId,
     weather: data.weather,
     goldTeesEnabled: Boolean(data.goldTeesEnabled),
+    bracketPublished: Boolean(data.bracketPublished),
   };
 }
 
@@ -245,4 +246,13 @@ export async function fetchRegistrationCount(
   const colRef = collection(db, "tournaments", tournamentId, "registrations");
   const snap = await getCountFromServer(colRef);
   return snap.data().count;
+}
+
+/** Toggle bracket visibility for non-admin users. */
+export async function setBracketPublished(
+  tournamentId: string,
+  published: boolean,
+) {
+  const ref = doc(db, "tournaments", tournamentId);
+  await setDoc(ref, { bracketPublished: published }, { merge: true });
 }
