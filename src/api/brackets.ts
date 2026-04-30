@@ -13,7 +13,11 @@ import {
   serverTimestamp,
   type FirestoreError,
 } from "firebase/firestore";
-import type { TournamentBracket, BracketMatch } from "@/types/bracket";
+import type {
+  TournamentBracket,
+  BracketMatch,
+  BracketTeam,
+} from "@/types/bracket";
 
 const bracketRef = (tournamentId: string) => doc(db, "brackets", tournamentId);
 
@@ -134,12 +138,12 @@ export async function saveMatchResults(
   const matches = currentBracket.matches.map((m) => ({ ...m }));
 
   // Process rounds in ascending order so propagation is correct
-    const matchMap = new Map(matches.map((m) => [m.id, m]));
-    const sortedMatchIds = Object.keys(updates).sort((a, b) => {
-      const ra = matchMap.get(a)?.round ?? 0;
-      const rb = matchMap.get(b)?.round ?? 0;
-      return ra - rb;
-    });
+  const matchMap = new Map(matches.map((m) => [m.id, m]));
+  const sortedMatchIds = Object.keys(updates).sort((a, b) => {
+    const ra = matchMap.get(a)?.round ?? 0;
+    const rb = matchMap.get(b)?.round ?? 0;
+    return ra - rb;
+  });
 
   for (const matchId of sortedMatchIds) {
     // Empty string means "clear this match's result"
@@ -210,6 +214,114 @@ function clearDownstream(
       }
     }
   }
+}
+
+// ── Sync teams from current registrations ─────────────────────────────────────
+
+/**
+ * Update bracket.teams to reflect the current set of registered teams.
+ *
+ * - Teams already in the bracket: name/memberIds/memberNames are refreshed;
+ *   seed and any match assignments are preserved.
+ * - Newly registered teams not yet in the bracket: appended at the end with
+ *   no seed so the admin can assign them via Edit Matchups.
+ * - Teams in the bracket that are no longer registered: left unchanged
+ *   (removing them could break existing match references).
+ */
+export async function syncBracketTeams(
+  tournamentId: string,
+  currentTeams: BracketTeam[],
+  updatedTeams: BracketTeam[],
+): Promise<{ added: number; updated: number }> {
+  const existingById = new Map(currentTeams.map((t) => [t.id, t]));
+  const merged: BracketTeam[] = [];
+  let added = 0;
+  let updated = 0;
+
+  // Refresh existing teams first (preserve order + seed)
+  for (const existing of currentTeams) {
+    const fresh = updatedTeams.find((t) => t.id === existing.id);
+    if (fresh) {
+      merged.push({
+        ...fresh,
+        seed: existing.seed, // preserve the assigned seed
+      });
+      if (
+        fresh.name !== existing.name ||
+        JSON.stringify(fresh.memberIds) !== JSON.stringify(existing.memberIds)
+      ) {
+        updated++;
+      }
+    } else {
+      // No longer registered — keep as-is to avoid breaking match references
+      merged.push(existing);
+    }
+  }
+
+  // Append newly registered teams that aren't in the bracket yet
+  for (const team of updatedTeams) {
+    if (!existingById.has(team.id)) {
+      merged.push({ ...team, seed: undefined });
+      added++;
+    }
+  }
+
+  if (added === 0 && updated === 0) return { added, updated };
+
+  await setDoc(
+    bracketRef(tournamentId),
+    { teams: stripUndefined(merged), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  return { added, updated };
+}
+
+// ── Update first-round matchup assignments ───────────────────────────────────
+
+/**
+ * Directly swap which teams face each other in existing first-round matches,
+ * without regenerating the bracket structure.
+ *
+ * If a match's current winner is no longer one of the new participants, that
+ * winner is cleared and any downstream results from that match are also cleared.
+ */
+export async function updateFirstRoundMatchups(
+  tournamentId: string,
+  currentBracket: TournamentBracket,
+  slotUpdates: Array<{
+    matchId: string;
+    team1Id: string | null;
+    team2Id: string | null;
+  }>,
+): Promise<void> {
+  if (slotUpdates.length === 0) return;
+  const matches = currentBracket.matches.map((m) => ({ ...m }));
+
+  for (const { matchId, team1Id, team2Id } of slotUpdates) {
+    const match = matches.find((m) => m.id === matchId && m.round === 1);
+    if (!match) continue;
+
+    const prevWinnerId = match.winnerId;
+    const newParticipants = new Set<string | null>([team1Id, team2Id]);
+
+    if (prevWinnerId && !newParticipants.has(prevWinnerId)) {
+      // Winner is no longer playing in this match — clear result and downstream
+      match.winnerId = null;
+      if (match.nextMatchId) {
+        clearDownstream(matches, match.id, prevWinnerId);
+      }
+    }
+
+    match.team1Id = team1Id;
+    match.team2Id = team2Id;
+  }
+
+  await setDoc(
+    bracketRef(tournamentId),
+    { matches, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────

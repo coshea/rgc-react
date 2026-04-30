@@ -29,6 +29,31 @@ const ROUND_LABEL_HEIGHT = 36;
 
 // ── Geometry helpers ──────────────────────────────────────────────────────────
 
+/**
+ * Computes the pixel dimensions of a bracket for a given TournamentBracket.
+ * Useful for pre-computing scale factors (e.g. for print layout) without
+ * mounting the component.
+ */
+export function calcBracketDimensions(bracket: TournamentBracket): {
+  width: number;
+  height: number;
+} {
+  const { teams, size } = bracket;
+  const numRounds = Math.log2(size);
+  const n1 = size / 2;
+  const maxMembers = teams.reduce((acc, t) => {
+    const count =
+      t.memberNames && t.memberNames.length > 0 ? t.memberNames.length : 1;
+    return Math.max(acc, count);
+  }, 1);
+  const cardH = calcMatchHeight(maxMembers);
+  const slotUnit = cardH + V_GAP;
+  const totalWidth = numRounds * MATCH_WIDTH + (numRounds - 1) * H_GAP;
+  const bracketHeight = n1 * slotUnit - V_GAP;
+  const totalHeight = ROUND_LABEL_HEIGHT + bracketHeight;
+  return { width: totalWidth, height: totalHeight };
+}
+
 function matchTopY(
   round: number,
   pos: number,

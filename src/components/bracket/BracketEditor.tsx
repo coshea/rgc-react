@@ -9,7 +9,7 @@
  * tournament actions are centralised in one place.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
@@ -22,6 +22,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Select,
+  SelectItem,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -49,8 +51,14 @@ import {
   saveBracket,
   saveMatchResults,
   deleteBracket,
+  updateFirstRoundMatchups,
+  syncBracketTeams,
 } from "@/api/brackets";
-import { generateBracket, shuffleTeams } from "@/utils/bracketGenerator";
+import {
+  generateBracket,
+  generateBracketFromSlots,
+  shuffleTeams,
+} from "@/utils/bracketGenerator";
 import { addToast } from "@/providers/toast";
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
 
@@ -73,7 +81,44 @@ interface BracketEditorProps {
   }>;
 }
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type BracketMode = "seeding" | "matchups";
+interface MatchupSlot {
+  team1Id: string | null;
+  team2Id: string | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function nextPow2(n: number): number {
+  if (n <= 1) return 1;
+  return Math.pow(2, Math.ceil(Math.log2(n)));
+}
+
+/** Sentinel prefix used to identify bye-slot entries in the seed order list */
+const BYE_PREFIX = "__bye__:";
+function isByeId(id: string): boolean {
+  return id.startsWith(BYE_PREFIX);
+}
+
+/**
+ * UI label for a registration: captain (first member) + remaining members sorted
+ * alphabetically, joined with a middle dot. Falls back to team shortcode.
+ */
+function registrationDisplayLabel(reg: RegistrationDoc): string {
+  const members = reg.team ?? [];
+  if (members.length === 0) return `Team ${reg.id.slice(-4).toUpperCase()}`;
+  const captain = members[0];
+  const rest = members
+    .slice(1)
+    .filter((m) => m.displayName)
+    .sort((a, b) => (a.displayName ?? "").localeCompare(b.displayName ?? ""));
+  const captainName =
+    captain.displayName ?? `Team ${reg.id.slice(-4).toUpperCase()}`;
+  if (rest.length === 0) return captainName;
+  return [captainName, ...rest.map((m) => m.displayName!)].join(" · ");
+}
 
 function registrationToTeam(reg: RegistrationDoc, seed?: number): BracketTeam {
   const members = reg.team ?? [];
@@ -106,7 +151,11 @@ interface SortableTeamRowProps {
   label: string;
   seed: number;
   excluded: boolean;
+  isBye?: boolean;
+  /** When true, hides the include/exclude toggle (used in seed-edit panel) */
+  hideExclude?: boolean;
   onToggleExclude: (id: string) => void;
+  onRemoveBye?: (id: string) => void;
 }
 
 function SortableTeamRow({
@@ -114,7 +163,10 @@ function SortableTeamRow({
   label,
   seed,
   excluded,
+  isBye,
+  hideExclude,
   onToggleExclude,
+  onRemoveBye,
 }: SortableTeamRowProps) {
   const {
     attributes,
@@ -136,12 +188,15 @@ function SortableTeamRow({
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-3 rounded-lg px-3 py-2 border select-none transition-colors ${
-        excluded
-          ? "border-default-100 bg-default-50 dark:bg-default-900/30 opacity-50"
-          : "border-default-200 bg-content1"
+        isBye
+          ? "border-dashed border-primary-300 bg-primary-50 dark:bg-primary-950/20"
+          : excluded
+            ? "border-default-100 bg-default-50 dark:bg-default-900/30 opacity-50"
+            : "border-default-200 bg-content1"
       }`}
     >
-      {!excluded && (
+      {/* Drag handle – shown for non-excluded rows (including byes) */}
+      {(!excluded || isBye) && (
         <button
           type="button"
           className="touch-none cursor-grab active:cursor-grabbing text-default-400 hover:text-default-600 shrink-0 p-0.5"
@@ -152,9 +207,21 @@ function SortableTeamRow({
           <Icon icon="lucide:grip-vertical" className="w-4 h-4" />
         </button>
       )}
-      {excluded && <span className="shrink-0 w-5" aria-hidden="true" />}
+      {excluded && !isBye && (
+        <span className="shrink-0 w-5" aria-hidden="true" />
+      )}
 
-      {!excluded && (
+      {/* Seed / BYE chip */}
+      {isBye ? (
+        <Chip
+          size="sm"
+          variant="flat"
+          color="primary"
+          className="shrink-0 min-w-10 justify-center"
+        >
+          BYE
+        </Chip>
+      ) : !excluded ? (
         <Chip
           size="sm"
           variant="flat"
@@ -163,8 +230,7 @@ function SortableTeamRow({
         >
           #{seed}
         </Chip>
-      )}
-      {excluded && (
+      ) : (
         <Chip
           size="sm"
           variant="flat"
@@ -176,25 +242,47 @@ function SortableTeamRow({
       )}
 
       <span
-        className={`text-sm flex-1 min-w-0 truncate ${excluded ? "line-through text-default-400" : ""}`}
+        className={`text-sm flex-1 min-w-0 truncate ${
+          isBye
+            ? "text-primary-600 dark:text-primary-400 italic"
+            : excluded
+              ? "line-through text-default-400"
+              : ""
+        }`}
       >
         {label}
       </span>
 
-      <button
-        type="button"
-        className="shrink-0 p-1 rounded text-default-400 hover:text-default-700 transition-colors"
-        aria-label={
-          excluded ? "Include team in bracket" : "Exclude team from bracket"
-        }
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => onToggleExclude(id)}
-      >
-        <Icon
-          icon={excluded ? "lucide:plus-circle" : "lucide:x-circle"}
-          className="w-4 h-4"
-        />
-      </button>
+      {isBye ? (
+        /* Bye rows: remove button */
+        <button
+          type="button"
+          className="shrink-0 p-1 rounded text-danger-400 hover:text-danger-600 transition-colors"
+          aria-label="Remove bye slot"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onRemoveBye?.(id)}
+        >
+          <Icon icon="lucide:x-circle" className="w-4 h-4" />
+        </button>
+      ) : (
+        /* Team rows: include/exclude toggle */
+        !hideExclude && (
+          <button
+            type="button"
+            className="shrink-0 p-1 rounded text-default-400 hover:text-default-700 transition-colors"
+            aria-label={
+              excluded ? "Include team in bracket" : "Exclude team from bracket"
+            }
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onToggleExclude(id)}
+          >
+            <Icon
+              icon={excluded ? "lucide:plus-circle" : "lucide:x-circle"}
+              className="w-4 h-4"
+            />
+          </button>
+        )
+      )}
     </div>
   );
 }
@@ -209,16 +297,39 @@ export function BracketEditor({
   const [bracket, setBracket] = useState<TournamentBracket | null>(null);
   const [bracketLoading, setBracketLoading] = useState(true);
 
-  // Seeding order (array of reg IDs; index 0 = seed #1)
+  // Whether the generator is in seed-reorder mode or manual matchup assignment
+  const [bracketMode, setBracketMode] = useState<BracketMode>("seeding");
+
+  // Seeding order (array of reg IDs or bye sentinels; index 0 = seed #1)
   const [seedOrder, setSeedOrder] = useState<string[]>([]);
   // IDs excluded from bracket generation
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
+  // Counter for generating unique bye-slot IDs (ref: doesn't affect render)
+  const byeCounterRef = useRef(0);
+
+  // Manual matchup slots (only used in "matchups" mode)
+  const [matchupSlots, setMatchupSlots] = useState<MatchupSlot[]>([]);
 
   // Action states
   const [generating, setGenerating] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Whether the seed-reorder panel is shown on an already-generated bracket
+  const [showSeedEdit, setShowSeedEdit] = useState(false);
+
+  // Whether the direct matchup-edit panel is shown on an already-generated bracket
+  const [showMatchupEdit, setShowMatchupEdit] = useState(false);
+  const [editSlots, setEditSlots] = useState<
+    Array<{ matchId: string; team1Id: string | null; team2Id: string | null }>
+  >([]);
+  const [savingMatchups, setSavingMatchups] = useState(false);
+  const [syncingTeams, setSyncingTeams] = useState(false);
+
+  // Track whether seedOrder has already been synchronised from the bracket
+  // (so we don't overwrite manual edits on every bracket update)
+  const hasSyncedFromBracketRef = useRef(false);
 
   // Pending match-winner selections (matchId → winnerId); not yet persisted
   const [pendingWinners, setPendingWinners] = useState<Record<string, string>>(
@@ -245,9 +356,23 @@ export function BracketEditor({
     return unsub;
   }, [tournamentId]);
 
-  // Initialise seed order from registrations (only before a bracket exists)
+  // Initialise seed order:
+  //  • When a bracket first loads (null → bracket): use bracket teams sorted by seed.
+  //  • When bracket is absent and registrations load: use a shuffled list.
+  //  • Subsequent bracket updates (match results) do NOT overwrite the seed order.
   useEffect(() => {
-    if (!bracket && registrations.length > 0) {
+    if (bracket) {
+      if (!hasSyncedFromBracketRef.current) {
+        hasSyncedFromBracketRef.current = true;
+        setSeedOrder(
+          [...bracket.teams]
+            .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+            .map((t) => t.id),
+        );
+        setExcludedIds(new Set());
+      }
+    } else if (registrations.length > 0) {
+      hasSyncedFromBracketRef.current = false;
       setSeedOrder(
         shuffleTeams(registrations.map((r) => registrationToTeam(r))).map(
           (t) => t.id,
@@ -280,10 +405,21 @@ export function BracketEditor({
   const regLabelMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const reg of registrations) {
-      map.set(reg.id, registrationToTeam(reg).name);
+      map.set(reg.id, registrationDisplayLabel(reg));
     }
     return map;
   }, [registrations]);
+
+  // Registrations sorted alphabetically by display label (used in dropdowns)
+  const sortedRegistrations = useMemo(
+    () =>
+      [...registrations].sort((a, b) =>
+        (regLabelMap.get(a.id) ?? "").localeCompare(
+          regLabelMap.get(b.id) ?? "",
+        ),
+      ),
+    [registrations, regLabelMap],
+  );
 
   const userPhotoMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -297,11 +433,49 @@ export function BracketEditor({
   const seedData = useMemo(() => {
     let includedCount = 0;
     return seedOrder.map((id) => {
-      const isExcluded = excludedIds.has(id);
-      if (!isExcluded) includedCount++;
-      return { id, isExcluded, seed: isExcluded ? 0 : includedCount };
+      const bye = isByeId(id);
+      const isExcluded = !bye && excludedIds.has(id);
+      if (!isExcluded && !bye) includedCount++;
+      return {
+        id,
+        isExcluded,
+        isBye: bye,
+        seed: isExcluded || bye ? 0 : includedCount,
+      };
     });
   }, [seedOrder, excludedIds]);
+
+  // Computed before callbacks so handleGenerate can safely close over it
+  const includedTeamCount = useMemo(
+    () => seedOrder.filter((id) => !isByeId(id) && !excludedIds.has(id)).length,
+    [seedOrder, excludedIds],
+  );
+
+  // In matchup mode: number of first-round slots (= bracket size / 2)
+  const matchupSlotCount = useMemo(
+    () => nextPow2(Math.max(registrations.length, 2)) / 2,
+    [registrations.length],
+  );
+
+  // Teams already placed in matchup slots
+  const assignedMatchupIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const slot of matchupSlots) {
+      if (slot.team1Id) s.add(slot.team1Id);
+      if (slot.team2Id) s.add(slot.team2Id);
+    }
+    return s;
+  }, [matchupSlots]);
+
+  // Count of assigned non-bye teams in matchup mode
+  const matchupTeamCount = useMemo(
+    () =>
+      matchupSlots.reduce(
+        (acc, s) => acc + (s.team1Id ? 1 : 0) + (s.team2Id ? 1 : 0),
+        0,
+      ),
+    [matchupSlots],
+  );
 
   // ── Generate ──────────────────────────────────────────────────────────────────
 
@@ -317,17 +491,104 @@ export function BracketEditor({
     });
   }, []);
 
+  // Initialise matchup slots from the current seed order (pair consecutive seeds)
+  const handleClearSeeding = useCallback(() => {
+    // Remove all bye slots; re-include all excluded teams
+    setSeedOrder((prev) => prev.filter((id) => !isByeId(id)));
+    setExcludedIds(new Set());
+  }, []);
+
+  const handleClearMatchups = useCallback(() => {
+    setMatchupSlots((prev) =>
+      prev.map(() => ({ team1Id: null, team2Id: null })),
+    );
+  }, []);
+
+  const initMatchupSlots = useCallback(() => {
+    const activeIds = seedOrder.filter(
+      (id) => !isByeId(id) && !excludedIds.has(id),
+    );
+    const slots: MatchupSlot[] = [];
+    for (let i = 0; i < matchupSlotCount; i++) {
+      slots.push({
+        team1Id: activeIds[i * 2] ?? null,
+        team2Id: activeIds[i * 2 + 1] ?? null,
+      });
+    }
+    setMatchupSlots(slots);
+  }, [seedOrder, excludedIds, matchupSlotCount]);
+
+  const handleSetBracketMode = useCallback(
+    (mode: BracketMode) => {
+      setBracketMode(mode);
+      if (mode === "matchups") initMatchupSlots();
+    },
+    [initMatchupSlots],
+  );
+
+  const updateMatchupSlot = useCallback(
+    (index: number, field: "team1Id" | "team2Id", value: string | null) => {
+      setMatchupSlots((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], [field]: value };
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleAddBye = useCallback(() => {
+    const next = ++byeCounterRef.current;
+    setSeedOrder((prev) => [...prev, `${BYE_PREFIX}${next}`]);
+  }, []);
+
+  const handleRemoveBye = useCallback((id: string) => {
+    setSeedOrder((prev) => prev.filter((x) => x !== id));
+  }, []);
+
   const handleGenerate = useCallback(async () => {
-    if (registrations.length < 2) return;
+    if (bracketMode === "seeding" && includedTeamCount < 2) return;
+    if (bracketMode === "matchups" && matchupTeamCount < 2) return;
     setGenerating(true);
     try {
       const regMap = new Map(registrations.map((r) => [r.id, r]));
-      const orderedTeams = seedOrder
-        .filter((id) => !excludedIds.has(id))
-        .map((id) => regMap.get(id))
-        .filter((r): r is RegistrationDoc => r !== undefined)
-        .map((r) => registrationToTeam(r));
-      const newBracket = generateBracket(tournamentId, orderedTeams);
+      let newBracket;
+
+      if (bracketMode === "matchups") {
+        // Build ordered slot array from explicit matchup pairs
+        const orderedSlots = matchupSlots.flatMap((s) => [
+          s.team1Id
+            ? registrationToTeam(regMap.get(s.team1Id) as RegistrationDoc)
+            : null,
+          s.team2Id
+            ? registrationToTeam(regMap.get(s.team2Id) as RegistrationDoc)
+            : null,
+        ]);
+        newBracket = generateBracketFromSlots(tournamentId, orderedSlots);
+      } else {
+        const activeSlots = seedOrder.filter(
+          (id) => isByeId(id) || !excludedIds.has(id),
+        );
+        const hasByes = activeSlots.some(isByeId);
+        if (hasByes) {
+          // Manual byes: use sequential slot pairing so the admin's explicit
+          // ordering (including bye positions) is respected directly.
+          const orderedSlots = activeSlots.map((id) =>
+            isByeId(id)
+              ? null
+              : registrationToTeam(regMap.get(id) as RegistrationDoc),
+          );
+          newBracket = generateBracketFromSlots(tournamentId, orderedSlots);
+        } else {
+          // No manual byes: use standard seeding (1v highest, 2v second-highest …)
+          const orderedTeams = activeSlots
+            .map((id) => regMap.get(id))
+            .filter((r): r is RegistrationDoc => r !== undefined)
+            .map((r) => registrationToTeam(r));
+          newBracket = generateBracket(tournamentId, orderedTeams);
+        }
+      }
+
       await saveBracket(newBracket);
       addToast({ title: "Bracket generated!", color: "success" });
     } catch (err: unknown) {
@@ -338,7 +599,16 @@ export function BracketEditor({
       setGenerating(false);
       setShowRegenConfirm(false);
     }
-  }, [tournamentId, registrations, seedOrder, excludedIds]);
+  }, [
+    tournamentId,
+    registrations,
+    seedOrder,
+    excludedIds,
+    includedTeamCount,
+    bracketMode,
+    matchupSlots,
+    matchupTeamCount,
+  ]);
 
   // ── Save results ──────────────────────────────────────────────────────────────
 
@@ -385,10 +655,82 @@ export function BracketEditor({
   };
 
   const handleDeleteAndRegen = async () => {
-    setSeedOrder([]);
+    setShowSeedEdit(false);
+    setShowMatchupEdit(false);
+    hasSyncedFromBracketRef.current = false;
     await deleteBracket(tournamentId);
     await handleGenerate();
   };
+
+  const handleSaveMatchups = useCallback(async () => {
+    if (!bracket) return;
+
+    // Validate: no team assigned to more than one slot
+    const seen = new Set<string>();
+    for (const slot of editSlots) {
+      for (const id of [slot.team1Id, slot.team2Id]) {
+        if (!id) continue;
+        if (seen.has(id)) {
+          addToast({
+            title: "Duplicate assignment",
+            description: "Each team can only appear in one match.",
+            color: "warning",
+          });
+          return;
+        }
+        seen.add(id);
+      }
+    }
+
+    setSavingMatchups(true);
+    try {
+      await updateFirstRoundMatchups(tournamentId, bracket, editSlots);
+      setShowMatchupEdit(false);
+      addToast({ title: "Matchups updated!", color: "success" });
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to update matchups";
+      addToast({ title: "Error", description: msg, color: "danger" });
+    } finally {
+      setSavingMatchups(false);
+    }
+  }, [bracket, editSlots, tournamentId]);
+
+  const handleSyncTeams = useCallback(async () => {
+    if (!bracket) return;
+    setSyncingTeams(true);
+    try {
+      const updatedTeams = registrations.map((r) => registrationToTeam(r));
+      const { added, updated } = await syncBracketTeams(
+        tournamentId,
+        bracket.teams,
+        updatedTeams,
+      );
+      if (added === 0 && updated === 0) {
+        addToast({
+          title: "Already up to date",
+          description: "No changes detected.",
+          color: "default",
+        });
+      } else {
+        const parts: string[] = [];
+        if (added > 0)
+          parts.push(`${added} team${added !== 1 ? "s" : ""} added`);
+        if (updated > 0)
+          parts.push(`${updated} team${updated !== 1 ? "s" : ""} updated`);
+        addToast({
+          title: "Teams synced",
+          description: parts.join(", ") + ".",
+          color: "success",
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to sync teams";
+      addToast({ title: "Error", description: msg, color: "danger" });
+    } finally {
+      setSyncingTeams(false);
+    }
+  }, [bracket, registrations, tournamentId]);
 
   // ── Derived state ─────────────────────────────────────────────────────────────
 
@@ -414,15 +756,64 @@ export function BracketEditor({
     );
   }
 
-  const includedTeamCount = seedOrder.filter(
-    (id) => !excludedIds.has(id),
-  ).length;
-
   return (
     <div className="space-y-4">
       {/* Regenerate / Delete controls (only when bracket exists) */}
       {bracket && (
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 justify-end flex-wrap">
+          <Button
+            size="sm"
+            variant={showSeedEdit ? "solid" : "flat"}
+            color="primary"
+            startContent={
+              <Icon icon="lucide:list-ordered" className="w-4 h-4" />
+            }
+            onPress={() => {
+              setShowSeedEdit((v) => !v);
+              setShowMatchupEdit(false);
+            }}
+          >
+            Edit Seeds
+          </Button>
+          <Button
+            size="sm"
+            variant={showMatchupEdit ? "solid" : "flat"}
+            color="secondary"
+            startContent={<Icon icon="lucide:pencil" className="w-4 h-4" />}
+            onPress={() => {
+              const opening = !showMatchupEdit;
+              setShowMatchupEdit(opening);
+              setShowSeedEdit(false);
+              if (opening && bracket) {
+                setEditSlots(
+                  [...bracket.matches]
+                    .filter((m) => m.round === 1)
+                    .sort((a, b) => a.position - b.position)
+                    .map((m) => ({
+                      matchId: m.id,
+                      team1Id: m.team1Id,
+                      team2Id: m.team2Id,
+                    })),
+                );
+              }
+            }}
+          >
+            Edit Matchups
+          </Button>
+          <Button
+            size="sm"
+            variant="flat"
+            color="default"
+            isLoading={syncingTeams}
+            startContent={
+              !syncingTeams && (
+                <Icon icon="lucide:refresh-ccw" className="w-4 h-4" />
+              )
+            }
+            onPress={handleSyncTeams}
+          >
+            Resync Teams
+          </Button>
           <Button
             size="sm"
             variant="flat"
@@ -442,6 +833,219 @@ export function BracketEditor({
             Delete
           </Button>
         </div>
+      )}
+
+      {/* Seed-edit panel (shown when a bracket exists and admin toggled Edit Seeds) */}
+      {bracket && showSeedEdit && (
+        <Card shadow="sm">
+          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="font-semibold text-sm">Edit Seedings</p>
+            <p className="text-xs text-default-400">
+              Drag to reorder, then click Regenerate to apply.
+            </p>
+          </CardHeader>
+          <CardBody className="space-y-3 pb-4">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={seedOrder}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1.5">
+                  {seedOrder.map((id, idx) => (
+                    <SortableTeamRow
+                      key={id}
+                      id={id}
+                      label={
+                        regLabelMap.get(id) ??
+                        bracket.teams.find((t) => t.id === id)?.name ??
+                        id
+                      }
+                      seed={idx + 1}
+                      excluded={false}
+                      hideExclude
+                      onToggleExclude={() => undefined}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            <div className="flex gap-2 pt-1 flex-wrap justify-end">
+              <Button
+                size="sm"
+                variant="flat"
+                startContent={
+                  <Icon icon="lucide:shuffle" className="w-4 h-4" />
+                }
+                onPress={() => {
+                  setSeedOrder((prev) => {
+                    const a = [...prev];
+                    for (let i = a.length - 1; i > 0; i--) {
+                      const j = Math.floor(Math.random() * (i + 1));
+                      [a[i], a[j]] = [a[j], a[i]];
+                    }
+                    return a;
+                  });
+                }}
+              >
+                Randomize
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => {
+                  setSeedOrder(
+                    [...bracket.teams]
+                      .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+                      .map((t) => t.id),
+                  );
+                }}
+              >
+                Reset to Current
+              </Button>
+              <Button
+                size="sm"
+                color="warning"
+                startContent={
+                  <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
+                }
+                onPress={() => setShowRegenConfirm(true)}
+              >
+                Regenerate with New Seeds
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Edit Matchups panel — directly swap round-1 pairings without regenerating */}
+      {bracket && showMatchupEdit && (
+        <Card shadow="sm">
+          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="font-semibold text-sm">Edit First Round Matchups</p>
+            <p className="text-xs text-default-400">
+              Changing a match with an existing result will clear that result.
+            </p>
+          </CardHeader>
+          <CardBody className="space-y-2 pb-4">
+            {editSlots.map((slot, idx) => (
+              <div key={slot.matchId} className="flex items-center gap-2">
+                <span className="text-xs text-default-400 w-14 shrink-0 text-right">
+                  Match {idx + 1}
+                </span>
+                <Select
+                  size="sm"
+                  aria-label={`Match ${idx + 1} — team 1`}
+                  selectedKeys={
+                    slot.team1Id
+                      ? new Set([slot.team1Id])
+                      : new Set(["__none__"])
+                  }
+                  onSelectionChange={(keys) => {
+                    const val = [...keys][0] as string;
+                    setEditSlots((prev) =>
+                      prev.map((s, i) =>
+                        i === idx
+                          ? {
+                              ...s,
+                              team1Id: val === "__none__" ? null : val,
+                            }
+                          : s,
+                      ),
+                    );
+                  }}
+                  className="flex-1"
+                >
+                  <>
+                    <SelectItem key="__none__">— BYE —</SelectItem>
+                    {bracket.teams
+                      .slice()
+                      .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+                      .map((t) => (
+                        <SelectItem key={t.id}>
+                          {regLabelMap.get(t.id) ?? t.name}
+                        </SelectItem>
+                      ))}
+                  </>
+                </Select>
+                <span className="text-xs text-default-400 shrink-0">vs</span>
+                <Select
+                  size="sm"
+                  aria-label={`Match ${idx + 1} — team 2`}
+                  selectedKeys={
+                    slot.team2Id
+                      ? new Set([slot.team2Id])
+                      : new Set(["__none__"])
+                  }
+                  onSelectionChange={(keys) => {
+                    const val = [...keys][0] as string;
+                    setEditSlots((prev) =>
+                      prev.map((s, i) =>
+                        i === idx
+                          ? {
+                              ...s,
+                              team2Id: val === "__none__" ? null : val,
+                            }
+                          : s,
+                      ),
+                    );
+                  }}
+                  className="flex-1"
+                >
+                  <>
+                    <SelectItem key="__none__">— BYE —</SelectItem>
+                    {bracket.teams
+                      .slice()
+                      .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+                      .map((t) => (
+                        <SelectItem key={t.id}>
+                          {regLabelMap.get(t.id) ?? t.name}
+                        </SelectItem>
+                      ))}
+                  </>
+                </Select>
+              </div>
+            ))}
+
+            <div className="flex gap-2 justify-end pt-2">
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => {
+                  setEditSlots(
+                    [...bracket.matches]
+                      .filter((m) => m.round === 1)
+                      .sort((a, b) => a.position - b.position)
+                      .map((m) => ({
+                        matchId: m.id,
+                        team1Id: m.team1Id,
+                        team2Id: m.team2Id,
+                      })),
+                  );
+                }}
+              >
+                Reset
+              </Button>
+              <Button
+                size="sm"
+                color="secondary"
+                isLoading={savingMatchups}
+                startContent={
+                  !savingMatchups && (
+                    <Icon icon="lucide:save" className="w-4 h-4" />
+                  )
+                }
+                onPress={handleSaveMatchups}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {bracket ? (
@@ -761,8 +1365,36 @@ export function BracketEditor({
       ) : (
         /* ── No bracket yet: show generator ── */
         <Card shadow="sm">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold">Generate Bracket</p>
+            {registrations.length >= 2 && (
+              <div className="flex gap-1 rounded-lg border border-default-200 p-0.5">
+                <Button
+                  size="sm"
+                  variant={bracketMode === "seeding" ? "solid" : "light"}
+                  color={bracketMode === "seeding" ? "primary" : "default"}
+                  onPress={() => handleSetBracketMode("seeding")}
+                  startContent={
+                    <Icon icon="lucide:list-ordered" className="w-3.5 h-3.5" />
+                  }
+                  className="h-7 text-xs"
+                >
+                  By Seeding
+                </Button>
+                <Button
+                  size="sm"
+                  variant={bracketMode === "matchups" ? "solid" : "light"}
+                  color={bracketMode === "matchups" ? "primary" : "default"}
+                  onPress={() => handleSetBracketMode("matchups")}
+                  startContent={
+                    <Icon icon="lucide:swords" className="w-3.5 h-3.5" />
+                  }
+                  className="h-7 text-xs"
+                >
+                  By Matchups
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardBody className="space-y-4">
             {registrations.length < 2 ? (
@@ -774,29 +1406,60 @@ export function BracketEditor({
                     : "At least 2 registered teams are needed."}
                 </p>
               </div>
-            ) : (
+            ) : bracketMode === "seeding" ? (
               <>
                 <p className="text-sm text-default-500">
                   {registrations.length} team
                   {registrations.length !== 1 ? "s" : ""} registered. Drag to
-                  reorder — the top position is seed #1 and receives the first
-                  bye.
+                  reorder — the top position is seed #1.{" "}
+                  {seedOrder.some(isByeId)
+                    ? "Drag BYE slots next to the teams that should advance automatically."
+                    : "Use 'Add Bye' to manually control which team gets a bye, or byes will be assigned automatically to top seeds."}
                 </p>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="danger"
+                    startContent={
+                      <Icon icon="lucide:eraser" className="w-4 h-4" />
+                    }
+                    onPress={handleClearSeeding}
+                    isDisabled={
+                      excludedIds.size === 0 && !seedOrder.some(isByeId)
+                    }
+                  >
+                    Clear All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    startContent={
+                      <Icon icon="lucide:plus" className="w-4 h-4" />
+                    }
+                    onPress={handleAddBye}
+                  >
+                    Add Bye
+                  </Button>
                   <Button
                     size="sm"
                     variant="flat"
                     startContent={
                       <Icon icon="lucide:shuffle" className="w-4 h-4" />
                     }
-                    onPress={() =>
-                      setSeedOrder((prev) =>
-                        shuffleTeams(
-                          prev.map((id) => ({ id }) as BracketTeam),
-                        ).map((t) => t.id),
-                      )
-                    }
+                    onPress={() => {
+                      // Simple Fisher-Yates shuffle that works on all entry types
+                      setSeedOrder((prev) => {
+                        const a = [...prev];
+                        for (let i = a.length - 1; i > 0; i--) {
+                          const j = Math.floor(Math.random() * (i + 1));
+                          [a[i], a[j]] = [a[j], a[i]];
+                        }
+                        return a;
+                      });
+                    }}
                   >
                     Randomize Order
                   </Button>
@@ -812,14 +1475,16 @@ export function BracketEditor({
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-1.5">
-                      {seedData.map(({ id, isExcluded, seed }) => (
+                      {seedData.map(({ id, isExcluded, isBye, seed }) => (
                         <SortableTeamRow
                           key={id}
                           id={id}
-                          label={regLabelMap.get(id) ?? id}
+                          label={isBye ? "Bye" : (regLabelMap.get(id) ?? id)}
                           seed={seed}
                           excluded={isExcluded}
+                          isBye={isBye}
                           onToggleExclude={toggleExclude}
+                          onRemoveBye={handleRemoveBye}
                         />
                       ))}
                     </div>
@@ -837,12 +1502,163 @@ export function BracketEditor({
                   className="mt-2"
                 >
                   Generate Bracket
-                  {excludedIds.size > 0 && (
+                  {(excludedIds.size > 0 || seedOrder.some(isByeId)) && (
                     <span className="ml-1 text-xs opacity-70">
                       ({includedTeamCount} teams)
                     </span>
                   )}
                 </Button>
+              </>
+            ) : (
+              /* ── Matchup assignment mode ── */
+              <>
+                <p className="text-sm text-default-500">
+                  Directly assign who plays who in the first round. Leave a slot
+                  empty to give that team a bye. Teams not assigned to any match
+                  will be excluded from the bracket.
+                </p>
+
+                <div className="space-y-2">
+                  {matchupSlots.map((slot, i) => {
+                    // Options available for team1: unassigned teams + current team1
+                    const availForT1 = sortedRegistrations.filter(
+                      (r) =>
+                        !assignedMatchupIds.has(r.id) || r.id === slot.team1Id,
+                    );
+                    // Options available for team2: unassigned teams + current team2
+                    const availForT2 = sortedRegistrations.filter(
+                      (r) =>
+                        !assignedMatchupIds.has(r.id) || r.id === slot.team2Id,
+                    );
+
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 flex-wrap rounded-lg border border-default-200 p-2"
+                      >
+                        <span className="text-xs font-semibold text-default-400 w-16 shrink-0">
+                          Match {i + 1}
+                        </span>
+                        <Select
+                          size="sm"
+                          placeholder="— Bye —"
+                          aria-label={`Match ${i + 1} team 1`}
+                          selectedKeys={
+                            slot.team1Id ? new Set([slot.team1Id]) : new Set()
+                          }
+                          onSelectionChange={(keys) => {
+                            const val =
+                              Array.from(keys as Set<string>)[0] ?? null;
+                            updateMatchupSlot(i, "team1Id", val);
+                          }}
+                          className="flex-1 min-w-[140px]"
+                          classNames={{ trigger: "h-9" }}
+                        >
+                          {availForT1.map((r) => (
+                            <SelectItem
+                              key={r.id}
+                              textValue={regLabelMap.get(r.id) ?? r.id}
+                            >
+                              {regLabelMap.get(r.id) ?? r.id}
+                            </SelectItem>
+                          ))}
+                        </Select>
+
+                        <span className="text-xs text-default-400 shrink-0">
+                          vs
+                        </span>
+
+                        <Select
+                          size="sm"
+                          placeholder="— Bye —"
+                          aria-label={`Match ${i + 1} team 2`}
+                          selectedKeys={
+                            slot.team2Id ? new Set([slot.team2Id]) : new Set()
+                          }
+                          onSelectionChange={(keys) => {
+                            const val =
+                              Array.from(keys as Set<string>)[0] ?? null;
+                            updateMatchupSlot(i, "team2Id", val);
+                          }}
+                          className="flex-1 min-w-[140px]"
+                          classNames={{ trigger: "h-9" }}
+                        >
+                          {availForT2.map((r) => (
+                            <SelectItem
+                              key={r.id}
+                              textValue={regLabelMap.get(r.id) ?? r.id}
+                            >
+                              {regLabelMap.get(r.id) ?? r.id}
+                            </SelectItem>
+                          ))}
+                        </Select>
+
+                        {(slot.team1Id || slot.team2Id) && (
+                          <button
+                            type="button"
+                            aria-label="Clear match"
+                            className="shrink-0 p-1 rounded text-default-400 hover:text-danger transition-colors"
+                            onClick={() => {
+                              updateMatchupSlot(i, "team1Id", null);
+                              updateMatchupSlot(i, "team2Id", null);
+                            }}
+                          >
+                            <Icon icon="lucide:x" className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Unassigned teams */}
+                {registrations.some((r) => !assignedMatchupIds.has(r.id)) && (
+                  <div className="pt-1">
+                    <p className="text-xs text-default-400 mb-1.5">
+                      Not yet assigned (will be excluded):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sortedRegistrations
+                        .filter((r) => !assignedMatchupIds.has(r.id))
+                        .map((r) => (
+                          <Chip key={r.id} size="sm" variant="flat">
+                            {regLabelMap.get(r.id) ?? r.id}
+                          </Chip>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="flat"
+                    color="danger"
+                    startContent={
+                      <Icon icon="lucide:eraser" className="w-4 h-4" />
+                    }
+                    onPress={handleClearMatchups}
+                    isDisabled={matchupTeamCount === 0}
+                  >
+                    Clear All
+                  </Button>
+                  <Button
+                    color="primary"
+                    className="flex-1"
+                    startContent={
+                      <Icon icon="lucide:git-branch" className="w-4 h-4" />
+                    }
+                    onPress={handleGenerate}
+                    isLoading={generating}
+                    isDisabled={matchupTeamCount < 2}
+                  >
+                    Generate Bracket
+                    {matchupTeamCount > 0 && (
+                      <span className="ml-1 text-xs opacity-70">
+                        ({matchupTeamCount} teams)
+                      </span>
+                    )}
+                  </Button>
+                </div>
               </>
             )}
           </CardBody>
@@ -859,8 +1675,8 @@ export function BracketEditor({
           <ModalHeader>Regenerate Bracket?</ModalHeader>
           <ModalBody>
             <p className="text-sm text-default-600">
-              This will replace the existing bracket with a freshly randomised
-              draw. All current match results will be lost.
+              This will replace the existing bracket with a new draw using the
+              current seed order. All current match results will be lost.
             </p>
           </ModalBody>
           <ModalFooter>

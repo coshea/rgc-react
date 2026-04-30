@@ -88,26 +88,20 @@ function arrangeSlots(
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function generateBracket(
+/**
+ * Internal: builds rounds + matches from a padded slot array that is already
+ * a power-of-2 in length. `allTeams` is the flat list of non-null teams that
+ * will be stored in the bracket document.
+ */
+function buildMatchesFromPaddedSlots(
   tournamentId: string,
-  teams: BracketTeam[],
+  paddedSlots: (BracketTeam | null)[],
+  allTeams: BracketTeam[],
 ): TournamentBracket {
-  if (teams.length < 2) {
-    throw new Error("At least 2 teams are required to generate a bracket.");
-  }
-
-  // Assign seed numbers based on position in the input array
-  const seededTeams: BracketTeam[] = teams.map((t, i) => ({
-    ...t,
-    seed: i + 1,
-  }));
-
-  const size = nextPowerOf2(seededTeams.length);
+  const size = paddedSlots.length;
   const numRounds = Math.log2(size);
-  const slots = arrangeSlots(seededTeams, size);
 
   // Pre-allocate match IDs in round order so we can wire nextMatchId
-  // matchIds[roundIndex][positionIndex] (both 0-based)
   const matchIds: string[][] = [];
   let counter = 1;
   for (let r = 0; r < numRounds; r++) {
@@ -132,12 +126,10 @@ export function generateBracket(
 
       let team1Id: string | null = null;
       let team2Id: string | null = null;
-      let winnerId: string | null = null;
 
       if (r === 0) {
-        // Round 1: assign from pre-arranged slots only; winners are never pre-filled.
-        team1Id = slots[pos * 2]?.id ?? null;
-        team2Id = slots[pos * 2 + 1]?.id ?? null;
+        team1Id = paddedSlots[pos * 2]?.id ?? null;
+        team2Id = paddedSlots[pos * 2 + 1]?.id ?? null;
       }
 
       matches.push({
@@ -147,7 +139,7 @@ export function generateBracket(
         nextMatchId,
         team1Id,
         team2Id,
-        winnerId,
+        winnerId: null,
       });
     }
   }
@@ -156,7 +148,62 @@ export function generateBracket(
     tournamentId,
     format: "single_elimination",
     size,
-    teams: seededTeams,
+    teams: allTeams,
     matches,
   };
+}
+
+export function generateBracket(
+  tournamentId: string,
+  teams: BracketTeam[],
+): TournamentBracket {
+  if (teams.length < 2) {
+    throw new Error("At least 2 teams are required to generate a bracket.");
+  }
+
+  // Assign seed numbers based on position in the input array
+  const seededTeams: BracketTeam[] = teams.map((t, i) => ({
+    ...t,
+    seed: i + 1,
+  }));
+
+  const size = nextPowerOf2(seededTeams.length);
+  const slots = arrangeSlots(seededTeams, size);
+
+  return buildMatchesFromPaddedSlots(tournamentId, slots, seededTeams);
+}
+
+/**
+ * Generates a bracket from an **explicit ordered slot list** where `null`
+ * entries represent manual byes. The slot order maps directly to round-1
+ * matchups (slot[0] vs slot[1], slot[2] vs slot[3], …) giving the admin full
+ * control over which team faces which bye.
+ *
+ * Seed numbers are assigned sequentially to non-null entries (1, 2, 3, …).
+ * If the slot count is not a power of 2, extra null byes are appended.
+ */
+export function generateBracketFromSlots(
+  tournamentId: string,
+  explicitSlots: (BracketTeam | null)[],
+): TournamentBracket {
+  const actualTeams = explicitSlots.filter((t): t is BracketTeam => t !== null);
+  if (actualTeams.length < 2) {
+    throw new Error("At least 2 teams are required to generate a bracket.");
+  }
+
+  // Assign seeds to actual teams in slot order
+  let seedCounter = 0;
+  const seededSlots: (BracketTeam | null)[] = explicitSlots.map((t) =>
+    t ? { ...t, seed: ++seedCounter } : null,
+  );
+  const seededTeams = seededSlots.filter((t): t is BracketTeam => t !== null);
+
+  const size = nextPowerOf2(seededSlots.length);
+  // Pad end with nulls if slot count is not already a power of 2
+  const paddedSlots: (BracketTeam | null)[] = [
+    ...seededSlots,
+    ...Array<null>(size - seededSlots.length).fill(null),
+  ];
+
+  return buildMatchesFromPaddedSlots(tournamentId, paddedSlots, seededTeams);
 }

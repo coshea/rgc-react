@@ -136,9 +136,9 @@ describe("team label derivation", () => {
     expect(screen.getByText("Alice")).toBeInTheDocument();
   });
 
-  it("shows captain + '+N' for multi-member registrations", () => {
+  it("shows all member names separated by '·' for multi-member registrations", () => {
     renderEditor([TEAM_A, TEAM_B]);
-    expect(screen.getByText("Bob +1")).toBeInTheDocument();
+    expect(screen.getByText("Bob · Carol")).toBeInTheDocument();
   });
 
   it("falls back to 'Team XXXX' when no displayName is available", () => {
@@ -252,7 +252,7 @@ describe("seed re-numbering", () => {
     // 4 teams; exclude team at position 2 (seed #2)
     renderEditor([TEAM_A, TEAM_B, TEAM_C, TEAM_D]);
 
-    // Exclude the second team (Bob +1 at index 1 → originally #2)
+    // Exclude the second team (Bob · Carol at index 1 → originally #2)
     const excludeBtns = screen.getAllByRole("button", {
       name: /exclude team from bracket/i,
     });

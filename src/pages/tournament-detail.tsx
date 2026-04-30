@@ -8,7 +8,10 @@ import {
 } from "@/api/tournaments";
 import { LookingForTeamSection } from "@/components/looking-for-team-section";
 import { onBracket } from "@/api/brackets";
-import { BracketView } from "@/components/bracket/BracketView";
+import {
+  BracketView,
+  calcBracketDimensions,
+} from "@/components/bracket/BracketView";
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
 import {
   Card,
@@ -171,6 +174,75 @@ const TournamentDetailPage: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
+
+  const handlePrintBracket = React.useCallback(() => {
+    if (!bracket) return;
+    const el = document.getElementById("bracket-print-root");
+    if (!el) return;
+
+    const { width: bracketW, height: bracketH } =
+      calcBracketDimensions(bracket);
+    // A4 landscape at 96 dpi with 10mm margins ≈ 1046 × 718 px usable
+    const pageW = 1046;
+    const pageH = 718;
+    const scale = Math.min(pageW / bracketW, pageH / bracketH, 1).toFixed(4);
+
+    // Collect all stylesheets from the current document so the cloned
+    // bracket renders correctly (Tailwind / HeroUI classes, SVG colours, etc.)
+    const linkTags = Array.from(
+      document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
+    )
+      .map((l) => l.outerHTML)
+      .join("\n");
+    const styleTags = Array.from(document.querySelectorAll("style"))
+      .map((s) => `<style>${s.textContent}</style>`)
+      .join("\n");
+
+    // Carry the dark/light class so colours match what the user sees
+    const htmlClass = document.documentElement.className;
+
+    const html = `<!DOCTYPE html>
+<html class="${htmlClass}">
+<head>
+<meta charset="utf-8">
+${linkTags}
+${styleTags}
+<style>
+@page { size: landscape; margin: 10mm; }
+html, body { margin: 0; padding: 0; background: white; }
+/* zoom shrinks both visual size AND layout box, keeping it to one page */
+#bracket-wrapper {
+  zoom: ${scale};
+  transform-origin: top left;
+}
+/* let the bracket's overflow-x container expand fully when printed */
+#bracket-wrapper > div {
+  overflow: visible !important;
+  height: auto !important;
+  width: auto !important;
+}
+</style>
+</head>
+<body>
+<div id="bracket-wrapper">${el.innerHTML}</div>
+<script>window.onload = function () { window.print(); };<\/script>
+</body>
+</html>`;
+
+    const printWindow = window.open("", "_blank", "width=900,height=600");
+    if (!printWindow) {
+      addToast({
+        title: "Pop-up blocked",
+        description:
+          "Allow pop-ups for this site then try again to print the bracket.",
+        color: "warning",
+      });
+      return;
+    }
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }, [bracket]);
+
   const [adminOpen, setAdminOpen] = React.useState(false);
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
@@ -1178,25 +1250,40 @@ const TournamentDetailPage: React.FC = () => {
                     <h2 className="text-lg font-semibold">
                       Tournament Bracket
                     </h2>
-                    <Tooltip content="Expand bracket">
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        aria-label="Expand bracket"
-                        onPress={() => setBracketExpanded(true)}
-                      >
-                        <Icon icon="lucide:expand" className="w-4 h-4" />
-                      </Button>
-                    </Tooltip>
+                    <div className="flex items-center gap-1">
+                      <Tooltip content="Print / Save as PDF">
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          size="sm"
+                          aria-label="Print bracket"
+                          onPress={handlePrintBracket}
+                        >
+                          <Icon icon="lucide:printer" className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip content="Expand bracket">
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          size="sm"
+                          aria-label="Expand bracket"
+                          onPress={() => setBracketExpanded(true)}
+                        >
+                          <Icon icon="lucide:expand" className="w-4 h-4" />
+                        </Button>
+                      </Tooltip>
+                    </div>
                   </CardHeader>
                   <Divider />
                   <CardBody className="pt-4">
-                    <BracketView
-                      bracket={bracket}
-                      onTeamPress={(team) => setBracketTeamModal(team)}
-                      userPhotoMap={bracketUserPhotoMap}
-                    />
+                    <div id="bracket-print-root">
+                      <BracketView
+                        bracket={bracket}
+                        onTeamPress={(team) => setBracketTeamModal(team)}
+                        userPhotoMap={bracketUserPhotoMap}
+                      />
+                    </div>
                   </CardBody>
                 </Card>
               </div>
@@ -1498,17 +1585,30 @@ const TournamentDetailPage: React.FC = () => {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-divider shrink-0">
               <h2 className="text-lg font-semibold">Tournament Bracket</h2>
-              <Tooltip content="Close fullscreen">
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  aria-label="Close fullscreen bracket"
-                  onPress={() => setBracketExpanded(false)}
-                >
-                  <Icon icon="lucide:shrink" className="w-4 h-4" />
-                </Button>
-              </Tooltip>
+              <div className="flex items-center gap-1">
+                <Tooltip content="Print / Save as PDF">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    aria-label="Print bracket"
+                    onPress={handlePrintBracket}
+                  >
+                    <Icon icon="lucide:printer" className="w-4 h-4" />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Close fullscreen">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    size="sm"
+                    aria-label="Close fullscreen bracket"
+                    onPress={() => setBracketExpanded(false)}
+                  >
+                    <Icon icon="lucide:shrink" className="w-4 h-4" />
+                  </Button>
+                </Tooltip>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-4">
               <BracketView

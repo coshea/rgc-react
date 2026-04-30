@@ -256,9 +256,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         return;
       }
       const { db } = await import("@/config/firebase");
-      const { collection, addDoc, updateDoc, doc, deleteField } = await import(
-        "firebase/firestore"
-      );
+      const { collection, addDoc, updateDoc, doc, deleteField } =
+        await import("firebase/firestore");
       // Sanitize winnerGroups to avoid writing `undefined` fields to Firestore
       const sanitizedGroups: WinnerGroup[] = (winnerGroups || []).map((g) => ({
         ...g,
@@ -394,9 +393,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       if (!tournament || !tournament.firestoreId) return;
       setRegsLoading(true);
       try {
-        const { collection, onSnapshot, orderBy, query } = await import(
-          "firebase/firestore"
-        );
+        const { collection, onSnapshot, orderBy, query } =
+          await import("firebase/firestore");
         const { db } = await import("@/config/firebase");
         // Users real-time
         const usersCol = collection(db, "users");
@@ -452,9 +450,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     let unsubTournaments: (() => void) | null = null;
     const loadTournaments = async () => {
       try {
-        const { collection, onSnapshot, orderBy, query } = await import(
-          "firebase/firestore"
-        );
+        const { collection, onSnapshot, orderBy, query } =
+          await import("firebase/firestore");
         const { db } = await import("@/config/firebase");
         const tournamentsCol = collection(db, "tournaments");
         const q = query(tournamentsCol, orderBy("date", "desc"));
@@ -548,9 +545,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       }
 
       const { db } = await import("@/config/firebase");
-      const { collection, addDoc, serverTimestamp } = await import(
-        "firebase/firestore"
-      );
+      const { collection, addDoc, serverTimestamp } =
+        await import("firebase/firestore");
       const team = cleaned.map((id) => {
         const u = allUsers.find((x) => x.id === id);
         return { id, displayName: u?.displayName || u?.email || id };
@@ -833,7 +829,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 placeholder="Link to previous tournament"
                 description="Show the defending champion from last year"
                 selectedKeys={
-                  previousTournamentId ? [previousTournamentId] : []
+                  previousTournamentId &&
+                  allTournaments.some(
+                    (t) =>
+                      t.firestoreId === previousTournamentId &&
+                      t.firestoreId !== tournament?.firestoreId,
+                  )
+                    ? [previousTournamentId]
+                    : []
                 }
                 classNames={{
                   trigger: "bg-content2",
@@ -1047,9 +1050,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                           };
                         });
                         try {
-                          const { doc, updateDoc } = await import(
-                            "firebase/firestore"
-                          );
+                          const { doc, updateDoc } =
+                            await import("firebase/firestore");
                           const { db } = await import("@/config/firebase");
                           const regRef = doc(
                             db,
