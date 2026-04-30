@@ -16,10 +16,12 @@ const allowedPaths = new Set<string>([
 
 const ProfileCompletionGate: React.FC = () => {
   const { user, loading } = useAuth();
-  const { userProfile, isLoading } = useUserProfile();
+  const { userProfile, isPending } = useUserProfile();
   const location = useLocation();
 
-  if (loading || (user && isLoading)) {
+  // isPending covers both normal fetch and the paused/offline case (where isLoading
+  // would be false even though there is no data yet), preventing a false redirect.
+  if (loading || (user && isPending)) {
     return (
       <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
         <div className="space-y-2">
