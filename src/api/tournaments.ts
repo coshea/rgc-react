@@ -254,5 +254,5 @@ export async function setBracketPublished(
   published: boolean,
 ) {
   const ref = doc(db, "tournaments", tournamentId);
-  await setDoc(ref, { bracketPublished: published }, { merge: true });
+  await updateDoc(ref, { bracketPublished: published });
 }
