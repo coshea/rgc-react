@@ -39,6 +39,12 @@ vi.mock("@heroui/react", async (orig) => {
   };
 });
 
+// API-level mocks
+const setBracketPublishedMock = vi.fn(async (..._args: any[]) => {});
+vi.mock("@/api/tournaments", () => ({
+  setBracketPublished: (...args: any[]) => setBracketPublishedMock(...args),
+}));
+
 // Firestore mocks
 const addDocMock = vi.fn(async (..._args: any[]) => ({ id: "new123" }));
 const updateDocMock = vi.fn(async (..._args: any[]) => {});
@@ -104,6 +110,7 @@ beforeEach(() => {
   addToastMock.mockClear();
   addDocMock.mockClear();
   updateDocMock.mockClear();
+  setBracketPublishedMock.mockClear();
 });
 
 describe("TournamentEditor - create mode", () => {
@@ -286,6 +293,7 @@ describe("TournamentEditor - edge cases", () => {
   });
 
   it("allows submission when canceled and completed toggled (no winners)", async () => {
+
     const onSave = vi.fn();
     const qc = new QueryClient();
     render(
@@ -313,6 +321,119 @@ describe("TournamentEditor - edge cases", () => {
     await waitFor(() => {
       expect(addDocMock).toHaveBeenCalled();
       expect(onSave).toHaveBeenCalled();
+    });
+  });
+});
+
+describe("TournamentEditor - bracket publish/unpublish", () => {
+  const baseTournament: Tournament = {
+    ...openRegistrationWindow(),
+    title: "Club Championship",
+    description: "Annual event",
+    players: 4,
+    status: TournamentStatus.Upcoming,
+    prizePool: 100,
+    winnerGroups: [],
+    date: new Date(),
+    tee: "Blue",
+    firestoreId: "abc123",
+  };
+
+  it("shows 'Publish' button when bracketPublished is false", () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={{ ...baseTournament, bracketPublished: false }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(
+      screen.getByRole("button", { name: /^Publish$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'Published' button when bracketPublished is true", () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={{ ...baseTournament, bracketPublished: true }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(
+      screen.getByRole("button", { name: /^Published$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking Publish calls setBracketPublished(id, true) and shows success toast", async () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={{ ...baseTournament, bracketPublished: false }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Publish$/i }));
+    await waitFor(() => {
+      expect(setBracketPublishedMock).toHaveBeenCalledWith("abc123", true);
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Bracket published",
+          color: "success",
+        }),
+      );
+    });
+  });
+
+  it("clicking Published (to unpublish) calls setBracketPublished(id, false) and shows success toast", async () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={{ ...baseTournament, bracketPublished: true }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Published$/i }));
+    await waitFor(() => {
+      expect(setBracketPublishedMock).toHaveBeenCalledWith("abc123", false);
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Bracket unpublished" }),
+      );
+    });
+  });
+
+  it("shows error toast when setBracketPublished throws", async () => {
+    setBracketPublishedMock.mockRejectedValueOnce(new Error("Firestore error"));
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={{ ...baseTournament, bracketPublished: false }}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Publish$/i }));
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Update failed",
+          color: "danger",
+        }),
+      );
     });
   });
 });

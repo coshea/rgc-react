@@ -1,8 +1,7 @@
 import { addToast } from "@/providers/toast";
 
 /**
- * Copy an email list to the clipboard when it would exceed typical mailto
- * length limits (> 2000 chars), otherwise open a mailto: link directly.
+ * Copy an email list to the clipboard.
  */
 export async function copyOrMailtoEmails(emails: string[]): Promise<void> {
   const seen = new Set<string>();
@@ -20,31 +19,20 @@ export async function copyOrMailtoEmails(emails: string[]): Promise<void> {
   }
 
   const emailString = normalized.join(",");
-  const isLarge = emailString.length > 2000;
 
-  if (isLarge && navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(emailString);
-      addToast({
-        title: "Emails copied to clipboard",
-        description: `${normalized.length} email addresses copied. Paste into your email client manually.`,
-        color: "success",
-      });
-      return;
-    } catch (err) {
-      console.warn(
-        "[copyOrMailtoEmails] Clipboard write failed, falling back to mailto:",
-        err,
-      );
-      addToast({
-        title: "Clipboard unavailable",
-        description:
-          "Could not copy to clipboard. Opening your email client instead.",
-        color: "warning",
-      });
-      // fall through to mailto
-    }
+  try {
+    await navigator.clipboard.writeText(emailString);
+    addToast({
+      title: "Emails copied to clipboard",
+      description: `${normalized.length} email address${normalized.length === 1 ? "" : "es"} copied.`,
+      color: "success",
+    });
+  } catch (err) {
+    console.error("[copyOrMailtoEmails] Clipboard write failed:", err);
+    addToast({
+      title: "Copy failed",
+      description: "Could not copy email addresses to clipboard.",
+      color: "danger",
+    });
   }
-
-  window.location.href = `mailto:${normalized.join(",")}`;
 }

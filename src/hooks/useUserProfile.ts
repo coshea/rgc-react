@@ -19,6 +19,7 @@ export function useUserProfile() {
     },
     enabled: !!uid,
     staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 30, // keep cache 30 min so offline reconnect doesn't evict it
   });
 
   const mutation = useMutation<
@@ -85,6 +86,9 @@ export function useUserProfile() {
   return {
     userProfile: query.data,
     isLoading: query.isLoading,
+    // isPending is true whenever there is no data yet (fetching OR paused/offline).
+    // Use this in guards to avoid acting on undefined data during reconnect.
+    isPending: query.isPending,
     isError: query.isError,
     refetch: query.refetch,
     save: mutation.mutateAsync,

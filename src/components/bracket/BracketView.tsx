@@ -154,7 +154,7 @@ export function BracketView({
   // (implicitly set when overflow-x: auto is used) from creating a vertical scrollbar.
   return (
     <div
-      className="w-full overflow-x-auto touch-pan-x"
+      className="w-full overflow-x-auto touch-pan-x touch-pan-y"
       style={{ height: totalHeight + 16 }}
     >
       <div

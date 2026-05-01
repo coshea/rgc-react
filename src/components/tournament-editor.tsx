@@ -29,6 +29,7 @@ import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { BracketEditor } from "@/components/bracket/BracketEditor";
+import { setBracketPublished } from "@/api/tournaments";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -138,6 +139,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
   const [regsOpen, setRegsOpen] = React.useState(false);
   const [bracketOpen, setBracketOpen] = React.useState(false);
+  const [publishingBracket, setPublishingBracket] = React.useState(false);
   const [weather, setWeather] = React.useState<
     import("@/types/tournament").TournamentWeather | null
   >(seed.weather || null);
@@ -1095,18 +1097,65 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           {isEditing && tournament?.firestoreId && (
             <div className="pt-6">
               <Divider className="my-4" />
-              <button
-                type="button"
-                onClick={() => setBracketOpen((o) => !o)}
-                aria-expanded={bracketOpen}
-                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                <h3 className="text-lg font-medium">Tournament Bracket</h3>
-                <Icon
-                  icon="lucide:chevron-down"
-                  className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
-                />
-              </button>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBracketOpen((o) => !o)}
+                  aria-expanded={bracketOpen}
+                  className="flex-1 flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  <h3 className="text-lg font-medium">Tournament Bracket</h3>
+                  <Icon
+                    icon="lucide:chevron-down"
+                    className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color={tournament.bracketPublished ? "success" : "default"}
+                  isLoading={publishingBracket}
+                  startContent={
+                    !publishingBracket ? (
+                      <Icon
+                        icon={
+                          tournament.bracketPublished
+                            ? "lucide:eye"
+                            : "lucide:eye-off"
+                        }
+                        className="w-4 h-4"
+                      />
+                    ) : undefined
+                  }
+                  onPress={async () => {
+                    if (!tournament.firestoreId) return;
+                    setPublishingBracket(true);
+                    try {
+                      const next = !tournament.bracketPublished;
+                      await setBracketPublished(tournament.firestoreId, next);
+                      addToast({
+                        title: next
+                          ? "Bracket published"
+                          : "Bracket unpublished",
+                        description: next
+                          ? "The bracket is now visible to all members."
+                          : "The bracket is now hidden from members.",
+                        color: next ? "success" : "default",
+                      });
+                    } catch {
+                      addToast({
+                        title: "Update failed",
+                        description: "Could not update bracket visibility.",
+                        color: "danger",
+                      });
+                    } finally {
+                      setPublishingBracket(false);
+                    }
+                  }}
+                >
+                  {tournament.bracketPublished ? "Published" : "Publish"}
+                </Button>
+              </div>
               {bracketOpen && (
                 <div className="pt-2">
                   <BracketEditor

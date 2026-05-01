@@ -51,6 +51,21 @@ function emitCollection(
   });
 }
 
+function emitBracket(
+  id: string,
+  bracket: {
+    tournamentId: string;
+    format: string;
+    size: number;
+    teams: any[];
+    matches: any[];
+  } | null,
+) {
+  act(() => {
+    (apiListeners[`brackets/${id}`] || []).forEach((cb) => cb(bracket));
+  });
+}
+
 vi.mock("@/api/tournaments", () => ({
   onTournament: (id: string, next: any) => {
     const key = `tournaments/${id}`;
@@ -82,6 +97,24 @@ vi.mock("@/api/tournaments", () => ({
 vi.mock("@/api/users", () => ({
   getUsers: async () => [],
   getUserProfile: vi.fn(async () => null),
+}));
+
+vi.mock("@/api/brackets", () => ({
+  onBracket: (id: string, next: any, _error?: any) => {
+    const key = `brackets/${id}`;
+    apiListeners[key] = apiListeners[key] || [];
+    apiListeners[key].push(next);
+    return () => {
+      apiListeners[key] = (apiListeners[key] || []).filter(
+        (fn) => fn !== next,
+      );
+    };
+  },
+}));
+
+vi.mock("@/components/bracket/BracketView", () => ({
+  BracketView: () => <div data-testid="bracket-view" />,
+  calcBracketDimensions: () => ({ width: 800, height: 600 }),
 }));
 
 // Avoid rendering markdown heavy component cost
@@ -637,5 +670,55 @@ describe("TournamentDetailPage", () => {
     const cells = dataLine.split(",").map((c) => c.replace(/"/g, ""));
     expect(cells[3]).toBe(""); // Alice goldTee empty
     expect(cells[6]).toBe("Gold"); // Bob goldTee is Gold
+  });
+
+  describe("Bracket visibility", () => {
+    const minimalBracket = {
+      tournamentId: "tid",
+      format: "single_elimination",
+      size: 2,
+      teams: [],
+      matches: [],
+    };
+
+    it("non-admin does not see bracket section when bracketPublished is false", async () => {
+      isAdminMock = false;
+      renderWithRoute("bv1");
+      emitDoc("tournaments/bv1", { ...baseTournament, bracketPublished: false });
+      emitBracket("bv1", minimalBracket);
+      await screen.findByText("Club Championship");
+      expect(screen.queryByText("Tournament Bracket")).toBeNull();
+    });
+
+    it("non-admin sees bracket section when bracketPublished is true", async () => {
+      isAdminMock = false;
+      renderWithRoute("bv2");
+      emitDoc("tournaments/bv2", { ...baseTournament, bracketPublished: true });
+      emitBracket("bv2", minimalBracket);
+      await screen.findByText("Club Championship");
+      await waitFor(() =>
+        expect(screen.getByText("Tournament Bracket")).toBeInTheDocument(),
+      );
+    });
+
+    it("admin sees bracket section with print/PNG controls when bracketPublished is false", async () => {
+      isAdminMock = true;
+      renderWithRoute("bv3");
+      emitDoc("tournaments/bv3", {
+        ...baseTournament,
+        bracketPublished: false,
+      });
+      emitBracket("bv3", minimalBracket);
+      await screen.findByText("Club Championship");
+      await waitFor(() =>
+        expect(screen.getByText("Tournament Bracket")).toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole("button", { name: "Print bracket" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Download bracket as PNG" }),
+      ).toBeInTheDocument();
+    });
   });
 });

@@ -138,7 +138,7 @@ function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
         size="sm"
         variant="flat"
         color={seed === 1 ? "warning" : "default"}
-        className="shrink-0 min-w-[2.5rem] justify-center"
+        className="shrink-0 min-w-10 justify-center"
       >
         #{seed}
       </Chip>

@@ -34,6 +34,9 @@ export interface Tournament {
   weather?: TournamentWeather;
   // When true, players may select gold (senior) tees during registration
   goldTeesEnabled?: boolean;
+  // When true, the bracket is visible to all users on the tournament detail page.
+  // Admins can always see it. Defaults to false (unpublished).
+  bracketPublished?: boolean;
 }
 
 export interface TournamentWeather {
