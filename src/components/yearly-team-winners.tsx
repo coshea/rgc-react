@@ -194,7 +194,7 @@ export function YearlyTeamWinners({ year }: Props) {
               </div>
               <div className="flex flex-wrap gap-1">
                 {team.tournaments.map((t) => {
-                  let color: any =
+                  const color: any =
                     t.place === 1
                       ? "success"
                       : t.place === 2

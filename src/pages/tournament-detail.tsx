@@ -175,160 +175,221 @@ const TournamentDetailPage: React.FC = () => {
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
   const [downloadingPng, setDownloadingPng] = React.useState(false);
+  const [printingBracket, setPrintingBracket] = React.useState(false);
 
-  const handlePrintBracket = React.useCallback(() => {
-    if (!bracket) return;
-    const el = document.getElementById("bracket-print-root");
-    if (!el) return;
+  const handlePrintBracket = React.useCallback(
+    async (el: HTMLDivElement | null) => {
+      if (!bracket || !el) return;
 
-    const { width: bracketW, height: bracketH } =
-      calcBracketDimensions(bracket);
-    // 10 mm margin on each side ≈ 38 px at 96 dpi — size the page to fit the
-    // bracket exactly so no scaling / zoom is needed.
-    const marginPx = 38;
-    const pageW = bracketW + marginPx * 2;
-    const pageH = bracketH + marginPx * 2 + 16; // +16 for BracketView scroll-container
+      setPrintingBracket(true);
+      try {
+        // Render the bracket as a compressed JPEG instead of copying all app
+        // stylesheets into the print window. This keeps the PDF small because
+        // the browser only needs to embed one image, not the entire CSS bundle
+        // plus font files.
+        const { toJpeg } = await import("html-to-image");
 
-    // Collect all stylesheets from the current document so the cloned
-    // bracket renders correctly (Tailwind / HeroUI classes, SVG colours, etc.)
-    const linkTags = Array.from(
-      document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
-    )
-      .map((l) => l.outerHTML)
-      .join("\n");
-    const styleTags = Array.from(document.querySelectorAll("style"))
-      .map((s) => `<style>${s.textContent}</style>`)
-      .join("\n");
+        const { width: bracketW, height: bracketH } =
+          calcBracketDimensions(bracket);
+        const captureH = bracketH + 16;
 
-    // Always print in light mode regardless of the user's dark mode preference.
-    const lightHtmlClass = document.documentElement.className
-      .replace(/\bdark\b/g, "")
-      .trim();
+        // Always export in light mode — strip the dark class so dark-mode
+        // Tailwind utilities don't apply.
+        const htmlEl = document.documentElement;
+        const hadDark = htmlEl.classList.contains("dark");
+        if (hadDark) htmlEl.classList.remove("dark");
 
-    const html = `<!DOCTYPE html>
-<html class="${lightHtmlClass}">
+        // Expand the BracketView scroll container so the full bracket is captured.
+        const scrollContainer = el.firstElementChild as HTMLElement | null;
+        const savedOverflow = scrollContainer?.style.overflow ?? "";
+        const savedWidth = scrollContainer?.style.width ?? "";
+        const savedHeight = scrollContainer?.style.height ?? "";
+        if (scrollContainer) {
+          scrollContainer.style.overflow = "visible";
+          scrollContainer.style.width = bracketW + "px";
+          scrollContainer.style.height = captureH + "px";
+        }
+
+        // Skip external images (Firebase Storage avatars) to avoid CORS errors.
+        const skipExternalImages = (node: Node) => {
+          if (
+            node instanceof HTMLImageElement &&
+            node.src &&
+            !node.src.startsWith(window.location.origin) &&
+            !node.src.startsWith("data:")
+          ) {
+            return false;
+          }
+          return true;
+        };
+
+        let dataUrl: string;
+        try {
+          dataUrl = await toJpeg(el, {
+            quality: 0.7,
+            width: bracketW,
+            height: captureH,
+            backgroundColor: "#ffffff",
+            filter: skipExternalImages,
+          });
+        } finally {
+          if (scrollContainer) {
+            scrollContainer.style.overflow = savedOverflow;
+            scrollContainer.style.width = savedWidth;
+            scrollContainer.style.height = savedHeight;
+          }
+          if (hadDark) htmlEl.classList.add("dark");
+        }
+
+        const pxToMm = (px: number) => (px * 25.4) / 96;
+        const pageWmm = (pxToMm(bracketW) + 20).toFixed(1);
+        const pageHmm = (pxToMm(captureH) + 20).toFixed(1);
+
+        const tournamentTitle = tournament?.title ?? "Tournament Bracket";
+
+        // Minimal print window — no app CSS needed, just the JPEG image.
+        const html = `<!DOCTYPE html>
+<html>
 <head>
 <meta charset="utf-8">
-${linkTags}
-${styleTags}
+<title>${tournamentTitle} — Bracket</title>
 <style>
-/* Page sized to exact bracket dimensions — no scaling needed */
-@page { size: ${pageW}px ${pageH}px; margin: 10mm; }
-html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
-/* Expand the BracketView scroll container so the full bracket is visible */
-#bracket-wrapper > div {
-  overflow: visible !important;
-  width: ${bracketW}px !important;
-  height: auto !important;
-}
+@page { size: ${pageWmm}mm ${pageHmm}mm; margin: 10mm; }
+html, body { margin: 0; padding: 0; background: white; }
+img { display: block; max-width: 100%; }
 </style>
 </head>
 <body>
-<div id="bracket-wrapper">${el.innerHTML}</div>
-<script>window.onload = function () { window.print(); };<\/script>
+<img src="${dataUrl}" width="${bracketW}" />
+<script>window.onload = function () { window.print(); };</script>
 </body>
 </html>`;
 
-    const printWindow = window.open("", "_blank", "width=900,height=600");
-    if (!printWindow) {
-      addToast({
-        title: "Pop-up blocked",
-        description:
-          "Allow pop-ups for this site then try again to print the bracket.",
-        color: "warning",
-      });
-      return;
-    }
-    printWindow.document.write(html);
-    printWindow.document.close();
-  }, [bracket]);
-
-  const handleDownloadBracketPng = React.useCallback(async () => {
-    if (!bracket) return;
-    const el = document.getElementById("bracket-print-root");
-    if (!el) return;
-
-    setDownloadingPng(true);
-    try {
-      const { toPng } = await import("html-to-image");
-
-      // calcBracketDimensions gives us the exact pixel size of the rendered
-      // bracket tree, regardless of the viewport width.
-      const { width: bracketW, height: bracketH } =
-        calcBracketDimensions(bracket);
-      // BracketView adds 16px to height on its scroll-container
-      const captureH = bracketH + 16;
-
-      // Always export in light mode — strip the dark class so dark-mode
-      // Tailwind utilities don't apply, regardless of user preference.
-      const htmlEl = document.documentElement;
-      const hadDark = htmlEl.classList.contains("dark");
-      if (hadDark) htmlEl.classList.remove("dark");
-
-      // BracketView's outermost div has overflow-x:auto which clips the bracket
-      // when the container is narrower than totalWidth. Temporarily expand it so
-      // html-to-image captures the full horizontal extent, then restore.
-      const scrollContainer = el.firstElementChild as HTMLElement | null;
-      const savedOverflow = scrollContainer?.style.overflow ?? "";
-      const savedWidth = scrollContainer?.style.width ?? "";
-      const savedHeight = scrollContainer?.style.height ?? "";
-      if (scrollContainer) {
-        scrollContainer.style.overflow = "visible";
-        scrollContainer.style.width = bracketW + "px";
-        scrollContainer.style.height = captureH + "px";
-      }
-
-      // Skip external <img> nodes (Firebase Storage avatars) — they fail CORS
-      // when html-to-image tries to fetch and embed them.
-      const skipExternalImages = (node: Node) => {
-        if (
-          node instanceof HTMLImageElement &&
-          node.src &&
-          !node.src.startsWith(window.location.origin) &&
-          !node.src.startsWith("data:")
-        ) {
-          return false;
+        const printWindow = window.open("", "_blank", "width=900,height=600");
+        if (!printWindow) {
+          addToast({
+            title: "Pop-up blocked",
+            description:
+              "Allow pop-ups for this site then try again to print the bracket.",
+            color: "warning",
+          });
+          return;
         }
-        return true;
-      };
-
-      let dataUrl: string;
-      try {
-        dataUrl = await toPng(el, {
-          pixelRatio: 2,
-          width: bracketW,
-          height: captureH,
-          backgroundColor: "#ffffff",
-          filter: skipExternalImages,
+        printWindow.document.write(html);
+        printWindow.document.close();
+      } catch (err) {
+        console.error("Failed to generate bracket for PDF:", err);
+        addToast({
+          title: "Export failed",
+          description: "Could not generate the bracket for printing. Try again.",
+          color: "danger",
         });
       } finally {
-        // Always restore the scroll container styles and dark class
-        if (scrollContainer) {
-          scrollContainer.style.overflow = savedOverflow;
-          scrollContainer.style.width = savedWidth;
-          scrollContainer.style.height = savedHeight;
-        }
-        if (hadDark) htmlEl.classList.add("dark");
+        setPrintingBracket(false);
       }
+    },
+    [bracket, tournament],
+  );
 
-      const link = document.createElement("a");
-      link.download = `bracket-${bracket.tournamentId}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Failed to export bracket PNG:", err);
-      addToast({
-        title: "Export failed",
-        description: "Could not generate the bracket image. Try again.",
-        color: "danger",
-      });
-    } finally {
-      setDownloadingPng(false);
-    }
-  }, [bracket]);
+  const handleDownloadBracketPng = React.useCallback(
+    async (el: HTMLDivElement | null) => {
+      if (!bracket || !el) return;
+
+      setDownloadingPng(true);
+      try {
+        const { toPng } = await import("html-to-image");
+
+        // calcBracketDimensions gives us the exact pixel size of the rendered
+        // bracket tree, regardless of the viewport width.
+        const { width: bracketW, height: bracketH } =
+          calcBracketDimensions(bracket);
+        // BracketView adds 16px to height on its scroll-container
+        const captureH = bracketH + 16;
+
+        // Always export in light mode — strip the dark class so dark-mode
+        // Tailwind utilities don't apply, regardless of user preference.
+        const htmlEl = document.documentElement;
+        const hadDark = htmlEl.classList.contains("dark");
+        if (hadDark) htmlEl.classList.remove("dark");
+
+        // BracketView's outermost div has overflow-x:auto which clips the bracket
+        // when the container is narrower than totalWidth. Temporarily expand it so
+        // html-to-image captures the full horizontal extent, then restore.
+        const scrollContainer = el.firstElementChild as HTMLElement | null;
+        const savedOverflow = scrollContainer?.style.overflow ?? "";
+        const savedWidth = scrollContainer?.style.width ?? "";
+        const savedHeight = scrollContainer?.style.height ?? "";
+        if (scrollContainer) {
+          scrollContainer.style.overflow = "visible";
+          scrollContainer.style.width = bracketW + "px";
+          scrollContainer.style.height = captureH + "px";
+        }
+
+        // Skip external <img> nodes (Firebase Storage avatars) — they fail CORS
+        // when html-to-image tries to fetch and embed them.
+        const skipExternalImages = (node: Node) => {
+          if (
+            node instanceof HTMLImageElement &&
+            node.src &&
+            !node.src.startsWith(window.location.origin) &&
+            !node.src.startsWith("data:")
+          ) {
+            return false;
+          }
+          return true;
+        };
+
+        let dataUrl: string;
+        try {
+          dataUrl = await toPng(el, {
+            pixelRatio: 2,
+            width: bracketW,
+            height: captureH,
+            backgroundColor: "#ffffff",
+            filter: skipExternalImages,
+          });
+        } finally {
+          // Always restore the scroll container styles and dark class
+          if (scrollContainer) {
+            scrollContainer.style.overflow = savedOverflow;
+            scrollContainer.style.width = savedWidth;
+            scrollContainer.style.height = savedHeight;
+          }
+          if (hadDark) htmlEl.classList.add("dark");
+        }
+
+        const tournamentTitle = tournament?.title ?? "Tournament Bracket";
+        const safeTournamentTitle = tournamentTitle
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9_-]/g, "")
+          .replace(/^-+|-+$/g, "");
+        const filename = safeTournamentTitle
+          ? `bracket-${safeTournamentTitle}.png`
+          : `bracket-${bracket.tournamentId}.png`;
+
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error("Failed to export bracket PNG:", err);
+        addToast({
+          title: "Export failed",
+          description: "Could not generate the bracket image. Try again.",
+          color: "danger",
+        });
+      } finally {
+        setDownloadingPng(false);
+      }
+    },
+    [bracket, tournament],
+  );
 
   const [adminOpen, setAdminOpen] = React.useState(false);
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
+  const cardBracketRef = React.useRef<HTMLDivElement>(null);
+  const fullscreenBracketRef = React.useRef<HTMLDivElement>(null);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -1350,9 +1411,14 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                               variant="light"
                               size="sm"
                               aria-label="Print bracket"
-                              onPress={handlePrintBracket}
+                              isLoading={printingBracket}
+                              onPress={() =>
+                                handlePrintBracket(cardBracketRef.current)
+                              }
                             >
-                              <Icon icon="lucide:printer" className="w-4 h-4" />
+                              {!printingBracket && (
+                                <Icon icon="lucide:printer" className="w-4 h-4" />
+                              )}
                             </Button>
                           </Tooltip>
                           <Tooltip content="Download bracket as PNG">
@@ -1362,7 +1428,9 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                               size="sm"
                               aria-label="Download bracket as PNG"
                               isLoading={downloadingPng}
-                              onPress={handleDownloadBracketPng}
+                              onPress={() =>
+                                handleDownloadBracketPng(cardBracketRef.current)
+                              }
                             >
                               {!downloadingPng && (
                                 <Icon
@@ -1389,7 +1457,7 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                   </CardHeader>
                   <Divider />
                   <CardBody className="pt-4">
-                    <div id="bracket-print-root">
+                    <div ref={cardBracketRef}>
                       <BracketView
                         bracket={bracket}
                         onTeamPress={(team) => setBracketTeamModal(team)}
@@ -1706,9 +1774,14 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                         variant="light"
                         size="sm"
                         aria-label="Print bracket"
-                        onPress={handlePrintBracket}
+                        isLoading={printingBracket}
+                        onPress={() =>
+                          handlePrintBracket(fullscreenBracketRef.current)
+                        }
                       >
-                        <Icon icon="lucide:printer" className="w-4 h-4" />
+                        {!printingBracket && (
+                          <Icon icon="lucide:printer" className="w-4 h-4" />
+                        )}
                       </Button>
                     </Tooltip>
                     <Tooltip content="Download bracket as PNG">
@@ -1718,7 +1791,9 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                         size="sm"
                         aria-label="Download bracket as PNG"
                         isLoading={downloadingPng}
-                        onPress={handleDownloadBracketPng}
+                        onPress={() =>
+                          handleDownloadBracketPng(fullscreenBracketRef.current)
+                        }
                       >
                         {!downloadingPng && (
                           <Icon icon="lucide:image-down" className="w-4 h-4" />
@@ -1741,14 +1816,16 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
               </div>
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
-              <BracketView
-                bracket={bracket}
-                onTeamPress={(team) => {
-                  setBracketTeamModal(team);
-                  setBracketExpanded(false);
-                }}
-                userPhotoMap={bracketUserPhotoMap}
-              />
+              <div ref={fullscreenBracketRef}>
+                <BracketView
+                  bracket={bracket}
+                  onTeamPress={(team) => {
+                    setBracketTeamModal(team);
+                    setBracketExpanded(false);
+                  }}
+                  userPhotoMap={bracketUserPhotoMap}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -1991,8 +2068,6 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
             const emails = memberRows
               .map((r) => r.memberUser?.email)
               .filter((e): e is string => !!e);
-            const mailtoHref =
-              emails.length > 0 ? `mailto:${emails.join(",")}` : undefined;
 
             return (
               <>
@@ -2043,17 +2118,23 @@ html, body { margin: 0; padding: 0; background: white; color-scheme: light; }
                   </div>
                 </ModalBody>
                 <ModalFooter>
-                  {mailtoHref && (
+                  {emails.length > 0 && (
                     <Button
-                      as="a"
-                      href={mailtoHref}
                       variant="flat"
                       color="primary"
                       startContent={
-                        <Icon icon="lucide:mail" className="w-4 h-4" />
+                        <Icon icon="lucide:copy" className="w-4 h-4" />
                       }
+                      onPress={async () => {
+                        await navigator.clipboard.writeText(emails.join(","));
+                        addToast({
+                          title: "Emails copied",
+                          description: `${emails.length} email address${emails.length === 1 ? "" : "es"} copied to clipboard.`,
+                          color: "success",
+                        });
+                      }}
                     >
-                      Email team
+                      Copy emails
                     </Button>
                   )}
                   <Button variant="light" color="default" onPress={onClose}>

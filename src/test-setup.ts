@@ -76,13 +76,16 @@ vi.mock("framer-motion", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
     children ?? null;
 
-  const el = (tag: string) =>
-    React.forwardRef<
+  const el = (tag: string) => {
+    const Component = React.forwardRef<
       Element,
       React.HTMLAttributes<Element> & { children?: React.ReactNode }
     >(({ children, ...props }, ref) =>
       React.createElement(tag, { ...props, ref }, children),
     );
+    Component.displayName = `motion.${tag}`;
+    return Component;
+  };
 
   const motionProxy = new Proxy({} as Record<string, unknown>, {
     get: (_t, tag: string | symbol) =>

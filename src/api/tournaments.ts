@@ -20,6 +20,7 @@ import {
   getDocs,
   addDoc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   getCountFromServer,
 } from "firebase/firestore";

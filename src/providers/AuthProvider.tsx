@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     // evaluate once so both the try block and the catch handler can reference it
-    let isCrossOriginIsolated: boolean | undefined =
+    const isCrossOriginIsolated: boolean | undefined =
       typeof window !== "undefined" &&
       (window as WindowWithCOI).crossOriginIsolated;
 
