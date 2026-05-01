@@ -19,6 +19,9 @@ jobs:
           # Firebase CLI v14+ requires Node >=20; use Node 22 for compatibility
           node-version: "22"
 
+      - name: Install npm 11
+        run: npm install -g npm@11
+
       - name: Install dependencies
         run: npm ci
 

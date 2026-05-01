@@ -66,6 +66,7 @@ import {
   getTournamentGoogleCalendarUrl,
   downloadTournamentIcsFile,
 } from "@/utils/calendar";
+import { copyOrMailtoEmails } from "@/utils/email";
 import { EmailRegistrantsButton } from "@/components/email-registrants-button";
 
 const formatLocalDateTime = (date?: Date) => {
@@ -246,13 +247,21 @@ const TournamentDetailPage: React.FC = () => {
         const pageHmm = (pxToMm(captureH) + 20).toFixed(1);
 
         const tournamentTitle = tournament?.title ?? "Tournament Bracket";
+        const escapeHtml = (s: string) =>
+          s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        const safeTitle = escapeHtml(tournamentTitle);
 
         // Minimal print window — no app CSS needed, just the JPEG image.
         const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>${tournamentTitle} — Bracket</title>
+<title>${safeTitle} — Bracket</title>
 <style>
 @page { size: ${pageWmm}mm ${pageHmm}mm; margin: 10mm; }
 html, body { margin: 0; padding: 0; background: white; }
@@ -2125,14 +2134,7 @@ img { display: block; max-width: 100%; }
                       startContent={
                         <Icon icon="lucide:copy" className="w-4 h-4" />
                       }
-                      onPress={async () => {
-                        await navigator.clipboard.writeText(emails.join(","));
-                        addToast({
-                          title: "Emails copied",
-                          description: `${emails.length} email address${emails.length === 1 ? "" : "es"} copied to clipboard.`,
-                          color: "success",
-                        });
-                      }}
+                      onPress={() => copyOrMailtoEmails(emails)}
                     >
                       Copy emails
                     </Button>
