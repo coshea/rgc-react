@@ -164,5 +164,11 @@ export const siteConfig = {
       link: "/settings/notifications",
       icon: "lucide:settings-2",
     },
+    backfillCreatedAt: {
+      title: "Backfill Member Since",
+      description: "One-time migration to populate member-since dates",
+      link: "/admin/backfill-created-at",
+      icon: "lucide:calendar-clock",
+    },
   },
 };

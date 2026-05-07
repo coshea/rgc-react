@@ -60,6 +60,9 @@ const PoliciesListPage = lazy(() =>
 const AdminNotificationsPage = lazy(
   () => import("@/pages/admin-notifications"),
 );
+const AdminBackfillCreatedAtPage = lazy(
+  () => import("@/pages/admin-backfill-created-at"),
+);
 const NotificationSettingsPage = lazy(
   () => import("@/pages/notification-settings"),
 );
@@ -218,6 +221,15 @@ function App() {
                   </RequireAdmin>
                 }
                 path={siteConfig.pages.adminNotifications.link}
+              />
+
+              <Route
+                element={
+                  <RequireAdmin>
+                    <AdminBackfillCreatedAtPage />
+                  </RequireAdmin>
+                }
+                path={siteConfig.pages.backfillCreatedAt.link}
               />
 
               <Route
