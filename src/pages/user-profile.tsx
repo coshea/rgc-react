@@ -29,8 +29,11 @@ import {
   useUserChampionships,
   useUserTournamentWins,
   useUserWinnings,
+  useUserRegistrations,
 } from "@/hooks/useUserTournaments";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { useUsersMap } from "@/hooks/useUsers";
+import { TeamRegistrationCard } from "@/components/team-registration-card";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
 import { toDate } from "@/api/users";
@@ -54,6 +57,9 @@ const UserProfilePage: React.FC = () => {
     useUserTournamentWins(userId);
   const { data: winnings, isLoading: winningsLoading } =
     useUserWinnings(userId);
+  const { data: userRegistrations = [], isLoading: registrationsLoading } =
+    useUserRegistrations(userId);
+  const { usersMap } = useUsersMap();
 
   usePageTracking(profileUser?.displayName || `User ${userId}`, userLoading);
 
@@ -691,6 +697,129 @@ const UserProfilePage: React.FC = () => {
               <p className="text-default-500">
                 Check back later for tournament victories!
               </p>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Current Registration Status */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <Icon
+              icon="lucide:calendar-check"
+              className="w-5 h-5 text-primary"
+            />
+            <h3 className="text-lg font-semibold">
+              Current Registration Status
+            </h3>
+            {!registrationsLoading && userRegistrations.length > 0 && (
+              <Chip size="sm" color="primary" variant="flat">
+                {userRegistrations.length}
+              </Chip>
+            )}
+          </div>
+        </CardHeader>
+        <CardBody>
+          {registrationsLoading ? (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-default-200 p-3 space-y-2"
+                >
+                  <Skeleton className="h-5 w-40 rounded" />
+                  <Skeleton className="h-4 w-28 rounded" />
+                  <div className="space-y-1.5 pt-1">
+                    <Skeleton className="h-7 w-full rounded" />
+                    <Skeleton className="h-7 w-full rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : userRegistrations.length === 0 ? (
+            <div className="text-center py-8">
+              <Icon
+                icon="lucide:calendar-x"
+                className="w-12 h-12 mx-auto mb-3 text-default-300"
+              />
+              <p className="text-default-500">
+                Not registered for any upcoming tournaments
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {userRegistrations.map((r) => {
+                const { registration, tournament } = r;
+                const maxPlayers = tournament.players ?? 1;
+                const openSpots = Math.max(
+                  0,
+                  maxPlayers - registration.team.length,
+                );
+                const showOpenSpots =
+                  registration.openSpotsOptIn === true && openSpots > 0;
+                const regDate =
+                  registration.registeredAt != null &&
+                  typeof registration.registeredAt === "object" &&
+                  "toDate" in (registration.registeredAt as object)
+                    ? (
+                        registration.registeredAt as { toDate: () => Date }
+                      ).toDate()
+                    : null;
+                const dateStr = regDate
+                  ? `Registered ${regDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}`
+                  : "";
+                const tournamentDateStr = tournament.date.toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  },
+                );
+
+                return (
+                  <Card
+                    key={tournament.firestoreId}
+                    isPressable
+                    onPress={() =>
+                      navigate(`/tournaments/${tournament.firestoreId}`)
+                    }
+                    className="border border-default-200 hover:border-primary/40 transition-colors"
+                  >
+                    <CardHeader className="pb-1 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm truncate">
+                          {tournament.title}
+                        </p>
+                        <p className="text-xs text-foreground-500">
+                          {tournamentDateStr}
+                        </p>
+                      </div>
+                      <Icon
+                        icon="lucide:chevron-right"
+                        className="w-4 h-4 text-foreground-400 shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
+                    </CardHeader>
+                    <CardBody className="pt-0 pb-2 px-2">
+                      <TeamRegistrationCard
+                        teamNumber={1}
+                        displayTeam={registration.team}
+                        leaderId={registration.ownerId}
+                        isWaitlisted={false}
+                        openSpots={openSpots}
+                        showOpenSpots={showOpenSpots}
+                        dateStr={dateStr}
+                        maxPlayers={maxPlayers}
+                        usersMap={usersMap}
+                      />
+                    </CardBody>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardBody>

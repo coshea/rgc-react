@@ -257,3 +257,81 @@ export async function setBracketPublished(
   const ref = doc(db, "tournaments", tournamentId);
   await updateDoc(ref, { bracketPublished: published });
 }
+
+// ── User upcoming registrations ───────────────────────────────────────────────
+
+export interface UserRegistrationWithTournament {
+  registration: {
+    id: string;
+    ownerId: string;
+    team: RegistrationMember[];
+    openSpotsOptIn?: boolean;
+    registeredAt?: unknown;
+  };
+  tournament: ReturnType<typeof mapTournamentDoc>;
+}
+
+/**
+ * Fetch upcoming tournaments where the given user owns a registration.
+ * Results are sorted by tournament date ascending.
+ */
+export async function fetchUserUpcomingRegistrations(
+  uid: string,
+): Promise<UserRegistrationWithTournament[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tournamentsRef = collection(db, "tournaments");
+  const q = query(
+    tournamentsRef,
+    where("date", ">=", today),
+    orderBy("date", "asc"),
+  );
+  const tournamentSnaps = await getDocs(q);
+
+  const results: UserRegistrationWithTournament[] = [];
+
+  await Promise.all(
+    tournamentSnaps.docs.map(async (tDoc) => {
+      const tournament = mapTournamentDoc(tDoc);
+      const regCol = collection(db, "tournaments", tDoc.id, "registrations");
+      const regSnaps = await getDocs(regCol);
+
+      const matchingDoc = regSnaps.docs.find((doc) => {
+        const data = doc.data();
+        if (data.ownerId === uid) return true;
+        const team = Array.isArray(data.team)
+          ? (data.team as RegistrationMember[])
+          : [];
+        return team.some((m) => m.id === uid);
+      });
+
+      if (matchingDoc) {
+        const regData = matchingDoc.data();
+        const team = Array.isArray(regData.team)
+          ? (regData.team as RegistrationMember[])
+          : [];
+        const ownerId =
+          typeof regData.ownerId === "string" ? regData.ownerId : uid;
+        const openSpotsOptIn =
+          typeof regData.openSpotsOptIn === "boolean"
+            ? regData.openSpotsOptIn
+            : undefined;
+        results.push({
+          registration: {
+            id: matchingDoc.id,
+            ownerId,
+            team,
+            openSpotsOptIn,
+            registeredAt: regData.registeredAt,
+          },
+          tournament,
+        });
+      }
+    }),
+  );
+
+  return results.sort(
+    (a, b) => a.tournament.date.getTime() - b.tournament.date.getTime(),
+  );
+}

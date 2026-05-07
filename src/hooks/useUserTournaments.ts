@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { collection, query, getDocs, orderBy, where } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { fetchUserChampionships } from "@/api/championships";
+import {
+  fetchUserUpcomingRegistrations,
+  type UserRegistrationWithTournament,
+} from "@/api/tournaments";
 import { SEASON_AWARD_LABELS } from "@/types/seasonAwards";
 import type { Tournament } from "@/types/tournament";
 
@@ -291,5 +295,17 @@ export function useUserSeasonAwards(userId: string | undefined) {
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch upcoming tournament registrations owned by the given user.
+ */
+export function useUserRegistrations(userId: string | undefined) {
+  return useQuery<UserRegistrationWithTournament[]>({
+    queryKey: ["userRegistrations", userId],
+    queryFn: () => fetchUserUpcomingRegistrations(userId!),
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000,
   });
 }
