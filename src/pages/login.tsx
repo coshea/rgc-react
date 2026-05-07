@@ -333,6 +333,21 @@ export default function LoginPage() {
       // Navigation or further actions on successful Google sign-in
       const additionalUserInfo = getAdditionalUserInfo(result);
       if (additionalUserInfo?.isNewUser) {
+        const displayName = result.user.displayName || "";
+        const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+        const [first, ...rest] = nameParts;
+        try {
+          await saveUserProfile(result.user.uid, {
+            firstName: first ?? "",
+            lastName: rest.join(" ") ?? "",
+            email: result.user.email || undefined,
+          });
+        } catch (profileError: unknown) {
+          console.error(
+            "Failed to save profile after Google sign-in",
+            profileError,
+          );
+        }
         navigate(siteConfig.pages.profile.link);
       } else {
         const dest = state?.from || siteConfig.pages.home.link;

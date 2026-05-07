@@ -225,21 +225,18 @@ export default function SignUpPage() {
         if (additionalUserInfo?.isNewUser) {
           const displayName = result.user.displayName || "";
           const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
-          if (nameParts.length >= 2) {
-            const [first, ...rest] = nameParts;
-            const last = rest.join(" ");
-            try {
-              await saveUserProfile(result.user.uid, {
-                firstName: first,
-                lastName: last,
-                email: result.user.email || undefined,
-              });
-            } catch (profileError: unknown) {
-              console.error(
-                "Failed to save profile after Google signup",
-                profileError,
-              );
-            }
+          const [first, ...rest] = nameParts;
+          try {
+            await saveUserProfile(result.user.uid, {
+              firstName: first ?? "",
+              lastName: rest.join(" ") ?? "",
+              email: result.user.email || undefined,
+            });
+          } catch (profileError: unknown) {
+            console.error(
+              "Failed to save profile after Google signup",
+              profileError,
+            );
           }
           navigate(siteConfig.pages.profile.link);
         } else {

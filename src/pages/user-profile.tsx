@@ -256,21 +256,33 @@ const UserProfilePage: React.FC = () => {
         <BackButton />
 
         {isOwnProfile && (
-          <Button
-            color="primary"
-            variant="flat"
-            size="sm"
-            startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
-            onPress={() => {
-              if (isMobile) {
-                navigate("/profile/edit");
-                return;
+          <div className="flex items-center gap-2">
+            <Button
+              variant="flat"
+              size="sm"
+              startContent={<Icon icon="lucide:bell" className="w-4 h-4" />}
+              onPress={() =>
+                navigate(siteConfig.pages.notificationSettings.link)
               }
-              onOpen();
-            }}
-          >
-            Edit Profile
-          </Button>
+            >
+              Notifications
+            </Button>
+            <Button
+              color="primary"
+              variant="flat"
+              size="sm"
+              startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
+              onPress={() => {
+                if (isMobile) {
+                  navigate("/profile/edit");
+                  return;
+                }
+                onOpen();
+              }}
+            >
+              Edit Profile
+            </Button>
+          </div>
         )}
       </div>
 
@@ -372,8 +384,10 @@ const UserProfilePage: React.FC = () => {
                     <Icon icon="lucide:calendar" className="w-4 h-4" />
                     <span>
                       Member since{" "}
-                      {toDate(profileUser.createdAt)?.getFullYear() ||
-                        "Unknown"}
+                      {toDate(profileUser.createdAt)?.toLocaleDateString(
+                        "en-US",
+                        { month: "long", year: "numeric" },
+                      ) ?? "Unknown"}
                     </span>
                   </div>
                 )}
