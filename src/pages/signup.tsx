@@ -25,6 +25,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { auth } from "@/config/firebase";
+import { parseDisplayName } from "@/utils/profileCompletion";
 import {
   storePendingSignupProfile,
   clearPendingSignupProfile,
@@ -223,13 +224,13 @@ export default function SignUpPage() {
       if (result.user) {
         const additionalUserInfo = getAdditionalUserInfo(result);
         if (additionalUserInfo?.isNewUser) {
-          const displayName = result.user.displayName || "";
-          const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
-          const [first, ...rest] = nameParts;
+          const { firstName: first, lastName } = parseDisplayName(
+            result.user.displayName,
+          );
           try {
             await saveUserProfile(result.user.uid, {
-              firstName: first ?? "",
-              lastName: rest.join(" ") ?? "",
+              firstName: first,
+              lastName: lastName,
               email: result.user.email || undefined,
             });
           } catch (profileError: unknown) {

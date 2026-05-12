@@ -24,6 +24,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
+import { parseDisplayName } from "@/utils/profileCompletion";
 
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
 const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
@@ -333,13 +334,13 @@ export default function LoginPage() {
       // Navigation or further actions on successful Google sign-in
       const additionalUserInfo = getAdditionalUserInfo(result);
       if (additionalUserInfo?.isNewUser) {
-        const displayName = result.user.displayName || "";
-        const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
-        const [first, ...rest] = nameParts;
+        const { firstName: first, lastName } = parseDisplayName(
+          result.user.displayName,
+        );
         try {
           await saveUserProfile(result.user.uid, {
-            firstName: first ?? "",
-            lastName: rest.join(" ") ?? "",
+            firstName: first,
+            lastName: lastName,
             email: result.user.email || undefined,
           });
         } catch (profileError: unknown) {
