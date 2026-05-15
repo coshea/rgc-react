@@ -13,7 +13,7 @@ import { Icon } from "@iconify/react";
 import { TeeBadge } from "@/components/tee-badge";
 import { fetchRegistrationCount } from "@/api/tournaments";
 import { type Tournament } from "@/types/tournament";
-import { getRegistrationWindowInfo } from "@/utils/tournamentStatus";
+import { getRegistrationWindowInfo, RegistrationWindowState } from "@/utils/tournamentStatus";
 import { TournamentStatusChip } from "@/components/tournament-status-chip";
 
 interface TournamentStatusCardProps {
@@ -35,6 +35,8 @@ export function TournamentStatusCard({
   const isNearFull = cap !== undefined && !isFull && teamCount >= cap * 0.8;
 
   const registrationWindowInfo = getRegistrationWindowInfo(tournament);
+  const registrationClosed =
+    registrationWindowInfo.state === RegistrationWindowState.Closed;
 
   const fillColor = isFull
     ? ("danger" as const)
@@ -119,7 +121,7 @@ export function TournamentStatusCard({
                 {cap !== undefined && (
                   <span className="text-default-400 font-normal"> / {cap}</span>
                 )}
-                {isFull && (
+                {!registrationClosed && isFull && (
                   <Chip
                     color="danger"
                     size="sm"
@@ -129,7 +131,7 @@ export function TournamentStatusCard({
                     Full
                   </Chip>
                 )}
-                {isNearFull && !isFull && (
+                {!registrationClosed && isNearFull && !isFull && (
                   <Chip
                     color="warning"
                     size="sm"
@@ -141,7 +143,7 @@ export function TournamentStatusCard({
                 )}
               </span>
             </div>
-            {cap !== undefined && cap > 0 && (
+            {!registrationClosed && cap !== undefined && cap > 0 && (
               <Progress
                 color={fillColor}
                 value={fillPct}
@@ -153,7 +155,8 @@ export function TournamentStatusCard({
         )}
 
         {/* Registration window */}
-        {(registrationWindowInfo.start || registrationWindowInfo.end) && (
+        {!registrationClosed &&
+          (registrationWindowInfo.start || registrationWindowInfo.end) && (
           <div className="text-xs text-default-400 flex items-center gap-1">
             <Icon icon="lucide:calendar-clock" className="w-3 h-3" />
             <span className="font-medium text-default-500">Registration:</span>

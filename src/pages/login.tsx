@@ -24,6 +24,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
+import { parseDisplayName } from "@/utils/profileCompletion";
 
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
 const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
@@ -333,6 +334,21 @@ export default function LoginPage() {
       // Navigation or further actions on successful Google sign-in
       const additionalUserInfo = getAdditionalUserInfo(result);
       if (additionalUserInfo?.isNewUser) {
+        const { firstName: first, lastName } = parseDisplayName(
+          result.user.displayName,
+        );
+        try {
+          await saveUserProfile(result.user.uid, {
+            firstName: first,
+            lastName: lastName,
+            email: result.user.email || undefined,
+          });
+        } catch (profileError: unknown) {
+          console.error(
+            "Failed to save profile after Google sign-in",
+            profileError,
+          );
+        }
         navigate(siteConfig.pages.profile.link);
       } else {
         const dest = state?.from || siteConfig.pages.home.link;

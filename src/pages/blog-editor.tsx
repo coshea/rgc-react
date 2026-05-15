@@ -31,7 +31,11 @@ import {
   generateSlug,
   generateExcerpt,
 } from "@/api/blog";
-import { onAllTournaments, mapTournamentDoc } from "@/api/tournaments";
+import {
+  onAllTournaments,
+  mapTournamentDoc,
+  fetchRegistrationCount,
+} from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
@@ -228,11 +232,14 @@ export const BlogEditorPage: React.FC = () => {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
+                timeZone: "UTC",
               })
             : String(tournament.date),
         tee: tournament.tee ?? "Mixed",
         prizePool: tournament.prizePool,
-        totalTeams: tournament.players,
+        totalTeams: tournament.firestoreId
+          ? await fetchRegistrationCount(tournament.firestoreId)
+          : tournament.players,
         description: tournament.description ?? "",
         winnerGroups: tournament.winnerGroups ?? [],
         weather: tournament.weather,

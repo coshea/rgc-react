@@ -18,6 +18,11 @@ import {
   PAYPAL_ENVIRONMENT,
   PAYPAL_ENVIRONMENT_NAME,
 } from "./paypalConfig";
+import { RESEND_API_KEY } from "./resendConfig";
+import {
+  sendMembershipConfirmationEmail,
+  sendDonationConfirmationEmail,
+} from "./sendPaymentConfirmationEmails";
 import {
   AuthError,
   corsMiddleware,
@@ -40,7 +45,7 @@ export { notify_tournament_canceled } from "./notifyTournamentCanceled";
 export { generate_blog_writeup } from "./generateBlogWriteup";
 
 export const verify_and_record_membership_payment = onRequest(
-  { secrets: [PAYPAL_CLIENT_SECRET] },
+  { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
   async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
@@ -105,6 +110,40 @@ export const verify_and_record_membership_payment = onRequest(
           },
         });
 
+        if (resp.ok && !resp.reused) {
+          try {
+            const userRecord = await admin.auth().getUser(uid);
+            const email = userRecord.email;
+            if (email) {
+              const apiKey = RESEND_API_KEY.value();
+              const name = userRecord.displayName || email;
+              await sendMembershipConfirmationEmail(apiKey, email, {
+                name,
+                membershipType: request.membershipType,
+                paymentMethod: "paypal",
+                amount: resp.amount,
+                currency: resp.currency,
+                year: request.year,
+              });
+              logger.info(
+                "verify_and_record_membership_payment: confirmation email sent",
+                { uid, membershipType: request.membershipType },
+              );
+            }
+          } catch (emailErr) {
+            logger.warn(
+              "verify_and_record_membership_payment: failed to send confirmation email",
+              {
+                error:
+                  emailErr instanceof Error
+                    ? emailErr.message
+                    : "Unknown error",
+                uid,
+              },
+            );
+          }
+        }
+
         res.status(200).json(resp);
       } catch (e) {
         const message = e instanceof Error ? e.message : "Unknown error";
@@ -129,67 +168,102 @@ export const verify_and_record_membership_payment = onRequest(
   },
 );
 
-export const request_check_membership_payment = onRequest(async (req, res) => {
-  corsMiddleware(req, res, async () => {
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-
-    if (req.method !== "POST") {
-      res.status(405).json({ ok: false, error: "Method not allowed" });
-      return;
-    }
-
-    let uid: string | null = null;
-    let request: ReturnType<typeof parseCheckPaymentRequest> | null = null;
-
-    try {
-      uid = await getUidFromRequest(
-        req as unknown as { headers: Record<string, unknown> },
-      );
-
-      request = parseCheckPaymentRequest(req.body);
-
-      const serverNow = getFirestoreWriteTime();
-
-      const { groupId, reused } = await recordCheckMembershipPayment({
-        db: admin.firestore(),
-        now: serverNow,
-        payment: {
-          uid,
-          year: request.year,
-          membershipType: request.membershipType,
-          donationAmount: request.donationAmount,
-          requestId: request.requestId,
-        },
-      });
-
-      res.status(200).json({ ok: true, groupId, reused });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Unknown error";
-      logger.error("request_check_membership_payment failed", {
-        error: message,
-        stack: e instanceof Error ? e.stack : undefined,
-        uid,
-        year: request?.year ?? null,
-        membershipType: request?.membershipType ?? null,
-        donationAmount: request?.donationAmount ?? null,
-        requestId: request?.requestId ?? null,
-        origin: req.headers.origin ?? null,
-        host: req.headers.host ?? null,
-      });
-      if (e instanceof AuthError) {
-        res.status(e.status).json({ ok: false, error: e.message });
+export const request_check_membership_payment = onRequest(
+  { secrets: [RESEND_API_KEY] },
+  async (req, res) => {
+    corsMiddleware(req, res, async () => {
+      if (req.method === "OPTIONS") {
+        res.status(204).send("");
         return;
       }
-      res.status(500).json({ ok: false, error: message });
-    }
-  });
-});
+
+      if (req.method !== "POST") {
+        res.status(405).json({ ok: false, error: "Method not allowed" });
+        return;
+      }
+
+      let uid: string | null = null;
+      let request: ReturnType<typeof parseCheckPaymentRequest> | null = null;
+
+      try {
+        uid = await getUidFromRequest(
+          req as unknown as { headers: Record<string, unknown> },
+        );
+
+        request = parseCheckPaymentRequest(req.body);
+
+        const serverNow = getFirestoreWriteTime();
+
+        const { groupId, reused } = await recordCheckMembershipPayment({
+          db: admin.firestore(),
+          now: serverNow,
+          payment: {
+            uid,
+            year: request.year,
+            membershipType: request.membershipType,
+            donationAmount: request.donationAmount,
+            requestId: request.requestId,
+          },
+        });
+
+        if (!reused) {
+          try {
+            const userRecord = await admin.auth().getUser(uid);
+            const email = userRecord.email;
+            if (email) {
+              const apiKey = RESEND_API_KEY.value();
+              const name = userRecord.displayName || email;
+              await sendMembershipConfirmationEmail(apiKey, email, {
+                name,
+                membershipType: request.membershipType,
+                paymentMethod: "check",
+                year: request.year,
+              });
+              logger.info(
+                "request_check_membership_payment: confirmation email sent",
+                { uid, membershipType: request.membershipType },
+              );
+            }
+          } catch (emailErr) {
+            logger.warn(
+              "request_check_membership_payment: failed to send confirmation email",
+              {
+                error:
+                  emailErr instanceof Error
+                    ? emailErr.message
+                    : "Unknown error",
+                uid,
+              },
+            );
+          }
+        }
+
+        res.status(200).json({ ok: true, groupId, reused });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Unknown error";
+        logger.error("request_check_membership_payment failed", {
+          error: message,
+          stack: e instanceof Error ? e.stack : undefined,
+          uid,
+          year: request?.year ?? null,
+          membershipType: request?.membershipType ?? null,
+          donationAmount: request?.donationAmount ?? null,
+          requestId: request?.requestId ?? null,
+          origin: req.headers.origin ?? null,
+          host: req.headers.host ?? null,
+        });
+        if (e instanceof AuthError) {
+          res.status(e.status).json({ ok: false, error: e.message });
+          return;
+        }
+        res.status(500).json({ ok: false, error: message });
+      }
+    });
+  },
+);
 
 export const verify_and_record_donation_payment = onRequest(
-  { secrets: [PAYPAL_CLIENT_SECRET] },
+  { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
   async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
@@ -253,6 +327,38 @@ export const verify_and_record_donation_payment = onRequest(
             },
           },
         });
+
+        if (resp.ok && !resp.reused) {
+          try {
+            const userRecord = await admin.auth().getUser(uid);
+            const email = userRecord.email;
+            if (email) {
+              const apiKey = RESEND_API_KEY.value();
+              const name = userRecord.displayName || email;
+              await sendDonationConfirmationEmail(apiKey, email, {
+                name,
+                paymentMethod: "paypal",
+                amount: resp.amount,
+                currency: resp.currency,
+              });
+              logger.info(
+                "verify_and_record_donation_payment: confirmation email sent",
+                { uid },
+              );
+            }
+          } catch (emailErr) {
+            logger.warn(
+              "verify_and_record_donation_payment: failed to send confirmation email",
+              {
+                error:
+                  emailErr instanceof Error
+                    ? emailErr.message
+                    : "Unknown error",
+                uid,
+              },
+            );
+          }
+        }
 
         res.status(200).json(resp);
       } catch (e) {

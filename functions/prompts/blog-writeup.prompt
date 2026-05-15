@@ -22,9 +22,9 @@ Write a blog post announcing the results of the {{tournamentTitle}} tournament.
 {{#if closestToPinFormatted}}
 3. **Closest to the Pin** — Briefly recognize the closest-to-pin winner(s) listed below.
 
-4. **Closing paragraph** — Warm congratulations to all participants and a look-ahead to the next event.
+4. **Closing paragraph** — Brief congratulations to all participants. Do NOT include any sign-off, sign-off phrases, or closing salutation.
 {{else}}
-3. **Closing paragraph** — Warm congratulations to all participants and a look-ahead to the next event.
+3. **Closing paragraph** — Brief congratulations to all participants. Do NOT include any sign-off, sign-off phrases, or closing salutation.
 {{/if}}
 
 ---
