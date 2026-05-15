@@ -284,7 +284,7 @@ export interface UserRegistrationWithTournament {
  * team member). Uses collectionGroup queries to avoid the N+1 pattern of
  * scanning all registrations for every tournament.
  *
- * "Upcoming" means the tournament date is today or later AND the tournament
+ * "Upcoming" means the tournament
  * has not been manually marked Completed or Canceled.
  *
  * Results are sorted by tournament date ascending.
@@ -308,10 +308,11 @@ export async function fetchUserUpcomingRegistrations(
     ),
   ]);
 
-  // Merge results, deduplicating by registration document ID.
+  // Merge results, deduplicating by full document path so that registrations
+  // from different tournaments with the same document ID are never conflated.
   const regDocsById = new Map<string, QueryDocumentSnapshot<DocumentData>>();
   for (const d of [...ownedSnaps.docs, ...memberSnaps.docs]) {
-    regDocsById.set(d.id, d);
+    regDocsById.set(d.ref.path, d);
   }
 
   if (regDocsById.size === 0) return [];
