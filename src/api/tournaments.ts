@@ -274,7 +274,7 @@ export interface UserRegistrationWithTournament {
     ownerId: string;
     team: RegistrationMember[];
     openSpotsOptIn?: boolean;
-    registeredAt?: unknown;
+    registeredAt?: Date;
   };
   tournament: ReturnType<typeof mapTournamentDoc>;
 }
@@ -362,7 +362,7 @@ export async function fetchUserUpcomingRegistrations(
         ownerId,
         team,
         openSpotsOptIn,
-        registeredAt: regData.registeredAt,
+        registeredAt: parseToDate(regData.registeredAt),
       },
       tournament,
     });

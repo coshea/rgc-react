@@ -299,7 +299,7 @@ export function useUserSeasonAwards(userId: string | undefined) {
 }
 
 /**
- * Hook to fetch upcoming tournament registrations owned by the given user.
+ * Hook to fetch upcoming tournament registrations owned by the given user or part of the team.
  */
 export function useUserRegistrations(userId: string | undefined) {
   return useQuery<UserRegistrationWithTournament[]>({

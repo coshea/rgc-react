@@ -36,7 +36,7 @@ import { useUsersMap } from "@/hooks/useUsers";
 import { TeamRegistrationCard } from "@/components/team-registration-card";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
-import { toDate, type FirestoreTimestamp } from "@/api/users";
+import { toDate } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
 
 const UserProfilePage: React.FC = () => {
@@ -386,7 +386,7 @@ const UserProfilePage: React.FC = () => {
                       Member since{" "}
                       {toDate(profileUser.createdAt)?.toLocaleDateString(
                         "en-US",
-                        { month: "long", year: "numeric" },
+                        { month: "long", year: "numeric", timeZone: "UTC" },
                       ) ?? "Unknown"}
                     </span>
                   </div>
@@ -772,9 +772,7 @@ const UserProfilePage: React.FC = () => {
                 );
                 const showOpenSpots =
                   registration.openSpotsOptIn === true && openSpots > 0;
-                const regDate = toDate(
-                  registration.registeredAt as FirestoreTimestamp | undefined,
-                );
+                const regDate = registration.registeredAt;
                 const dateStr = regDate
                   ? `Registered ${regDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}`
                   : "";
