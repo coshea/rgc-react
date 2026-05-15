@@ -125,7 +125,7 @@ export const BlogListPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pt-4 pb-10 px-4">
+    <div className="max-w-6xl mx-auto pt-4 pb-10">
       {/* Header */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -279,17 +279,17 @@ export const BlogListPage: React.FC = () => {
                       {isAdmin ? (
                         <Button
                           variant="light"
-                          className="h-auto p-0 data-[hover=true]:bg-transparent"
+                          className="w-full h-auto p-0 data-[hover=true]:bg-transparent"
                           onPress={() =>
                             navigate(`/announcements/${post.slug}`)
                           }
                         >
-                          <h2 className="text-2xl font-bold mb-2 line-clamp-2 text-left">
+                          <h2 className="w-full text-lg md:text-2xl font-bold mb-2 line-clamp-2 text-left break-words">
                             {post.title}
                           </h2>
                         </Button>
                       ) : (
-                        <h2 className="text-2xl font-bold mb-2 line-clamp-2">
+                        <h2 className="text-lg md:text-2xl font-bold mb-2 line-clamp-2 break-words">
                           {post.title}
                         </h2>
                       )}
