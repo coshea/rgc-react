@@ -1,11 +1,12 @@
 {
   "indexes": [
     {
-      "collectionGroup": "findAGame",
+      "collectionGroup": "blogPosts",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "date", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "isPinned", "order": "DESCENDING" },
+        { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
     },
     {
@@ -18,12 +19,29 @@
       ]
     },
     {
-      "collectionGroup": "blogPosts",
+      "collectionGroup": "findAGame",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "memberPayments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "purpose", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "isPinned", "order": "DESCENDING" },
-        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "year", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],
@@ -33,6 +51,21 @@
       "fieldPath": "expiresAt",
       "ttl": true,
       "indexes": []
+    },
+    {
+      "collectionGroup": "registrations",
+      "fieldPath": "ownerId",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "registrations",
+      "fieldPath": "memberIds",
+      "indexes": [
+        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION_GROUP" }
+      ]
     }
   ]
 }

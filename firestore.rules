@@ -464,6 +464,13 @@ service cloud.firestore {
       allow create: if isAdmin();
     }
 
+    // CollectionGroup read access for registrations — required for collectionGroup queries
+    // used in fetchUserUpcomingRegistrations. Write rules are still governed by the
+    // more specific nested match under tournaments/{tournamentId}/registrations.
+    match /{path=**}/registrations/{registrationId} {
+      allow read: if request.auth != null;
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

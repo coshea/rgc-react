@@ -11,6 +11,7 @@ import {
   doc,
   onSnapshot,
   collection,
+  collectionGroup,
   query,
   orderBy,
   deleteDoc,
@@ -23,6 +24,8 @@ import {
   updateDoc,
   serverTimestamp,
   getCountFromServer,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from "firebase/firestore";
 
 // Real-time listener for a single tournament document.
@@ -138,6 +141,10 @@ export async function upsertRegistration(
   registrationId: string | null,
   payload: RegistrationPayload,
 ) {
+  // memberIds is a derived flat array of team member IDs stored alongside the
+  // registration to enable efficient collectionGroup queries (array-contains).
+  const memberIds = payload.team.map((m) => m.id);
+
   // When creating a new registration, stamp it with the server timestamp so
   // ordering by `registeredAt` reflects the original registration time.
   // When updating an existing registration, DO NOT modify `registeredAt` to
@@ -152,13 +159,14 @@ export async function upsertRegistration(
     );
     // Merge the payload but intentionally omit `registeredAt` so the existing
     // value remains unchanged.
-    await setDoc(ref, { ...payload }, { merge: true });
+    await setDoc(ref, { ...payload, memberIds }, { merge: true });
     return registrationId;
   }
 
   const col = collection(db, "tournaments", tournamentId, "registrations");
   const created = await addDoc(col, {
     ...payload,
+    memberIds,
     registeredAt: serverTimestamp(),
   });
   return created.id;
@@ -272,64 +280,93 @@ export interface UserRegistrationWithTournament {
 }
 
 /**
- * Fetch upcoming tournaments where the given user owns a registration.
+ * Fetch upcoming tournaments where the given user is registered (as owner or
+ * team member). Uses collectionGroup queries to avoid the N+1 pattern of
+ * scanning all registrations for every tournament.
+ *
+ * "Upcoming" means the tournament date is today or later AND the tournament
+ * has not been manually marked Completed or Canceled.
+ *
  * Results are sorted by tournament date ascending.
  */
 export async function fetchUserUpcomingRegistrations(
   uid: string,
 ): Promise<UserRegistrationWithTournament[]> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Two targeted collectionGroup queries replace the old N+1 pattern.
+  // Query 1: registrations where the user is the captain/owner.
+  // Query 2: registrations where the user appears in the memberIds array
+  //          (populated by upsertRegistration for all new/updated registrations).
+  const [ownedSnaps, memberSnaps] = await Promise.all([
+    getDocs(
+      query(collectionGroup(db, "registrations"), where("ownerId", "==", uid)),
+    ),
+    getDocs(
+      query(
+        collectionGroup(db, "registrations"),
+        where("memberIds", "array-contains", uid),
+      ),
+    ),
+  ]);
 
-  const tournamentsRef = collection(db, "tournaments");
-  const q = query(
-    tournamentsRef,
-    where("date", ">=", today),
-    orderBy("date", "asc"),
+  // Merge results, deduplicating by registration document ID.
+  const regDocsById = new Map<string, QueryDocumentSnapshot<DocumentData>>();
+  for (const d of [...ownedSnaps.docs, ...memberSnaps.docs]) {
+    regDocsById.set(d.id, d);
+  }
+
+  if (regDocsById.size === 0) return [];
+
+  // Fetch only the specific tournament documents referenced by those
+  // registrations (typically 2-3 documents total).
+  const regDocsList = Array.from(regDocsById.values());
+  const tournamentSnaps = await Promise.all(
+    regDocsList.map((regDoc) => {
+      const tournamentId = regDoc.ref.parent.parent?.id;
+      return tournamentId
+        ? getDoc(doc(db, "tournaments", tournamentId))
+        : Promise.resolve(null);
+    }),
   );
-  const tournamentSnaps = await getDocs(q);
 
   const results: UserRegistrationWithTournament[] = [];
 
-  await Promise.all(
-    tournamentSnaps.docs.map(async (tDoc) => {
-      const tournament = mapTournamentDoc(tDoc);
-      const regCol = collection(db, "tournaments", tDoc.id, "registrations");
-      const regSnaps = await getDocs(regCol);
+  for (let i = 0; i < regDocsList.length; i++) {
+    const tSnap = tournamentSnaps[i];
+    if (!tSnap || !tSnap.exists()) continue;
 
-      const matchingDoc = regSnaps.docs.find((doc) => {
-        const data = doc.data();
-        if (data.ownerId === uid) return true;
-        const team = Array.isArray(data.team)
-          ? (data.team as RegistrationMember[])
-          : [];
-        return team.some((m) => m.id === uid);
-      });
+    const tournament = mapTournamentDoc(tSnap);
 
-      if (matchingDoc) {
-        const regData = matchingDoc.data();
-        const team = Array.isArray(regData.team)
-          ? (regData.team as RegistrationMember[])
-          : [];
-        const ownerId =
-          typeof regData.ownerId === "string" ? regData.ownerId : uid;
-        const openSpotsOptIn =
-          typeof regData.openSpotsOptIn === "boolean"
-            ? regData.openSpotsOptIn
-            : undefined;
-        results.push({
-          registration: {
-            id: matchingDoc.id,
-            ownerId,
-            team,
-            openSpotsOptIn,
-            registeredAt: regData.registeredAt,
-          },
-          tournament,
-        });
-      }
-    }),
-  );
+    // Only include tournaments where registration window is open or has passed
+    // but the tournament has not been completed/canceled yet.
+    if (
+      tournament.status === TournamentStatus.Completed ||
+      tournament.status === TournamentStatus.Canceled
+    ) {
+      continue;
+    }
+
+    const regDoc = regDocsList[i];
+    const regData = regDoc.data();
+    const team = Array.isArray(regData.team)
+      ? (regData.team as RegistrationMember[])
+      : [];
+    const ownerId = typeof regData.ownerId === "string" ? regData.ownerId : uid;
+    const openSpotsOptIn =
+      typeof regData.openSpotsOptIn === "boolean"
+        ? regData.openSpotsOptIn
+        : undefined;
+
+    results.push({
+      registration: {
+        id: regDoc.id,
+        ownerId,
+        team,
+        openSpotsOptIn,
+        registeredAt: regData.registeredAt,
+      },
+      tournament,
+    });
+  }
 
   return results.sort(
     (a, b) => a.tournament.date.getTime() - b.tournament.date.getTime(),
