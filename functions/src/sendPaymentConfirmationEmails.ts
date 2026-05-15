@@ -198,7 +198,7 @@ export function buildFullMembershipEmailHtml(
   const { name, paymentMethod, amount, currency, year } = p;
 
   const isCheck = paymentMethod === "check";
-  const headline = "&#127823; Membership Confirmed!";
+  const headline = "Membership Confirmed!";
   const subline = isCheck
     ? `Your ${year} membership request has been received.`
     : `Your ${year} full membership is now active.`;
@@ -245,7 +245,7 @@ export function buildHandicapMembershipEmailHtml(
   const { name, paymentMethod, amount, currency, year } = p;
 
   const isCheck = paymentMethod === "check";
-  const headline = "&#127823; Membership Confirmed!";
+  const headline = "Membership Confirmed!";
   const subline = isCheck
     ? `Your ${year} handicap membership request has been received.`
     : `Your ${year} handicap membership is now active.`;
