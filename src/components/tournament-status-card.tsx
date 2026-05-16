@@ -13,8 +13,12 @@ import { Icon } from "@iconify/react";
 import { TeeBadge } from "@/components/tee-badge";
 import { fetchRegistrationCount } from "@/api/tournaments";
 import { type Tournament } from "@/types/tournament";
-import { getRegistrationWindowInfo, RegistrationWindowState } from "@/utils/tournamentStatus";
+import {
+  getRegistrationWindowInfo,
+  RegistrationWindowState,
+} from "@/utils/tournamentStatus";
 import { TournamentStatusChip } from "@/components/tournament-status-chip";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface TournamentStatusCardProps {
   tournament: Tournament;
@@ -23,10 +27,11 @@ interface TournamentStatusCardProps {
 export function TournamentStatusCard({
   tournament,
 }: TournamentStatusCardProps) {
+  const { user } = useAuth();
   const { data: teamCount = 0, isLoading } = useQuery({
     queryKey: ["registrationCount", tournament.firestoreId],
     queryFn: () => fetchRegistrationCount(tournament.firestoreId!),
-    enabled: Boolean(tournament.firestoreId),
+    enabled: Boolean(tournament.firestoreId) && Boolean(user),
     staleTime: 60_000,
   });
   const cap = tournament.maxTeams;
@@ -102,13 +107,13 @@ export function TournamentStatusCard({
           </p>
         )}
 
-        {/* Registration fill rate */}
-        {isLoading ? (
+        {/* Registration fill rate — only shown to authenticated users */}
+        {user && isLoading ? (
           <div className="flex items-center gap-2 text-xs text-default-400">
             <Spinner size="sm" />
             Loading registrations…
           </div>
-        ) : (
+        ) : user ? (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-default-600">
@@ -152,37 +157,39 @@ export function TournamentStatusCard({
               />
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Registration window */}
         {!registrationClosed &&
           (registrationWindowInfo.start || registrationWindowInfo.end) && (
-          <div className="text-xs text-default-400 flex items-center gap-1">
-            <Icon icon="lucide:calendar-clock" className="w-3 h-3" />
-            <span className="font-medium text-default-500">Registration:</span>
-            {registrationWindowInfo.start && (
-              <span>
-                Opens{" "}
-                {registrationWindowInfo.start.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
+            <div className="text-xs text-default-400 flex items-center gap-1">
+              <Icon icon="lucide:calendar-clock" className="w-3 h-3" />
+              <span className="font-medium text-default-500">
+                Registration:
               </span>
-            )}
-            {registrationWindowInfo.start && registrationWindowInfo.end && (
-              <span>·</span>
-            )}
-            {registrationWindowInfo.end && (
-              <span>
-                Closes{" "}
-                {registrationWindowInfo.end.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            )}
-          </div>
-        )}
+              {registrationWindowInfo.start && (
+                <span>
+                  Opens{" "}
+                  {registrationWindowInfo.start.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+              {registrationWindowInfo.start && registrationWindowInfo.end && (
+                <span>·</span>
+              )}
+              {registrationWindowInfo.end && (
+                <span>
+                  Closes{" "}
+                  {registrationWindowInfo.end.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+          )}
       </CardBody>
     </Card>
   );
