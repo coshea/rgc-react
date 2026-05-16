@@ -230,7 +230,7 @@ export default function MembershipPaymentsFlow({
       (step.purpose === "renew" ||
         step.purpose === "new" ||
         step.purpose === "handicap")
-        ? `RGCM-${currentYear}-${user.uid}-${step.purpose}`
+        ? `RGCM-${currentYear}-${user.uid}-${step.purpose}-${Date.now()}`
         : null;
 
     return actions.order.create({

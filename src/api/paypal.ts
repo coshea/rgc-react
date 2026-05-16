@@ -8,6 +8,30 @@ import type {
   VerifyAndRecordPayPalDonationResponse,
 } from "@@/types";
 
+/** Retry a fetch up to `maxAttempts` times on network-level failures (TypeError). */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  maxAttempts = 3,
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        // Only retry on network errors (TypeError: Failed to fetch), not server errors.
+        if (!(err instanceof TypeError)) throw err;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 500 * Math.pow(2, attempt - 1)),
+        );
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function verifyAndRecordPayPalMembershipPayment(params: {
   user: User;
   request: VerifyAndRecordPayPalRequest;
@@ -23,14 +47,17 @@ export async function verifyAndRecordPayPalMembershipPayment(params: {
 
   const token = await user.getIdToken();
 
-  const resp = await fetch(`${baseUrl}/verify_and_record_membership_payment`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const resp = await fetchWithRetry(
+    `${baseUrl}/verify_and_record_membership_payment`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
     },
-    body: JSON.stringify(request),
-  });
+  );
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
@@ -62,14 +89,17 @@ export async function verifyAndRecordPayPalDonationPayment(params: {
 
   const token = await user.getIdToken();
 
-  const resp = await fetch(`${baseUrl}/verify_and_record_donation_payment`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const resp = await fetchWithRetry(
+    `${baseUrl}/verify_and_record_donation_payment`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
     },
-    body: JSON.stringify(request),
-  });
+  );
 
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
