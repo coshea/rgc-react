@@ -1,5 +1,5 @@
 import React from "react";
-import { Textarea, Button, Tooltip } from "@heroui/react";
+import { TextArea, Button, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -124,22 +124,27 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         <label className="text-sm font-medium">{label}</label>
         <div className="flex items-center gap-1 flex-wrap">
           {BUTTONS.map((b) => (
-            <Tooltip key={b.label} content={b.label}>
-              <Button
+            <Tooltip key={b.label}>
+              <Tooltip.Trigger>
+                <Button
                 isIconOnly
                 size="sm"
-                variant="light"
+                variant="ghost"
                 onPress={() => applyInsertion(b.insert)}
                 aria-label={b.label}
               >
                 <Icon icon={b.icon} className="w-4 h-4" />
               </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                {b.label}
+              </Tooltip.Content>
             </Tooltip>
           ))}
           {!hidePreviewToggle && (
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={() => setPreview((p) => !p)}
               aria-label="Toggle preview"
             >
@@ -147,16 +152,21 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             </Button>
           )}
           {onPopout && (
-            <Tooltip content="Popout">
-              <Button
+            <Tooltip>
+              <Tooltip.Trigger>
+                <Button
                 isIconOnly
                 size="sm"
-                variant="light"
+                variant="ghost"
                 onPress={onPopout}
                 aria-label="Open popout editor"
               >
                 <Icon icon="lucide:expand" className="w-4 h-4" />
               </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                Popout
+              </Tooltip.Content>
             </Tooltip>
           )}
         </div>
@@ -172,7 +182,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
             />
           ) : (
-            <Textarea
+            <TextArea
               ref={textareaRef}
               placeholder={placeholder}
               minRows={minRows}
@@ -191,7 +201,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
             />
           ) : (
-            <Textarea
+            <TextArea
               ref={textareaRef}
               placeholder={placeholder}
               minRows={minRows}

@@ -1,6 +1,6 @@
 import { TournamentStatusCard } from "./tournament-status-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { Button, Card, CardBody, Skeleton } from "@heroui/react";
+import { Button, Card,  Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@iconify/react";
@@ -14,7 +14,7 @@ export function TournamentSection() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
-  const { data: latestYear, isLoading: latestYearLoading } = useQuery<
+  const { data: latestYear,  isLoading: latestYearLoading } = useQuery<
     number | null
   >({
     queryKey: ["latestTournamentYear"],
@@ -39,7 +39,7 @@ export function TournamentSection() {
   });
 
   const yearToShow = latestYear ?? currentYear;
-  const { tournaments, isLoading: tournamentsLoading } = useYearlyTournaments({
+  const { tournaments,  isLoading: tournamentsLoading } = useYearlyTournaments({
     year: yearToShow,
     enabled: !latestYearLoading,
   });
@@ -88,7 +88,7 @@ export function TournamentSection() {
           </div>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => navigate("/tournaments")}
             endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
             className="self-start sm:self-auto"
@@ -100,7 +100,7 @@ export function TournamentSection() {
           {latestYearLoading || tournamentsLoading
             ? Array.from({ length: isMobile ? 3 : 3 }).map((_, idx) => (
                 <Card key={idx} className="w-full">
-                  <CardBody className="p-4 space-y-3">
+                  <Card.Content className="p-4 space-y-3">
                     <Skeleton className="h-6 w-3/4 rounded-lg" />
                     <Skeleton className="h-4 w-1/2 rounded-lg" />
                     <Skeleton className="h-4 w-full rounded-lg" />
@@ -109,7 +109,7 @@ export function TournamentSection() {
                       <Skeleton className="h-5 w-20 rounded-full" />
                       <Skeleton className="h-8 w-24 rounded-lg" />
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               ))
             : displayTournaments.map((tournament) => (

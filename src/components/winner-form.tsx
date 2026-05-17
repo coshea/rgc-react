@@ -11,11 +11,11 @@ import React from "react";
 import {
   Button,
   Card,
-  CardBody,
   Chip,
   NumberInput,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Tooltip,
 } from "@heroui/react";
 import { Input } from "@heroui/react";
@@ -39,7 +39,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   prizePool,
   isCompleted,
 }) => {
-  const { users, isLoading: usersLoading } = useUsers();
+  const { users,  isLoading: usersLoading } = useUsers();
 
   const addWinner = () => {
     const nextPlace =
@@ -66,7 +66,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   const updateWinner = (place: number, updates: Partial<Winner>) => {
     const updatedWinners = winners.map((w) =>
-      w.place === place ? { ...w, ...updates } : w
+      w.place === place ? { ...w, ...updates } : w,
     );
 
     onWinnersChange(updatedWinners);
@@ -96,7 +96,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   const calculateTotalPrizePool = (): number => {
     return winners.reduce(
       (total, winner) => total + calculateTotalPrize(winner),
-      0
+      0,
     );
   };
 
@@ -108,7 +108,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   // Build a set of valid user ids for quick membership checks
   const validUserIds = React.useMemo(
     () => new Set(users.map((u) => u.id)),
-    [users]
+    [users],
   );
 
   // Auto-sanitize any winner entries that reference users no longer in the list
@@ -117,7 +117,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
     let changed = false;
     const cleaned = winners.map((w) => {
       const filteredIds = (w.userIds || []).filter((id) =>
-        validUserIds.has(id)
+        validUserIds.has(id),
       );
       if (filteredIds.length !== w.userIds.length) {
         changed = true;
@@ -153,19 +153,24 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Tournament Winners</h3>
         <div className="flex items-center gap-2">
-          <Tooltip content="Remaining prize pool">
-            <Chip
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Chip
               color={remainingPrizePool < 0 ? "danger" : "success"}
-              variant="flat"
+              variant="tertiary"
               className="min-w-[100px] justify-center"
             >
               ${remainingPrizePool.toLocaleString()}
             </Chip>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              Remaining prize pool
+            </Tooltip.Content>
           </Tooltip>
           <Button
             size="sm"
-            color="primary"
-            variant="flat"
+            
+            variant="tertiary"
             startContent={<Icon icon="lucide:plus" />}
             onPress={addWinner}
             isDisabled={remainingPrizePool <= 0}
@@ -183,7 +188,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
         <div className="space-y-4">
           {sortedWinners.map((winner) => (
             <Card key={winner.place} className="w-full">
-              <CardBody className="p-4">
+              <Card.Content className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -202,8 +207,8 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                   <Button
                     size="sm"
                     isIconOnly
-                    color="danger"
-                    variant="light"
+                    
+                    variant="ghost"
                     onPress={() => removeWinner(winner.place)}
                     aria-label={`Remove ${getPlaceLabel(winner.place)}`}
                   >
@@ -214,24 +219,28 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Select
-                      label="Select Winner(s)"
                       placeholder={
                         teamSize > 1 ? "Select team members" : "Select winner"
                       }
                       selectionMode={teamSize > 1 ? "multiple" : "single"}
-                      // ensure selectedKeys only includes currently valid user ids
-                      selectedKeys={
-                        new Set(
-                          (winner.userIds || []).filter((id) =>
-                            validUserIds.has(id)
-                          )
-                        )
+                      value={
+                        teamSize > 1
+                          ? (winner.userIds || []).filter((id) =>
+                              validUserIds.has(id),
+                            )
+                          : (winner.userIds || []).filter((id) =>
+                              validUserIds.has(id),
+                            )[0]
                       }
-                      onSelectionChange={(keys) => {
-                        const selectedKeys = Array.from(keys);
+                      onChange={(keys) => {
+                        const selectedKeys = Array.isArray(keys)
+                          ? keys
+                          : keys
+                            ? [keys]
+                            : [];
                         handleUserSelection(
                           winner.place,
-                          selectedKeys as string[]
+                          selectedKeys as string[],
                         );
                       }}
                       isRequired
@@ -242,14 +251,27 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                         winner.userIds.length === 0 ? "Winner is required" : ""
                       }
                     >
-                      {users.map((user) => (
-                        <SelectItem
-                          key={user.id}
-                          textValue={user.displayName || user.email || user.id}
-                        >
-                          {user.displayName}
-                        </SelectItem>
-                      ))}
+                      <Label>Select Winner(s)</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {users.map((user) => (
+                            <ListBox.Item
+                              key={user.id}
+                              id={user.id}
+                              textValue={
+                                user.displayName || user.email || user.id
+                              }
+                            >
+                              {user.displayName}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
                     </Select>
                   </div>
 
@@ -293,8 +315,8 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                       {winner.displayNames.map((name, index) => (
                         <Chip
                           key={index}
-                          color="primary"
-                          variant="flat"
+                          
+                          variant="tertiary"
                           size="sm"
                         >
                           {name}
@@ -308,7 +330,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                     </div>
                   </div>
                 )}
-              </CardBody>
+              </Card.Content>
             </Card>
           ))}
         </div>

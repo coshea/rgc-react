@@ -1,14 +1,4 @@
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Modal, Button, Input, Label, ListBox, Select } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
@@ -79,7 +69,7 @@ export function ChampionshipEditorModal({
           name,
           id: championship.runnerUpIds?.[index] || "",
           isHistorical: championship.isHistorical,
-        })
+        }),
       );
 
       setFormData({
@@ -108,7 +98,7 @@ export function ChampionshipEditorModal({
 
     // Validate winners
     const hasWinnerNames = formData.winners.some((winner) =>
-      winner.name.trim()
+      winner.name.trim(),
     );
     const hasWinnerIds = formData.winners.some((winner) => winner.id.trim());
 
@@ -279,7 +269,7 @@ export function ChampionshipEditorModal({
   const updateRunnerUp = (
     index: number,
     field: "name" | "id",
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => {
       const newRunnersUp = [...prev.runnersUp];
@@ -335,122 +325,136 @@ export function ChampionshipEditorModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      size="2xl"
-      scrollBehavior="inside"
-      classNames={{
-        base: "max-h-[90vh]",
-        body: "py-6",
+      onOpenChange={(open) => {
+        if (!open) handleClose();
       }}
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h2 className="text-xl font-bold">
-            {isEditing ? "Edit Championship" : "Create Championship"}
-          </h2>
-          <p className="text-sm text-default-500 font-normal">
-            {isEditing
-              ? "Update championship details"
-              : "Add a new championship record"}
-          </p>
-        </ModalHeader>
+      <Modal.Container size="lg" scroll="inside">
+        <Modal.Dialog>
+          <Modal.Header className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold">
+              {isEditing ? "Edit Championship" : "Create Championship"}
+            </h2>
+            <p className="text-sm text-default-500 font-normal">
+              {isEditing
+                ? "Update championship details"
+                : "Add a new championship record"}
+            </p>
+          </Modal.Header>
 
-        <ModalBody className="gap-6">
-          {/* Form errors */}
-          {errors.submit && (
-            <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
-              <p className="text-danger text-sm">{errors.submit}</p>
+          <Modal.Body className="gap-6">
+            {/* Form errors */}
+            {errors.submit && (
+              <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
+                <p className="text-danger text-sm">{errors.submit}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Year */}
+              <Input
+                label="Year"
+                type="number"
+                value={formData.year.toString()}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    year: parseInt(value) || new Date().getFullYear(),
+                  }))
+                }
+                isInvalid={!!errors.year}
+                errorMessage={errors.year}
+                min={1900}
+                max={new Date().getFullYear() + 1}
+              />
+
+              {/* Championship Type */}
+              <Select
+                value={formData.championshipType}
+                onChange={(key) => {
+                  if (key) {
+                    const type = key as ChampionshipType;
+                    setFormData((prev) => ({
+                      ...prev,
+                      championshipType: type,
+                    }));
+                  }
+                }}
+              >
+                <Label>Championship Type</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {Object.entries(CHAMPIONSHIP_TYPES).map(([key, label]) => (
+                      <ListBox.Item key={key} id={key} textValue={label}>
+                        {label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Year */}
-            <Input
-              label="Year"
-              type="number"
-              value={formData.year.toString()}
-              onValueChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  year: parseInt(value) || new Date().getFullYear(),
-                }))
-              }
-              isInvalid={!!errors.year}
-              errorMessage={errors.year}
-              min={1900}
-              max={new Date().getFullYear() + 1}
+            {/* Winners Section */}
+            <PlayerEntrySection
+              title="Winners"
+              buttonText="Add Winner"
+              entries={formData.winners}
+              users={users}
+              usersLoading={usersLoading}
+              errors={{
+                names: errors.winnerNames,
+                ids: errors.winnerIds,
+              }}
+              required={true}
+              onAdd={addWinner}
+              onRemove={removeWinner}
+              onUpdate={updateWinner}
+              onUpdateHistorical={updateWinnerHistorical}
             />
 
-            {/* Championship Type */}
-            <Select
-              label="Championship Type"
-              selectedKeys={[formData.championshipType]}
-              onSelectionChange={(keys) => {
-                const type = Array.from(keys)[0] as ChampionshipType;
-                setFormData((prev) => ({ ...prev, championshipType: type }));
+            {/* Runners-up Section */}
+            <PlayerEntrySection
+              title="Runners-up"
+              buttonText="Add Runner-up"
+              entries={formData.runnersUp}
+              users={users}
+              usersLoading={usersLoading}
+              errors={{
+                names: errors.runnerUpNames,
+                ids: errors.runnerUpIds,
               }}
+              required={false}
+              onAdd={addRunnerUp}
+              onRemove={removeRunnerUp}
+              onUpdate={updateRunnerUp}
+              onUpdateHistorical={updateRunnerUpHistorical}
+            />
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button
+              variant="tertiary"
+              onPress={handleClose}
+              disabled={isSubmitting}
             >
-              {Object.entries(CHAMPIONSHIP_TYPES).map(([key, label]) => (
-                <SelectItem key={key} textValue={label}>
-                  {label}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-
-          {/* Winners Section */}
-          <PlayerEntrySection
-            title="Winners"
-            buttonText="Add Winner"
-            entries={formData.winners}
-            users={users}
-            usersLoading={usersLoading}
-            errors={{
-              names: errors.winnerNames,
-              ids: errors.winnerIds,
-            }}
-            required={true}
-            onAdd={addWinner}
-            onRemove={removeWinner}
-            onUpdate={updateWinner}
-            onUpdateHistorical={updateWinnerHistorical}
-          />
-
-          {/* Runners-up Section */}
-          <PlayerEntrySection
-            title="Runners-up"
-            buttonText="Add Runner-up"
-            entries={formData.runnersUp}
-            users={users}
-            usersLoading={usersLoading}
-            errors={{
-              names: errors.runnerUpNames,
-              ids: errors.runnerUpIds,
-            }}
-            required={false}
-            onAdd={addRunnerUp}
-            onRemove={removeRunnerUp}
-            onUpdate={updateRunnerUp}
-            onUpdateHistorical={updateRunnerUpHistorical}
-          />
-        </ModalBody>
-
-        <ModalFooter>
-          <Button variant="flat" onPress={handleClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            color="primary"
-            onPress={handleSubmit}
-            isLoading={isSubmitting}
-            startContent={
-              !isSubmitting && <Icon icon="lucide:save" className="w-4 h-4" />
-            }
-          >
-            {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
+              Cancel
+            </Button>
+            <Button
+              onPress={handleSubmit}
+              startContent={
+                !isSubmitting && <Icon icon="lucide:save" className="w-4 h-4" />
+              }
+            >
+              {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
     </Modal>
   );
 }

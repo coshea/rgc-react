@@ -1,5 +1,5 @@
 import React from "react";
-import { Textarea, Button, Card } from "@heroui/react";
+import { TextArea, Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -53,7 +53,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <div className="flex flex-wrap gap-1 p-2 border border-divider rounded-lg bg-default-50">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("**", "**")}
           aria-label="Bold"
@@ -62,7 +62,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("*", "*")}
           aria-label="Italic"
@@ -71,7 +71,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("# ")}
           aria-label="Heading"
@@ -80,7 +80,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("\n- ")}
           aria-label="List"
@@ -89,7 +89,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("[", "](url)")}
           aria-label="Link"
@@ -98,7 +98,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("`", "`")}
           aria-label="Code"
@@ -107,7 +107,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("> ")}
           aria-label="Quote"
@@ -118,7 +118,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <div className="ml-auto flex gap-1">
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => setShowPreview(!showPreview)}
             startContent={
               <Icon icon={showPreview ? "lucide:edit" : "lucide:eye"} />
@@ -139,7 +139,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </div>
         </Card>
       ) : (
-        <Textarea
+        <TextArea
           value={value}
           onValueChange={onChange}
           placeholder={placeholder}

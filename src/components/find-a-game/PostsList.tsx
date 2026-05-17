@@ -1,4 +1,4 @@
-import { Button, Card, CardBody } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useEffect, useMemo, useState } from "react";
 import { FindAGamePost, deletePartnerPost } from "@/api/find-a-game";
@@ -45,7 +45,7 @@ export function PostsList({
   // Collect unique ownerIds for the current posts
   const ownerIds = useMemo(
     () => Array.from(new Set(posts.map((p) => p.ownerId))),
-    [posts]
+    [posts],
   );
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export function PostsList({
             console.error("Failed to load profile for", uid, e);
             return { uid, profile: null } as const;
           }
-        })
+        }),
       );
       if (cancelled) return;
       setOwners((prev) => {
@@ -103,10 +103,9 @@ export function PostsList({
     return (
       <Card
         key={p.id}
-        shadow="sm"
         className="border border-default-200 h-full hover:shadow-lg hover:border-primary-200 transition-all duration-200 cursor-pointer group bg-linear-to-br from-background to-default-50"
       >
-        <CardBody className="p-0 overflow-hidden">
+        <Card.Content className="p-0 overflow-hidden">
           {/* Header with gradient background */}
           <div
             className={`px-4 py-3 ${
@@ -191,8 +190,7 @@ export function PostsList({
                     as="a"
                     size="sm"
                     isIconOnly
-                    variant="flat"
-                    color="primary"
+                    variant="tertiary"
                     href={`mailto:${owners[p.ownerId]!.email}`}
                     aria-label="Email"
                     className="hover:scale-110 transition-transform"
@@ -205,8 +203,7 @@ export function PostsList({
                     as="a"
                     size="sm"
                     isIconOnly
-                    variant="flat"
-                    color="success"
+                    variant="tertiary"
                     href={`tel:${normalizePhone(owners[p.ownerId]!.phone)}`}
                     aria-label="Call"
                     className="hover:scale-110 transition-transform"
@@ -222,7 +219,7 @@ export function PostsList({
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-default-100">
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => onEditRequest?.(p)}
                   startContent={<Icon icon="lucide:edit" />}
                   aria-label="Edit post"
@@ -232,8 +229,7 @@ export function PostsList({
                 </Button>
                 <Button
                   size="sm"
-                  color="danger"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => removePost(p)}
                   startContent={<Icon icon="lucide:trash-2" />}
                   aria-label="Delete post"
@@ -244,7 +240,7 @@ export function PostsList({
               </div>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   };

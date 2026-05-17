@@ -1,4 +1,4 @@
-import { Alert, Button, Spacer } from "@heroui/react";
+import { Alert, Button } from "@heroui/react";
 
 export function AlreadyPaidNotice(props: {
   currentYear: number;
@@ -8,22 +8,22 @@ export function AlreadyPaidNotice(props: {
 
   return (
     <div className="w-full max-w-4xl">
-      <Alert color="success">
+      <Alert >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             Your annual dues are already recorded for {currentYear}. Thank you!
           </div>
           <Button
             size="sm"
-            color="primary"
-            variant="flat"
+            
+            variant="tertiary"
             onPress={onDonationPress}
           >
             Make a donation
           </Button>
         </div>
       </Alert>
-      <Spacer y={4} />
+      <div className="h-4" />
     </div>
   );
 }

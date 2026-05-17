@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import {
   Button,
   Input,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Switch,
-  Textarea,
+  TextArea,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
@@ -233,7 +234,7 @@ export default function MembershipAdminModal({
           </h2>
           <Button
             isIconOnly
-            variant="flat"
+            variant="tertiary"
             onPress={handleCancel}
             aria-label="Close modal"
           >
@@ -348,13 +349,10 @@ export default function MembershipAdminModal({
                   <span className="font-medium">public-docs</span>.
                 </p>
                 <Select
-                  label="Membership letter document"
-                  selectedKeys={
-                    membershipLetterUrl ? [membershipLetterUrl] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string | undefined;
-                    setMembershipLetterUrl(value || "");
+                  value={membershipLetterUrl || undefined}
+                  onChange={(key) => {
+                    const value = key ? String(key) : "";
+                    setMembershipLetterUrl(value);
                     if (errors.membershipLetterUrl) {
                       setErrors((prev) => ({
                         ...prev,
@@ -371,11 +369,25 @@ export default function MembershipAdminModal({
                       : "Select a membership letter"
                   }
                 >
-                  {membershipLetterOptions.map((doc) => (
-                    <SelectItem key={doc.url} textValue={doc.name}>
-                      {doc.name}
-                    </SelectItem>
-                  ))}
+                  <Label>Membership letter document</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {membershipLetterOptions.map((doc) => (
+                        <ListBox.Item
+                          key={doc.url}
+                          id={doc.url}
+                          textValue={doc.name}
+                        >
+                          {doc.name}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <Input
                   label="Selected URL"
@@ -394,13 +406,10 @@ export default function MembershipAdminModal({
                   <span className="font-medium">public-docs</span>.
                 </p>
                 <Select
-                  label="Application document"
-                  selectedKeys={
-                    membershipApplicationUrl ? [membershipApplicationUrl] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string | undefined;
-                    setMembershipApplicationUrl(value || "");
+                  value={membershipApplicationUrl || undefined}
+                  onChange={(key) => {
+                    const value = key ? String(key) : "";
+                    setMembershipApplicationUrl(value);
                     if (errors.membershipApplicationUrl) {
                       setErrors((prev) => ({
                         ...prev,
@@ -417,11 +426,25 @@ export default function MembershipAdminModal({
                       : "Select an application PDF"
                   }
                 >
-                  {membershipApplicationOptions.map((doc) => (
-                    <SelectItem key={doc.url} textValue={doc.name}>
-                      {doc.name}
-                    </SelectItem>
-                  ))}
+                  <Label>Application document</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {membershipApplicationOptions.map((doc) => (
+                        <ListBox.Item
+                          key={doc.url}
+                          id={doc.url}
+                          textValue={doc.name}
+                        >
+                          {doc.name}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <Input
                   label="Selected URL"
@@ -440,7 +463,7 @@ export default function MembershipAdminModal({
                     This message will be displayed to members when registration
                     is closed
                   </p>
-                  <Textarea
+                  <TextArea
                     placeholder="Registration for the current year is closed. Please check back next year."
                     value={closedMessage}
                     onChange={(e) => {
@@ -463,7 +486,7 @@ export default function MembershipAdminModal({
                     Last updated:{" "}
                     {new Date(
                       typeof settings.updatedAt === "object" &&
-                      "toDate" in settings.updatedAt
+                        "toDate" in settings.updatedAt
                         ? settings.updatedAt.toDate()
                         : settings.updatedAt,
                     ).toLocaleString()}
@@ -477,14 +500,18 @@ export default function MembershipAdminModal({
         {/* Footer */}
         {!loading && (
           <div className="flex items-center justify-end gap-3 p-6 border-t border-divider sticky bottom-0 bg-content1">
-            <Button variant="flat" onPress={handleCancel} isDisabled={saving}>
+            <Button
+              variant="tertiary"
+              onPress={handleCancel}
+              isDisabled={saving}
+            >
               Cancel
             </Button>
             <Button
-              color="primary"
+              
               onPress={handleSave}
               isDisabled={!hasChanges || saving}
-              isLoading={saving}
+             
               startContent={
                 !saving && <Icon icon="lucide:save" width={18} height={18} />
               }

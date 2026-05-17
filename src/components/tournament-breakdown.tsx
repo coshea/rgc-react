@@ -12,7 +12,6 @@ import {
   Tooltip,
   Button,
   Card,
-  CardBody,
 } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
@@ -273,32 +272,28 @@ export function TournamentBreakdown({ year }: Props) {
         <div className="flex flex-wrap gap-2">
           <Chip
             size="sm"
-            variant="flat"
-            color="primary"
+            variant="tertiary"
             startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
           >
             {globalStats.withResults} events
           </Chip>
           <Chip
             size="sm"
-            variant="flat"
-            color="success"
+            variant="tertiary"
             startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
           >
             {globalStats.unique} unique winners
           </Chip>
           <Chip
             size="sm"
-            variant="flat"
-            color="warning"
+            variant="tertiary"
             startContent={<Icon icon="lucide:banknote" className="w-3 h-3" />}
           >
             {formatPrize(globalStats.totalPrize)}
           </Chip>
           <Chip
             size="sm"
-            variant="flat"
-            color="secondary"
+            variant="tertiary"
             startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
           >
             {globalStats.avgWinners.toFixed(1)} winners / event
@@ -391,8 +386,8 @@ export function TournamentBreakdown({ year }: Props) {
               aria-labelledby={`tournament-${id}`}
             >
               <div className="h-1 w-full bg-linear-to-r from-primary/40 via-primary/10 to-transparent" />
-              <Card shadow="none" className="bg-transparent">
-                <CardBody className="space-y-4">
+              <Card className="bg-transparent">
+                <Card.Content className="space-y-4">
                   {/* Header */}
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
@@ -428,8 +423,7 @@ export function TournamentBreakdown({ year }: Props) {
                       <div className="flex flex-col items-end text-right gap-1">
                         <Chip
                           size="sm"
-                          variant="flat"
-                          color="success"
+                          variant="tertiary"
                           className="text-[11px]"
                         >
                           {formatPrize(tournament.prizePool)} pool
@@ -443,8 +437,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="danger"
-                                variant="solid"
+                                variant="primary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -455,8 +448,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="default"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -467,8 +459,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="warning"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -479,8 +470,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="primary"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -611,15 +601,18 @@ export function TournamentBreakdown({ year }: Props) {
                             </p>
                           </div>
                           {g.players.length > 4 && (
-                            <Tooltip
-                              content={g.players
-                                .slice(4)
-                                .map((p) => p.name)
-                                .join(", ")}
-                            >
-                              <span className="text-[10px] text-default-400">
-                                +{g.players.length - 4}
-                              </span>
+                            <Tooltip>
+                              <Tooltip.Trigger>
+                                <span className="text-[10px] text-default-400">
+                                  +{g.players.length - 4}
+                                </span>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                {g.players
+                                  .slice(4)
+                                  .map((p) => p.name)
+                                  .join(", ")}
+                              </Tooltip.Content>
                             </Tooltip>
                           )}
                         </div>
@@ -631,7 +624,7 @@ export function TournamentBreakdown({ year }: Props) {
                   <div className="pt-1">
                     <Button
                       size="sm"
-                      variant="light"
+                      variant="ghost"
                       radius="sm"
                       onPress={() => toggle(id)}
                       endContent={
@@ -764,7 +757,7 @@ export function TournamentBreakdown({ year }: Props) {
                       </Table>
                     )}
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </article>
           );

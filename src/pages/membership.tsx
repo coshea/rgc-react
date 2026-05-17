@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
@@ -71,8 +71,7 @@ export default function MembershipPage() {
         {isAdmin ? (
           <div className="mt-6 flex justify-center gap-2">
             <Button
-              color="primary"
-              variant="flat"
+              variant="tertiary"
               size="sm"
               onPress={() => setShowAdminModal(true)}
               startContent={
@@ -83,7 +82,7 @@ export default function MembershipPage() {
             </Button>
 
             <Button
-              variant="flat"
+              variant="tertiary"
               size="sm"
               onPress={() =>
                 navigate(
@@ -106,7 +105,7 @@ export default function MembershipPage() {
 
       <section className="mt-8 w-full max-w-3xl">
         <Card className="border border-content3 bg-content1">
-          <CardBody className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
+          <Card.Content className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
               <Icon
                 icon="lucide:mail-open"
@@ -132,8 +131,7 @@ export default function MembershipPage() {
               href={membershipLetterUrl}
               target="_blank"
               rel="noreferrer"
-              color="primary"
-              variant="flat"
+              variant="tertiary"
               className="shrink-0 sm:mt-1"
               startContent={
                 <Icon icon="lucide:file-text" width={16} height={16} />
@@ -141,7 +139,7 @@ export default function MembershipPage() {
             >
               Read Letter
             </Button>
-          </CardBody>
+          </Card.Content>
         </Card>
       </section>
 
@@ -153,7 +151,7 @@ export default function MembershipPage() {
       {showClosedMessage ? (
         <div className="mt-10 w-full">
           <Card className="mx-auto w-full max-w-3xl border-2 border-warning bg-content1/70 backdrop-blur">
-            <CardBody className="p-6">
+            <Card.Content className="p-6">
               <div className="flex items-start gap-4">
                 <Icon
                   icon="lucide:info"
@@ -171,7 +169,7 @@ export default function MembershipPage() {
                   </p>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       ) : null}

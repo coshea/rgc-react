@@ -1,8 +1,8 @@
 import {
   Card,
-  CardBody,
-  CardHeader,
-  Divider,
+  
+  
+  Separator,
   Chip,
   Button,
 } from "@heroui/react";
@@ -47,7 +47,7 @@ export function ChampionshipCard({
       }`}
       shadow={isClubChampion ? "lg" : "md"}
     >
-      <CardHeader className="flex flex-col gap-1 pb-2">
+      <Card.Header className="flex flex-col gap-1 pb-2">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             {isClubChampion && (
@@ -62,7 +62,7 @@ export function ChampionshipCard({
           {showEditButton && onEdit && (
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={() => onEdit(championship)}
               startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
             >
@@ -70,11 +70,11 @@ export function ChampionshipCard({
             </Button>
           )}
         </div>
-      </CardHeader>
+      </Card.Header>
 
-      <Divider />
+      <Separator />
 
-      <CardBody className="space-y-4 p-4">
+      <Card.Content className="space-y-4 p-4">
         {/* Winners */}
         <div className="space-y-2">
           {championship.winnerNames && championship.winnerNames.length > 0 ? (
@@ -116,8 +116,8 @@ export function ChampionshipCard({
                         as={Link}
                         to={`/profile/${winnerId}`}
                         size="sm"
-                        variant="flat"
-                        color="warning"
+                        variant="tertiary"
+                        
                         isIconOnly
                         className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800"
                       >
@@ -191,8 +191,8 @@ export function ChampionshipCard({
                           as={Link}
                           to={`/profile/${runnerUpId}`}
                           size="sm"
-                          variant="flat"
-                          color="default"
+                          variant="tertiary"
+                          
                           isIconOnly
                           className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
                         >
@@ -205,7 +205,7 @@ export function ChampionshipCard({
               })}
             </div>
           )}
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -242,8 +242,8 @@ export function ChampionshipYearGroup({
         <div className="w-1 h-8 bg-linear-to-b from-primary to-primary/50 rounded-full"></div>
         <Chip
           size="lg"
-          variant="solid"
-          color="primary"
+          variant="primary"
+          
           className="text-lg font-bold px-6 py-2 bg-linear-to-r from-primary to-primary/80"
         >
           {year}

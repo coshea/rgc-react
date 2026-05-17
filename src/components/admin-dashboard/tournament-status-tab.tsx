@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Select, SelectItem, Spinner } from "@heroui/react";
+import { ListBox, Select, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { TournamentStatusCard } from "@/components/tournament-status-card";
@@ -67,18 +67,30 @@ export function TournamentStatusTab() {
       <div className="flex items-center gap-3">
         <Select
           aria-label="Select year"
-          disallowEmptySelection
-          selectedKeys={[String(selectedYear)]}
-          onSelectionChange={(keys) => {
-            const val = Array.from(keys)[0];
-            if (val) setSelectedYear(Number(val));
+          value={String(selectedYear)}
+          onChange={(key) => {
+            if (key) setSelectedYear(Number(key));
           }}
           className="w-32"
-          size="sm"
         >
-          {YEAR_OPTIONS.map((y) => (
-            <SelectItem key={String(y)}>{String(y)}</SelectItem>
-          ))}
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {YEAR_OPTIONS.map((y) => (
+                <ListBox.Item
+                  key={String(y)}
+                  id={String(y)}
+                  textValue={String(y)}
+                >
+                  {String(y)}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
         <p className="text-sm text-default-500">
           {isLoading

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardBody, Skeleton, Chip, Tooltip } from "@heroui/react";
+import { Card, Skeleton, Chip, Tooltip } from "@heroui/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
@@ -44,7 +44,7 @@ export function YearlyTeamWinners({ year }: Props) {
             const competitors = w.competitors || [];
             if (competitors.length <= 1) return;
             const sorted = [...competitors].sort((a, b) =>
-              a.userId.localeCompare(b.userId)
+              a.userId.localeCompare(b.userId),
             );
             const userIds = sorted.map((c) => c.userId);
             const key = userIds.join("|");
@@ -108,7 +108,7 @@ export function YearlyTeamWinners({ year }: Props) {
     if (!filter.trim()) return teams;
     const q = filter.toLowerCase();
     return teams.filter((t) =>
-      t.displayNames.join(" ").toLowerCase().includes(q)
+      t.displayNames.join(" ").toLowerCase().includes(q),
     );
   }, [filter, teams]);
 
@@ -173,7 +173,7 @@ export function YearlyTeamWinners({ year }: Props) {
             key={team.key}
             className="border border-default-200/60 dark:border-default-100/10"
           >
-            <CardBody className="space-y-3">
+            <Card.Content className="space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium leading-snug">
@@ -203,24 +203,26 @@ export function YearlyTeamWinners({ year }: Props) {
                           ? "danger"
                           : "default";
                   return (
-                    <Tooltip
-                      key={t.entryKey}
-                      content={`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
-                    >
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        color={color}
-                        className="text-[10px] font-medium"
-                      >
-                        {t.title}: {t.place === 1 ? "🏆" : `P${t.place}`} $
-                        {t.prizePerPlayer}
-                      </Chip>
+                    <Tooltip key={t.entryKey}>
+                      <Tooltip.Trigger>
+                        <Chip
+                          size="sm"
+                          variant="tertiary"
+                          color={color}
+                          className="text-[10px] font-medium"
+                        >
+                          {t.title}: {t.place === 1 ? "🏆" : `P${t.place}`} $
+                          {t.prizePerPlayer}
+                        </Chip>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        {`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
+                      </Tooltip.Content>
                     </Tooltip>
                   );
                 })}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>

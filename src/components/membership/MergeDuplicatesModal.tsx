@@ -1,17 +1,12 @@
 import React, { useState, useMemo } from "react";
 import {
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Card,
-  CardBody,
   Chip,
   RadioGroup,
   Radio,
-  Divider,
+  Separator,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -215,7 +210,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
       <Card
         className={`${primary ? "border-2 border-primary" : "border border-default-200"}`}
       >
-        <CardBody className="p-4">
+        <Card.Content className="p-4">
           <div className="flex items-start gap-3">
             <UserAvatar user={user} size="lg" />
             <div className="flex-1 min-w-0">
@@ -224,7 +219,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   {user.displayName || "No Name"}
                 </h4>
                 {user.boardMember && (
-                  <Chip size="sm" color="secondary" variant="flat">
+                  <Chip size="sm" variant="tertiary">
                     Board
                   </Chip>
                 )}
@@ -268,18 +263,14 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
               </div>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   };
 
   const renderReasonChip = (reason: DuplicateGroup["reason"]) => {
     const color =
-      reason === "email"
-        ? "danger"
-        : reason === "name"
-          ? "warning"
-          : "secondary";
+      reason === "email" ? "danger" : reason === "name" ? "warning" : "default";
     const label =
       reason === "email"
         ? "Same Email"
@@ -288,7 +279,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
           : "Manual Selection";
 
     return (
-      <Chip size="sm" color={color} variant="flat">
+      <Chip size="sm" color={color} variant="tertiary">
         {label}
       </Chip>
     );
@@ -297,23 +288,22 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      size="3xl"
-      scrollBehavior="inside"
-      isDismissable={!merging}
-      hideCloseButton={merging}
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
     >
-      <ModalContent>
-        {() => (
+      <Modal.Backdrop isDismissable={!merging} />
+      <Modal.Container size="lg" scroll="inside">
+        <Modal.Dialog>
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <Modal.Header className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <Icon icon="lucide:users" className="w-5 h-5 text-warning" />
                 <span>Merge Duplicate Users</span>
               </div>
-            </ModalHeader>
+            </Modal.Header>
 
-            <ModalBody>
+            <Modal.Body>
               {/* Scan Step: Show duplicate groups and manual form */}
               {step === "scan" && (
                 <div className="space-y-4">
@@ -352,7 +342,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   )}
 
                   <Card className="border border-default-200">
-                    <CardBody className="space-y-4">
+                    <Card.Content className="space-y-4">
                       <div className="flex items-start gap-3">
                         <Icon
                           icon="lucide:sparkles"
@@ -391,22 +381,21 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
 
                       <div className="flex justify-end">
                         <Button
-                          color="primary"
-                          variant="solid"
+                          variant="primary"
                           isDisabled={!manualSelectionReady}
                           onPress={handleManualReview}
                         >
                           Review Manual Selection
                         </Button>
                       </div>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
 
                   {duplicateGroups.length > 0 && (
                     <div className="space-y-3">
                       {duplicateGroups.map((group, idx) => (
                         <Card key={idx} className="border border-default-200">
-                          <CardBody className="p-4">
+                          <Card.Content className="p-4">
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -421,8 +410,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                               </div>
                               <Button
                                 size="sm"
-                                color="primary"
-                                variant="flat"
+                                variant="tertiary"
                                 onPress={() => handleReviewGroup(group)}
                                 endContent={
                                   <Icon
@@ -449,7 +437,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                                 </div>
                               ))}
                             </div>
-                          </CardBody>
+                          </Card.Content>
                         </Card>
                       ))}
                     </div>
@@ -539,7 +527,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     )}
                   </div>
 
-                  <Divider />
+                  <Separator />
 
                   <div>
                     <h4 className="text-sm font-semibold mb-2 text-danger-600">
@@ -566,26 +554,21 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   </p>
                 </div>
               )}
-            </ModalBody>
+            </Modal.Body>
 
-            <ModalFooter>
+            <Modal.Footer>
               {step === "scan" && (
-                <Button color="default" variant="flat" onPress={handleClose}>
+                <Button variant="tertiary" onPress={handleClose}>
                   Close
                 </Button>
               )}
 
               {step === "review" && (
                 <>
-                  <Button
-                    color="default"
-                    variant="flat"
-                    onPress={handleBackToScan}
-                  >
+                  <Button variant="tertiary" onPress={handleBackToScan}>
                     Back
                   </Button>
                   <Button
-                    color="primary"
                     onPress={handleProceedToConfirm}
                     isDisabled={!primaryUserId}
                   >
@@ -596,15 +579,10 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
 
               {step === "confirm" && (
                 <>
-                  <Button
-                    color="default"
-                    variant="flat"
-                    onPress={() => setStep("review")}
-                  >
+                  <Button variant="tertiary" onPress={() => setStep("review")}>
                     Back
                   </Button>
                   <Button
-                    color="danger"
                     onPress={handleConfirmMerge}
                     startContent={
                       <Icon icon="lucide:git-merge" className="w-4 h-4" />
@@ -614,10 +592,10 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   </Button>
                 </>
               )}
-            </ModalFooter>
+            </Modal.Footer>
           </>
-        )}
-      </ModalContent>
+        </Modal.Dialog>
+      </Modal.Container>
     </Modal>
   );
 };

@@ -1,4 +1,4 @@
-import { Button, Input, Select, SelectItem, Spinner } from "@heroui/react";
+import { Button, Input, ListBox, Select, Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import {
@@ -216,7 +216,7 @@ export function EditMemberModal({
           <Button
             isIconOnly
             size="sm"
-            variant="light"
+            variant="ghost"
             aria-label="Close"
             onPress={onClose}
             className="text-default-500"
@@ -289,24 +289,29 @@ export function EditMemberModal({
                         Role <span className="text-danger">*</span>
                       </label>
                       <Select
-                        size="sm"
                         aria-label="Board Role"
                         placeholder="Select a role"
-                        selectedKeys={
-                          form.role ? new Set([form.role]) : new Set()
-                        }
+                        value={form.role || undefined}
                         isDisabled={saving}
-                        onSelectionChange={(keys) => {
-                          const v = Array.from(keys as Set<string>)[0];
-                          onChange({ ...form, role: v });
+                        onChange={(key) => {
+                          if (key) onChange({ ...form, role: String(key) });
                         }}
                         className="max-w-full"
                       >
-                        {options.map((r) => (
-                          <SelectItem key={r} textValue={r}>
-                            {r}
-                          </SelectItem>
-                        ))}
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {options.map((r) => (
+                              <ListBox.Item key={r} id={r} textValue={r}>
+                                {r}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
                       </Select>
                       {!form.role?.trim() && (
                         <p className="text-[11px] text-danger mt-1">
@@ -359,28 +364,37 @@ export function EditMemberModal({
                     <span>Paid / Confirmed</span>
                   </label>
                   <Select
-                    size="sm"
                     aria-label="Membership Type"
                     placeholder="Type"
-                    selectedKeys={
-                      payment.membershipType
-                        ? new Set([payment.membershipType])
-                        : new Set()
-                    }
+                    value={payment.membershipType || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(keys) => {
-                      const v = Array.from(keys as Set<string>)[0];
-                      setPayment((p) => ({ ...p, membershipType: v }));
-                      setPaymentDirty(true);
+                    onChange={(key) => {
+                      if (key) {
+                        setPayment((p) => ({
+                          ...p,
+                          membershipType: String(key),
+                        }));
+                        setPaymentDirty(true);
+                      }
                     }}
                     className="min-w-[130px]"
                   >
-                    <SelectItem key="full" textValue="Full">
-                      Full
-                    </SelectItem>
-                    <SelectItem key="handicap" textValue="Handicap">
-                      Handicap
-                    </SelectItem>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="full" textValue="Full">
+                          Full
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="handicap" textValue="Handicap">
+                          Handicap
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                   <Input
                     size="sm"
@@ -396,25 +410,32 @@ export function EditMemberModal({
                 </div>
                 <div className="flex flex-col gap-2">
                   <Select
-                    size="sm"
                     aria-label="Payment Method"
                     placeholder="Method"
-                    selectedKeys={
-                      payment.method ? new Set([payment.method]) : new Set()
-                    }
+                    value={payment.method || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(keys) => {
-                      const v = Array.from(keys as Set<string>)[0] ?? "";
+                    onChange={(key) => {
+                      const v = key ? String(key) : "";
                       setPayment((p) => ({ ...p, method: v }));
                       setPaymentDirty(true);
                     }}
                   >
-                    <SelectItem key="paypal" textValue="PayPal">
-                      PayPal
-                    </SelectItem>
-                    <SelectItem key="check" textValue="Check">
-                      Check
-                    </SelectItem>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="paypal" textValue="PayPal">
+                          PayPal
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="check" textValue="Check">
+                          Check
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                 </div>
                 <p className="text-[11px] text-default-500 leading-snug">
@@ -430,16 +451,14 @@ export function EditMemberModal({
                         </span>
                         <Button
                           size="sm"
-                          color="danger"
-                          variant="flat"
-                          isLoading={deletingPayment}
+                          variant="tertiary"
                           onPress={handleDeletePayment}
                         >
                           Confirm
                         </Button>
                         <Button
                           size="sm"
-                          variant="light"
+                          variant="ghost"
                           isDisabled={deletingPayment}
                           onPress={() => setConfirmingDelete(false)}
                         >
@@ -449,8 +468,7 @@ export function EditMemberModal({
                     ) : (
                       <Button
                         size="sm"
-                        color="danger"
-                        variant="light"
+                        variant="ghost"
                         startContent={
                           <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
                         }
@@ -467,15 +485,10 @@ export function EditMemberModal({
           </div>
         )}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="flat" onPress={onClose} isDisabled={saving}>
+          <Button variant="tertiary" onPress={onClose} isDisabled={saving}>
             Cancel
           </Button>
-          <Button
-            onPress={handleSave}
-            color="secondary"
-            isDisabled={saving}
-            aria-busy={saving}
-          >
+          <Button onPress={handleSave} isDisabled={saving} aria-busy={saving}>
             {saving ? (
               <span className="flex items-center gap-1">
                 <Spinner size="sm" /> Saving...

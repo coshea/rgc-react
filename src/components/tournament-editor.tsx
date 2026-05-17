@@ -1,18 +1,16 @@
 import React from "react";
 import {
   Card,
-  CardBody,
-  CardFooter,
   Input,
-  Textarea,
+  TextArea,
   Button,
   DatePicker,
-  NumberInput,
-  Divider,
+  Separator,
+  ListBox,
   Select,
-  SelectItem,
   Checkbox,
 } from "@heroui/react";
+import { Label } from "react-aria-components";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
@@ -592,14 +590,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
   return (
     <Card className="w-full h-full flex flex-col">
-      <CardBody className="p-6 overflow-y-auto flex-1">
+      <Card.Content className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-medium">
             {isEditing ? "Edit Tournament" : "Create New Tournament"}
           </h2>
           <Button
-            color="default"
-            variant="light"
+            variant="ghost"
             isIconOnly
             onPress={onCancel}
             aria-label="Cancel"
@@ -623,7 +620,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.title}
                 errorMessage={errors.title}
               />
-              <Textarea
+              <TextArea
                 label="Description"
                 placeholder="Enter tournament description"
                 value={description}
@@ -652,7 +649,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 errorMessage={errors.date}
               />
               <Card>
-                <CardBody className="p-4 space-y-3">
+                <Card.Content className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold">
                       Registration Window
@@ -695,42 +692,46 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       UTC.
                     </p>
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </div>
             <div className="space-y-6">
-              <NumberInput
+              <Input
+                type="number"
                 label="Number of Players On A Team"
                 placeholder="Enter number of players"
-                value={players}
-                onValueChange={setPlayers}
+                value={String(players)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPlayers(parseInt(e.target.value, 10) || 1)
+                }
                 min={1}
                 max={100}
                 isInvalid={!!errors.players}
                 errorMessage={errors.players}
               />
-              <NumberInput
+              <Input
+                type="number"
                 label="Max Registered Teams (Optional)"
                 placeholder="Leave blank for unlimited"
-                value={maxTeams}
-                onValueChange={(value) => {
+                value={maxTeams !== undefined ? String(maxTeams) : ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const parsed = parseInt(e.target.value, 10);
                   setMaxTeams(
-                    typeof value === "number" &&
-                      Number.isFinite(value) &&
-                      value > 0
-                      ? value
-                      : undefined,
+                    Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
                   );
                 }}
                 min={1}
                 isInvalid={!!errors.maxTeams}
                 errorMessage={errors.maxTeams}
               />
-              <NumberInput
+              <Input
+                type="number"
                 label="Prize Pool ($)"
                 placeholder="Enter prize amount"
-                value={prizePool}
-                onValueChange={setPrizePool}
+                value={String(prizePool)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPrizePool(parseFloat(e.target.value) || 0)
+                }
                 min={0}
                 startContent={
                   <div className="pointer-events-none flex items-center">
@@ -741,75 +742,57 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 errorMessage={errors.prizePool}
               />
               <Select
-                label="Tee"
-                selectedKeys={[tee]}
+                value={tee}
+                onChange={(val) => {
+                  if (val && isTeeColor(String(val)))
+                    setTee(String(val) as typeof tee);
+                }}
                 disallowEmptySelection
-                classNames={{
-                  trigger: "bg-content2",
-                  popoverContent: "min-w-[160px]",
-                }}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
-                  if (val && isTeeColor(val)) setTee(val);
-                }}
-                renderValue={(items) => {
-                  const val = items[0]?.key as string | undefined;
-                  const cls = (v: string | undefined) =>
-                    v === "Blue"
-                      ? "text-blue-600 dark:text-blue-300"
-                      : v === "White"
-                        ? "text-default-700 dark:text-default-300"
-                        : v === "Gold"
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : v === "Red"
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-teal-600 dark:text-teal-400";
-                  return (
-                    <div className={`flex items-center gap-2 ${cls(val)}`}>
-                      <Icon icon="lucide:flag" className="w-4 h-4 opacity-70" />
-                      <span>{val}</span>
-                    </div>
-                  );
-                }}
               >
-                {["Blue", "White", "Gold", "Red", "Mixed"].map((opt) => (
-                  <SelectItem
-                    key={opt}
-                    textValue={opt}
-                    className="flex items-center"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          opt === "Blue"
-                            ? "w-3 h-3 rounded-full bg-blue-500 inline-block"
-                            : opt === "White"
-                              ? "w-3 h-3 rounded-full bg-default-300 inline-block border border-default-400"
-                              : opt === "Gold"
-                                ? "w-3 h-3 rounded-full bg-yellow-500 inline-block"
-                                : opt === "Red"
-                                  ? "w-3 h-3 rounded-full bg-red-500 inline-block"
-                                  : "w-3 h-3 rounded-full bg-teal-500 inline-block"
-                        }
-                      />
-                      <span
-                        className={
-                          opt === "Blue"
-                            ? "text-blue-600 dark:text-blue-300"
-                            : opt === "White"
-                              ? "text-default-700 dark:text-default-300"
-                              : opt === "Gold"
-                                ? "text-yellow-600 dark:text-yellow-400"
-                                : opt === "Red"
-                                  ? "text-red-600 dark:text-red-400"
-                                  : "text-teal-600 dark:text-teal-400"
-                        }
-                      >
-                        {opt}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
+                <Label>Tee</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {["Blue", "White", "Gold", "Red", "Mixed"].map((opt) => (
+                      <ListBox.Item key={opt} id={opt} textValue={opt}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={
+                              opt === "Blue"
+                                ? "w-3 h-3 rounded-full bg-blue-500 inline-block"
+                                : opt === "White"
+                                  ? "w-3 h-3 rounded-full bg-default-300 inline-block border border-default-400"
+                                  : opt === "Gold"
+                                    ? "w-3 h-3 rounded-full bg-yellow-500 inline-block"
+                                    : opt === "Red"
+                                      ? "w-3 h-3 rounded-full bg-red-500 inline-block"
+                                      : "w-3 h-3 rounded-full bg-teal-500 inline-block"
+                            }
+                          />
+                          <span
+                            className={
+                              opt === "Blue"
+                                ? "text-blue-600 dark:text-blue-300"
+                                : opt === "White"
+                                  ? "text-default-700 dark:text-default-300"
+                                  : opt === "Gold"
+                                    ? "text-yellow-600 dark:text-yellow-400"
+                                    : opt === "Red"
+                                      ? "text-red-600 dark:text-red-400"
+                                      : "text-teal-600 dark:text-teal-400"
+                            }
+                          >
+                            {opt}
+                          </span>
+                        </div>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Checkbox
@@ -827,61 +810,68 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 </Checkbox>
               )}
               <Select
-                label="Previous Year's Tournament (Optional)"
-                placeholder="Link to previous tournament"
-                description="Show the defending champion from last year"
-                selectedKeys={
+                value={
                   previousTournamentId &&
                   allTournaments.some(
                     (t) =>
                       t.firestoreId === previousTournamentId &&
                       t.firestoreId !== tournament?.firestoreId,
                   )
-                    ? [previousTournamentId]
-                    : []
+                    ? previousTournamentId
+                    : undefined
                 }
-                classNames={{
-                  trigger: "bg-content2",
+                onChange={(val) => {
+                  setPreviousTournamentId(val ? String(val) : undefined);
                 }}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string | undefined;
-                  setPreviousTournamentId(val || undefined);
-                }}
+                placeholder="Link to previous tournament"
               >
-                {allTournaments
-                  .filter(
-                    (t) =>
-                      t.firestoreId &&
-                      t.firestoreId !== tournament?.firestoreId,
-                  )
-                  .map((t) => {
-                    const year = t.date.getFullYear();
-                    const label = `${t.title} (${year})`;
-                    return (
-                      <SelectItem key={t.firestoreId!} textValue={label}>
-                        <div className="flex flex-col">
-                          <span>{t.title}</span>
-                          <span className="text-xs text-default-400">
-                            {year}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
+                <Label>Previous Year's Tournament (Optional)</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {allTournaments
+                      .filter(
+                        (t) =>
+                          t.firestoreId &&
+                          t.firestoreId !== tournament?.firestoreId,
+                      )
+                      .map((t) => {
+                        const year = t.date.getFullYear();
+                        const label = `${t.title} (${year})`;
+                        return (
+                          <ListBox.Item
+                            key={t.firestoreId!}
+                            id={t.firestoreId!}
+                            textValue={label}
+                          >
+                            <div className="flex flex-col">
+                              <span>{t.title}</span>
+                              <span className="text-xs text-default-400">
+                                {year}
+                              </span>
+                            </div>
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        );
+                      })}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               {/* Weather Section */}
               <Card>
-                <CardBody className="p-4 space-y-3">
+                <Card.Content className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold">
                       Tournament Weather
                     </h3>
                     <Button
                       size="sm"
-                      variant="flat"
+                      variant="tertiary"
                       onPress={handleFetchWeather}
-                      isLoading={fetchingWeather}
                       isDisabled={!date}
                       startContent={
                         !fetchingWeather && (
@@ -924,52 +914,60 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                         : "Set a tournament date to fetch weather"}
                     </p>
                   )}
-                </CardBody>
+                </Card.Content>
               </Card>
 
               <div className="flex flex-col gap-4 pt-2">
                 <Select
-                  label="Status"
-                  selectedKeys={[status]}
-                  disallowEmptySelection
-                  onSelectionChange={(keys) => {
-                    const key = Array.from(keys)[0] as
-                      | TournamentStatus
-                      | undefined;
-                    const v = key ?? TournamentStatus.Upcoming;
+                  value={status}
+                  onChange={(val) => {
+                    const v =
+                      (val as TournamentStatus) ?? TournamentStatus.Upcoming;
                     setStatus(v);
-                    // Allow winners to be managed when a tournament is In Progress
-                    // or Completed so editors can add results while the event is running.
                     setCompleted(
                       v === TournamentStatus.Completed ||
                         v === TournamentStatus.InProgress,
                     );
                   }}
+                  disallowEmptySelection
                 >
-                  <SelectItem
-                    key={TournamentStatus.Upcoming}
-                    textValue="Upcoming"
-                  >
-                    Upcoming (Registration Closed)
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.InProgress}
-                    textValue="In Progress"
-                  >
-                    In Progress
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.Completed}
-                    textValue="Completed"
-                  >
-                    Tournament Completed
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.Canceled}
-                    textValue="Canceled"
-                  >
-                    Tournament Canceled
-                  </SelectItem>
+                  <Label>Status</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item
+                        id={TournamentStatus.Upcoming}
+                        textValue="Upcoming"
+                      >
+                        Upcoming (Registration Closed)
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item
+                        id={TournamentStatus.InProgress}
+                        textValue="In Progress"
+                      >
+                        In Progress
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item
+                        id={TournamentStatus.Completed}
+                        textValue="Completed"
+                      >
+                        Tournament Completed
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item
+                        id={TournamentStatus.Canceled}
+                        textValue="Canceled"
+                      >
+                        Tournament Canceled
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               </div>
             </div>
@@ -978,7 +976,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
             status === TournamentStatus.Completed ||
             status === TournamentStatus.InProgress) && (
             <div className="pt-4">
-              <Divider className="my-4" />
+              <Separator className="my-4" />
               <div className="grid grid-cols-1 gap-6">
                 <div>
                   <GroupedWinnersEditor
@@ -998,7 +996,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           )}
           {isEditing && (
             <div className="pt-6">
-              <Divider className="my-4" />
+              <Separator className="my-4" />
               <button
                 type="button"
                 onClick={() => setRegsOpen((o) => !o)}
@@ -1017,7 +1015,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     <div className="mb-4 flex items-center gap-3">
                       <Button
                         size="sm"
-                        color="primary"
                         startContent={<PlusIcon className="w-4 h-4" />}
                         onPress={() => setAddOpen(true)}
                       >
@@ -1096,7 +1093,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           )}
           {isEditing && tournament?.firestoreId && (
             <div className="pt-6">
-              <Divider className="my-4" />
+              <Separator className="my-4" />
               <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
@@ -1112,9 +1109,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 </button>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   color={tournament.bracketPublished ? "success" : "default"}
-                  isLoading={publishingBracket}
                   startContent={
                     !publishingBracket ? (
                       <Icon
@@ -1200,7 +1196,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               <div className="h-4" />
               <div className="flex justify-end gap-2">
                 <Button
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => {
                     if (!adding) {
                       setAddOpen(false);
@@ -1212,8 +1208,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   Cancel
                 </Button>
                 <Button
-                  color="primary"
-                  isLoading={adding}
                   onPress={submitNewRegistration}
                   isDisabled={newMembers.filter(Boolean).length === 0}
                 >
@@ -1233,7 +1227,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-medium">Details (Popout Editor)</h3>
                 <Button
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => setDetailsPopoutOpen(false)}
                 >
                   Close
@@ -1267,21 +1261,19 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
             </div>
           </div>
         )}
-      </CardBody>
-      <CardFooter className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0">
-        <Button color="default" variant="flat" onPress={onCancel}>
+      </Card.Content>
+      <Card.Footer className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0">
+        <Button variant="tertiary" onPress={onCancel}>
           Cancel
         </Button>
         <Button
-          color="primary"
           type="submit"
           form="tournament-editor-form"
-          isLoading={isSubmitting}
           startContent={!isSubmitting && <Icon icon="lucide:save" />}
         >
           {isEditing ? "Update Tournament" : "Create Tournament"}
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 };

@@ -1,33 +1,17 @@
-import type { NavigateOptions } from "react-router-dom";
-
-import { HeroUIProvider } from "@heroui/system";
-import { ToastProvider } from "@heroui/react";
-import { useHref, useNavigate } from "react-router-dom";
+import { Toast } from "@heroui/react";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ConsentProvider } from "@/providers/ConsentProvider";
 import ConsentBanner from "@/components/consent-banner";
 
-declare module "@react-types/shared" {
-  interface RouterConfig {
-    routerOptions: NavigateOptions;
-  }
-}
-
 export function Provider({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-
   return (
     <ConsentProvider>
       <AuthProvider>
-        <HeroUIProvider navigate={navigate} useHref={useHref}>
-          {/* Global toast provider so addToast calls render */}
-          <div className="relative" style={{ zIndex: 9999 }}>
-            <ToastProvider placement="bottom-center" />
-          </div>
-          {/* Cookie consent banner (fixed) */}
-          <ConsentBanner />
-          {children}
-        </HeroUIProvider>
+        {/* Global toast provider so toast() calls render */}
+        <Toast.Provider placement="bottom" />
+        {/* Cookie consent banner (fixed) */}
+        <ConsentBanner />
+        {children}
       </AuthProvider>
     </ConsentProvider>
   );

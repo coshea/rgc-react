@@ -35,11 +35,11 @@ export function DeleteMemberModal({
           )}
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="flat" onPress={onCancel}>
+          <Button variant="tertiary" onPress={onCancel}>
             Cancel
           </Button>
           {!selfDelete && (
-            <Button color="danger" onPress={onConfirm}>
+            <Button  onPress={onConfirm}>
               Delete
             </Button>
           )}

@@ -2,21 +2,13 @@ import React from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import {
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Button,
-  Divider,
+  Separator,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
   Skeleton,
   Link,
 } from "@heroui/react";
-import { button as buttonStyles } from "@heroui/theme";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
 import { UserAvatar } from "@/components/avatar";
@@ -44,7 +36,9 @@ const UserProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { user: profileUser, isLoading: userLoading } = useUserById(userId);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onOpenChange = (v: boolean) => setIsOpen(v);
   const isMobile = useMediaQuery("(max-width: 640px)");
 
   // Check if the current user is viewing their own profile
@@ -75,7 +69,7 @@ const UserProfilePage: React.FC = () => {
 
         {/* Profile Header Skeleton */}
         <Card className="bg-linear-to-r from-primary/10 to-secondary/10">
-          <CardBody className="p-8">
+          <Card.Content className="p-8">
             <div className="flex flex-col md:flex-row items-center gap-6">
               <Skeleton className="w-32 h-32 rounded-full" />
               <div className="flex-1 text-center md:text-left space-y-3 w-full">
@@ -106,25 +100,25 @@ const UserProfilePage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Tournament Winnings Skeleton */}
           <Card className="lg:col-span-1">
-            <CardHeader className="pb-2">
+            <Card.Header className="pb-2">
               <div className="flex items-center gap-2">
                 <Skeleton className="w-5 h-5 rounded" />
                 <Skeleton className="h-6 w-32 rounded" />
               </div>
-            </CardHeader>
-            <CardBody className="space-y-4">
+            </Card.Header>
+            <Card.Content className="space-y-4">
               <div className="text-center space-y-2">
                 <Skeleton className="h-8 w-24 mx-auto rounded" />
                 <Skeleton className="h-4 w-20 mx-auto rounded" />
               </div>
 
-              <Divider />
+              <Separator />
 
               <div className="text-center space-y-2">
                 <Skeleton className="h-6 w-20 mx-auto rounded" />
@@ -140,19 +134,19 @@ const UserProfilePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* Championships Skeleton */}
           <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
+            <Card.Header className="pb-2">
               <div className="flex items-center gap-2">
                 <Skeleton className="w-5 h-5 rounded" />
                 <Skeleton className="h-6 w-24 rounded" />
                 <Skeleton className="h-5 w-8 rounded-full" />
               </div>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                   <div
@@ -166,13 +160,13 @@ const UserProfilePage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
 
         {/* Tournament Wins Skeleton */}
         <Card>
-          <CardHeader className="pb-2">
+          <Card.Header className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Skeleton className="w-5 h-5 rounded" />
@@ -180,8 +174,8 @@ const UserProfilePage: React.FC = () => {
                 <Skeleton className="h-5 w-8 rounded-full" />
               </div>
             </div>
-          </CardHeader>
-          <CardBody>
+          </Card.Header>
+          <Card.Content>
             <div className="space-y-6">
               {[2024, 2023].map((year) => (
                 <div key={year} className="space-y-3">
@@ -209,7 +203,7 @@ const UserProfilePage: React.FC = () => {
                 </div>
               ))}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -223,7 +217,7 @@ const UserProfilePage: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <Card className="text-center py-12">
-          <CardBody>
+          <Card.Content>
             <Icon
               icon="lucide:user-x"
               className="w-16 h-16 mx-auto mb-4 text-default-400"
@@ -234,11 +228,11 @@ const UserProfilePage: React.FC = () => {
             </p>
             <Link
               href={siteConfig.pages.directory.link}
-              className={buttonStyles({ color: "primary", variant: "flat" })}
+              className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium border border-default-200 hover:bg-default-100 transition-colors"
             >
               Browse Member Directory
             </Link>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -258,7 +252,7 @@ const UserProfilePage: React.FC = () => {
         {isOwnProfile && (
           <div className="flex items-center gap-2">
             <Button
-              variant="flat"
+              variant="tertiary"
               size="sm"
               startContent={<Icon icon="lucide:bell" className="w-4 h-4" />}
               onPress={() =>
@@ -268,8 +262,7 @@ const UserProfilePage: React.FC = () => {
               Notifications
             </Button>
             <Button
-              color="primary"
-              variant="flat"
+              variant="tertiary"
               size="sm"
               startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
               onPress={() => {
@@ -288,7 +281,7 @@ const UserProfilePage: React.FC = () => {
 
       {/* Profile Header */}
       <Card className="bg-linear-to-r from-primary/10 to-secondary/10">
-        <CardBody className="p-8">
+        <Card.Content className="p-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <UserAvatar
               user={profileUser}
@@ -315,7 +308,7 @@ const UserProfilePage: React.FC = () => {
                             ].color
                           : "secondary"
                       }
-                      variant="flat"
+                      variant="tertiary"
                       size="sm"
                       startContent={
                         <Icon
@@ -339,8 +332,7 @@ const UserProfilePage: React.FC = () => {
 
                   {profileUser.membershipType === "full" && (
                     <Chip
-                      color="success"
-                      variant="flat"
+                      variant="tertiary"
                       size="sm"
                       startContent={
                         <Icon icon="lucide:badge-check" className="w-3 h-3" />
@@ -352,8 +344,7 @@ const UserProfilePage: React.FC = () => {
 
                   {profileUser.membershipType === "handicap" && (
                     <Chip
-                      color="primary"
-                      variant="flat"
+                      variant="tertiary"
                       size="sm"
                       startContent={
                         <Icon icon="lucide:golf" className="w-3 h-3" />
@@ -365,8 +356,7 @@ const UserProfilePage: React.FC = () => {
 
                   {!championshipsLoading && majorChampionships.length > 0 && (
                     <Chip
-                      color="warning"
-                      variant="flat"
+                      variant="tertiary"
                       size="sm"
                       startContent={
                         <Icon icon="lucide:crown" className="w-3 h-3" />
@@ -419,26 +409,26 @@ const UserProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Tournament Winnings Summary */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-2">
+          <Card.Header className="pb-2">
             <div className="flex items-center gap-2">
               <Icon icon="lucide:trophy" className="w-5 h-5 text-warning" />
               <h3 className="text-lg font-semibold">Tournament Winnings</h3>
             </div>
-          </CardHeader>
-          <CardBody className="space-y-4">
+          </Card.Header>
+          <Card.Content className="space-y-4">
             {winningsLoading ? (
               <>
                 <div className="text-center space-y-2">
                   <Skeleton className="h-8 w-24 mx-auto rounded" />
                   <Skeleton className="h-4 w-20 mx-auto rounded" />
                 </div>
-                <Divider />
+                <Separator />
                 <div className="text-center space-y-2">
                   <Skeleton className="h-6 w-20 mx-auto rounded" />
                   <Skeleton className="h-4 w-16 mx-auto rounded" />
@@ -462,7 +452,7 @@ const UserProfilePage: React.FC = () => {
                   <p className="text-sm text-default-600">Lifetime Winnings</p>
                 </div>
 
-                <Divider />
+                <Separator />
 
                 <div className="text-center space-y-2">
                   <div className="text-xl font-semibold text-primary">
@@ -493,23 +483,23 @@ const UserProfilePage: React.FC = () => {
                 </div>
               </>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Championships */}
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
+          <Card.Header className="pb-2">
             <div className="flex items-center gap-2">
               <Icon icon="lucide:crown" className="w-5 h-5 text-warning" />
               <h3 className="text-lg font-semibold">Championships</h3>
               {!championshipsLoading && (
-                <Chip size="sm" color="warning" variant="flat">
+                <Chip size="sm" variant="tertiary">
                   {majorChampionships.length}
                 </Chip>
               )}
             </div>
-          </CardHeader>
-          <CardBody>
+          </Card.Header>
+          <Card.Content>
             {championshipsLoading ? (
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {[1, 2, 3].map((i) => (
@@ -568,7 +558,7 @@ const UserProfilePage: React.FC = () => {
                           ? "success"
                           : "default"
                       }
-                      variant="flat"
+                      variant="tertiary"
                     >
                       {championship.placement === "champion"
                         ? "Champion"
@@ -586,26 +576,26 @@ const UserProfilePage: React.FC = () => {
                 <p className="text-default-500">No championships yet</p>
               </div>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 
       {/* Tournament Wins (Regular Tournaments) */}
       <Card>
-        <CardHeader className="pb-2">
+        <Card.Header className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Icon icon="lucide:award" className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold">Tournament Wins</h3>
               {!winsLoading && (
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip size="sm" variant="tertiary">
                   {tournamentWins.length}
                 </Chip>
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           {winsLoading ? (
             <div className="space-y-6">
               {[2024, 2023].map((year) => (
@@ -656,7 +646,7 @@ const UserProfilePage: React.FC = () => {
                       <h4 className="text-lg font-semibold text-primary">
                         {year}
                       </h4>
-                      <Chip size="sm" variant="flat" color="primary">
+                      <Chip size="sm" variant="tertiary">
                         {tournaments.length} tournament
                         {tournaments.length !== 1 ? "s" : ""}
                       </Chip>
@@ -679,7 +669,7 @@ const UserProfilePage: React.FC = () => {
 
                           <div className="flex items-center gap-2 shrink-0">
                             {tournament.position && (
-                              <Chip size="sm" color="primary" variant="flat">
+                              <Chip size="sm" variant="tertiary">
                                 {tournament.position === 1
                                   ? "1st"
                                   : tournament.position === 2
@@ -713,12 +703,12 @@ const UserProfilePage: React.FC = () => {
               </p>
             </div>
           )}
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Current Registration Status */}
       <Card>
-        <CardHeader className="pb-2">
+        <Card.Header className="pb-2">
           <div className="flex items-center gap-2">
             <Icon
               icon="lucide:calendar-check"
@@ -728,13 +718,13 @@ const UserProfilePage: React.FC = () => {
               Current Registration Status
             </h3>
             {!registrationsLoading && userRegistrations.length > 0 && (
-              <Chip size="sm" color="primary" variant="flat">
+              <Chip size="sm" variant="tertiary">
                 {userRegistrations.length}
               </Chip>
             )}
           </div>
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           {registrationsLoading ? (
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2].map((i) => (
@@ -790,13 +780,12 @@ const UserProfilePage: React.FC = () => {
                 return (
                   <Card
                     key={tournament.firestoreId}
-                    isPressable
                     onPress={() =>
                       navigate(`/tournaments/${tournament.firestoreId}`)
                     }
                     className="border border-default-200 hover:border-primary/40 transition-colors"
                   >
-                    <CardHeader className="pb-1 flex items-start justify-between gap-2">
+                    <Card.Header className="pb-1 flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground text-sm truncate">
                           {tournament.title}
@@ -810,8 +799,8 @@ const UserProfilePage: React.FC = () => {
                         className="w-4 h-4 text-foreground-400 shrink-0 mt-0.5"
                         aria-hidden="true"
                       />
-                    </CardHeader>
-                    <CardBody className="pt-0 pb-2 px-2">
+                    </Card.Header>
+                    <Card.Content className="pt-0 pb-2 px-2">
                       <TeamRegistrationCard
                         teamNumber={1}
                         displayTeam={registration.team}
@@ -823,61 +812,46 @@ const UserProfilePage: React.FC = () => {
                         maxPlayers={maxPlayers}
                         usersMap={usersMap}
                       />
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 );
               })}
             </div>
           )}
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Edit Profile Modal */}
-      <Modal
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
-        size="2xl"
-        shouldBlockScroll={false}
-        placement="top-center"
-        classNames={{
-          // Mobile: cap height so the body can scroll (keyboard-safe in practice).
-          // Desktop: keep a centered dialog feel.
-          wrapper: "items-start pt-6 sm:items-center sm:pt-0",
-          base: "mx-3 my-3 w-[calc(100%-1.5rem)] max-h-[85vh] max-h-[85svh] max-h-[85dvh] sm:max-h-[90vh] sm:max-w-2xl flex flex-col overflow-hidden",
-          header: "shrink-0",
-          body: "flex-1 min-h-0 overflow-hidden p-0",
-          footer: "shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
-        }}
-      >
-        <ModalContent>
-          {() => (
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <Modal.Container size="lg" placement="top">
+          <Modal.Dialog>
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">Edit Profile</h2>
                 <p className="text-sm text-default-500">
                   Update your profile information and settings
                 </p>
-              </ModalHeader>
-              <ModalBody>
+              </Modal.Header>
+              <Modal.Body>
                 <div className="h-full overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
                   <ProfileForm
                     hideActions
                     formId="profile-edit-form"
-                    onSaved={() => onOpenChange()}
+                    onSaved={() => onOpenChange(false)}
                   />
                 </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="flat" onPress={() => onOpenChange()}>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="tertiary" onPress={() => onOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button color="primary" type="submit" form="profile-edit-form">
+                <Button type="submit" form="profile-edit-form">
                   Save
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
     </div>
   );

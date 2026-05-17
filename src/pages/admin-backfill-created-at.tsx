@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import {
   Button,
   Card,
-  CardBody,
   Chip,
   Spinner,
   Table,
@@ -184,9 +183,9 @@ export default function AdminBackfillCreatedAtPage() {
 
   const chipColor: Record<
     RowStatus,
-    "primary" | "success" | "warning" | "danger"
+    "accent" | "success" | "warning" | "danger"
   > = {
-    ready: "primary",
+    ready: "accent",
     done: "success",
     "no-payment": "warning",
     error: "danger",
@@ -214,7 +213,7 @@ export default function AdminBackfillCreatedAtPage() {
 
         {/* Criteria card */}
         <Card className="mb-6">
-          <CardBody className="gap-2 text-sm text-default-600">
+          <Card.Content className="gap-2 text-sm text-default-600">
             <p>
               <strong>Included:</strong> Users missing a member-since date with{" "}
               <code className="text-xs bg-default-100 px-1 py-0.5 rounded">
@@ -239,17 +238,15 @@ export default function AdminBackfillCreatedAtPage() {
               </code>{" "}
               is set).
             </p>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Action bar */}
         <div className="flex gap-3 mb-6">
           <Button
-            color="primary"
-            variant="flat"
+            variant="tertiary"
             startContent={<Icon icon="lucide:search" className="w-4 h-4" />}
             onPress={loadPreview}
-            isLoading={loading}
             isDisabled={running}
           >
             Load Preview
@@ -257,7 +254,6 @@ export default function AdminBackfillCreatedAtPage() {
 
           {loaded && readyCount > 0 && !running && (
             <Button
-              color="success"
               startContent={<Icon icon="lucide:play" className="w-4 h-4" />}
               onPress={runBackfill}
               isDisabled={loading}
@@ -277,10 +273,10 @@ export default function AdminBackfillCreatedAtPage() {
         {/* Load error */}
         {loadError && (
           <Card className="mb-4 border-danger-200">
-            <CardBody className="flex flex-row items-center gap-2 text-danger text-sm">
+            <Card.Content className="flex flex-row items-center gap-2 text-danger text-sm">
               <Icon icon="lucide:alert-circle" className="w-4 h-4 shrink-0" />
               {loadError}
-            </CardBody>
+            </Card.Content>
           </Card>
         )}
 
@@ -297,17 +293,17 @@ export default function AdminBackfillCreatedAtPage() {
           <>
             {/* Summary chips */}
             <div className="flex flex-wrap gap-3 mb-4">
-              <Chip color="success" variant="flat" size="sm">
+              <Chip variant="tertiary" size="sm">
                 {doneCount} updated
               </Chip>
-              <Chip color="primary" variant="flat" size="sm">
+              <Chip variant="tertiary" size="sm">
                 {readyCount} ready
               </Chip>
-              <Chip color="warning" variant="flat" size="sm">
+              <Chip variant="tertiary" size="sm">
                 {noPaymentCount} no payment found
               </Chip>
               {errorCount > 0 && (
-                <Chip color="danger" variant="flat" size="sm">
+                <Chip variant="tertiary" size="sm">
                   {errorCount} errors
                 </Chip>
               )}
@@ -315,12 +311,12 @@ export default function AdminBackfillCreatedAtPage() {
 
             {rows.length === 0 ? (
               <Card>
-                <CardBody className="flex flex-col items-center gap-2 py-12 text-default-400">
+                <Card.Content className="flex flex-col items-center gap-2 py-12 text-default-400">
                   <Icon icon="lucide:check-circle-2" className="w-10 h-10" />
                   <p className="font-medium">
                     All eligible members already have a member-since date.
                   </p>
-                </CardBody>
+                </Card.Content>
               </Card>
             ) : (
               <Table aria-label="Backfill member-since date preview" isStriped>
@@ -355,7 +351,7 @@ export default function AdminBackfillCreatedAtPage() {
                       <TableCell>
                         <Chip
                           color={chipColor[row.status]}
-                          variant="flat"
+                          variant="tertiary"
                           size="sm"
                           title={row.errorMsg}
                         >

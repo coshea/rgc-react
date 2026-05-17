@@ -1,13 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Button,
-  Divider,
-} from "@heroui/react";
+import { Card, Chip, Button, Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -178,7 +171,7 @@ export const BlogPostPage: React.FC = () => {
         {isAdmin && (
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => navigate(`/announcements/edit/${post.id}`)}
             startContent={<Icon icon="lucide:edit" />}
           >
@@ -206,18 +199,17 @@ export const BlogPostPage: React.FC = () => {
           {post.isPinned && (
             <Chip
               size="sm"
-              color="warning"
-              variant="flat"
+              variant="tertiary"
               startContent={<Icon icon="lucide:pin" />}
             >
               Pinned
             </Chip>
           )}
-          <Chip size="sm" variant="flat">
+          <Chip size="sm" variant="tertiary">
             {post.category}
           </Chip>
           {post.tags?.map((tag) => (
-            <Chip key={tag} size="sm" variant="dot">
+            <Chip key={tag} size="sm" variant="tertiary">
               {tag}
             </Chip>
           ))}
@@ -244,8 +236,8 @@ export const BlogPostPage: React.FC = () => {
       {/* Tournament Weather (only for tournament results) */}
       {post.category === BlogCategory.TournamentResults &&
         tournament?.weather && (
-          <Card shadow="sm" className="mb-6">
-            <CardHeader className="pb-0">
+          <Card className="mb-6">
+            <Card.Header className="pb-0">
               <div className="flex items-center gap-2">
                 <Icon
                   icon={getWeatherIcon(tournament.weather.condition)}
@@ -255,9 +247,9 @@ export const BlogPostPage: React.FC = () => {
                   Tournament Day Weather
                 </h2>
               </div>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-4">
+            </Card.Header>
+            <Separator />
+            <Card.Content className="pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <p className="text-foreground-500 text-xs uppercase tracking-wide">
@@ -292,37 +284,37 @@ export const BlogPostPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         )}
 
       {/* Post Content */}
       <Card>
-        <CardBody className="p-8">{renderContent()}</CardBody>
+        <Card.Content className="p-8">{renderContent()}</Card.Content>
       </Card>
 
       {/* Tournament Results — shown as a separate section below content */}
       {post.category === BlogCategory.TournamentResults &&
         tournament != null &&
         (tournament.winnerGroups?.length ?? 0) > 0 && (
-          <Card className="mt-6" shadow="sm">
-            <CardHeader className="pb-0">
+          <Card className="mt-6">
+            <Card.Header className="pb-0">
               <div className="flex items-center gap-2">
                 <Icon icon="lucide:trophy" className="w-5 h-5 text-warning" />
                 <h2 className="text-lg font-semibold">Tournament Results</h2>
               </div>
-            </CardHeader>
-            <Divider />
-            <CardBody className="pt-4">
+            </Card.Header>
+            <Separator />
+            <Card.Content className="pt-4">
               <GroupedWinners groups={tournament.winnerGroups ?? []} />
-            </CardBody>
+            </Card.Content>
           </Card>
         )}
 
       {/* Navigation Footer */}
       <div className="mt-8 flex justify-center">
         <Button
-          variant="flat"
+          variant="tertiary"
           onPress={() => navigate("/announcements")}
           startContent={<Icon icon="lucide:arrow-left" />}
         >

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Tabs, Tab } from "@heroui/react";
+import { Tabs } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -51,63 +51,60 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs
-          aria-label="Admin Dashboard"
-          selectedKey={activeTab}
-          onSelectionChange={handleTabChange}
-          classNames={{ tabList: "mb-2 overflow-x-auto scrollbar-hide" }}
-        >
-          <Tab
-            key="overview"
-            title={
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:users" className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Members</span>
-              </div>
-            }
-            aria-label="Members"
-          >
+        <Tabs selectedKey={activeTab} onSelectionChange={handleTabChange}>
+          <Tabs.ListContainer>
+            <Tabs.List
+              aria-label="Admin Dashboard"
+              className="mb-2 overflow-x-auto scrollbar-hide"
+            >
+              <Tabs.Tab id="overview" aria-label="Members">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:users" className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Members</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="payments" aria-label="Payments">
+                <Tabs.Separator />
+                <div className="flex items-center gap-2">
+                  <Icon
+                    icon="lucide:credit-card"
+                    className="w-4 h-4 shrink-0"
+                  />
+                  <span className="hidden sm:inline">Payments</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="tournaments" aria-label="Tournaments">
+                <Tabs.Separator />
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:flag" className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Tournaments</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="notifications" aria-label="Notifications">
+                <Tabs.Separator />
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:bell" className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Notifications</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
+          <Tabs.Panel id="overview">
             <MemberOverviewTab />
-          </Tab>
-
-          <Tab
-            key="payments"
-            title={
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:credit-card" className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Payments</span>
-              </div>
-            }
-            aria-label="Payments"
-          >
+          </Tabs.Panel>
+          <Tabs.Panel id="payments">
             <PaymentsTab isEmbedded />
-          </Tab>
-
-          <Tab
-            key="tournaments"
-            title={
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:flag" className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Tournaments</span>
-              </div>
-            }
-            aria-label="Tournaments"
-          >
+          </Tabs.Panel>
+          <Tabs.Panel id="tournaments">
             <TournamentStatusTab />
-          </Tab>
-
-          <Tab
-            key="notifications"
-            title={
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:bell" className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Notifications</span>
-              </div>
-            }
-            aria-label="Notifications"
-          >
+          </Tabs.Panel>
+          <Tabs.Panel id="notifications">
             <NotificationsTab />
-          </Tab>
+          </Tabs.Panel>
         </Tabs>
       </div>
     </div>

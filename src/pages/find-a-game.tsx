@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import {
   Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
+  
+  
+  
   Chip,
   Button,
 } from "@heroui/react";
@@ -198,40 +198,40 @@ export default function FindAGamePage() {
         </p>
       </header>
 
-      <Card shadow="sm">
-        <CardHeader className="flex items-center justify-between pb-2">
+      <Card>
+        <Card.Header className="flex items-center justify-between pb-2">
           <div className="flex flex-col gap-1">
             <h3 className="text-base font-semibold flex items-center gap-2">
               <Icon icon="lucide:calendar" className="w-4 h-4" /> Upcoming posts
             </h3>
             {!userLoggedIn ? (
-              <Chip size="sm" variant="flat" color="warning">
+              <Chip size="sm" variant="tertiary" >
                 You must be logged in to post
               </Chip>
             ) : null}
           </div>
           <Button
-            color="primary"
+            
             isDisabled={!userLoggedIn}
             onPress={() => setCreateOpen(true)}
             startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
           >
             New Post
           </Button>
-        </CardHeader>
-        <CardBody className="space-y-4">
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <PostsList
             posts={posts}
             canEdit={canEditPost}
             onEditRequest={onEditRequest}
           />
-        </CardBody>
-        <CardFooter>
+        </Card.Content>
+        <Card.Footer>
           <div className="text-[11px] text-default-500">
             Please update or delete your post if plans change. Admins may remove
             stale content.
           </div>
-        </CardFooter>
+        </Card.Footer>
       </Card>
 
       <FindAGamePostModal

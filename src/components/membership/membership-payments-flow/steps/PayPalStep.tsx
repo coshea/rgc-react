@@ -1,12 +1,5 @@
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-  addToast,
-} from "@heroui/react";
+import { Alert, Button, Card, Separator } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { useState } from "react";
 import BackButton from "@/components/back-button";
 import { siteConfig } from "@/config/site";
@@ -50,15 +43,15 @@ export function PayPalStep(props: {
   const [showCheckConfirm, setShowCheckConfirm] = useState(false);
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 4: Submit payment</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4 overflow-visible">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4 overflow-visible">
         {paypalEnabled && showPayPalSandboxNotice && (
-          <Alert color="warning">
+          <Alert>
             PayPal is running in SANDBOX mode. Payments are not live.
           </Alert>
         )}
@@ -73,7 +66,7 @@ export function PayPalStep(props: {
           <div className="text-base font-semibold">{currency(amount)}</div>
         </div>
 
-        <Alert color="primary">
+        <Alert>
           <strong>Referral Discount:</strong> If you are using a referral,
           please use the "Pay by check (mail)" option below to receive your
           discount.
@@ -123,7 +116,7 @@ export function PayPalStep(props: {
             </div>
             <div className="shrink-0 sm:self-start">
               <Button
-                variant="bordered"
+                variant="outline"
                 onPress={() => {
                   setShowCheckConfirm(true);
                 }}
@@ -133,7 +126,7 @@ export function PayPalStep(props: {
             </div>
           </div>
         </div>
-      </CardBody>
+      </Card.Content>
 
       {showCheckConfirm ? (
         <div
@@ -152,11 +145,13 @@ export function PayPalStep(props: {
               pending until it’s received.
             </p>
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="flat" onPress={() => setShowCheckConfirm(false)}>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowCheckConfirm(false)}
+              >
                 Cancel
               </Button>
               <Button
-                color="primary"
                 onPress={() => {
                   setShowCheckConfirm(false);
                   if (typeof onCheckSelected === "function") {

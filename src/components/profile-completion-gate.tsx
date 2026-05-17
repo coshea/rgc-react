@@ -19,7 +19,7 @@ const ProfileCompletionGate: React.FC = () => {
   const { userProfile, isPending } = useUserProfile();
   const location = useLocation();
 
-  // isPending covers both normal fetch and the paused/offline case (where isLoading
+  // isPending covers both normal fetch and the paused/offline case (where
   // would be false even though there is no data yet), preventing a false redirect.
   if (loading || (user && isPending)) {
     return (

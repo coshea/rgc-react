@@ -1,6 +1,6 @@
 import { title } from "@/components/primitives";
 import { siteConfig } from "@/config/site";
-import { Button, Link, Card, CardBody } from "@heroui/react";
+import { Button, Link, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
@@ -20,7 +20,7 @@ export default function AboutPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
         <Card>
-          <CardBody className="space-y-2">
+          <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Tournaments & Events</h2>
             <p className="text-default-600">
               Each season we run about 15 member tournaments—from quick fun
@@ -31,18 +31,17 @@ export default function AboutPage() {
               <Button
                 as={Link}
                 href={siteConfig.pages.tournaments.link}
-                color="primary"
-                variant="flat"
+                variant="tertiary"
                 endContent={<Icon icon="lucide:chevron-right" />}
               >
                 View Tournaments
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="space-y-2">
+          <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Membership</h2>
             <p className="text-default-600">
               Whether you’re new in town or a long-time local, our club offers
@@ -53,14 +52,13 @@ export default function AboutPage() {
               <Button
                 as={Link}
                 href={siteConfig.pages.membership.link}
-                color="secondary"
-                variant="flat"
+                variant="tertiary"
                 endContent={<Icon icon="lucide:user-plus" />}
               >
                 Become a Member
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 

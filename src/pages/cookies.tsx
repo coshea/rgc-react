@@ -50,7 +50,7 @@ export default function CookiePolicyPage() {
           <div className="flex gap-2 mt-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={reject}
               isDisabled={status === "rejected"}
             >
@@ -58,7 +58,7 @@ export default function CookiePolicyPage() {
             </Button>
             <Button
               size="sm"
-              color="primary"
+              
               onPress={accept}
               isDisabled={status === "accepted"}
             >

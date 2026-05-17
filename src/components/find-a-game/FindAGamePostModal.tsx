@@ -1,19 +1,22 @@
 import {
   Button,
   Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
   Form,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   DatePicker,
-  TimeInput,
 } from "@heroui/react";
-import type { PopoverProps } from "@heroui/popover";
+import type { Placement } from "react-aria-components";
+type PopoverProps = {
+  portalContainer?: HTMLElement;
+  containerPadding?: number;
+  placement?: Placement;
+  shouldFlip?: boolean;
+  offset?: number;
+};
 import { Icon } from "@iconify/react";
-import { type DateValue, parseDate, parseTime } from "@internationalized/date";
+import { type DateValue, parseDate } from "@internationalized/date";
 import { toYMD } from "@/api/find-a-game";
 import { useCallback, useState } from "react";
 
@@ -49,7 +52,7 @@ export default function FindAGamePostModal({
   openSpots,
   onOpenSpotsChange,
   canSubmit,
-  creating,
+  creating: _creating,
   onSubmit,
   title,
   submitLabel,
@@ -58,7 +61,7 @@ export default function FindAGamePostModal({
   // Otherwise, the modal's aria-hide-outside behavior can mark the focused option as aria-hidden,
   // triggering the browser warning about hiding focused descendants.
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
-    null
+    null,
   );
   const setPortalRef = useCallback((node: HTMLDivElement | null) => {
     setPortalContainer(node);
@@ -75,125 +78,131 @@ export default function FindAGamePostModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      scrollBehavior="inside"
-      classNames={{
-        // Mobile: shorter modal, but positioned higher to leave room for the calendar to open downward.
-        // Desktop: keep the usual centered dialog feel.
-        wrapper: "items-start pt-8 sm:items-center sm:pt-0",
-        base: "mx-3 my-3 max-h-[85dvh] sm:max-h-[90vh] sm:max-w-lg",
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <ModalContent>
-        <div ref={setPortalRef} />
-        <ModalHeader className="flex flex-col gap-1">
-          <div className="text-lg font-semibold">{title || "Create Post"}</div>
-        </ModalHeader>
-        <ModalBody>
-          <Form
-            className="flex flex-col gap-3"
-            validationBehavior="native"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await onSubmit();
-            }}
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <Select
-                label="Post Type"
-                selectedKeys={[mode]}
-                onSelectionChange={(keys) => {
-                  const v = Array.from(keys)[0] as Mode;
-                  onModeChange(v);
-                }}
-                popoverProps={popoverProps()}
-                className="min-w-[220px] w-60"
-              >
-                <SelectItem
-                  key="needPlayers"
-                  textValue="Need Players"
-                  startContent={
-                    <Icon icon="lucide:user-plus" className="w-4 h-4" />
-                  }
-                >
-                  Need Players
-                </SelectItem>
-                <SelectItem
-                  key="needGroup"
-                  textValue="Need a Group"
-                  startContent={
-                    <Icon icon="lucide:users" className="w-4 h-4" />
-                  }
-                >
-                  Need a Group
-                </SelectItem>
-              </Select>
-
-              <DatePicker
-                label="Date"
-                value={date ? parseDate(date) : null}
-                onChange={(v: DateValue | null) =>
-                  onDateChange(v ? v.toString() : "")
-                }
-                minValue={parseDate(toYMD(new Date()))}
-                popoverProps={{
-                  ...popoverProps(),
-                  placement: "bottom",
-                  shouldFlip: false,
-                  offset: 8,
-                }}
-                className="w-48"
-                classNames={{
-                  // Keep the calendar within the modal/screen on small devices.
-                  popoverContent: "max-w-[90vw] max-h-[55vh] overflow-auto",
-                  calendarContent: "max-w-[90vw]",
-                }}
-                isRequired
-              />
-
-              {mode === "needPlayers" && (
-                <>
-                  <TimeInput
-                    label="Tee Time"
-                    value={time ? parseTime(time) : null}
-                    onChange={(v) => onTimeChange(v ? v.toString() : "")}
-                    granularity="minute"
-                    hourCycle={12}
-                    className="w-40"
-                  />
-                  <Select
-                    label="Open Spots"
-                    selectedKeys={[openSpots]}
-                    onSelectionChange={(keys) =>
-                      onOpenSpotsChange(String(Array.from(keys)[0] || "1"))
-                    }
-                    popoverProps={popoverProps()}
-                    className="w-36"
-                  >
-                    <SelectItem key="1">1</SelectItem>
-                    <SelectItem key="2">2</SelectItem>
-                    <SelectItem key="3">3</SelectItem>
-                  </Select>
-                </>
-              )}
+      <Modal.Container scroll="inside">
+        <Modal.Dialog>
+          <div ref={setPortalRef} />
+          <Modal.Header className="flex flex-col gap-1">
+            <div className="text-lg font-semibold">
+              {title || "Create Post"}
             </div>
+          </Modal.Header>
+          <Modal.Body>
+            <Form
+              className="flex flex-col gap-3"
+              validationBehavior="native"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await onSubmit();
+              }}
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <Select
+                  value={mode}
+                  onChange={(key) => {
+                    if (key) onModeChange(key as Mode);
+                  }}
+                  className="min-w-[220px] w-60"
+                >
+                  <Label>Post Type</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover {...popoverProps()}>
+                    <ListBox>
+                      <ListBox.Item id="needPlayers" textValue="Need Players">
+                        <Icon icon="lucide:user-plus" className="w-4 h-4" />
+                        Need Players
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="needGroup" textValue="Need a Group">
+                        <Icon icon="lucide:users" className="w-4 h-4" />
+                        Need a Group
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
 
-            <ModalFooter className="flex items-center justify-between w-full">
-              <Button variant="flat" onPress={onClose}>
-                Cancel
-              </Button>
-              <Button
-                color="primary"
-                isDisabled={!canSubmit}
-                isLoading={creating}
-                type="submit"
-              >
-                {submitLabel || "Post"}
-              </Button>
-            </ModalFooter>
-          </Form>
-        </ModalBody>
-      </ModalContent>
+                <DatePicker
+                  label="Date"
+                  value={date ? parseDate(date) : null}
+                  onChange={(v: DateValue | null) =>
+                    onDateChange(v ? v.toString() : "")
+                  }
+                  minValue={parseDate(toYMD(new Date()))}
+                  popoverProps={{
+                    ...popoverProps(),
+                    placement: "bottom",
+                    shouldFlip: false,
+                    offset: 8,
+                  }}
+                  className="w-48"
+                  classNames={{
+                    // Keep the calendar within the modal/screen on small devices.
+                    popoverContent: "max-w-[90vw] max-h-[55vh] overflow-auto",
+                    calendarContent: "max-w-[90vw]",
+                  }}
+                  isRequired
+                />
+
+                {mode === "needPlayers" && (
+                  <>
+                    <div className="flex flex-col gap-1 w-40">
+                      <span className="text-sm">Tee Time</span>
+                      <input
+                        type="time"
+                        value={time || ""}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          onTimeChange(e.target.value)
+                        }
+                        className="w-40 rounded border border-default-300 p-1 text-sm"
+                      />
+                    </div>
+                    <Select
+                      value={openSpots}
+                      onChange={(key) => onOpenSpotsChange(String(key || "1"))}
+                      className="w-36"
+                    >
+                      <Label>Open Spots</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover {...popoverProps()}>
+                        <ListBox>
+                          <ListBox.Item id="1" textValue="1">
+                            1<ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="2" textValue="2">
+                            2<ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="3" textValue="3">
+                            3<ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </>
+                )}
+              </div>
+
+              <Modal.Footer className="flex items-center justify-between w-full">
+                <Button variant="tertiary" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button isDisabled={!canSubmit} type="submit">
+                  {submitLabel || "Post"}
+                </Button>
+              </Modal.Footer>
+            </Form>
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
     </Modal>
   );
 }

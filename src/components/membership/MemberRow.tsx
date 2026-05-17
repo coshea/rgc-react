@@ -61,11 +61,12 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
       )}
       {isAdmin && (
         <div className="flex justify-end gap-2 pr-2">
-          <Tooltip content="Edit member">
-            <Button
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button
               isIconOnly
               size="sm"
-              variant="light"
+              variant="ghost"
               onPress={() => onEdit(user)}
               aria-label="Edit member"
             >
@@ -83,13 +84,18 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
                 <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
               </svg>
             </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              Edit member
+            </Tooltip.Content>
           </Tooltip>
-          <Tooltip content="Delete member" color="danger">
-            <Button
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button
               isIconOnly
               size="sm"
-              variant="light"
-              color="danger"
+              variant="ghost"
+              
               onPress={() => onDelete(user)}
               aria-label="Delete member"
             >
@@ -110,6 +116,10 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
                 <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
               </svg>
             </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              Delete member
+            </Tooltip.Content>
           </Tooltip>
         </div>
       )}

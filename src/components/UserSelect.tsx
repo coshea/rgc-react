@@ -1,5 +1,5 @@
 import React from "react";
-import { Autocomplete, AutocompleteItem, Button } from "@heroui/react";
+import { ComboBox, Input, ListBox, Label, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
 
@@ -59,7 +59,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
 
   const idSet = React.useMemo(
     () => new Set(sortedUsers.map((u) => u.id)),
-    [sortedUsers]
+    [sortedUsers],
   );
 
   const renderRemovedHint = () => {
@@ -110,31 +110,32 @@ export const UserSelect: React.FC<UserSelectProps> = ({
 
     return (
       <div className={className}>
-        <Autocomplete
-          label={label}
-          placeholder={placeholder}
-          inputProps={{
-            classNames: {
-              input: "text-base",
-            },
-          }}
+        <ComboBox
+          inputValue={inputValue}
+          onInputChange={setInputValue}
           isDisabled={disabled || !canAddMore}
           isRequired={required}
           isInvalid={invalid}
           errorMessage={errorMessage}
-          menuTrigger="input"
-          allowsCustomValue={false}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          items={filteredRemaining}
           onSelectionChange={(key) => addUser(key as string)}
+          items={filteredRemaining}
         >
-          {(u: User) => (
-            <AutocompleteItem key={u.id} textValue={displayFor(u)}>
-              {displayFor(u)}
-            </AutocompleteItem>
-          )}
-        </Autocomplete>
+          {label && <Label>{label}</Label>}
+          <ComboBox.InputGroup>
+            <Input placeholder={placeholder} />
+            <ComboBox.Trigger />
+          </ComboBox.InputGroup>
+          <ComboBox.Popover>
+            <ListBox>
+              {(u: User) => (
+                <ListBox.Item key={u.id} id={u.id} textValue={displayFor(u)}>
+                  {displayFor(u)}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              )}
+            </ListBox>
+          </ComboBox.Popover>
+        </ComboBox>
         {/* Selected list */}
         {selected.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -150,7 +151,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     aria-label={`Remove ${labelText}`}
                     onPress={() => removeUser(id)}
                   >
@@ -174,14 +175,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
 
   return (
     <div className={className}>
-      <Autocomplete
-        label={label}
-        placeholder={placeholder}
-        inputProps={{
-          classNames: {
-            input: "text-base",
-          },
-        }}
+      <ComboBox
         selectedKey={selectedKey}
         onSelectionChange={(key) => {
           onChange(((key as string) || "") as string);
@@ -190,16 +184,25 @@ export const UserSelect: React.FC<UserSelectProps> = ({
         isRequired={required}
         isInvalid={invalid}
         errorMessage={errorMessage}
-        menuTrigger="input"
+        items={sortedUsers}
         allowsCustomValue={allowCustomValue}
-        defaultItems={sortedUsers}
       >
-        {(u: User) => (
-          <AutocompleteItem key={u.id} textValue={displayFor(u)}>
-            {displayFor(u)}
-          </AutocompleteItem>
-        )}
-      </Autocomplete>
+        {label && <Label>{label}</Label>}
+        <ComboBox.InputGroup>
+          <Input placeholder={placeholder} />
+          <ComboBox.Trigger />
+        </ComboBox.InputGroup>
+        <ComboBox.Popover>
+          <ListBox>
+            {(u: User) => (
+              <ListBox.Item key={u.id} id={u.id} textValue={displayFor(u)}>
+                {displayFor(u)}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            )}
+          </ListBox>
+        </ComboBox.Popover>
+      </ComboBox>
       {renderRemovedHint()}
     </div>
   );

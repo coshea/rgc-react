@@ -77,7 +77,7 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <Button
         isIconOnly
-        variant="light"
+        variant="ghost"
         size="sm"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={open}
@@ -109,9 +109,9 @@ export function NotificationBell() {
               </span>
               {unreadCount > 0 && (
                 <Button
-                  variant="light"
+                  variant="ghost"
                   size="sm"
-                  color="primary"
+                  
                   className="text-xs h-6 min-w-0 px-2"
                   onPress={() => markAllRead()}
                 >
@@ -156,7 +156,7 @@ export function NotificationBell() {
             {/* Footer */}
             <div className="border-t border-default-100 px-4 py-2 flex justify-between">
               <Button
-                variant="light"
+                variant="ghost"
                 size="sm"
                 className="text-xs h-6 min-w-0 px-2"
                 aria-label="Notification settings"
@@ -172,9 +172,9 @@ export function NotificationBell() {
               </Button>
               {notifications.length > 0 && (
                 <Button
-                  variant="light"
+                  variant="ghost"
                   size="sm"
-                  color="danger"
+                  
                   className="text-xs h-6 min-w-0 px-2"
                   onPress={() => {
                     clearAll();
@@ -256,7 +256,7 @@ function NotificationItem({
       {/* Dismiss button */}
       <Button
         isIconOnly
-        variant="light"
+        variant="ghost"
         size="sm"
         aria-label="Dismiss notification"
         className="shrink-0 text-default-300 hover:text-danger mt-0.5 min-w-0 w-6 h-6"

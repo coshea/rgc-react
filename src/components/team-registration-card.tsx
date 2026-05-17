@@ -1,4 +1,4 @@
-import { Card, CardBody, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
@@ -68,10 +68,9 @@ export function TeamRegistrationCard({
             : `Open spot details for Team ${teamNumber}`
           : undefined
       }
-      isPressable={isInteractive}
       onPress={isInteractive ? onPress : undefined}
     >
-      <CardBody className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
+      <Card.Content className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
         {/* Header: team number + date + waitlist chip */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -87,8 +86,7 @@ export function TeamRegistrationCard({
           {isWaitlisted && (
             <Chip
               size="sm"
-              variant="flat"
-              color="warning"
+              variant="tertiary"
               className="h-5 px-2 text-[10px] shrink-0"
             >
               Waitlist
@@ -125,8 +123,7 @@ export function TeamRegistrationCard({
                 {isLeader && maxPlayers > 1 && (
                   <Chip
                     size="sm"
-                    variant="flat"
-                    color="primary"
+                    variant="tertiary"
                     className="h-5 px-2 text-[10px] shrink-0"
                   >
                     Leader
@@ -186,7 +183,7 @@ export function TeamRegistrationCard({
             </li>
           )}
         </ul>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

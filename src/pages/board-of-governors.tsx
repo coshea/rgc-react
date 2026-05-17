@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, CardHeader, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { useBoardMembers } from "@/hooks/useBoardMembers";
@@ -56,12 +56,10 @@ const BoardOfGovernorsPage: React.FC = () => {
             return (
               <Card
                 key={member.id}
-                shadow="sm"
-                isPressable
                 onPress={() => navigate(`/profile/${member.id}`)}
                 className={`relative border border-default-200 bg-content1/60 hover:bg-content2 transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
               >
-                <CardHeader className="py-3 flex flex-col items-center text-center">
+                <Card.Header className="py-3 flex flex-col items-center text-center">
                   <div className="relative mb-2">
                     <UserAvatar
                       user={member}
@@ -78,19 +76,19 @@ const BoardOfGovernorsPage: React.FC = () => {
                       <Chip
                         size="sm"
                         color={meta.color}
-                        variant={isPresident ? "solid" : "flat"}
+                        variant={isPresident ? "primary" : "tertiary"}
                         startContent={chipStart}
                       >
                         {meta.label || member.roleLabel}
                       </Chip>
                     ) : (
-                      <Chip size="sm" variant="flat" color="default">
+                      <Chip size="sm" variant="tertiary">
                         {member.roleLabel}
                       </Chip>
                     )}
                   </div>
-                </CardHeader>
-                <CardBody className="pt-0 pb-3" />
+                </Card.Header>
+                <Card.Content className="pt-0 pb-3" />
               </Card>
             );
           })}

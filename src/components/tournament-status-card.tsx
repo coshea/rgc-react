@@ -1,13 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Progress,
-  Spinner,
-} from "@heroui/react";
+import { Card, Chip, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { TeeBadge } from "@/components/tee-badge";
@@ -43,12 +36,6 @@ export function TournamentStatusCard({
   const registrationClosed =
     registrationWindowInfo.state === RegistrationWindowState.Closed;
 
-  const fillColor = isFull
-    ? ("danger" as const)
-    : isNearFull
-      ? ("warning" as const)
-      : ("success" as const);
-
   const formattedDate = tournament.date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -59,24 +46,21 @@ export function TournamentStatusCard({
 
   return (
     <Card
-      shadow="sm"
       as={tournament.firestoreId ? Link : undefined}
       to={
         tournament.firestoreId
           ? `/tournaments/${tournament.firestoreId}`
           : undefined
       }
-      isPressable={Boolean(tournament.firestoreId)}
-      isHoverable={Boolean(tournament.firestoreId)}
     >
-      <CardHeader className="flex items-start justify-between gap-2 pb-2">
+      <Card.Header className="flex items-start justify-between gap-2 pb-2">
         <div className="min-w-0 flex-1">
           <p className="font-semibold leading-snug">{tournament.title}</p>
           <p className="text-sm text-default-400 mt-0.5">{formattedDate}</p>
         </div>
         <TournamentStatusChip tournament={tournament} />
-      </CardHeader>
-      <CardBody className="pt-0 space-y-3">
+      </Card.Header>
+      <Card.Content className="pt-0 space-y-3">
         <div className="flex items-center gap-4 text-sm text-default-500">
           <span className="flex items-center gap-1">
             <Icon icon="lucide:users" className="w-3.5 h-3.5" />
@@ -128,9 +112,8 @@ export function TournamentStatusCard({
                 )}
                 {!registrationClosed && isFull && (
                   <Chip
-                    color="danger"
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     className="ml-2 align-middle"
                   >
                     Full
@@ -138,9 +121,8 @@ export function TournamentStatusCard({
                 )}
                 {!registrationClosed && isNearFull && !isFull && (
                   <Chip
-                    color="warning"
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     className="ml-2 align-middle"
                   >
                     Nearly full
@@ -149,12 +131,25 @@ export function TournamentStatusCard({
               </span>
             </div>
             {!registrationClosed && cap !== undefined && cap > 0 && (
-              <Progress
-                color={fillColor}
-                value={fillPct}
-                size="sm"
+              <div
+                role="progressbar"
                 aria-label={`${teamCount} of ${cap} teams registered`}
-              />
+                aria-valuenow={fillPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                className="h-2 w-full rounded-full bg-default-200 overflow-hidden"
+              >
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    isFull
+                      ? "bg-danger-500"
+                      : isNearFull
+                        ? "bg-warning-500"
+                        : "bg-success-500"
+                  }`}
+                  style={{ width: `${fillPct}%` }}
+                />
+              </div>
             )}
           </div>
         ) : null}
@@ -190,7 +185,7 @@ export function TournamentStatusCard({
               )}
             </div>
           )}
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

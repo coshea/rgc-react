@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 
@@ -100,7 +100,7 @@ export function MemberOverviewTab() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             isIconOnly
             onPress={() => setYear((y) => Math.max(y - 1, 2024))}
             isDisabled={year <= 2024}
@@ -111,7 +111,7 @@ export function MemberOverviewTab() {
           <span className="text-sm font-medium w-12 text-center">{year}</span>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             isIconOnly
             onPress={() => setYear((y) => Math.min(y + 1, currentYear))}
             isDisabled={year >= currentYear}
@@ -130,8 +130,8 @@ export function MemberOverviewTab() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-default-500">Total Members</p>
@@ -147,11 +147,11 @@ export function MemberOverviewTab() {
                 <p className="mt-2 text-xs text-default-400">
                   {stats.activeCount} active (paid last 2 yrs)
                 </p>
-              </CardBody>
+              </Card.Content>
             </Card>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-default-500">Memberships</p>
@@ -181,11 +181,11 @@ export function MemberOverviewTab() {
                     </span>
                   </span>
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-default-500">New This Year</p>
@@ -203,18 +203,17 @@ export function MemberOverviewTab() {
                 <p className="mt-2 text-xs text-default-400">
                   Joined in {year}
                 </p>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Button
               className="h-auto p-0 block w-full rounded-xl bg-transparent data-[hover=true]:bg-transparent data-[focus-visible=true]:ring-2"
-              disableRipple
               onPress={() => setShowNotPaid(true)}
             >
-              <Card shadow="sm" className="w-full text-left">
-                <CardBody className="p-5">
+              <Card className="w-full text-left">
+                <Card.Content className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm text-default-500">Not Paid Yet</p>
@@ -232,12 +231,12 @@ export function MemberOverviewTab() {
                   <p className="mt-2 text-xs text-default-400">
                     No payment in {year} · click to view
                   </p>
-                </CardBody>
+                </Card.Content>
               </Card>
             </Button>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-default-500">Payments</p>
@@ -269,7 +268,7 @@ export function MemberOverviewTab() {
                     </span>
                   </span>
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
 
@@ -296,7 +295,7 @@ export function MemberOverviewTab() {
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     aria-label="Close"
                     onPress={() => setShowNotPaid(false)}
                   >
@@ -308,8 +307,7 @@ export function MemberOverviewTab() {
                 <div className="flex items-center gap-2 px-5 py-3 border-b border-default-200">
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="primary"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:mail" className="w-4 h-4" />
                     }
@@ -324,7 +322,7 @@ export function MemberOverviewTab() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:check-square" className="w-4 h-4" />
                     }
@@ -370,13 +368,13 @@ export function MemberOverviewTab() {
                               {m.membershipType && (
                                 <Chip
                                   size="sm"
-                                  variant="flat"
+                                  variant="tertiary"
                                   color={
                                     m.membershipType === MEMBERSHIP_TYPES.FULL
                                       ? "success"
                                       : m.membershipType ===
                                           MEMBERSHIP_TYPES.HANDICAP
-                                        ? "primary"
+                                        ? "accent"
                                         : "default"
                                   }
                                 >
@@ -391,7 +389,7 @@ export function MemberOverviewTab() {
                                   href={`mailto:${m.email}`}
                                   size="sm"
                                   isIconOnly
-                                  variant="light"
+                                  variant="ghost"
                                   aria-label={`Email ${name}`}
                                 >
                                   <Icon

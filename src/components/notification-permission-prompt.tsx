@@ -49,7 +49,7 @@ export function NotificationPermissionPrompt({
           <div className="flex gap-2 mt-4">
             <Button
               size="sm"
-              color="primary"
+              
               className="flex-1 font-medium"
               onPress={onAllow}
               startContent={
@@ -60,8 +60,8 @@ export function NotificationPermissionPrompt({
             </Button>
             <Button
               size="sm"
-              variant="flat"
-              color="default"
+              variant="tertiary"
+              
               className="shrink-0"
               onPress={onDismiss}
             >

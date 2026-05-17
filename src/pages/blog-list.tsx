@@ -2,17 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
-  CardBody,
   Button,
   Input,
   Chip,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -132,7 +128,6 @@ export const BlogListPage: React.FC = () => {
           <h1 className="text-3xl font-bold">Club Announcements</h1>
           {isAdmin && (
             <Button
-              color="primary"
               onPress={() => navigate("/announcements/new")}
               startContent={<Icon icon="lucide:plus" />}
             >
@@ -156,23 +151,34 @@ export const BlogListPage: React.FC = () => {
           />
           <Select
             className="sm:w-64"
-            label="Category"
-            selectedKeys={filterCategory ? [filterCategory] : []}
-            onSelectionChange={(keys) => {
-              const value = Array.from(keys)[0] as BlogCategory | "all";
-              setFilterCategory(value);
+            value={filterCategory}
+            onChange={(key) => {
+              if (key) setFilterCategory(key as BlogCategory | "all");
             }}
           >
-            {[
-              <SelectItem key="all">All Categories</SelectItem>,
-              ...Object.values(BlogCategory).map((cat) => (
-                <SelectItem key={cat}>{cat}</SelectItem>
-              )),
-            ]}
+            <Label>Category</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="all" textValue="All Categories">
+                  All Categories
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                {Object.values(BlogCategory).map((cat) => (
+                  <ListBox.Item key={cat} id={cat} textValue={cat}>
+                    {cat}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
           {isAdmin && (
             <Button
-              variant={showAllPosts ? "solid" : "flat"}
+              variant={showAllPosts ? "primary" : "tertiary"}
               onPress={() => setShowAllPosts(!showAllPosts)}
               startContent={
                 <Icon icon={showAllPosts ? "lucide:eye" : "lucide:eye-off"} />
@@ -197,7 +203,7 @@ export const BlogListPage: React.FC = () => {
       {/* Empty State */}
       {!loading && filteredPosts.length === 0 && (
         <Card>
-          <CardBody className="text-center py-12">
+          <Card.Content className="text-center py-12">
             <Icon
               icon="lucide:file-text"
               className="text-6xl text-foreground-300 mx-auto mb-4"
@@ -206,14 +212,13 @@ export const BlogListPage: React.FC = () => {
             {isAdmin && (
               <Button
                 className="mt-4"
-                color="primary"
                 onPress={() => navigate("/announcements/new")}
                 startContent={<Icon icon="lucide:plus" />}
               >
                 Create Your First Post
               </Button>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -222,14 +227,13 @@ export const BlogListPage: React.FC = () => {
         {filteredPosts.map((post) => (
           <Card
             key={post.id}
-            isPressable={!isAdmin}
             onPress={
               !isAdmin
                 ? () => navigate(`/announcements/${post.slug}`)
                 : undefined
             }
           >
-            <CardBody className="p-6">
+            <Card.Content className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Featured Image */}
                 {post.featuredImage && (
@@ -252,14 +256,13 @@ export const BlogListPage: React.FC = () => {
                         {post.isPinned && (
                           <Chip
                             size="sm"
-                            color="warning"
-                            variant="flat"
+                            variant="tertiary"
                             startContent={<Icon icon="lucide:pin" />}
                           >
                             Pinned
                           </Chip>
                         )}
-                        <Chip size="sm" variant="flat">
+                        <Chip size="sm" variant="tertiary">
                           {post.category}
                         </Chip>
                         {isAdmin && (
@@ -270,7 +273,7 @@ export const BlogListPage: React.FC = () => {
                                 ? "success"
                                 : "default"
                             }
-                            variant="flat"
+                            variant="tertiary"
                           >
                             {post.status}
                           </Chip>
@@ -278,7 +281,7 @@ export const BlogListPage: React.FC = () => {
                       </div>
                       {isAdmin ? (
                         <Button
-                          variant="light"
+                          variant="ghost"
                           className="w-full h-auto p-0 data-[hover=true]:bg-transparent"
                           onPress={() =>
                             navigate(`/announcements/${post.slug}`)
@@ -315,7 +318,7 @@ export const BlogListPage: React.FC = () => {
                       <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           isIconOnly
                           onPress={() =>
                             navigate(`/announcements/edit/${post.id}`)
@@ -326,8 +329,7 @@ export const BlogListPage: React.FC = () => {
                         </Button>
                         <Button
                           size="sm"
-                          variant="flat"
-                          color="danger"
+                          variant="tertiary"
                           isIconOnly
                           onPress={() =>
                             setDeleteConfirm({
@@ -344,7 +346,7 @@ export const BlogListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>
@@ -352,29 +354,31 @@ export const BlogListPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={!!deleteConfirm}
-        onClose={() => !deleting && setDeleteConfirm(null)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteConfirm(null);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Delete Blog Post</ModalHeader>
-          <ModalBody>
-            <p>
-              Are you sure you want to delete "{deleteConfirm?.title}"? This
-              cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => !deleting && setDeleteConfirm(null)}
-              isDisabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button color="danger" onPress={handleDelete} isLoading={deleting}>
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header>Delete Blog Post</Modal.Header>
+            <Modal.Body>
+              <p>
+                Are you sure you want to delete "{deleteConfirm?.title}"? This
+                cannot be undone.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => !deleting && setDeleteConfirm(null)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button onPress={handleDelete}>Delete</Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
     </div>
   );

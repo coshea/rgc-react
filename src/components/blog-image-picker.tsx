@@ -2,10 +2,10 @@ import React from "react";
 import {
   Button,
   Card,
-  CardBody,
   Input,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -146,7 +146,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
     <div className="space-y-4">
       {/* Upload Area */}
       <Card>
-        <CardBody>
+        <Card.Content>
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               dragActive
@@ -194,7 +194,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                 <div className="flex gap-2 justify-center">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => {
                       setSelectedFile(null);
                       setCustomFilename("");
@@ -204,7 +204,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   </Button>
                   <Button
                     size="sm"
-                    color="primary"
+                    
                     onPress={handleConfirmUpload}
                     startContent={<Icon icon="lucide:upload" />}
                   >
@@ -223,7 +223,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                 </p>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => fileInputRef.current?.click()}
                   startContent={<Icon icon="lucide:image-plus" />}
                 >
@@ -232,7 +232,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
               </>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Select from existing images */}
@@ -242,36 +242,46 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
         </div>
       ) : images.length > 0 ? (
         <Select
-          label="Or select from previously uploaded images"
-          placeholder="Choose an image"
-          selectedKeys={selectedImageName ? [selectedImageName] : []}
-          onSelectionChange={(keys) => {
-            const name = Array.from(keys)[0] as string;
-            const img = images.find((i) => i.name === name);
-            if (img) {
-              onChange(img.url);
+          value={selectedImageName}
+          onChange={(key) => {
+            if (key) {
+              const name = String(key);
+              const img = images.find((i) => i.name === name);
+              if (img) {
+                onChange(img.url);
+              }
             }
           }}
         >
-          {images.map((img) => (
-            <SelectItem key={img.name} textValue={img.name}>
-              <div className="flex items-center gap-2">
-                <img
-                  src={img.url}
-                  alt={img.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-10 h-10 object-cover rounded"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm truncate">{img.name}</div>
-                  <div className="text-xs text-foreground-500">
-                    {new Date(img.uploadedAt).toLocaleDateString()}
+          <Label>Or select from previously uploaded images</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {images.map((img) => (
+                <ListBox.Item key={img.name} id={img.name} textValue={img.name}>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm truncate">{img.name}</div>
+                      <div className="text-xs text-foreground-500">
+                        {new Date(img.uploadedAt).toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </SelectItem>
-          ))}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       ) : (
         <p className="text-sm text-foreground-500 text-center">
@@ -286,8 +296,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
             <p className="text-sm font-medium">Selected Image:</p>
             <Button
               size="sm"
-              variant="flat"
-              color="danger"
+              variant="tertiary"
+              
               onPress={() => onChange("")}
               startContent={<Icon icon="lucide:x" />}
             >

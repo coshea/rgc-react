@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card, CardBody, Spinner, Link } from "@heroui/react";
+import { Button, Card,  Spinner, Link } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { siteConfig } from "@/config/site";
 import { sendEmailVerification, ActionCodeSettings } from "firebase/auth";
@@ -76,17 +76,17 @@ export default function VerifyEmailPage() {
     return (
       <div className="flex items-center justify-center h-full p-10">
         <Card className="max-w-md w-full">
-          <CardBody>
+          <Card.Content>
             <p className="text-sm mb-4">You need to sign in first.</p>
             <Button
-              color="primary"
+              
               onPress={() =>
                 window.location.replace(siteConfig.pages.login.link)
               }
             >
               Go to Login
             </Button>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -95,7 +95,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="flex items-center justify-center h-full p-4">
       <Card className="max-w-lg w-full">
-        <CardBody className="space-y-5">
+        <Card.Content className="space-y-5">
           <div className="flex items-center gap-2 text-large font-medium">
             <Icon icon="lucide:mail" className="w-5 h-5" />
             Verify Your Email
@@ -115,9 +115,9 @@ export default function VerifyEmailPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               fullWidth
-              color="primary"
+              
               onPress={checkStatus}
-              isLoading={checking}
+             
               startContent={
                 !checking && (
                   <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
@@ -128,10 +128,10 @@ export default function VerifyEmailPage() {
             </Button>
             <Button
               fullWidth
-              variant="flat"
+              variant="tertiary"
               onPress={triggerResend}
               isDisabled={remainingMs > 0 || resendLoading}
-              isLoading={resendLoading}
+             
               startContent={
                 !resendLoading && (
                   <Icon icon="lucide:send" className="w-4 h-4" />
@@ -149,7 +149,7 @@ export default function VerifyEmailPage() {
             <Link href={siteConfig.pages.login.link}>log out</Link> and sign up
             again.
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

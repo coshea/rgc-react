@@ -1,16 +1,5 @@
 import React from "react";
-import {
-  Button,
-  Input,
-  Checkbox,
-  Link,
-  Divider,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
+import { Button, Input, Checkbox, Link, Separator, Modal } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getAdditionalUserInfo } from "firebase/auth";
 
@@ -301,31 +290,26 @@ export default function SignUpPage() {
     onOpenChange: (open: boolean) => void;
     viewLink: string;
   }) => (
-    <Modal
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      size="lg"
-      scrollBehavior="inside"
-    >
-      <ModalContent>
-        {(close) => (
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal.Container size="lg" scroll="inside">
+        <Modal.Dialog>
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <Modal.Header className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">{title}</h2>
               <p className="text-small text-default-500">
                 Last updated: January 2026
               </p>
-            </ModalHeader>
-            <ModalBody className="space-y-4">
+            </Modal.Header>
+            <Modal.Body className="space-y-4">
               {sections.map((section) => (
                 <div key={section.title}>
                   <p className="font-semibold">{section.title}</p>
                   <p className="text-sm text-default-600">{section.body}</p>
                 </div>
               ))}
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" onPress={() => close()}>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="ghost" onPress={() => onOpenChange(false)}>
                 Close
               </Button>
               <Button
@@ -333,16 +317,16 @@ export default function SignUpPage() {
                 href={viewLink}
                 target="_blank"
                 rel="noreferrer"
-                variant="flat"
-                color="primary"
-                onPress={() => close()}
+                variant="tertiary"
+                
+                onPress={() => onOpenChange(false)}
               >
                 View Full Page
               </Button>
-            </ModalFooter>
+            </Modal.Footer>
           </>
-        )}
-      </ModalContent>
+        </Modal.Dialog>
+      </Modal.Container>
     </Modal>
   );
 
@@ -373,10 +357,10 @@ export default function SignUpPage() {
                   <Icon icon="flat-color-icons:google" width={24} />
                 )
               }
-              variant="bordered"
+              variant="outline"
               onPress={handleGoogleSignUp}
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
+             
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -385,9 +369,9 @@ export default function SignUpPage() {
           </div>
 
           <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
             <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
           </div>
 
           <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
@@ -399,7 +383,7 @@ export default function SignUpPage() {
                 name="firstName"
                 placeholder="Enter your first name"
                 type="text"
-                variant="bordered"
+                variant="outline"
               />
               <Input
                 isRequired
@@ -408,7 +392,7 @@ export default function SignUpPage() {
                 name="lastName"
                 placeholder="Enter your last name"
                 type="text"
-                variant="bordered"
+                variant="outline"
               />
               <Input
                 isRequired
@@ -417,7 +401,7 @@ export default function SignUpPage() {
                 name="email"
                 placeholder="Enter your email"
                 type="email"
-                variant="bordered"
+                variant="outline"
                 value={signupEmail}
                 onValueChange={setSignupEmail}
               />
@@ -433,7 +417,7 @@ export default function SignUpPage() {
                     endContent={
                       <Button
                         isIconOnly
-                        variant="light"
+                        variant="ghost"
                         size="sm"
                         onPress={toggleVisibility}
                         aria-label={
@@ -458,7 +442,7 @@ export default function SignUpPage() {
                     name="password"
                     placeholder="Enter your password"
                     type={isVisible ? "text" : "password"}
-                    variant="bordered"
+                    variant="outline"
                   />
                   <Input
                     isRequired
@@ -468,7 +452,7 @@ export default function SignUpPage() {
                     endContent={
                       <Button
                         isIconOnly
-                        variant="light"
+                        variant="ghost"
                         size="sm"
                         onPress={toggleConfirmVisibility}
                         aria-label={
@@ -495,7 +479,7 @@ export default function SignUpPage() {
                     name="confirmPassword"
                     placeholder="Confirm your password"
                     type={isConfirmVisible ? "text" : "password"}
-                    variant="bordered"
+                    variant="outline"
                   />
                 </>
               )}
@@ -531,10 +515,10 @@ export default function SignUpPage() {
               </Link>
             </Checkbox>
             <Button
-              color="primary"
+              
               type="submit"
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
+             
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -546,7 +530,7 @@ export default function SignUpPage() {
 
           <div className="flex flex-col items-center gap-2">
             <Button
-              variant="light"
+              variant="ghost"
               size="sm"
               className="text-default-500"
               onPress={() =>
@@ -568,14 +552,15 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
-      <Modal isOpen={linkSent} isDismissable={false}>
-        <ModalContent>
-          {() => (
+      <Modal isOpen={linkSent}>
+        <Modal.Backdrop isDismissable={false} />
+        <Modal.Container>
+          <Modal.Dialog>
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 Check your email
-              </ModalHeader>
-              <ModalBody className="space-y-3">
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
                 <p className="text-small text-default-600">
                   We sent a sign-up link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
@@ -589,10 +574,10 @@ export default function SignUpPage() {
                   </span>
                   .
                 </p>
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
-                  variant="light"
+                  variant="ghost"
                   onPress={() => {
                     setLinkSent(false);
                     setLinkSentEmail("");
@@ -604,10 +589,10 @@ export default function SignUpPage() {
                 >
                   Close
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
       <PolicyModal
         title="Terms of Use"

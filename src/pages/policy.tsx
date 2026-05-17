@@ -2,10 +2,10 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
-  CardBody,
-  CardHeader,
+  
+  
   Button,
-  Divider,
+  Separator,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -96,7 +96,7 @@ export const PolicyPage: React.FC = () => {
       <div className="max-w-4xl mx-auto p-6">
         <BackButton />
         <Card className="mt-4">
-          <CardBody className="text-center py-12">
+          <Card.Content className="text-center py-12">
             <Icon
               icon="lucide:file-text"
               className="w-16 h-16 mx-auto mb-4 text-default-300"
@@ -106,12 +106,12 @@ export const PolicyPage: React.FC = () => {
               This policy document hasn't been created yet.
             </p>
             {isAdmin && (
-              <Button color="primary" onPress={handleEdit}>
+              <Button  onPress={handleEdit}>
                 <Icon icon="lucide:plus" className="w-4 h-4" />
                 Create Policy
               </Button>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -122,7 +122,7 @@ export const PolicyPage: React.FC = () => {
       <BackButton />
 
       <Card className="mt-4">
-        <CardHeader className="flex flex-col gap-3 pb-4">
+        <Card.Header className="flex flex-col gap-3 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
             <div className="flex items-center gap-3">
               <Icon
@@ -135,8 +135,8 @@ export const PolicyPage: React.FC = () => {
             </div>
             {isAdmin && (
               <Button
-                color="primary"
-                variant="flat"
+                
+                variant="tertiary"
                 size="sm"
                 onPress={handleEdit}
                 startContent={<Icon icon="lucide:pencil" className="w-4 h-4" />}
@@ -158,17 +158,17 @@ export const PolicyPage: React.FC = () => {
               )}
             </div>
           )}
-        </CardHeader>
+        </Card.Header>
 
-        <Divider />
+        <Separator />
 
-        <CardBody className="py-6">
+        <Card.Content className="py-6">
           <div className="max-w-none [&_a]:text-primary [&_a]:underline [&_a]:cursor-pointer hover:[&_a]:text-primary-600 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_li]:mb-1 [&_strong]:font-semibold">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {policy.content}
             </ReactMarkdown>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

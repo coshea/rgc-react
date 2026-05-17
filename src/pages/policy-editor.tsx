@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardBody, CardHeader, Button, Input } from "@heroui/react";
+import { Card,   Button, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Policy, PolicyType, POLICY_LABELS } from "@/types/policy";
 import { getPolicyByType, updatePolicy } from "@/api/policy";
@@ -137,7 +137,7 @@ export const PolicyEditorPage: React.FC = () => {
         <BackButton />
 
         <Card className="mt-4">
-          <CardHeader className="flex flex-col gap-3 pb-4">
+          <Card.Header className="flex flex-col gap-3 pb-4">
             <div className="flex items-center gap-3 w-full">
               <Icon
                 icon="lucide:pencil"
@@ -147,9 +147,9 @@ export const PolicyEditorPage: React.FC = () => {
                 {policy ? "Edit Policy" : "Create Policy"}
               </h1>
             </div>
-          </CardHeader>
+          </Card.Header>
 
-          <CardBody className="space-y-6">
+          <Card.Content className="space-y-6">
             <Input
               label="Title"
               placeholder="Enter policy title"
@@ -175,16 +175,16 @@ export const PolicyEditorPage: React.FC = () => {
 
             <div className="flex justify-end gap-3 pt-4">
               <Button
-                variant="flat"
+                variant="tertiary"
                 onPress={handleCancel}
                 isDisabled={isSaving}
               >
                 Cancel
               </Button>
               <Button
-                color="primary"
+                
                 onPress={handleSave}
-                isLoading={isSaving}
+               
                 startContent={
                   !isSaving && <Icon icon="lucide:save" className="w-4 h-4" />
                 }
@@ -192,7 +192,7 @@ export const PolicyEditorPage: React.FC = () => {
                 {isSaving ? "Saving..." : "Save Policy"}
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     </RequireAdmin>

@@ -56,19 +56,7 @@ vi.mock("@iconify/react", () => {
 });
 
 // Force HeroUI components down their non-animated code paths in tests.
-vi.mock("@heroui/system", async () => {
-  const actual =
-    await vi.importActual<typeof import("@heroui/system")>("@heroui/system");
-
-  return {
-    ...actual,
-    useProviderContext: () => ({
-      ...(actual.useProviderContext?.() ?? {}),
-      disableAnimation: true,
-      skipFramerMotionAnimations: true,
-    }),
-  };
-});
+// @heroui/system was removed in v3; mock is no-op to avoid import errors.
 
 // Mock framer-motion so that LazyMotion (used internally by HeroUI) never
 // schedules async feature-loading work that can fire after jsdom teardown.
