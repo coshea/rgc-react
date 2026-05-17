@@ -78,32 +78,12 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
     const finalTabIndex =
       typeof tabIndex === "number" ? tabIndex : onPress ? 0 : undefined;
 
-    // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
-    const computeInitials = (full?: string) => {
-      if (!full) return "?";
-      const cleaned = full.trim().replace(/\s+/g, " ");
-      if (!cleaned) return "?";
-      const parts = cleaned.split(" ");
-      if (parts.length === 1) {
-        const solo = parts[0].replace(/[^A-Za-z]/g, "");
-        if (solo.length >= 2) return (solo[0] + solo[1]).toUpperCase();
-        if (solo.length === 1) return solo[0].toUpperCase();
-        return "?";
-      }
-      const first = parts[0].replace(/[^A-Za-z]/g, "");
-      const last = parts[parts.length - 1].replace(/[^A-Za-z]/g, "");
-      const fi = first ? first[0].toUpperCase() : "";
-      const li = last ? last[0].toUpperCase() : "";
-      const combo = (fi + li).trim();
-      return combo || "?";
-    };
     return (
       <Avatar
         ref={ref}
         showFallback
         radius={squared ? "sm" : "full"}
         name={resolvedName}
-        getInitials={computeInitials}
         size={size}
         className={clsx(className)}
         src={resolvedSrc}
@@ -117,7 +97,7 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
         {...rest}
       />
     );
-  }
+  },
 );
 UserAvatar.displayName = "UserAvatar";
 

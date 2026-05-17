@@ -1,18 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Card,
-  CardBody,
-  Button,
-  Divider,
-  Checkbox,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
+import { Alert, Card, Button, Separator, Checkbox, Modal } from "@heroui/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
@@ -495,7 +483,7 @@ const TournamentRegister: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto">
       <Card>
-        <CardBody className="p-6">
+        <Card.Content className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-medium">
@@ -517,12 +505,12 @@ const TournamentRegister: React.FC = () => {
             </div>
           </div>
 
-          <Divider className="my-4" />
+          <Separator className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isTeamMemberNonLeader ? (
               <div className="space-y-3">
-                <Alert color="warning">
+                <Alert >
                   You&apos;re already registered with a team led by {leaderName}
                   . You can&apos;t create a new team. Contact your team leader
                   to make changes.
@@ -546,7 +534,7 @@ const TournamentRegister: React.FC = () => {
             ) : (
               <>
                 {tournament.goldTeesEnabled && (
-                  <Alert color="default" variant="faded">
+                  <Alert  variant="faded">
                     <span className="text-sm">
                       <strong>Gold tees</strong> are available for senior
                       players. To opt a player in, click the{" "}
@@ -661,8 +649,8 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full sm:w-auto"
-                      color="danger"
-                      variant="flat"
+                      
+                      variant="tertiary"
                       onPress={() => setConfirmOpen(true)}
                       isDisabled={deleting}
                     >
@@ -677,8 +665,8 @@ const TournamentRegister: React.FC = () => {
                 <div className="w-full sm:w-auto">
                   <Button
                     className="w-full"
-                    color="default"
-                    variant="flat"
+                    
+                    variant="tertiary"
                     onPress={() => navigate(-1)}
                   >
                     Cancel
@@ -690,7 +678,7 @@ const TournamentRegister: React.FC = () => {
                     <Button
                       className="w-full"
                       type="submit"
-                      color="primary"
+                      
                       isDisabled={
                         submitting ||
                         !user?.uid ||
@@ -714,33 +702,36 @@ const TournamentRegister: React.FC = () => {
             <Modal
               isOpen={confirmOpen}
               onOpenChange={(open) => setConfirmOpen(open)}
-              size="md"
             >
-              <ModalContent>
-                {(onClose) => (
+              <Modal.Container size="md">
+                <Modal.Dialog>
                   <>
-                    <ModalHeader>Cancel registration</ModalHeader>
-                    <ModalBody>
+                    <Modal.Header>Cancel registration</Modal.Header>
+                    <Modal.Body>
                       <p className="text-sm text-foreground-500">
                         Are you sure you want to cancel your registration? This
                         cannot be undone.
                       </p>
-                    </ModalBody>
-                    <ModalFooter>
-                      <Button variant="light" color="default" onPress={onClose}>
+                    </Modal.Body>
+                    <Modal.Footer>
+                      <Button
+                        variant="ghost"
+                        
+                        onPress={() => setConfirmOpen(false)}
+                      >
                         Close
                       </Button>
                       <Button
-                        color="danger"
+                        
                         onPress={handleConfirmCancel}
                         isDisabled={deleting}
                       >
                         {deleting ? "Cancelling..." : "Yes, cancel"}
                       </Button>
-                    </ModalFooter>
+                    </Modal.Footer>
                   </>
-                )}
-              </ModalContent>
+                </Modal.Dialog>
+              </Modal.Container>
             </Modal>
           </form>
           {/* Duplicate conflict confirmation modal */}
@@ -750,13 +741,12 @@ const TournamentRegister: React.FC = () => {
               setConflictModalOpen(open);
               if (!open) setConflicts([]);
             }}
-            size="lg"
           >
-            <ModalContent data-testid="conflict-modal">
-              {(onClose) => (
+            <Modal.Container size="lg">
+              <Modal.Dialog data-testid="conflict-modal">
                 <>
-                  <ModalHeader>Player Already Registered</ModalHeader>
-                  <ModalBody>
+                  <Modal.Header>Player Already Registered</Modal.Header>
+                  <Modal.Body>
                     <p className="text-sm text-foreground-500">
                       One or more selected teammates already appear on another
                       registered team.
@@ -783,7 +773,7 @@ const TournamentRegister: React.FC = () => {
                             className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
                             data-testid="conflict-team-card"
                           >
-                            <CardBody className="p-0">
+                            <Card.Content className="p-0">
                               <div className="flex items-start gap-4">
                                 <div className="flex -space-x-2">
                                   {teamMemberIds.map((mid) => {
@@ -829,7 +819,7 @@ const TournamentRegister: React.FC = () => {
                                   </div>
                                 </div>
                               </div>
-                            </CardBody>
+                            </Card.Content>
                           </Card>
                         );
                       })}
@@ -838,22 +828,22 @@ const TournamentRegister: React.FC = () => {
                       Continuing will register a team containing a player
                       already on another team.
                     </p>
-                  </ModalBody>
-                  <ModalFooter>
+                  </Modal.Body>
+                  <Modal.Footer>
                     <Button
-                      variant="light"
-                      color="default"
+                      variant="ghost"
+                      
                       onPress={() => {
-                        onClose();
+                        setConflictModalOpen(false);
                         setConflicts([]);
                       }}
                     >
                       Go Back
                     </Button>
                     <Button
-                      color="primary"
+                      
                       onPress={() => {
-                        onClose();
+                        setConflictModalOpen(false);
                         setConflicts([]);
                         setConflictsAcknowledged(true);
                         const pending = pendingMembersRef.current;
@@ -870,12 +860,12 @@ const TournamentRegister: React.FC = () => {
                     >
                       Continue Anyway
                     </Button>
-                  </ModalFooter>
+                  </Modal.Footer>
                 </>
-              )}
-            </ModalContent>
+              </Modal.Dialog>
+            </Modal.Container>
           </Modal>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

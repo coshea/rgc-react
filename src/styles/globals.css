@@ -1,7 +1,5 @@
 @import "tailwindcss";
-@plugin './hero.ts';
-
-@source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@import "@heroui/styles";
 
 /* Prevent any overflowing element from causing horizontal page scroll on mobile */
 html,
@@ -55,10 +53,10 @@ body {
     @apply leading-relaxed my-3;
   }
   .prose a {
-    @apply text-primary underline underline-offset-2;
+    @apply text-accent underline underline-offset-2;
   }
   .prose a:hover {
-    @apply text-primary-600;
+    @apply text-accent-hover;
   }
   .prose ul {
     @apply list-disc ml-6 my-3;
@@ -67,25 +65,25 @@ body {
     @apply list-decimal ml-6 my-3;
   }
   .prose code {
-    @apply bg-content2 rounded px-1 py-0.5 text-xs font-mono;
+    @apply bg-surface-secondary rounded px-1 py-0.5 text-xs font-mono;
   }
   .prose pre {
-    @apply bg-content2 rounded p-3 overflow-auto text-xs font-mono my-4;
+    @apply bg-surface-secondary rounded p-3 overflow-auto text-xs font-mono my-4;
   }
   .prose table {
     @apply w-full text-sm border-collapse my-4;
   }
   .prose th {
-    @apply font-medium border-b p-2 text-left bg-content2;
+    @apply font-medium border-b p-2 text-left bg-surface-secondary;
   }
   .prose td {
     @apply border-b p-2 align-top;
   }
   .prose blockquote {
-    @apply border-l-4 border-default-300 pl-4 italic text-foreground-500 my-4;
+    @apply border-l-4 border-separator-secondary pl-4 italic text-muted my-4;
   }
   .dark .prose blockquote {
-    @apply border-default-600;
+    @apply border-separator;
   }
 
   /*

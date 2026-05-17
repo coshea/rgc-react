@@ -75,7 +75,7 @@ export function ProfileForm({
       : userProfile?.membershipType === "handicap"
         ? {
             label: "Handicap Only",
-            color: "primary" as const,
+            color: "accent" as const,
             icon: "lucide:golf",
           }
         : null;
@@ -111,7 +111,7 @@ export function ProfileForm({
       });
       setImagePreview(user.photoURL || null);
     }
-  }, [user, userProfile, isLoading, isDirty]);
+  }, [user, userProfile, , isDirty]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -344,7 +344,7 @@ export function ProfileForm({
             <div className="mt-2 flex justify-center">
               <Chip
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 color={membershipTypeChip.color}
                 startContent={
                   <Icon icon={membershipTypeChip.icon} className="w-3 h-3" />
@@ -442,12 +442,7 @@ export function ProfileForm({
                 </Button>
               )}
 
-              <Button
-                type="submit"
-                color="primary"
-                className="w-1/3 h-10 text-sm py-1"
-                isLoading={isSubmitting}
-              >
+              <Button type="submit" className="w-1/3 h-10 text-sm py-1">
                 {isSubmitting ? "Saving..." : "Save Profile"}
               </Button>
             </div>

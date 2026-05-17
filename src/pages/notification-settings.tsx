@@ -1,13 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { isSupported as messagingIsSupported } from "firebase/messaging";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Button,
-  Divider,
-  Switch,
-} from "@heroui/react";
+import { Card, Button, Separator, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -58,7 +51,7 @@ export default function NotificationSettingsPage() {
   const [prefs, setPrefs] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES,
   );
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
 
   // Keep local state in sync when the profile finishes loading
   // (only on first successful load, not on every render)
@@ -105,7 +98,7 @@ export default function NotificationSettingsPage() {
         <BackButton />
       </div>
       <Card className="w-full max-w-lg p-2">
-        <CardHeader className="flex flex-col items-start px-4 pt-4 pb-0 gap-1">
+        <Card.Header className="flex flex-col items-start px-4 pt-4 pb-0 gap-1">
           <div className="flex items-center gap-2">
             <Icon icon="lucide:bell" className="text-xl text-primary" />
             <p className="text-large font-semibold">Notification Settings</p>
@@ -113,8 +106,8 @@ export default function NotificationSettingsPage() {
           <p className="text-small text-default-500">
             Manage your notification preferences
           </p>
-        </CardHeader>
-        <CardBody className="overflow-visible">
+        </Card.Header>
+        <Card.Content className="overflow-visible">
           {/* Push permission status */}
           {pushPermission !== null && (
             <>
@@ -166,10 +159,8 @@ export default function NotificationSettingsPage() {
                 {pushPermission === "default" && (
                   <Button
                     size="sm"
-                    color="primary"
-                    variant="flat"
+                    variant="tertiary"
                     className="shrink-0"
-                    isLoading={requestingPush}
                     startContent={
                       !requestingPush && (
                         <Icon icon="lucide:bell" className="text-sm" />
@@ -188,7 +179,7 @@ export default function NotificationSettingsPage() {
                   </Button>
                 )}
               </div>
-              <Divider className="my-3" />
+              <Separator className="my-3" />
             </>
           )}
           <form className="flex flex-col gap-2" onSubmit={handleSave}>
@@ -320,20 +311,15 @@ export default function NotificationSettingsPage() {
             </div>
 
             <div className="flex w-full justify-end gap-2 pt-4">
-              <Button variant="bordered" onPress={handleReset}>
+              <Button variant="outline" onPress={handleReset}>
                 Reset to Default
               </Button>
-              <Button
-                color="primary"
-                type="submit"
-                isLoading={saving}
-                isDisabled={isLoading}
-              >
+              <Button type="submit" isDisabled={isLoading}>
                 Save Changes
               </Button>
             </div>
           </form>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

@@ -1,10 +1,10 @@
 import {
   Button,
   Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
+  
+  
+  
+  Separator,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
@@ -40,13 +40,13 @@ export function HandicapConfirmStep(props: {
   const total = handicapFee + donationValue;
 
   return (
-    <Card className="w-full min-w-[320px] max-w-4xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full min-w-[320px] max-w-4xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 3: Review &amp; confirm</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4">
         <div className="space-y-1">
           <div className="text-sm text-default-600">Membership</div>
           <div className="text-base font-semibold">Handicap Only</div>
@@ -73,7 +73,7 @@ export function HandicapConfirmStep(props: {
           </div>
         </div>
 
-        <Divider />
+        <Separator />
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -95,13 +95,13 @@ export function HandicapConfirmStep(props: {
           <span>Amount due</span>
           <span>{currency(total)}</span>
         </div>
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={() => onContinueToPay(donationValue)}>
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
+        <Button  onPress={() => onContinueToPay(donationValue)}>
           Pay Handicap Fee
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 }

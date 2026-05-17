@@ -31,49 +31,49 @@ export default function SiteFooter() {
           <nav className="flex flex-wrap justify-center gap-3 sm:gap-6 text-foreground-500 text-sm sm:text-base">
             <Link
               href={siteConfig.pages.home.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Home
             </Link>
             <Link
               href={siteConfig.pages.about.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               About
             </Link>
             <Link
               href={siteConfig.pages.tournaments.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Tournaments
             </Link>
             <Link
               href={siteConfig.pages.moneyList.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Money List
             </Link>
             <Link
               href={siteConfig.pages.membership.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Membership
             </Link>
             <Link
               href={siteConfig.pages.contact.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Contact
             </Link>
             <Link
               href={siteConfig.pages.cookies.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Cookies
@@ -90,7 +90,8 @@ export default function SiteFooter() {
                 This site is protected by reCAPTCHA and the Google{" "}
                 <Link
                   href="https://policies.google.com/privacy"
-                  isExternal
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[11px] sm:text-xs font-normal text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Privacy Policy
@@ -98,7 +99,8 @@ export default function SiteFooter() {
                 and{" "}
                 <Link
                   href="https://policies.google.com/terms"
-                  isExternal
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[11px] sm:text-xs font-normal text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Terms of Service
@@ -110,7 +112,7 @@ export default function SiteFooter() {
               <Button
                 size="sm"
                 isIconOnly
-                variant="flat"
+                variant="tertiary"
                 aria-label="Back to top"
                 onPress={scrollTop}
                 className="rounded-full"

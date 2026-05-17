@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Card, CardBody, CardHeader, Divider } from "@heroui/react";
+import { Button, Card,   Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
@@ -182,8 +182,8 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
 
   return (
     <div className="mb-12">
-      <Card shadow="sm">
-        <CardHeader className="pb-0 flex flex-wrap items-center justify-between gap-2">
+      <Card>
+        <Card.Header className="pb-0 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Icon
               icon="lucide:search"
@@ -200,9 +200,9 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
           {canPost && (
             <Button
               size="sm"
-              variant={currentUserHasPost ? "flat" : "solid"}
+              variant={currentUserHasPost ? "tertiary" : "primary"}
               color={currentUserHasPost ? "default" : "secondary"}
-              isLoading={saving}
+             
               onPress={handleTogglePost}
               startContent={
                 !saving && (
@@ -217,9 +217,9 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
               {currentUserHasPost ? "Remove my post" : "I'm looking for a team"}
             </Button>
           )}
-        </CardHeader>
-        <Divider className="mt-3" />
-        <CardBody className="pt-4">
+        </Card.Header>
+        <Separator className="mt-3" />
+        <Card.Content className="pt-4">
           {isUserRegistered && currentUserHasPost ? (
             // User just joined a team — their post is hidden but give them a prompt to clean up
             <div className="text-sm text-foreground-500 flex items-start gap-2">
@@ -306,7 +306,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                           <Button
                             isIconOnly
                             size="sm"
-                            variant="light"
+                            variant="ghost"
                             as="a"
                             href={`mailto:${profile.email}`}
                             aria-label={`Email ${displayName}`}
@@ -322,9 +322,9 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                           <Button
                             isIconOnly
                             size="sm"
-                            variant="light"
-                            color="danger"
-                            isLoading={isDeleting}
+                            variant="ghost"
+                            
+                           
                             onPress={() => handleAdminDelete(post)}
                             aria-label={`Remove post for ${displayName}`}
                           >
@@ -344,7 +344,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
               </ul>
             </>
           )}
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

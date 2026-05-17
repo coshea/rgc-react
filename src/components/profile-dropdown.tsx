@@ -1,11 +1,4 @@
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
-  Link,
-} from "@heroui/react";
+import { Dropdown } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
@@ -28,12 +21,12 @@ export const ProfileDropdown = () => {
     <>
       <NotificationBell />
       <Dropdown placement="bottom-end">
-        <DropdownTrigger>
+        <Dropdown.Trigger>
           <div className="relative inline-block ml-3" aria-label="Profile menu">
             <UserAvatar
               as="button"
               isBordered
-              color={isAdmin ? "secondary" : "default"}
+              color={isAdmin ? "accent" : "default"}
               className="transition-transform"
               size="sm"
               user={
@@ -60,69 +53,73 @@ export const ProfileDropdown = () => {
               </span>
             )}
           </div>
-        </DropdownTrigger>
-        <DropdownMenu aria-label="Profile Actions" variant="flat">
-          <DropdownItem
-            key="profile"
-            className="h-14 gap-2"
-            isReadOnly
-            textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
-          >
-            <span className="block text-xs text-default-500">Signed in as</span>
-            <span className="block truncate max-w-[200px] text-sm">
-              {user?.email ?? "user@example.com"}
-            </span>
-          </DropdownItem>
+        </Dropdown.Trigger>
+        <Dropdown.Popover>
+          <Dropdown.Menu aria-label="Profile Actions">
+            <Dropdown.Item
+              id="profile-info"
+              className="h-14 gap-2"
+              isReadOnly
+              textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
+            >
+              <span className="block text-xs text-default-500">
+                Signed in as
+              </span>
+              <span className="block truncate max-w-[200px] text-sm">
+                {user?.email ?? "user@example.com"}
+              </span>
+            </Dropdown.Item>
 
-          <DropdownItem
-            key="settings"
-            as={Link}
-            href={user ? `/profile/${user.uid}` : siteConfig.pages.profile.link}
-          >
-            My Profile
-          </DropdownItem>
-
-          <DropdownItem
-            key="theme"
-            closeOnSelect={false}
-            className="cursor-default"
-            textValue="Theme"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-sm text-foreground">Theme</span>
-              <ThemeSwitch />
-            </div>
-          </DropdownItem>
-
-          {isAdmin || isBoardMember ? (
-            <DropdownSection
-              title="Admin"
-              showDivider
-              classNames={{
-                heading:
-                  "text-tiny font-semibold uppercase text-default-400 px-1",
+            <Dropdown.Item
+              id="settings"
+              textValue="My Profile"
+              onPress={() => {
+                const href = user
+                  ? `/profile/${user.uid}`
+                  : siteConfig.pages.profile.link;
+                window.location.href = href;
               }}
             >
-              <DropdownItem
-                key="admin-dashboard"
-                as={Link}
-                href={siteConfig.pages.adminDashboard.link}
-                startContent={
-                  <Icon
-                    icon="lucide:layout-dashboard"
-                    className="text-base text-default-500"
-                  />
-                }
-              >
-                Admin Dashboard
-              </DropdownItem>
-            </DropdownSection>
-          ) : null}
+              My Profile
+            </Dropdown.Item>
 
-          <DropdownItem key="logout" color="danger" onPress={logout}>
-            Log Out
-          </DropdownItem>
-        </DropdownMenu>
+            <Dropdown.Item
+              id="theme"
+              closeOnSelect={false}
+              className="cursor-default"
+              textValue="Theme"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-foreground">Theme</span>
+                <ThemeSwitch />
+              </div>
+            </Dropdown.Item>
+
+            {(isAdmin || isBoardMember) && (
+              <Dropdown.Section title="Admin">
+                <Dropdown.Item
+                  id="admin-dashboard"
+                  textValue="Admin Dashboard"
+                  onPress={() => {
+                    window.location.href = siteConfig.pages.adminDashboard.link;
+                  }}
+                  startContent={
+                    <Icon
+                      icon="lucide:layout-dashboard"
+                      className="text-base text-default-500"
+                    />
+                  }
+                >
+                  Admin Dashboard
+                </Dropdown.Item>
+              </Dropdown.Section>
+            )}
+
+            <Dropdown.Item id="logout" onPress={logout}>
+              Log Out
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
       </Dropdown>
     </>
   );

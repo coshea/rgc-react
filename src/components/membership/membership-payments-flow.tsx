@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
-import { Spacer, addToast } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import * as Sentry from "@sentry/react";
@@ -723,7 +723,7 @@ export default function MembershipPaymentsFlow({
         />
       </div>
 
-      <Spacer y={6} />
+      <div className="h-6" />
 
       {user && isPaidForCurrentYear && step.kind === "select" && (
         <AlreadyPaidNotice
@@ -1037,7 +1037,7 @@ export default function MembershipPaymentsFlow({
         />
       )}
 
-      <Spacer y={8} />
+      <div className="h-8" />
       <div className="w-full max-w-4xl text-center text-sm text-default-500 space-y-2">
         <div>For questions, please contact the club directly.</div>
         <div className="italic">

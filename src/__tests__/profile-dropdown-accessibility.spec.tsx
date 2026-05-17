@@ -61,29 +61,31 @@ vi.mock("@heroui/react", async (importOriginal) => {
     NavbarContent: ({ children }: any) => (
       <div data-testid="navbar-content">{children}</div>
     ),
-    Dropdown: ({ children }: any) => (
-      <div data-testid="dropdown">{children}</div>
-    ),
-    DropdownTrigger: ({ children }: any) => (
-      <div data-testid="trigger">{children}</div>
-    ),
-    DropdownMenu: ({ children, ...rest }: any) => (
-      <ul role="menu" {...rest}>
-        {children}
-      </ul>
-    ),
-    DropdownItem: ({ children, onPress: _op, as: _as, ...rest }: any) => {
-      // Drop unsupported DOM props (onPress, as)
-      return (
-        <li role="menuitem" tabIndex={-1} {...rest}>
-          {children}
-        </li>
-      );
-    },
-    DropdownSection: ({ children, title }: any) => (
-      <li role="group" aria-label={title}>
-        {children}
-      </li>
+    Dropdown: Object.assign(
+      ({ children }: any) => <div data-testid="dropdown">{children}</div>,
+      {
+        Trigger: ({ children }: any) => (
+          <div data-testid="trigger">{children}</div>
+        ),
+        Popover: ({ children }: any) => (
+          <div data-testid="dropdown-popover">{children}</div>
+        ),
+        Menu: ({ children, ...rest }: any) => (
+          <ul role="menu" {...rest}>
+            {children}
+          </ul>
+        ),
+        Item: ({ children, onPress: _op, id, ...rest }: any) => (
+          <li role="menuitem" tabIndex={-1} data-key={id} {...rest}>
+            {children}
+          </li>
+        ),
+        Section: ({ children, title }: any) => (
+          <li role="group" aria-label={title}>
+            {children}
+          </li>
+        ),
+      },
     ),
     Link: ({ children, href }: any) => <a href={href}>{children}</a>,
     // Keep Avatar behavior close enough for click handling

@@ -42,7 +42,7 @@ export default function BackButton({
 
   return (
     <Button
-      variant="flat"
+      variant="tertiary"
       size="sm"
       startContent={<Icon icon="lucide:arrow-left" className="w-4 h-4" />}
       onPress={handlePress}

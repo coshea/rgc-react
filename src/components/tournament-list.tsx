@@ -8,8 +8,9 @@ import {
   TableCell,
   Tooltip,
   Button,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
@@ -212,7 +213,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={filterStatus === "all" ? "solid" : "flat"}
+              variant={filterStatus === "all" ? "primary" : "tertiary"}
               color={filterStatus === "all" ? "primary" : "default"}
               size="sm"
               onPress={() => setFilterStatus("all")}
@@ -220,7 +221,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               All ({filterCounts.all})
             </Button>
             <Button
-              variant={filterStatus === "registration" ? "solid" : "flat"}
+              variant={filterStatus === "registration" ? "primary" : "tertiary"}
               color={filterStatus === "registration" ? "warning" : "default"}
               size="sm"
               onPress={() => setFilterStatus("registration")}
@@ -231,7 +232,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               Registration Open ({filterCounts.registration})
             </Button>
             <Button
-              variant={filterStatus === "scheduled" ? "solid" : "flat"}
+              variant={filterStatus === "scheduled" ? "primary" : "tertiary"}
               color={filterStatus === "scheduled" ? "primary" : "default"}
               size="sm"
               onPress={() => setFilterStatus("scheduled")}
@@ -240,7 +241,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
               Scheduled ({filterCounts.scheduled})
             </Button>
             <Button
-              variant={filterStatus === "completed" ? "solid" : "flat"}
+              variant={filterStatus === "completed" ? "primary" : "tertiary"}
               color={filterStatus === "completed" ? "success" : "default"}
               size="sm"
               onPress={() => setFilterStatus("completed")}
@@ -252,7 +253,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </Button>
             {filterCounts.canceled > 0 && (
               <Button
-                variant={filterStatus === "canceled" ? "solid" : "flat"}
+                variant={filterStatus === "canceled" ? "primary" : "tertiary"}
                 color={filterStatus === "canceled" ? "danger" : "default"}
                 size="sm"
                 onPress={() => setFilterStatus("canceled")}
@@ -267,23 +268,37 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <div className="min-w-32">
             <Select
               aria-label="Filter by year"
-              label="Year"
-              size="sm"
-              selectedKeys={
-                availableYears.includes(yearFilter) ? [String(yearFilter)] : []
+              value={
+                availableYears.includes(yearFilter)
+                  ? String(yearFilter)
+                  : undefined
               }
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0];
-                if (val !== undefined) setYearFilter(Number(val));
+              onChange={(key) => {
+                if (key !== undefined && key !== null)
+                  setYearFilter(Number(key));
               }}
               className="w-36"
               isDisabled={availableYears.length === 0}
             >
-              {availableYears.map((y) => (
-                <SelectItem key={String(y)} textValue={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
+              <Label>Year</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableYears.map((y) => (
+                    <ListBox.Item
+                      key={String(y)}
+                      id={String(y)}
+                      textValue={String(y)}
+                    >
+                      {y}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
         </div>
@@ -382,10 +397,13 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                 </TableCell>
                 <TableCell>
                   {tournament.assignedTeeTimes ? (
-                    <Tooltip content="Assigned tee times">
-                      <div className="flex items-center">
-                        <Icon icon="lucide:clock" className="text-primary" />
-                      </div>
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <div className="flex items-center">
+                          <Icon icon="lucide:clock" className="text-primary" />
+                        </div>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>Assigned tee times</Tooltip.Content>
                     </Tooltip>
                   ) : (
                     <span className="text-default-300">—</span>

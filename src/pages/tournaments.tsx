@@ -12,13 +12,10 @@ import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import {
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   RadioGroup,
   Radio,
 } from "@heroui/react";
@@ -165,58 +162,80 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-24 space-y-6">
-      <Modal isOpen={createModeOpen} onClose={() => setCreateModeOpen(false)}>
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            New Tournament
-          </ModalHeader>
-          <ModalBody>
-            <RadioGroup
-              label="How would you like to start?"
-              value={createMethod}
-              onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
-            >
-              <Radio value="scratch">Create from scratch</Radio>
-              <Radio value="copy">Copy from previous</Radio>
-            </RadioGroup>
-            {createMethod === "copy" && (
-              <Select
-                label="Choose a previous tournament"
-                selectedKeys={templateId ? [templateId] : []}
-                onSelectionChange={(keys) => {
-                  const id = Array.from(keys)[0] as string | undefined;
-                  setTemplateId(id || null);
-                }}
+      <Modal
+        isOpen={createModeOpen}
+        onOpenChange={(open) => {
+          if (!open) setCreateModeOpen(false);
+        }}
+      >
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header className="flex flex-col gap-1">
+              New Tournament
+            </Modal.Header>
+            <Modal.Body>
+              <RadioGroup
+                label="How would you like to start?"
+                value={createMethod}
+                onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
               >
-                {tournaments
-                  .filter((t) => !!t.firestoreId)
-                  .map((t) => {
-                    const year = t.date
-                      ? new Date(t.date).getFullYear()
-                      : undefined;
-                    const label = year ? `${t.title} (${year})` : t.title;
-                    return (
-                      <SelectItem key={t.firestoreId!} textValue={label}>
-                        {label}
-                      </SelectItem>
-                    );
-                  })}
-              </Select>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setCreateModeOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              isDisabled={createMethod === "copy" && !templateId}
-              onPress={onContinueCreate}
-            >
-              Continue
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+                <Radio value="scratch">Create from scratch</Radio>
+                <Radio value="copy">Copy from previous</Radio>
+              </RadioGroup>
+              {createMethod === "copy" && (
+                <Select
+                  value={templateId ?? undefined}
+                  onChange={(key) => {
+                    setTemplateId(key ? String(key) : null);
+                  }}
+                >
+                  <Label>Choose a previous tournament</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {tournaments
+                        .filter((t) => !!t.firestoreId)
+                        .map((t) => {
+                          const year = t.date
+                            ? new Date(t.date).getFullYear()
+                            : undefined;
+                          const label = year ? `${t.title} (${year})` : t.title;
+                          return (
+                            <ListBox.Item
+                              key={t.firestoreId!}
+                              id={t.firestoreId!}
+                              textValue={label}
+                            >
+                              {label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          );
+                        })}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setCreateModeOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                
+                isDisabled={createMethod === "copy" && !templateId}
+                onPress={onContinueCreate}
+              >
+                Continue
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
 
       {isCreating || editingTournament ? (
@@ -259,7 +278,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 target="_blank"
                 rel="noreferrer"
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 startContent={
                   <Icon icon="lucide:calendar" className="w-4 h-4" />
                 }
@@ -271,7 +290,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               {isAdmin && (
                 <>
                   <Button
-                    variant="flat"
+                    variant="tertiary"
                     size="sm"
                     onPress={() => navigate("/season-awards")}
                     startContent={
@@ -282,7 +301,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                     Awards
                   </Button>
                   <Button
-                    color="primary"
+                    
                     size="sm"
                     startContent={
                       <Icon

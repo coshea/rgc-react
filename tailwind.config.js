@@ -1,14 +1,13 @@
 // tailwind.config.js
-const {heroui} = require("@heroui/theme");
+// HeroUI v3 does not require a Tailwind plugin — styles are loaded via
+// @import "@heroui/styles" in globals.css
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./node_modules/@heroui/theme/dist/components/(avatar|button|code|dropdown|input|kbd|link|navbar|snippet|toggle|toast|ripple|spinner|menu|divider|popover|form).js",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {},
   },
   darkMode: "class",
-  plugins: [heroui()],
+  plugins: [],
 };

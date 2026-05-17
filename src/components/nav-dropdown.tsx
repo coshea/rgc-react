@@ -95,7 +95,7 @@ export default function NavDropdown({
   return (
     <div className="relative" ref={containerRef}>
       <Button
-        disableRipple
+       
         className="p-0 bg-transparent text-default-500 inline-flex items-center gap-1"
         endContent={
           <Icon
@@ -104,7 +104,7 @@ export default function NavDropdown({
           />
         }
         radius="sm"
-        variant="light"
+        variant="ghost"
         aria-haspopup="true"
         aria-expanded={open}
         onPress={() => {

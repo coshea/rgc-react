@@ -2,10 +2,10 @@ import { useState } from "react";
 import {
   Button,
   Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
+  
+  
+  
+  Separator,
   Input,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
@@ -48,13 +48,13 @@ export function HandicapStep(props: {
   }
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4">
         <h3 className="text-base font-semibold">Handicap Only</h3>
         <p className="text-sm text-default-600">
           Provide your details below. If you don’t know your GHIN yet, you can
@@ -78,7 +78,7 @@ export function HandicapStep(props: {
           }
           isInvalid={!!localErrors.handicapGhin}
           errorMessage={localErrors.handicapGhin}
-          variant="bordered"
+          variant="outline"
           inputMode="numeric"
           pattern="[0-9]*"
         />
@@ -88,13 +88,13 @@ export function HandicapStep(props: {
         <div className="text-sm">
           Fee: <strong>{currency(handicapFee)}</strong>
         </div>
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay} isLoading={submitting}>
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
+        <Button  onPress={handlePay}>
           Continue
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 }

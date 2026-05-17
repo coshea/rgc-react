@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  Form,
-  Input,
-  Textarea,
-  Button,
-  Alert,
-  Card,
-  CardBody,
-  Image,
-} from "@heroui/react";
+import { Form, Input, TextArea, Button, Alert, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import emailjs from "@emailjs/browser";
 import { EMAILJS_CONFIG, isEmailJSConfigured } from "@/config/emailjs";
@@ -90,7 +81,7 @@ export const ContactForm = () => {
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="hidden md:block relative h-[500px] overflow-hidden rounded-2xl">
-            <Image
+            <img
               src={golfBallHoleImage}
               alt="Contact Us"
               className="w-full h-full object-cover"
@@ -99,7 +90,7 @@ export const ContactForm = () => {
 
           <div className="w-full">
             <Card>
-              <CardBody className="p-6 space-y-4">
+              <Card.Content className="p-6 space-y-4">
                 <div className="text-center">
                   <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
                     Contact Us
@@ -110,16 +101,12 @@ export const ContactForm = () => {
                 </div>
 
                 {submitted && (
-                  <Alert className="mb-4" color="success">
+                  <Alert className="mb-4">
                     Thanks for reaching out! We'll get back to you soon.
                   </Alert>
                 )}
 
-                {error && (
-                  <Alert className="mb-4" color="danger">
-                    {error}
-                  </Alert>
-                )}
+                {error && <Alert className="mb-4">{error}</Alert>}
 
                 <Form
                   className="space-y-3 sm:space-y-4"
@@ -152,7 +139,7 @@ export const ContactForm = () => {
                     }
                   />
 
-                  <Textarea
+                  <TextArea
                     isRequired
                     label="Message"
                     placeholder="Enter your message"
@@ -165,17 +152,15 @@ export const ContactForm = () => {
 
                   <Button
                     type="submit"
-                    color="primary"
                     className="w-full"
                     size="md"
-                    isLoading={sending}
                     isDisabled={sending}
                   >
                     {sending ? "Sending..." : "Send Message"}
                     {!sending && <Icon icon="lucide:send" className="ml-2" />}
                   </Button>
                 </Form>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         </div>

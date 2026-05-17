@@ -1,11 +1,11 @@
 import {
   Button,
   Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
+  
+  
+  
   Checkbox,
-  Divider,
+  Separator,
 } from "@heroui/react";
 import { useState } from "react";
 import type { NewMemberState } from "../types";
@@ -61,13 +61,13 @@ export function NewMemberApplicationStep(props: {
   }
 
   return (
-    <Card className="w-full max-w-4xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-4xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Application</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-6">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-6">
         <div className="space-y-2">
           <h3 className="text-base font-semibold">New Member Application</h3>
           <p className="text-sm text-default-600">
@@ -106,8 +106,8 @@ export function NewMemberApplicationStep(props: {
             href={hasApplicationUrl ? membershipApplicationUrl : undefined}
             target={hasApplicationUrl ? "_blank" : undefined}
             rel={hasApplicationUrl ? "noreferrer" : undefined}
-            color="primary"
-            variant="flat"
+            
+            variant="tertiary"
             isDisabled={!hasApplicationUrl}
             startContent={
               <Icon icon="lucide:file-text" width={16} height={16} />
@@ -169,18 +169,18 @@ export function NewMemberApplicationStep(props: {
           <span>Amount due</span>
           <span>{currency(membershipAmountDue)}</span>
         </div>
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
         <Button
-          color="primary"
+          
           onPress={handleSubmit}
-          isLoading={submitting}
+         
           isDisabled={!hasApplicationUrl}
         >
           Continue to Payment
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 }

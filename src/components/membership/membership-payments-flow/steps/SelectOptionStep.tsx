@@ -1,4 +1,4 @@
-import { Button, Card, CardBody, CardFooter, CardHeader } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { MembershipOption } from "../types";
 
@@ -33,17 +33,14 @@ export function SelectOptionStep(props: {
       </div>
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        <Card
-          shadow="sm"
-          className="relative order-2 rounded-2xl border border-default-200 md:order-1"
-        >
-          <CardHeader className="flex flex-col items-start gap-1">
+        <Card className="relative order-2 rounded-2xl border border-default-200 md:order-1">
+          <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-xl font-semibold">Handicap Only</h3>
             <p className="text-sm text-default-600">
               Players looking only for a GHIN Handicap Index.
             </p>
-          </CardHeader>
-          <CardBody className="space-y-5">
+          </Card.Header>
+          <Card.Content className="space-y-5">
             <div className="text-3xl font-bold">{currency(handicapFee)}</div>
 
             <ul className="space-y-2 text-sm">
@@ -68,13 +65,12 @@ export function SelectOptionStep(props: {
                 <span>Play in club tournaments</span>
               </li>
             </ul>
-          </CardBody>
-          <CardFooter className="pt-2">
+          </Card.Content>
+          <Card.Footer className="pt-2">
             <Button
               fullWidth
               size="lg"
-              color="primary"
-              variant="flat"
+              variant="tertiary"
               isDisabled={membershipOptionsDisabled || !isLoggedIn}
               onPress={() => onSelectOption("handicap")}
             >
@@ -84,20 +80,17 @@ export function SelectOptionStep(props: {
                   ? "Log in to join"
                   : "Join Handicap Only"}
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
 
-        <Card
-          shadow="sm"
-          className="relative order-1 rounded-2xl border-2 border-primary shadow-lg md:order-2 md:scale-[1.02]"
-        >
-          <CardHeader className="flex flex-col items-start gap-1">
+        <Card className="relative order-1 rounded-2xl border-2 border-primary shadow-lg md:order-2 md:scale-[1.02]">
+          <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-2xl font-bold">{currentYear} Membership</h3>
             <p className="text-sm text-default-600">
               Full access to club benefits for one year.
             </p>
-          </CardHeader>
-          <CardBody className="space-y-5">
+          </Card.Header>
+          <Card.Content className="space-y-5">
             <div className="text-4xl font-extrabold">
               {currency(membershipAmountDue)}
             </div>
@@ -119,12 +112,11 @@ export function SelectOptionStep(props: {
                 </li>
               ))}
             </ul>
-          </CardBody>
-          <CardFooter className="pt-2">
+          </Card.Content>
+          <Card.Footer className="pt-2">
             <Button
               fullWidth
               size="lg"
-              color="primary"
               isDisabled={membershipOptionsDisabled}
               onPress={() => onSelectOption("renew")}
             >
@@ -132,21 +124,18 @@ export function SelectOptionStep(props: {
                 ? `Already paid for ${currentYear}`
                 : `Join for ${currentYear}`}
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
 
-        <Card
-          shadow="sm"
-          className="relative order-3 rounded-2xl border border-default-200"
-        >
-          <CardHeader className="flex flex-col items-start gap-1">
+        <Card className="relative order-3 rounded-2xl border border-default-200">
+          <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-xl font-semibold">Donation Only</h3>
             <p className="text-sm text-default-600">
               Support the course through the Ridgefield Golf Club Improvement
               Fund (RGCIF) with a donation.
             </p>
-          </CardHeader>
-          <CardBody className="space-y-5">
+          </Card.Header>
+          <Card.Content className="space-y-5">
             <div className="text-3xl font-bold">Pay what you want</div>
 
             <ul className="space-y-2 text-sm">
@@ -164,18 +153,17 @@ export function SelectOptionStep(props: {
                 ),
               )}
             </ul>
-          </CardBody>
-          <CardFooter className="pt-2">
+          </Card.Content>
+          <Card.Footer className="pt-2">
             <Button
               fullWidth
               size="lg"
-              color="primary"
-              variant="flat"
+              variant="tertiary"
               onPress={() => onSelectOption("donation")}
             >
               Donate
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
       </div>
     </div>

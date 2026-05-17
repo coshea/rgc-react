@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Card, CardBody, Button, Chip } from "@heroui/react";
+import { Card, Button, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import {
   useYearlyWinnings,
@@ -232,24 +232,21 @@ export function YearlyWinningsStandings({ year }: Props) {
             <>
               <Chip
                 size="sm"
-                variant="flat"
-                color="primary"
+                variant="tertiary"
                 startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
               >
                 {stats.withResults} events
               </Chip>
               <Chip
                 size="sm"
-                variant="flat"
-                color="success"
+                variant="tertiary"
                 startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
               >
                 {stats.unique} unique winners
               </Chip>
               <Chip
                 size="sm"
-                variant="flat"
-                color="warning"
+                variant="tertiary"
                 startContent={
                   <Icon icon="lucide:banknote" className="w-3 h-3" />
                 }
@@ -258,16 +255,14 @@ export function YearlyWinningsStandings({ year }: Props) {
               </Chip>
               <Chip
                 size="sm"
-                variant="flat"
-                color="secondary"
+                variant="tertiary"
                 startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
               >
                 {stats.avgWinners.toFixed(1)} winners / event
               </Chip>
               <Chip
                 size="sm"
-                variant="flat"
-                color="warning"
+                variant="tertiary"
                 startContent={<Icon icon="lucide:target" className="w-3 h-3" />}
               >
                 {`Awards $${stats.seasonAwardTotal.toLocaleString("en-US")}`}
@@ -281,7 +276,7 @@ export function YearlyWinningsStandings({ year }: Props) {
       </div>
 
       <Card>
-        <CardBody className="p-0">
+        <Card.Content className="p-0">
           <div className="px-1 sm:px-0 overflow-x-hidden">
             {/* Fixed table layout on mobile to guarantee all columns fit */}
             <table className="min-w-full w-full text-sm">
@@ -381,7 +376,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                               <Button
                                 isIconOnly
                                 size="sm"
-                                variant="light"
+                                variant="ghost"
                                 onPress={() => toggle(row.userId)}
                                 data-expander
                                 aria-expanded={isExpanded}
@@ -455,29 +450,17 @@ export function YearlyWinningsStandings({ year }: Props) {
                                       </div>
                                       {/* Mobile-focused summary chips for counts */}
                                       <div className="flex flex-wrap gap-2">
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="primary"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {tournamentPlacements.length}{" "}
                                           placement
                                           {tournamentPlacements.length === 1
                                             ? ""
                                             : "s"}
                                         </Chip>
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="success"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {wins} win{wins === 1 ? "" : "s"}
                                         </Chip>
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="warning"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {seasonAwards.length} award
                                           {seasonAwards.length === 1 ? "" : "s"}
                                         </Chip>
@@ -594,7 +577,7 @@ export function YearlyWinningsStandings({ year }: Props) {
               </tbody>
             </table>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

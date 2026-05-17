@@ -62,7 +62,7 @@ export function PlayerEntrySection({
         </h3>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           onPress={onAdd}
           startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
         >
@@ -120,8 +120,8 @@ export function PlayerEntrySection({
             {(entries.length > 1 || !required) && (
               <Button
                 isIconOnly
-                variant="flat"
-                color="danger"
+                variant="tertiary"
+                
                 size="lg"
                 onPress={() => onRemove(index)}
               >

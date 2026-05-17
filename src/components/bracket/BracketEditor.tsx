@@ -13,17 +13,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
-  Divider,
+  Separator,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Select,
-  SelectItem,
+  ListBox,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -215,8 +209,7 @@ function SortableTeamRow({
       {isBye ? (
         <Chip
           size="sm"
-          variant="flat"
-          color="primary"
+          variant="tertiary"
           className="shrink-0 min-w-10 justify-center"
         >
           BYE
@@ -224,7 +217,7 @@ function SortableTeamRow({
       ) : !excluded ? (
         <Chip
           size="sm"
-          variant="flat"
+          variant="tertiary"
           color={seed === 1 ? "warning" : "default"}
           className="shrink-0 min-w-10 justify-center"
         >
@@ -233,8 +226,7 @@ function SortableTeamRow({
       ) : (
         <Chip
           size="sm"
-          variant="flat"
-          color="default"
+          variant="tertiary"
           className="shrink-0 min-w-10 justify-center line-through"
         >
           —
@@ -763,8 +755,7 @@ export function BracketEditor({
         <div className="flex gap-2 justify-end flex-wrap">
           <Button
             size="sm"
-            variant={showSeedEdit ? "solid" : "flat"}
-            color="primary"
+            variant={showSeedEdit ? "primary" : "tertiary"}
             startContent={
               <Icon icon="lucide:list-ordered" className="w-4 h-4" />
             }
@@ -777,8 +768,7 @@ export function BracketEditor({
           </Button>
           <Button
             size="sm"
-            variant={showMatchupEdit ? "solid" : "flat"}
-            color="secondary"
+            variant={showMatchupEdit ? "primary" : "tertiary"}
             startContent={<Icon icon="lucide:pencil" className="w-4 h-4" />}
             onPress={() => {
               const opening = !showMatchupEdit;
@@ -802,9 +792,7 @@ export function BracketEditor({
           </Button>
           <Button
             size="sm"
-            variant="flat"
-            color="default"
-            isLoading={syncingTeams}
+            variant="tertiary"
             startContent={
               !syncingTeams && (
                 <Icon icon="lucide:refresh-ccw" className="w-4 h-4" />
@@ -816,8 +804,7 @@ export function BracketEditor({
           </Button>
           <Button
             size="sm"
-            variant="flat"
-            color="warning"
+            variant="tertiary"
             startContent={<Icon icon="lucide:refresh-cw" className="w-4 h-4" />}
             onPress={() => setShowRegenConfirm(true)}
           >
@@ -825,8 +812,7 @@ export function BracketEditor({
           </Button>
           <Button
             size="sm"
-            variant="flat"
-            color="danger"
+            variant="tertiary"
             startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
             onPress={() => setShowDeleteConfirm(true)}
           >
@@ -837,14 +823,14 @@ export function BracketEditor({
 
       {/* Seed-edit panel (shown when a bracket exists and admin toggled Edit Seeds) */}
       {bracket && showSeedEdit && (
-        <Card shadow="sm">
-          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
+        <Card>
+          <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold text-sm">Edit Seedings</p>
             <p className="text-xs text-default-400">
               Drag to reorder, then click Regenerate to apply.
             </p>
-          </CardHeader>
-          <CardBody className="space-y-3 pb-4">
+          </Card.Header>
+          <Card.Content className="space-y-3 pb-4">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -877,7 +863,7 @@ export function BracketEditor({
             <div className="flex gap-2 pt-1 flex-wrap justify-end">
               <Button
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 startContent={
                   <Icon icon="lucide:shuffle" className="w-4 h-4" />
                 }
@@ -896,7 +882,7 @@ export function BracketEditor({
               </Button>
               <Button
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => {
                   setSeedOrder(
                     [...bracket.teams]
@@ -909,7 +895,6 @@ export function BracketEditor({
               </Button>
               <Button
                 size="sm"
-                color="warning"
                 startContent={
                   <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
                 }
@@ -918,95 +903,105 @@ export function BracketEditor({
                 Regenerate with New Seeds
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {/* Edit Matchups panel — directly swap round-1 pairings without regenerating */}
       {bracket && showMatchupEdit && (
-        <Card shadow="sm">
-          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
+        <Card>
+          <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold text-sm">Edit First Round Matchups</p>
             <p className="text-xs text-default-400">
               Changing a match with an existing result will clear that result.
             </p>
-          </CardHeader>
-          <CardBody className="space-y-2 pb-4">
+          </Card.Header>
+          <Card.Content className="space-y-2 pb-4">
             {editSlots.map((slot, idx) => (
               <div key={slot.matchId} className="flex items-center gap-2">
                 <span className="text-xs text-default-400 w-14 shrink-0 text-right">
                   Match {idx + 1}
                 </span>
                 <Select
-                  size="sm"
                   aria-label={`Match ${idx + 1} — team 1`}
-                  selectedKeys={
-                    slot.team1Id
-                      ? new Set([slot.team1Id])
-                      : new Set(["__none__"])
-                  }
-                  onSelectionChange={(keys) => {
-                    const val = [...keys][0] as string;
+                  value={slot.team1Id ?? "__none__"}
+                  onChange={(val) => {
+                    const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
                         i === idx
-                          ? {
-                              ...s,
-                              team1Id: val === "__none__" ? null : val,
-                            }
+                          ? { ...s, team1Id: v === "__none__" ? null : v }
                           : s,
                       ),
                     );
                   }}
                   className="flex-1"
                 >
-                  <>
-                    <SelectItem key="__none__">— BYE —</SelectItem>
-                    {bracket.teams
-                      .slice()
-                      .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
-                      .map((t) => (
-                        <SelectItem key={t.id}>
-                          {regLabelMap.get(t.id) ?? t.name}
-                        </SelectItem>
-                      ))}
-                  </>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="__none__" textValue="— BYE —">
+                        — BYE —<ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      {bracket.teams
+                        .slice()
+                        .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+                        .map((t) => (
+                          <ListBox.Item
+                            key={t.id}
+                            id={t.id}
+                            textValue={regLabelMap.get(t.id) ?? t.name}
+                          >
+                            {regLabelMap.get(t.id) ?? t.name}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <span className="text-xs text-default-400 shrink-0">vs</span>
                 <Select
-                  size="sm"
                   aria-label={`Match ${idx + 1} — team 2`}
-                  selectedKeys={
-                    slot.team2Id
-                      ? new Set([slot.team2Id])
-                      : new Set(["__none__"])
-                  }
-                  onSelectionChange={(keys) => {
-                    const val = [...keys][0] as string;
+                  value={slot.team2Id ?? "__none__"}
+                  onChange={(val) => {
+                    const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
                         i === idx
-                          ? {
-                              ...s,
-                              team2Id: val === "__none__" ? null : val,
-                            }
+                          ? { ...s, team2Id: v === "__none__" ? null : v }
                           : s,
                       ),
                     );
                   }}
                   className="flex-1"
                 >
-                  <>
-                    <SelectItem key="__none__">— BYE —</SelectItem>
-                    {bracket.teams
-                      .slice()
-                      .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
-                      .map((t) => (
-                        <SelectItem key={t.id}>
-                          {regLabelMap.get(t.id) ?? t.name}
-                        </SelectItem>
-                      ))}
-                  </>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="__none__" textValue="— BYE —">
+                        — BYE —<ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      {bracket.teams
+                        .slice()
+                        .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+                        .map((t) => (
+                          <ListBox.Item
+                            key={t.id}
+                            id={t.id}
+                            textValue={regLabelMap.get(t.id) ?? t.name}
+                          >
+                            {regLabelMap.get(t.id) ?? t.name}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
               </div>
             ))}
@@ -1014,7 +1009,7 @@ export function BracketEditor({
             <div className="flex gap-2 justify-end pt-2">
               <Button
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => {
                   setEditSlots(
                     [...bracket.matches]
@@ -1032,8 +1027,6 @@ export function BracketEditor({
               </Button>
               <Button
                 size="sm"
-                color="secondary"
-                isLoading={savingMatchups}
                 startContent={
                   !savingMatchups && (
                     <Icon icon="lucide:save" className="w-4 h-4" />
@@ -1044,7 +1037,7 @@ export function BracketEditor({
                 Save Changes
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -1095,29 +1088,27 @@ export function BracketEditor({
           )}
 
           {/* Bracket visualisation */}
-          <Card shadow="sm">
-            <CardHeader>
+          <Card>
+            <Card.Header>
               <p className="font-semibold">Bracket</p>
               <p className="text-xs text-default-400 ml-2">
                 {bracket.size} slots · {bracket.teams.length} teams
                 {bracket.teams.length < bracket.size &&
                   ` · ${bracket.size - bracket.teams.length} bye${bracket.size - bracket.teams.length !== 1 ? "s" : ""}`}
               </p>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <BracketView bracket={bracket} userPhotoMap={userPhotoMap} />
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* Match results */}
-          <Card shadow="sm">
-            <CardHeader className="flex items-center justify-between">
+          <Card>
+            <Card.Header className="flex items-center justify-between">
               <p className="font-semibold text-sm">Match Results</p>
               <Button
                 size="sm"
-                color="primary"
                 onPress={handleSaveResults}
-                isLoading={saving}
                 isDisabled={Object.keys(pendingWinners).length === 0}
                 startContent={
                   !saving ? (
@@ -1127,8 +1118,8 @@ export function BracketEditor({
               >
                 Save Results
               </Button>
-            </CardHeader>
-            <CardBody className="space-y-5 pb-4">
+            </Card.Header>
+            <Card.Content className="space-y-5 pb-4">
               {(() => {
                 const teamMap = new Map(bracket.teams.map((t) => [t.id, t]));
                 const numRounds = Math.log2(bracket.size);
@@ -1181,8 +1172,8 @@ export function BracketEditor({
                                   size="sm"
                                   variant={
                                     selectedWinner === byeTeamId
-                                      ? "solid"
-                                      : "flat"
+                                      ? "primary"
+                                      : "tertiary"
                                   }
                                   color={
                                     selectedWinner === byeTeamId
@@ -1215,8 +1206,7 @@ export function BracketEditor({
                                 {selectedWinner && (
                                   <Button
                                     size="sm"
-                                    variant="light"
-                                    color="default"
+                                    variant="ghost"
                                     isIconOnly
                                     aria-label="Clear winner"
                                     onPress={() =>
@@ -1268,8 +1258,8 @@ export function BracketEditor({
                                 size="sm"
                                 variant={
                                   selectedWinner === m.team1Id
-                                    ? "solid"
-                                    : "flat"
+                                    ? "primary"
+                                    : "tertiary"
                                 }
                                 color={
                                   selectedWinner === m.team1Id
@@ -1303,8 +1293,8 @@ export function BracketEditor({
                                 size="sm"
                                 variant={
                                   selectedWinner === m.team2Id
-                                    ? "solid"
-                                    : "flat"
+                                    ? "primary"
+                                    : "tertiary"
                                 }
                                 color={
                                   selectedWinner === m.team2Id
@@ -1333,8 +1323,7 @@ export function BracketEditor({
                               {selectedWinner && (
                                 <Button
                                   size="sm"
-                                  variant="light"
-                                  color="default"
+                                  variant="ghost"
                                   isIconOnly
                                   aria-label="Clear winner"
                                   onPress={() =>
@@ -1359,19 +1348,19 @@ export function BracketEditor({
                   );
                 });
               })()}
-            </CardBody>
+            </Card.Content>
           </Card>
         </div>
       ) : (
         /* ── No bracket yet: show generator ── */
-        <Card shadow="sm">
-          <CardHeader className="flex items-center justify-between gap-2 flex-wrap">
+        <Card>
+          <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold">Generate Bracket</p>
             {registrations.length >= 2 && (
               <div className="flex gap-1 rounded-lg border border-default-200 p-0.5">
                 <Button
                   size="sm"
-                  variant={bracketMode === "seeding" ? "solid" : "light"}
+                  variant={bracketMode === "seeding" ? "primary" : "ghost"}
                   color={bracketMode === "seeding" ? "primary" : "default"}
                   onPress={() => handleSetBracketMode("seeding")}
                   startContent={
@@ -1383,7 +1372,7 @@ export function BracketEditor({
                 </Button>
                 <Button
                   size="sm"
-                  variant={bracketMode === "matchups" ? "solid" : "light"}
+                  variant={bracketMode === "matchups" ? "primary" : "ghost"}
                   color={bracketMode === "matchups" ? "primary" : "default"}
                   onPress={() => handleSetBracketMode("matchups")}
                   startContent={
@@ -1395,8 +1384,8 @@ export function BracketEditor({
                 </Button>
               </div>
             )}
-          </CardHeader>
-          <CardBody className="space-y-4">
+          </Card.Header>
+          <Card.Content className="space-y-4">
             {registrations.length < 2 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-default-400">
                 <Icon icon="lucide:users" className="w-8 h-8 opacity-40" />
@@ -1420,8 +1409,7 @@ export function BracketEditor({
                 <div className="flex justify-end gap-2 flex-wrap">
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="danger"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:eraser" className="w-4 h-4" />
                     }
@@ -1434,8 +1422,7 @@ export function BracketEditor({
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="primary"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:plus" className="w-4 h-4" />
                     }
@@ -1445,7 +1432,7 @@ export function BracketEditor({
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:shuffle" className="w-4 h-4" />
                     }
@@ -1492,12 +1479,10 @@ export function BracketEditor({
                 </DndContext>
 
                 <Button
-                  color="primary"
                   startContent={
                     <Icon icon="lucide:git-branch" className="w-4 h-4" />
                   }
                   onPress={handleGenerate}
-                  isLoading={generating}
                   isDisabled={includedTeamCount < 2}
                   className="mt-2"
                 >
@@ -1540,28 +1525,36 @@ export function BracketEditor({
                           Match {i + 1}
                         </span>
                         <Select
-                          size="sm"
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 1`}
-                          selectedKeys={
-                            slot.team1Id ? new Set([slot.team1Id]) : new Set()
-                          }
-                          onSelectionChange={(keys) => {
-                            const val =
-                              Array.from(keys as Set<string>)[0] ?? null;
-                            updateMatchupSlot(i, "team1Id", val);
+                          value={slot.team1Id ?? undefined}
+                          onChange={(val) => {
+                            updateMatchupSlot(
+                              i,
+                              "team1Id",
+                              (val as string) ?? null,
+                            );
                           }}
                           className="flex-1 min-w-[140px]"
-                          classNames={{ trigger: "h-9" }}
                         >
-                          {availForT1.map((r) => (
-                            <SelectItem
-                              key={r.id}
-                              textValue={regLabelMap.get(r.id) ?? r.id}
-                            >
-                              {regLabelMap.get(r.id) ?? r.id}
-                            </SelectItem>
-                          ))}
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {availForT1.map((r) => (
+                                <ListBox.Item
+                                  key={r.id}
+                                  id={r.id}
+                                  textValue={regLabelMap.get(r.id) ?? r.id}
+                                >
+                                  {regLabelMap.get(r.id) ?? r.id}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
                         </Select>
 
                         <span className="text-xs text-default-400 shrink-0">
@@ -1569,28 +1562,36 @@ export function BracketEditor({
                         </span>
 
                         <Select
-                          size="sm"
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 2`}
-                          selectedKeys={
-                            slot.team2Id ? new Set([slot.team2Id]) : new Set()
-                          }
-                          onSelectionChange={(keys) => {
-                            const val =
-                              Array.from(keys as Set<string>)[0] ?? null;
-                            updateMatchupSlot(i, "team2Id", val);
+                          value={slot.team2Id ?? undefined}
+                          onChange={(val) => {
+                            updateMatchupSlot(
+                              i,
+                              "team2Id",
+                              (val as string) ?? null,
+                            );
                           }}
                           className="flex-1 min-w-[140px]"
-                          classNames={{ trigger: "h-9" }}
                         >
-                          {availForT2.map((r) => (
-                            <SelectItem
-                              key={r.id}
-                              textValue={regLabelMap.get(r.id) ?? r.id}
-                            >
-                              {regLabelMap.get(r.id) ?? r.id}
-                            </SelectItem>
-                          ))}
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {availForT2.map((r) => (
+                                <ListBox.Item
+                                  key={r.id}
+                                  id={r.id}
+                                  textValue={regLabelMap.get(r.id) ?? r.id}
+                                >
+                                  {regLabelMap.get(r.id) ?? r.id}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
                         </Select>
 
                         {(slot.team1Id || slot.team2Id) && (
@@ -1621,7 +1622,7 @@ export function BracketEditor({
                       {sortedRegistrations
                         .filter((r) => !assignedMatchupIds.has(r.id))
                         .map((r) => (
-                          <Chip key={r.id} size="sm" variant="flat">
+                          <Chip key={r.id} size="sm" variant="tertiary">
                             {regLabelMap.get(r.id) ?? r.id}
                           </Chip>
                         ))}
@@ -1631,8 +1632,7 @@ export function BracketEditor({
 
                 <div className="flex gap-2 mt-2">
                   <Button
-                    variant="flat"
-                    color="danger"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:eraser" className="w-4 h-4" />
                     }
@@ -1642,13 +1642,11 @@ export function BracketEditor({
                     Clear All
                   </Button>
                   <Button
-                    color="primary"
                     className="flex-1"
                     startContent={
                       <Icon icon="lucide:git-branch" className="w-4 h-4" />
                     }
                     onPress={handleGenerate}
-                    isLoading={generating}
                     isDisabled={matchupTeamCount < 2}
                   >
                     Generate Bracket
@@ -1661,74 +1659,72 @@ export function BracketEditor({
                 </div>
               </>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {/* Regenerate confirmation */}
       <Modal
         isOpen={showRegenConfirm}
-        onClose={() => setShowRegenConfirm(false)}
-        size="sm"
+        onOpenChange={(open) => {
+          if (!open) setShowRegenConfirm(false);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Regenerate Bracket?</ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              This will replace the existing bracket with a new draw using the
-              current seed order. All current match results will be lost.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => setShowRegenConfirm(false)}
-              isDisabled={generating}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              onPress={handleDeleteAndRegen}
-              isLoading={generating}
-            >
-              Regenerate
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Regenerate Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-default-600">
+                This will replace the existing bracket with a new draw using the
+                current seed order. All current match results will be lost.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowRegenConfirm(false)}
+                isDisabled={generating}
+              >
+                Cancel
+              </Button>
+              <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
 
       {/* Delete confirmation */}
       <Modal
         isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        size="sm"
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteConfirm(false);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Delete Bracket?</ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              This will permanently delete the bracket and all match results.
-              This action cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => setShowDeleteConfirm(false)}
-              isDisabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button color="danger" onPress={handleDelete} isLoading={deleting}>
-              Delete Bracket
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Delete Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-default-600">
+                This will permanently delete the bracket and all match results.
+                This action cannot be undone.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowDeleteConfirm(false)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button onPress={handleDelete}>Delete Bracket</Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
 
       {/* Divider to visually separate from the section below */}
-      <Divider />
+      <Separator />
     </div>
   );
 }

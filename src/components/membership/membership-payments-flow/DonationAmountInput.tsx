@@ -66,7 +66,7 @@ export function DonationAmountInput({
         onBlur={() => setAmountFocused(false)}
         isInvalid={isInvalid}
         errorMessage={errorMessage}
-        variant="bordered"
+        variant="outline"
         type="text"
         inputMode="decimal"
         placeholder={placeholder}

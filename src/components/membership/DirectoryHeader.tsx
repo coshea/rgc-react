@@ -58,7 +58,7 @@ export function DirectoryHeader({
               {onExportMembers && (
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   startContent={
                     <Icon icon="lucide:download" className="w-4 h-4" />
                   }
@@ -77,8 +77,8 @@ export function DirectoryHeader({
             <div className="flex flex-col gap-2">
               <Button
                 size="sm"
-                color="secondary"
-                variant="flat"
+                
+                variant="tertiary"
                 onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
@@ -109,8 +109,8 @@ export function DirectoryHeader({
                   {onFindDuplicates && (
                     <Button
                       size="sm"
-                      color="warning"
-                      variant="flat"
+                      
+                      variant="tertiary"
                       startContent={
                         <Icon icon="lucide:users" className="w-4 h-4" />
                       }
@@ -122,7 +122,7 @@ export function DirectoryHeader({
                   )}
                   <Button
                     size="sm"
-                    color="primary"
+                    
                     startContent={<PlusIcon className="w-4 h-4" />}
                     onPress={onAdd}
                     className="font-medium w-full"
@@ -142,8 +142,9 @@ export function DirectoryHeader({
           {/* Admin or board: email + export */}
           {isAdminOrBoard && (
             <div className="flex gap-2 items-center">
-              <Tooltip content="Email active members">
-                <div>
+              <Tooltip>
+                <Tooltip.Trigger>
+                  <div>
                   <EmailMembersButton
                     members={members}
                     activeSet={activeSet}
@@ -151,12 +152,17 @@ export function DirectoryHeader({
                     size="sm"
                   />
                 </div>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  Email active members
+                </Tooltip.Content>
               </Tooltip>
               {onExportMembers && (
-                <Tooltip content="Export member list to CSV">
-                  <Button
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     startContent={
                       <Icon icon="lucide:download" className="w-4 h-4" />
                     }
@@ -166,6 +172,10 @@ export function DirectoryHeader({
                   >
                     Export
                   </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    Export member list to CSV
+                  </Tooltip.Content>
                 </Tooltip>
               )}
             </div>
@@ -175,8 +185,8 @@ export function DirectoryHeader({
             <div className="flex items-center gap-2 pl-2 border-l border-divider">
               <Button
                 size="sm"
-                color="secondary"
-                variant="flat"
+                
+                variant="tertiary"
                 onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
@@ -214,8 +224,8 @@ export function DirectoryHeader({
                   {onFindDuplicates && (
                     <Button
                       size="sm"
-                      color="warning"
-                      variant="flat"
+                      
+                      variant="tertiary"
                       startContent={
                         <Icon icon="lucide:users" className="w-4 h-4" />
                       }
@@ -227,7 +237,7 @@ export function DirectoryHeader({
                   )}
                   <Button
                     size="sm"
-                    color="primary"
+                    
                     startContent={<PlusIcon className="w-4 h-4" />}
                     onPress={onAdd}
                     className="font-medium whitespace-nowrap"

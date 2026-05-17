@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalBody,
-  Input,
-  Button,
-  Chip,
-  Divider,
-  Spinner,
-} from "@heroui/react";
+import { Modal, Input, Button, Chip, Separator, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -140,28 +131,13 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
     trimmedQuery.length > 0 && !showPages && !showTournaments && !loading;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onOpenChange={(open) => !open && onClose()}
-      size={isMobile ? "full" : "xl"}
-      placement={isMobile ? "top" : "auto"}
-      hideCloseButton
-      classNames={{
-        base: isMobile
-          ? "m-0 rounded-none rounded-b-xl max-h-[85dvh]"
-          : "mt-[10vh]",
-        body: "p-0",
-      }}
-      motionProps={{
-        variants: {
-          enter: { y: 0, opacity: 1, transition: { duration: 0.15 } },
-          exit: { y: -8, opacity: 0, transition: { duration: 0.1 } },
-        },
-      }}
-    >
-      <ModalContent>
-        {() => (
-          <ModalBody className="flex flex-col">
+    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Container
+        size={isMobile ? "full" : "lg"}
+        placement={isMobile ? "top" : "auto"}
+      >
+        <Modal.Dialog>
+          <Modal.Body className="flex flex-col">
             {/* Search input */}
             <div className="flex items-center px-4 py-3 gap-3">
               <Icon
@@ -171,7 +147,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               <Input
                 ref={inputRef}
                 autoFocus
-                variant="flat"
+                variant="tertiary"
                 classNames={{
                   base: "flex-1",
                   inputWrapper:
@@ -192,7 +168,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               </kbd>
               <Button
                 isIconOnly
-                variant="light"
+                variant="ghost"
                 radius="full"
                 size="sm"
                 aria-label="Close search"
@@ -203,7 +179,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               </Button>
             </div>
 
-            <Divider />
+            <Separator />
 
             {/* Results */}
             <div className="overflow-y-auto pb-2 max-h-[60dvh] sm:max-h-[60vh]">
@@ -252,7 +228,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
 
               {/* Divider between sections */}
               {!loading && showPages && showTournaments && (
-                <Divider className="my-1" />
+                <Separator className="my-1" />
               )}
 
               {/* Tournaments section */}
@@ -285,7 +261,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                       </span>
                       <Chip
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color={STATUS_COLOR[t.status]}
                         className="shrink-0"
                       >
@@ -303,9 +279,9 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                 </p>
               )}
             </div>
-          </ModalBody>
-        )}
-      </ModalContent>
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
     </Modal>
   );
 }

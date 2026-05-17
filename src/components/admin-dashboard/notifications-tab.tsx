@@ -14,9 +14,10 @@ import {
 import {
   Button,
   Input,
-  Textarea,
+  TextArea,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Chip,
   RadioGroup,
   Radio,
@@ -67,7 +68,7 @@ const NOTIFICATION_TYPES = (
 
 const TYPE_COLORS: Record<
   NotificationType,
-  "default" | "primary" | "success" | "warning" | "danger" | "secondary"
+  "default" | "accent" | "success" | "warning" | "danger"
 > = Object.fromEntries(
   (
     Object.entries(NOTIFICATION_TYPE_META) as [
@@ -77,7 +78,7 @@ const TYPE_COLORS: Record<
   ).map(([k, v]) => [k, v.color]),
 ) as Record<
   NotificationType,
-  "default" | "primary" | "success" | "warning" | "danger" | "secondary"
+  "default" | "accent" | "success" | "warning" | "danger"
 >;
 
 function formatSentAt(ts: Timestamp | undefined): string {
@@ -172,7 +173,7 @@ export function NotificationsTab() {
 
   // ── Tournaments list (current year) for tournament-registrant targeting ──
   const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
-  const [loadingTournaments, setLoadingTournaments] = useState(false);
+  const [_loadingTournaments, setLoadingTournaments] = useState(false);
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
   const [tournamentScope, setTournamentScope] = useState<
     "in-tournament" | "all"
@@ -180,7 +181,7 @@ export function NotificationsTab() {
 
   // ── Members list for recipient select ────────────────────────────────────
   const [members, setMembers] = useState<User[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [_loadingMembers, setLoadingMembers] = useState(true);
 
   useEffect(() => {
     async function fetchMembers() {
@@ -406,7 +407,7 @@ export function NotificationsTab() {
             isRequired
           />
 
-          <Textarea
+          <TextArea
             label="Body"
             placeholder="Notification message"
             value={body}
@@ -420,7 +421,7 @@ export function NotificationsTab() {
           <div className="flex justify-end -mt-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={() => {
                 const tournament = tournaments.find(
                   (t) => t.id === selectedTournamentId,
@@ -437,10 +438,9 @@ export function NotificationsTab() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              label="Type"
-              selectedKeys={[type]}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0] as NotificationType;
+              value={type}
+              onChange={(key) => {
+                const val = key as NotificationType;
                 if (val) {
                   setType(val);
                   // When switching to a tournament-type, pre-fill link if a
@@ -472,22 +472,32 @@ export function NotificationsTab() {
               isInvalid={Boolean(errors.type)}
               errorMessage={errors.type}
             >
-              {NOTIFICATION_TYPES.map((t) => (
-                <SelectItem
-                  key={t.value}
-                  startContent={<Icon icon={t.icon} className="text-base" />}
-                >
-                  {t.label}
-                </SelectItem>
-              ))}
+              <Label>Type</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {NOTIFICATION_TYPES.map((t) => (
+                    <ListBox.Item
+                      key={t.value}
+                      id={t.value}
+                      textValue={t.label}
+                    >
+                      <Icon icon={t.icon} className="text-base" />
+                      {t.label}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
 
             <Select
-              label="Recipient"
-              isLoading={loadingMembers}
-              selectedKeys={[targetUid]}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0] as string;
+              value={targetUid}
+              onChange={(key) => {
+                const val = key as string;
                 if (val) {
                   setTargetUid(val);
                   const isTournamentTargeting =
@@ -502,30 +512,45 @@ export function NotificationsTab() {
                 }
               }}
             >
-              <>
-                <SelectItem key="__all__">All Members</SelectItem>
-                <SelectItem
-                  key="__tournament_registrants__"
-                  startContent={
+              <Label>Recipient</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="All Members">
+                    All Members
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item
+                    id="__tournament_registrants__"
+                    textValue="Tournament Registrants"
+                  >
                     <Icon icon="lucide:users" className="text-base" />
-                  }
-                >
-                  Tournament Registrants
-                </SelectItem>
-                <SelectItem
-                  key="__tournament_non_registrants__"
-                  startContent={
+                    Tournament Registrants
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item
+                    id="__tournament_non_registrants__"
+                    textValue="Non-Registrants"
+                  >
                     <Icon icon="lucide:user-x" className="text-base" />
-                  }
-                >
-                  Non-Registrants
-                </SelectItem>
-                {members.map((m) => (
-                  <SelectItem key={m.id}>
-                    {m.displayName ?? m.email ?? m.id}
-                  </SelectItem>
-                ))}
-              </>
+                    Non-Registrants
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  {members.map((m) => (
+                    <ListBox.Item
+                      key={m.id}
+                      id={m.id}
+                      textValue={m.displayName ?? m.email ?? m.id}
+                    >
+                      {m.displayName ?? m.email ?? m.id}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
 
@@ -534,14 +559,10 @@ export function NotificationsTab() {
             targetUid === "__tournament_non_registrants__") && (
             <>
               <Select
-                label="Tournament"
                 placeholder="Select a tournament"
-                isLoading={loadingTournaments}
-                selectedKeys={
-                  selectedTournamentId ? [selectedTournamentId] : []
-                }
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
+                value={selectedTournamentId || undefined}
+                onChange={(key) => {
+                  const val = key as string;
                   if (val) {
                     setSelectedTournamentId(val);
                     setLink(`/tournaments/${val}`);
@@ -561,9 +582,21 @@ export function NotificationsTab() {
                 isInvalid={Boolean(errors.tournament)}
                 errorMessage={errors.tournament}
               >
-                {tournaments.map((t) => (
-                  <SelectItem key={t.id}>{t.title}</SelectItem>
-                ))}
+                <Label>Tournament</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {tournaments.map((t) => (
+                      <ListBox.Item key={t.id} id={t.id} textValue={t.title}>
+                        {t.title}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
               {targetUid === "__tournament_registrants__" &&
                 selectedTournamentId && (
@@ -601,8 +634,6 @@ export function NotificationsTab() {
 
           <div className="flex justify-end">
             <Button
-              color="primary"
-              isLoading={sending}
               onPress={handleSend}
               startContent={
                 !sending && <Icon icon="lucide:send" className="text-base" />
@@ -621,9 +652,8 @@ export function NotificationsTab() {
             Recent Sent
           </h2>
           <Button
-            variant="light"
+            variant="ghost"
             size="sm"
-            isLoading={loadingRecent}
             onPress={refreshRecent}
             startContent={
               !loadingRecent && (
@@ -653,7 +683,7 @@ export function NotificationsTab() {
                   <Chip
                     size="sm"
                     color={TYPE_COLORS[n.type as NotificationType] ?? "default"}
-                    variant="flat"
+                    variant="tertiary"
                     className="shrink-0 sm:mt-0.5"
                     startContent={
                       <Icon
@@ -674,10 +704,8 @@ export function NotificationsTab() {
                     </span>
                     <Button
                       size="sm"
-                      variant="light"
-                      color="danger"
+                      variant="ghost"
                       isIconOnly
-                      isLoading={deletingId === n.id}
                       aria-label="Delete notification"
                       onPress={() => handleDeleteNotification(n.id)}
                     >
@@ -708,10 +736,8 @@ export function NotificationsTab() {
                   </p>
                   <Button
                     size="sm"
-                    variant="light"
-                    color="danger"
+                    variant="ghost"
                     isIconOnly
-                    isLoading={deletingId === n.id}
                     aria-label="Delete notification"
                     onPress={() => handleDeleteNotification(n.id)}
                   >

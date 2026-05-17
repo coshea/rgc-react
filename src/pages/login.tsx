@@ -5,12 +5,8 @@ import {
   Checkbox,
   Link,
   Form,
-  Divider,
+  Separator,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
@@ -535,10 +531,10 @@ export default function LoginPage() {
                   <Icon icon="flat-color-icons:google" width={24} />
                 )
               }
-              variant="bordered"
+              variant="outline"
               onPress={handleGoogleSignIn}
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
+             
             >
               {authLoading || isSubmitting
                 ? "Signing in..."
@@ -547,9 +543,9 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
             <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
           </div>
 
           <Form
@@ -563,7 +559,7 @@ export default function LoginPage() {
               name="email"
               placeholder="Enter your email"
               type="email"
-              variant="bordered"
+              variant="outline"
               value={email}
               onValueChange={setEmail}
             />
@@ -573,7 +569,7 @@ export default function LoginPage() {
                 endContent={
                   <Button
                     isIconOnly
-                    variant="light"
+                    variant="ghost"
                     size="sm"
                     onPress={toggleVisibility}
                     aria-label={isVisible ? "Hide password" : "Show password"}
@@ -596,7 +592,7 @@ export default function LoginPage() {
                 name="password"
                 placeholder="Enter your password"
                 type={isVisible ? "text" : "password"}
-                variant="bordered"
+                variant="outline"
                 value={password}
                 onValueChange={setPassword}
               />
@@ -639,10 +635,10 @@ export default function LoginPage() {
 
             <Button
               className="w-full"
-              color="primary"
+              
               type="submit"
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
+             
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -654,7 +650,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col items-center gap-2">
             <Button
-              variant="light"
+              variant="ghost"
               size="sm"
               className="text-default-500"
               onPress={() => {
@@ -679,14 +675,15 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <Modal isOpen={linkSent} isDismissable={false}>
-        <ModalContent>
-          {() => (
+      <Modal isOpen={linkSent}>
+        <Modal.Backdrop isDismissable={false} />
+        <Modal.Container>
+          <Modal.Dialog>
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 Check your email
-              </ModalHeader>
-              <ModalBody className="space-y-3">
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
                 <p className="text-small text-default-600">
                   We sent a sign-in link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the link
@@ -700,10 +697,10 @@ export default function LoginPage() {
                   </span>
                   .
                 </p>
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
-                  variant="light"
+                  variant="ghost"
                   onPress={() => {
                     setLinkSent(false);
                     setLinkSentEmail("");
@@ -715,30 +712,29 @@ export default function LoginPage() {
                 >
                   Close
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
       <Modal
         isOpen={isEmailConfirmationModalOpen}
-        isDismissable={!magicLinkSubmitting}
-        hideCloseButton={magicLinkSubmitting}
         onOpenChange={(open) => {
           if (!open) {
             handleEmailPromptClose();
           }
         }}
       >
-        <ModalContent>
-          {() => (
+        <Modal.Backdrop isDismissable={!magicLinkSubmitting} />
+        <Modal.Container>
+          <Modal.Dialog>
             <form onSubmit={handleEmailConfirmationSubmit}>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 {linkNeedsResend
                   ? "Sign-in link no longer valid"
                   : "Confirm your email"}
-              </ModalHeader>
-              <ModalBody className="flex flex-col gap-3">
+              </Modal.Header>
+              <Modal.Body className="flex flex-col gap-3">
                 <p className="text-small text-default-500">
                   {linkNeedsResend
                     ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
@@ -759,22 +755,22 @@ export default function LoginPage() {
                   isInvalid={Boolean(emailConfirmationError)}
                   errorMessage={emailConfirmationError || undefined}
                   isDisabled={magicLinkSubmitting}
-                  variant="bordered"
+                  variant="outline"
                 />
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
                   type="button"
-                  variant="light"
+                  variant="ghost"
                   onPress={handleEmailPromptClose}
                   isDisabled={magicLinkSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button
-                  color="primary"
+                  
                   type="submit"
-                  isLoading={magicLinkSubmitting}
+                 
                   isDisabled={magicLinkSubmitting}
                 >
                   {magicLinkSubmitting
@@ -785,10 +781,10 @@ export default function LoginPage() {
                       ? "Send new link"
                       : "Confirm"}
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </form>
-          )}
-        </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
     </>
   );

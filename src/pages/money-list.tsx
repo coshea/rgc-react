@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Select, SelectItem, Tabs, Tab } from "@heroui/react";
+import { Select, Tabs, Label, ListBox } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 // Replaced legacy leaderboard with new standings component
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
@@ -35,20 +35,25 @@ export default function MoneyListPage() {
           </p>
         </div>
         <Select
-          label="Year"
-          size="sm"
-          selectedKeys={[String(year)]}
-          onSelectionChange={(keys) => {
-            const val = Array.from(keys)[0];
-            if (val) setYear(Number(val));
-          }}
+          value={String(year)}
+          onChange={(key) => { if (key) setYear(Number(key)); }}
           className="w-32"
         >
-          {years.map((y) => (
-            <SelectItem key={y} textValue={String(y)}>
-              {y}
-            </SelectItem>
-          ))}
+          <Label>Year</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {years.map((y) => (
+                <ListBox.Item key={y} id={String(y)} textValue={String(y)}>
+                  {y}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       </div>
 
@@ -56,37 +61,58 @@ export default function MoneyListPage() {
       <div className="sm:hidden mb-4">
         <Select
           aria-label="Select leaderboard view"
-          size="sm"
-          selectedKeys={[tab]}
-          onSelectionChange={(keys) => setTab(String(Array.from(keys)[0]))}
+          value={tab}
+          onChange={(key) => { if (key) setTab(String(key)); }}
           className="max-w-xs"
-          variant="bordered"
-          label="View"
         >
-          <SelectItem key="yearly" textValue="Yearly Standings">
-            Yearly Standings
-          </SelectItem>
-          <SelectItem key="tournaments" textValue="Tournament Breakdown">
-            Tournament Breakdown
-          </SelectItem>
-          <SelectItem key="teams" textValue="Team Winners">
-            Team Winners
-          </SelectItem>
+          <Label>View</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id="yearly" textValue="Yearly Standings">
+                Yearly Standings
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="tournaments" textValue="Tournament Breakdown">
+                Tournament Breakdown
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="teams" textValue="Team Winners">
+                Team Winners
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
         </Select>
       </div>
 
       {/* Desktop tabs */}
       <div className="hidden sm:block mb-6">
         <Tabs
-          aria-label="Leaderboard views"
           selectedKey={tab}
           onSelectionChange={(k) => setTab(String(k))}
-          variant="underlined"
-          color="primary"
         >
-          <Tab key="yearly" title="Yearly Standings" />
-          <Tab key="tournaments" title="Tournament Breakdown" />
-          <Tab key="teams" title="Team Winners" />
+          <Tabs.ListContainer>
+            <Tabs.List aria-label="Leaderboard views">
+              <Tabs.Tab id="yearly">
+                Yearly Standings
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="tournaments">
+                <Tabs.Separator />
+                Tournament Breakdown
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="teams">
+                <Tabs.Separator />
+                Team Winners
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
         </Tabs>
       </div>
 

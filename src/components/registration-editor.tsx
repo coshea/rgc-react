@@ -118,19 +118,11 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
             />
           </div>
           {onGoldTeesChange && (
-            <Tooltip
-              content={
-                uid
-                  ? "Playing from the gold (senior) tees"
-                  : "Select a player to set gold tees"
-              }
-              placement="top"
-              closeDelay={0}
-            >
-              <Button
+            <Tooltip closeDelay={0}>
+              <Tooltip.Trigger>
+                <Button
                 size="sm"
-                variant={uid && goldTees?.includes(uid) ? "flat" : "light"}
-                color={uid && goldTees?.includes(uid) ? "warning" : "default"}
+                variant={uid && goldTees?.includes(uid) ? "tertiary" : "ghost"}
                 onPress={() => {
                   if (!uid) return;
                   const isGold = goldTees?.includes(uid) ?? false;
@@ -146,17 +138,24 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
                   idx === 0 ? "team leader" : `teammate ${idx + 1}`
                 }`}
                 className="shrink-0 px-2 min-w-0"
-                startContent={<Icon icon="lucide:flag" className="text-sm" />}
               >
+                <Icon icon="lucide:flag" className="text-sm" />
                 Gold
               </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content placement='top'>
+                {
+                uid
+                  ? "Playing from the gold (senior) tees"
+                  : "Select a player to set gold tees"
+              }
+              </Tooltip.Content>
             </Tooltip>
           )}
           {ids.length > 1 && (
             <Button
               size="sm"
-              variant="light"
-              color="danger"
+              variant="ghost"
               isIconOnly
               onPress={() => removeSlot(idx)}
               aria-label={
@@ -172,7 +171,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           onPress={addSlot}
           isDisabled={disabled || ids.length >= maxSize}
         >

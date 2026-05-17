@@ -1,5 +1,12 @@
 import React from "react";
-import { Button, Divider, Input, Select, SelectItem } from "@heroui/react";
+import {
+  Button,
+  Separator,
+  Input,
+  Label,
+  ListBox,
+  Select,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import UserSelect from "@/components/UserSelect";
@@ -35,8 +42,8 @@ export function SeasonAwardsManager() {
   const [selectedYear, setSelectedYear] = React.useState<number>(currentYear);
   const [seasonAwards, setSeasonAwards] = React.useState<SeasonAward[]>([]);
   const [awardsLoading, setAwardsLoading] = React.useState(false);
-  const [awardSaving, setAwardSaving] = React.useState(false);
-  const [awardDeletingId, setAwardDeletingId] = React.useState<string | null>(
+  const [_awardSaving, setAwardSaving] = React.useState(false);
+  const [_awardDeletingId, setAwardDeletingId] = React.useState<string | null>(
     null,
   );
   const [editingAwardId, setEditingAwardId] = React.useState<string | null>(
@@ -238,21 +245,34 @@ export function SeasonAwardsManager() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Select
-          label="Award type"
-          selectedKeys={[awardType]}
-          onSelectionChange={(keys) => {
-            const next = Array.from(keys)[0] as SeasonAwardType | undefined;
+          value={awardType}
+          onChange={(key) => {
+            const next = key as SeasonAwardType | undefined;
             if (!next) return;
             setAwardError(null);
             setAwardType(next);
             setAwardAmountOverride("");
           }}
         >
-          {awardTypes.map((type) => (
-            <SelectItem key={type} textValue={SEASON_AWARD_LABELS[type]}>
-              {SEASON_AWARD_LABELS[type]}
-            </SelectItem>
-          ))}
+          <Label>Award type</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {awardTypes.map((type) => (
+                <ListBox.Item
+                  key={type}
+                  id={type}
+                  textValue={SEASON_AWARD_LABELS[type]}
+                >
+                  {SEASON_AWARD_LABELS[type]}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
         <UserSelect
           users={users}
@@ -311,12 +331,12 @@ export function SeasonAwardsManager() {
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button color="primary" onPress={saveAward} isLoading={awardSaving}>
+        <Button onPress={saveAward}>
           {editingAwardId ? "Update award" : "Add award"}
         </Button>
         {editingAwardId && (
           <Button
-            variant="flat"
+            variant="tertiary"
             onPress={() => resetAwardForm(undefined, selectedYear)}
           >
             Cancel edit
@@ -324,7 +344,7 @@ export function SeasonAwardsManager() {
         )}
       </div>
 
-      <Divider />
+      <Separator />
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Awards for {selectedYear}</h3>
@@ -353,16 +373,14 @@ export function SeasonAwardsManager() {
                 <div className="flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => beginEditAward(award)}
                   >
                     Edit
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="danger"
-                    isLoading={awardDeletingId === award.id}
+                    variant="tertiary"
                     onPress={() => removeAward(award.id)}
                   >
                     Delete

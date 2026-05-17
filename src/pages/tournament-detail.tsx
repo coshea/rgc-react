@@ -15,22 +15,13 @@ import {
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
 import {
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Button,
-  Divider,
+  Separator,
   Input,
   Tooltip,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
@@ -290,7 +281,8 @@ img { display: block; max-width: 100%; }
         console.error("Failed to generate bracket for PDF:", err);
         addToast({
           title: "Export failed",
-          description: "Could not generate the bracket for printing. Try again.",
+          description:
+            "Could not generate the bracket for printing. Try again.",
           color: "danger",
         });
       } finally {
@@ -744,13 +736,14 @@ img { display: block; max-width: 100%; }
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Tooltip content="Add to calendar">
-                      <div>
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <div>
                         <Dropdown placement="bottom-end">
-                          <DropdownTrigger>
+                          <Dropdown.Trigger>
                             <Button
                               size="sm"
-                              variant="flat"
+                              variant="tertiary"
                               startContent={
                                 <Icon icon="lucide:calendar-plus" />
                               }
@@ -758,37 +751,47 @@ img { display: block; max-width: 100%; }
                             >
                               Calendar
                             </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            aria-label="Calendar options"
-                            onAction={handleCalendarAction}
-                          >
-                            <DropdownItem
-                              key="google"
-                              startContent={<Icon icon="lucide:calendar" />}
-                            >
-                              Add to Google Calendar
-                            </DropdownItem>
-                            <DropdownItem
-                              key="ics"
-                              startContent={<Icon icon="lucide:download" />}
-                            >
-                              Download calendar file (.ics)
-                            </DropdownItem>
-                          </DropdownMenu>
+                          </Dropdown.Trigger>
+                          <Dropdown.Popover>
+                            <Dropdown.Menu aria-label="Calendar options">
+                              <Dropdown.Item
+                                id="google"
+                                startContent={<Icon icon="lucide:calendar" />}
+                                onPress={() => handleCalendarAction("google")}
+                              >
+                                Add to Google Calendar
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                id="ics"
+                                startContent={<Icon icon="lucide:download" />}
+                                onPress={() => handleCalendarAction("ics")}
+                              >
+                                Download calendar file (.ics)
+                              </Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
                         </Dropdown>
                       </div>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        Add to calendar
+                      </Tooltip.Content>
                     </Tooltip>
-                    <Tooltip content="Share tournament">
-                      <Button
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         onPress={shareLink}
                         startContent={<Icon icon="lucide:share" />}
                         aria-label="Share tournament"
                       >
                         Share
                       </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        Share tournament
+                      </Tooltip.Content>
                     </Tooltip>
                   </div>
                 </div>
@@ -827,7 +830,7 @@ img { display: block; max-width: 100%; }
                         />
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           onPress={exportRegistrations}
                           startContent={<Icon icon="lucide:download" />}
                           aria-label="Export registrations (Admin only)"
@@ -837,7 +840,7 @@ img { display: block; max-width: 100%; }
                         </Button>
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           onPress={() => setEditOpen(true)}
                           startContent={<Icon icon="lucide:edit" />}
                           aria-label="Edit tournament (Admin only)"
@@ -847,8 +850,8 @@ img { display: block; max-width: 100%; }
                         </Button>
                         <Button
                           size="sm"
-                          variant="flat"
-                          color="danger"
+                          variant="tertiary"
+                          
                           onPress={() => setDeleteConfirm(true)}
                           startContent={<Icon icon="lucide:trash-2" />}
                           aria-label="Delete tournament (Admin only)"
@@ -866,49 +869,60 @@ img { display: block; max-width: 100%; }
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Tooltip content="Add to calendar">
-                    <div>
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                      <div>
                       <Dropdown placement="bottom-end">
-                        <DropdownTrigger>
+                        <Dropdown.Trigger>
                           <Button
                             size="sm"
-                            variant="flat"
+                            variant="tertiary"
                             startContent={<Icon icon="lucide:calendar-plus" />}
                             aria-label="Add tournament to calendar"
                           >
                             Calendar
                           </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          aria-label="Calendar options"
-                          onAction={handleCalendarAction}
-                        >
-                          <DropdownItem
-                            key="google"
-                            startContent={<Icon icon="lucide:calendar" />}
-                          >
-                            Add to Google Calendar
-                          </DropdownItem>
-                          <DropdownItem
-                            key="ics"
-                            startContent={<Icon icon="lucide:download" />}
-                          >
-                            Download calendar file (.ics)
-                          </DropdownItem>
-                        </DropdownMenu>
+                        </Dropdown.Trigger>
+                        <Dropdown.Popover>
+                          <Dropdown.Menu aria-label="Calendar options">
+                            <Dropdown.Item
+                              id="google"
+                              startContent={<Icon icon="lucide:calendar" />}
+                              onPress={() => handleCalendarAction("google")}
+                            >
+                              Add to Google Calendar
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              id="ics"
+                              startContent={<Icon icon="lucide:download" />}
+                              onPress={() => handleCalendarAction("ics")}
+                            >
+                              Download calendar file (.ics)
+                            </Dropdown.Item>
+                          </Dropdown.Menu>
+                        </Dropdown.Popover>
                       </Dropdown>
                     </div>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      Add to calendar
+                    </Tooltip.Content>
                   </Tooltip>
-                  <Tooltip content="Share tournament">
-                    <Button
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                      <Button
                       size="sm"
-                      variant="flat"
+                      variant="tertiary"
                       onPress={shareLink}
                       startContent={<Icon icon="lucide:share" />}
                       aria-label="Share tournament"
                     >
                       Share
                     </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      Share tournament
+                    </Tooltip.Content>
                   </Tooltip>
 
                   {isAdmin && (
@@ -920,9 +934,9 @@ img { display: block; max-width: 100%; }
                         className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <Chip
-                          color="secondary"
+                          
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           className="cursor-pointer select-none"
                           endContent={
                             <Icon
@@ -947,8 +961,9 @@ img { display: block; max-width: 100%; }
                           ref={desktopAdminButtonsRef}
                           className="flex items-center gap-2"
                         >
-                          <Tooltip content="Email registrants (Admin only)">
-                            <div>
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <div>
                               <EmailRegistrantsButton
                                 registrations={registrations}
                                 usersMap={usersMap}
@@ -962,11 +977,16 @@ img { display: block; max-width: 100%; }
                                 size="sm"
                               />
                             </div>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Email registrants (Admin only)
+                            </Tooltip.Content>
                           </Tooltip>
-                          <Tooltip content="Export registrations (Admin only)">
-                            <Button
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <Button
                               size="sm"
-                              variant="flat"
+                              variant="tertiary"
                               onPress={exportRegistrations}
                               startContent={<Icon icon="lucide:download" />}
                               aria-label="Export registrations (Admin only)"
@@ -974,11 +994,16 @@ img { display: block; max-width: 100%; }
                             >
                               Export
                             </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Export registrations (Admin only)
+                            </Tooltip.Content>
                           </Tooltip>
-                          <Tooltip content="Edit tournament (Admin only)">
-                            <Button
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <Button
                               size="sm"
-                              variant="flat"
+                              variant="tertiary"
                               onPress={() => setEditOpen(true)}
                               startContent={<Icon icon="lucide:edit" />}
                               aria-label="Edit tournament (Admin only)"
@@ -986,12 +1011,17 @@ img { display: block; max-width: 100%; }
                             >
                               Edit
                             </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Edit tournament (Admin only)
+                            </Tooltip.Content>
                           </Tooltip>
-                          <Tooltip content="Delete tournament (Admin only)">
-                            <Button
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <Button
                               size="sm"
-                              variant="flat"
-                              color="danger"
+                              variant="tertiary"
+                              
                               onPress={() => setDeleteConfirm(true)}
                               startContent={<Icon icon="lucide:trash-2" />}
                               aria-label="Delete tournament (Admin only)"
@@ -999,6 +1029,10 @@ img { display: block; max-width: 100%; }
                             >
                               Delete
                             </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Delete tournament (Admin only)
+                            </Tooltip.Content>
                           </Tooltip>
                         </div>
                       </div>
@@ -1037,12 +1071,12 @@ img { display: block; max-width: 100%; }
 
             <div className="grid md:grid-cols-3 gap-6 mb-12">
               {/* Left Column: Overview */}
-              <Card className="md:col-span-2" shadow="sm">
-                <CardHeader className="pb-0">
+              <Card className="md:col-span-2">
+                <Card.Header className="pb-0">
                   <h2 className="text-lg font-semibold">Overview</h2>
-                </CardHeader>
-                <Divider />
-                <CardBody className="pt-4">
+                </Card.Header>
+                <Separator />
+                <Card.Content className="pt-4">
                   {tournament.detailsMarkdown ? (
                     <div className="prose dark:prose-invert max-w-none text-sm">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -1054,17 +1088,17 @@ img { display: block; max-width: 100%; }
                       {tournament.description}
                     </p>
                   )}
-                </CardBody>
+                </Card.Content>
               </Card>
 
               {/* Right Column: Key Facts */}
               <div className="space-y-6">
-                <Card shadow="sm">
-                  <CardHeader className="pb-0">
+                <Card>
+                  <Card.Header className="pb-0">
                     <h2 className="text-lg font-semibold">Key Facts</h2>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="pt-4 space-y-5 text-sm">
+                  </Card.Header>
+                  <Separator />
+                  <Card.Content className="pt-4 space-y-5 text-sm">
                     <div className="space-y-3">
                       <div className="flex items-start gap-2">
                         <Icon
@@ -1194,13 +1228,13 @@ img { display: block; max-width: 100%; }
                         </div>
                       )}
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
 
                 {/* Weather Card - Only show if weather data exists */}
                 {tournament.weather && (
-                  <Card shadow="sm">
-                    <CardHeader className="pb-0">
+                  <Card>
+                    <Card.Header className="pb-0">
                       <div className="flex items-center gap-2">
                         <Icon
                           icon={getWeatherIcon(tournament.weather.condition)}
@@ -1210,9 +1244,9 @@ img { display: block; max-width: 100%; }
                           Tournament Day Weather
                         </h2>
                       </div>
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="pt-4">
+                    </Card.Header>
+                    <Separator />
+                    <Card.Content className="pt-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="space-y-1">
                           <p className="text-foreground-500 text-xs uppercase tracking-wide">
@@ -1247,16 +1281,16 @@ img { display: block; max-width: 100%; }
                           </p>
                         </div>
                       </div>
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 )}
 
-                <Card shadow="sm">
-                  <CardHeader className="pb-0">
+                <Card>
+                  <Card.Header className="pb-0">
                     <h2 className="text-lg font-semibold">Registration</h2>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="pt-4 space-y-4">
+                  </Card.Header>
+                  <Separator />
+                  <Card.Content className="pt-4 space-y-4">
                     {registrationOpen ? (
                       <>
                         {isUserRegistered ? (
@@ -1269,8 +1303,8 @@ img { display: block; max-width: 100%; }
                               You're registered for this tournament.
                             </p>
                             <Button
-                              color="success"
-                              variant="flat"
+                              
+                              variant="tertiary"
                               fullWidth
                               isDisabled
                               startContent={
@@ -1283,7 +1317,7 @@ img { display: block; max-width: 100%; }
                             <Button
                               fullWidth
                               size="sm"
-                              variant="bordered"
+                              variant="outline"
                               onPress={handleRegister}
                               aria-label="View or edit your registration"
                             >
@@ -1297,7 +1331,7 @@ img { display: block; max-width: 100%; }
                               spots fill up.
                             </p>
                             <Button
-                              color="primary"
+                              
                               fullWidth
                               onPress={handleRegister}
                             >
@@ -1309,7 +1343,7 @@ img { display: block; max-width: 100%; }
                             <p className="text-sm text-foreground-600">
                               Sign in to register your team.
                             </p>
-                            <Button color="primary" fullWidth isDisabled>
+                            <Button  fullWidth isDisabled>
                               Register
                             </Button>
                             <p className="text-xs text-foreground-500">
@@ -1324,7 +1358,7 @@ img { display: block; max-width: 100%; }
                           "Registration is currently closed."}
                       </p>
                     )}
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               </div>
             </div>
@@ -1334,8 +1368,8 @@ img { display: block; max-width: 100%; }
               defendingChampions.competitors.length > 0) ||
             (isAdmin && tournament.previousTournamentId) ? (
               <div className="mb-12">
-                <Card className="md:col-span-2" shadow="sm">
-                  <CardHeader className="pb-0">
+                <Card className="md:col-span-2">
+                  <Card.Header className="pb-0">
                     <div className="flex items-center gap-2">
                       <Icon
                         icon="lucide:trophy"
@@ -1345,9 +1379,9 @@ img { display: block; max-width: 100%; }
                         Defending Champion
                       </h2>
                     </div>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="pt-4">
+                  </Card.Header>
+                  <Separator />
+                  <Card.Content className="pt-4">
                     {defendingChampions &&
                     defendingChampions.competitors.length > 0 ? (
                       <>
@@ -1372,7 +1406,7 @@ img { display: block; max-width: 100%; }
                         Previous tournament linked but no winners recorded yet.
                       </p>
                     )}
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               </div>
             ) : null}
@@ -1382,16 +1416,16 @@ img { display: block; max-width: 100%; }
                 (g) => (g.winners ?? []).length > 0,
               ) && (
                 <div className="mb-12">
-                  <Card shadow="sm">
-                    <CardHeader className="pb-0">
+                  <Card>
+                    <Card.Header className="pb-0">
                       <h2 className="text-lg font-semibold">
                         Tournament Winners
                       </h2>
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="pt-4">
+                    </Card.Header>
+                    <Separator />
+                    <Card.Content className="pt-4">
                       <GroupedWinners groups={tournament.winnerGroups || []} />
-                    </CardBody>
+                    </Card.Content>
                   </Card>
                 </div>
               )}
@@ -1399,14 +1433,14 @@ img { display: block; max-width: 100%; }
             {/* Tournament Bracket — visible to admins always; to members only when published */}
             {bracket && (isAdmin || tournament.bracketPublished) && (
               <div className="mb-12">
-                <Card shadow="sm">
-                  <CardHeader className="pb-0 flex items-center justify-between">
+                <Card>
+                  <Card.Header className="pb-0 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <h2 className="text-lg font-semibold">
                         Tournament Bracket
                       </h2>
                       {isAdmin && !tournament.bracketPublished && (
-                        <Chip size="sm" color="warning" variant="flat">
+                        <Chip size="sm"  variant="tertiary">
                           Unpublished
                         </Chip>
                       )}
@@ -1414,29 +1448,38 @@ img { display: block; max-width: 100%; }
                     <div className="flex items-center gap-1">
                       {isAdmin && (
                         <>
-                          <Tooltip content="Print / Save as PDF">
-                            <Button
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <Button
                               isIconOnly
-                              variant="light"
+                              variant="ghost"
                               size="sm"
                               aria-label="Print bracket"
-                              isLoading={printingBracket}
+                             
                               onPress={() =>
                                 handlePrintBracket(cardBracketRef.current)
                               }
                             >
                               {!printingBracket && (
-                                <Icon icon="lucide:printer" className="w-4 h-4" />
+                                <Icon
+                                  icon="lucide:printer"
+                                  className="w-4 h-4"
+                                />
                               )}
                             </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Print / Save as PDF
+                            </Tooltip.Content>
                           </Tooltip>
-                          <Tooltip content="Download bracket as PNG">
-                            <Button
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <Button
                               isIconOnly
-                              variant="light"
+                              variant="ghost"
                               size="sm"
                               aria-label="Download bracket as PNG"
-                              isLoading={downloadingPng}
+                             
                               onPress={() =>
                                 handleDownloadBracketPng(cardBracketRef.current)
                               }
@@ -1448,24 +1491,33 @@ img { display: block; max-width: 100%; }
                                 />
                               )}
                             </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              Download bracket as PNG
+                            </Tooltip.Content>
                           </Tooltip>
                         </>
                       )}
-                      <Tooltip content="Expand bracket">
-                        <Button
+                      <Tooltip>
+                        <Tooltip.Trigger>
+                          <Button
                           isIconOnly
-                          variant="light"
+                          variant="ghost"
                           size="sm"
                           aria-label="Expand bracket"
                           onPress={() => setBracketExpanded(true)}
                         >
                           <Icon icon="lucide:expand" className="w-4 h-4" />
                         </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          Expand bracket
+                        </Tooltip.Content>
                       </Tooltip>
                     </div>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="pt-4">
+                  </Card.Header>
+                  <Separator />
+                  <Card.Content className="pt-4">
                     <div ref={cardBracketRef}>
                       <BracketView
                         bracket={bracket}
@@ -1473,7 +1525,7 @@ img { display: block; max-width: 100%; }
                         userPhotoMap={bracketUserPhotoMap}
                       />
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               </div>
             )}
@@ -1489,8 +1541,8 @@ img { display: block; max-width: 100%; }
 
             <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
               {/* Full Width: Registered Teams (Improved readability) */}
-              <Card className="md:col-span-3" shadow="sm">
-                <CardHeader className="pb-0 flex flex-wrap items-center justify-between gap-2 overflow-visible relative">
+              <Card className="md:col-span-3">
+                <Card.Header className="pb-0 flex flex-wrap items-center justify-between gap-2 overflow-visible relative">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <Icon
                       icon="lucide:users"
@@ -1531,7 +1583,7 @@ img { display: block; max-width: 100%; }
                     {!regsLoading && registrations.length > 0 && (
                       <Button
                         size="sm"
-                        variant={showNeedingPlayers ? "solid" : "flat"}
+                        variant={showNeedingPlayers ? "primary" : "tertiary"}
                         color={showNeedingPlayers ? "warning" : "default"}
                         onPress={toggleShowNeedingPlayers}
                         aria-pressed={showNeedingPlayers}
@@ -1546,7 +1598,7 @@ img { display: block; max-width: 100%; }
                     {!regsLoading && hasPartnerTeamSlots && (
                       <Button
                         size="sm"
-                        variant={showPartnerTeams ? "solid" : "flat"}
+                        variant={showPartnerTeams ? "primary" : "tertiary"}
                         color={showPartnerTeams ? "warning" : "default"}
                         onPress={toggleShowPartnerTeams}
                         aria-pressed={showPartnerTeams}
@@ -1567,28 +1619,28 @@ img { display: block; max-width: 100%; }
                           className="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"
                           aria-hidden="true"
                         />
-                        <Tooltip
-                          content="Updates in real time as teams register."
-                          placement="bottom"
-                          closeDelay={0}
-                          offset={6}
-                        >
-                          <Button
+                        <Tooltip closeDelay={0}>
+                          <Tooltip.Trigger>
+                            <Button
                             size="sm"
-                            variant="light"
+                            variant="ghost"
                             onPress={() => {}}
                             aria-label="Real-time updates info"
                             className="min-w-0 h-auto px-0 py-0 text-[11px] text-foreground-400 underline decoration-dotted underline-offset-2"
                           >
                             Live
                           </Button>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content placement='bottom' offset={6}>
+                            Updates in real time as teams register.
+                          </Tooltip.Content>
                         </Tooltip>
                       </span>
                     )}
                   </div>
-                </CardHeader>
-                <Divider />
-                <CardBody className="pt-4">
+                </Card.Header>
+                <Separator />
+                <Card.Content className="pt-4">
                   {!userId ? (
                     <div className="text-sm text-foreground-500 flex items-start gap-2">
                       <Icon
@@ -1759,7 +1811,7 @@ img { display: block; max-width: 100%; }
                       </div>
                     </>
                   )}
-                </CardBody>
+                </Card.Content>
               </Card>
             </div>
           </>
@@ -1777,13 +1829,14 @@ img { display: block; max-width: 100%; }
               <div className="flex items-center gap-1">
                 {isAdmin && (
                   <>
-                    <Tooltip content="Print / Save as PDF">
-                      <Button
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
                         isIconOnly
-                        variant="light"
+                        variant="ghost"
                         size="sm"
                         aria-label="Print bracket"
-                        isLoading={printingBracket}
+                       
                         onPress={() =>
                           handlePrintBracket(fullscreenBracketRef.current)
                         }
@@ -1792,14 +1845,19 @@ img { display: block; max-width: 100%; }
                           <Icon icon="lucide:printer" className="w-4 h-4" />
                         )}
                       </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        Print / Save as PDF
+                      </Tooltip.Content>
                     </Tooltip>
-                    <Tooltip content="Download bracket as PNG">
-                      <Button
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
                         isIconOnly
-                        variant="light"
+                        variant="ghost"
                         size="sm"
                         aria-label="Download bracket as PNG"
-                        isLoading={downloadingPng}
+                       
                         onPress={() =>
                           handleDownloadBracketPng(fullscreenBracketRef.current)
                         }
@@ -1808,19 +1866,28 @@ img { display: block; max-width: 100%; }
                           <Icon icon="lucide:image-down" className="w-4 h-4" />
                         )}
                       </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        Download bracket as PNG
+                      </Tooltip.Content>
                     </Tooltip>
                   </>
                 )}
-                <Tooltip content="Close fullscreen">
-                  <Button
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
                     isIconOnly
-                    variant="light"
+                    variant="ghost"
                     size="sm"
                     aria-label="Close fullscreen bracket"
                     onPress={() => setBracketExpanded(false)}
                   >
                     <Icon icon="lucide:shrink" className="w-4 h-4" />
                   </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    Close fullscreen
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             </div>
@@ -1892,16 +1959,16 @@ img { display: block; max-width: 100%; }
               </p>
               <div className="flex justify-end gap-2">
                 <Button
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => !deleting && setDeleteConfirm(false)}
                   isDisabled={deleting}
                 >
                   Cancel
                 </Button>
                 <Button
-                  color="danger"
+                  
                   onPress={handleDelete}
-                  isLoading={deleting}
+                 
                 >
                   Delete
                 </Button>
@@ -1917,17 +1984,16 @@ img { display: block; max-width: 100%; }
           setOpenTeamModal(open);
           if (!open) setOpenTeamModalData(null);
         }}
-        size="md"
       >
-        <ModalContent>
-          {(onClose) => (
+        <Modal.Container size="md">
+          <Modal.Dialog>
             <>
-              <ModalHeader>
+              <Modal.Header>
                 {openTeamModalData?.lookingForPartnerTeam
                   ? "Seeking a partner team"
                   : "Open spot"}
-              </ModalHeader>
-              <ModalBody>
+              </Modal.Header>
+              <Modal.Body>
                 {openTeamModalData ? (
                   <div className="space-y-3">
                     <div className="text-sm text-foreground-600">
@@ -1974,8 +2040,8 @@ img { display: block; max-width: 100%; }
                                   (tournament?.players ?? 1) > 1 ? (
                                     <Chip
                                       size="sm"
-                                      variant="flat"
-                                      color="primary"
+                                      variant="tertiary"
+                                      
                                       className="h-5 px-2 text-[10px]"
                                     >
                                       Leader
@@ -1991,9 +2057,9 @@ img { display: block; max-width: 100%; }
                             </div>
                             <Button
                               size="sm"
-                              variant="flat"
+                              variant="tertiary"
                               onPress={() => {
-                                onClose();
+                                setOpenTeamModal(false);
                                 navigate(`/profile/${m.id}`);
                               }}
                               aria-label={`View profile for ${name}`}
@@ -2013,8 +2079,8 @@ img { display: block; max-width: 100%; }
                 ) : (
                   <p className="text-sm text-foreground-500">Loading...</p>
                 )}
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 {openTeamModalData &&
                   (() => {
                     const emails = openTeamModalData.team
@@ -2024,8 +2090,8 @@ img { display: block; max-width: 100%; }
                       <Button
                         as="a"
                         href={`mailto:${emails.join(",")}`}
-                        variant="flat"
-                        color="primary"
+                        variant="tertiary"
+                        
                         startContent={
                           <Icon icon="lucide:mail" className="w-4 h-4" />
                         }
@@ -2034,13 +2100,17 @@ img { display: block; max-width: 100%; }
                       </Button>
                     ) : null;
                   })()}
-                <Button variant="light" color="default" onPress={onClose}>
+                <Button
+                  variant="ghost"
+                  
+                  onPress={() => setOpenTeamModal(false)}
+                >
                   Close
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
 
       {/* Bracket team info modal */}
@@ -2052,101 +2122,106 @@ img { display: block; max-width: 100%; }
             setBracketMemberUsers(new Map());
           }
         }}
-        size="md"
       >
-        <ModalContent>
-          {(onClose) => {
-            const team = bracketTeamModal;
-            if (!team) return null;
+        <Modal.Container size="md">
+          <Modal.Dialog>
+            {(() => {
+              const team = bracketTeamModal;
+              if (!team) return null;
 
-            const memberRows = team.memberIds.map((uid, i) => {
-              // Prefer the directly-fetched user (not subject to orderBy exclusion)
-              const memberUser =
-                bracketMemberUsers.get(uid) ?? usersMap.get(uid);
-              const name = (
-                team.memberNames?.[i] ||
-                memberUser?.displayName ||
-                memberUser?.email ||
-                uid
-              )
-                .toString()
-                .trim();
-              return { uid, memberUser, name };
-            });
+              const memberRows = team.memberIds.map((uid, i) => {
+                // Prefer the directly-fetched user (not subject to orderBy exclusion)
+                const memberUser =
+                  bracketMemberUsers.get(uid) ?? usersMap.get(uid);
+                const name = (
+                  team.memberNames?.[i] ||
+                  memberUser?.displayName ||
+                  memberUser?.email ||
+                  uid
+                )
+                  .toString()
+                  .trim();
+                return { uid, memberUser, name };
+              });
 
-            const emails = memberRows
-              .map((r) => r.memberUser?.email)
-              .filter((e): e is string => !!e);
+              const emails = memberRows
+                .map((r) => r.memberUser?.email)
+                .filter((e): e is string => !!e);
 
-            return (
-              <>
-                <ModalHeader className="flex flex-col gap-0.5">
-                  <span>{team.name}</span>
-                  <span className="text-sm font-normal text-foreground-500">
-                    Team contact info
-                  </span>
-                </ModalHeader>
-                <ModalBody>
-                  <div className="space-y-2">
-                    {memberRows.map(({ uid, memberUser, name }) => (
-                      <div
-                        key={uid}
-                        className="flex items-center justify-between gap-3 rounded-md border border-default-200 bg-content2/60 p-2"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <UserAvatar
-                            size="sm"
-                            user={memberUser}
-                            name={memberUser ? undefined : name}
-                            alt={name}
-                          />
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium truncate">
-                              {name}
-                            </div>
-                            {memberUser?.email ? (
-                              <div className="text-[11px] text-foreground-500 truncate">
-                                {memberUser.email}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() => {
-                            onClose();
-                            navigate(`/profile/${uid}`);
-                          }}
-                          aria-label={`View profile for ${name}`}
+              return (
+                <>
+                  <Modal.Header className="flex flex-col gap-0.5">
+                    <span>{team.name}</span>
+                    <span className="text-sm font-normal text-foreground-500">
+                      Team contact info
+                    </span>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <div className="space-y-2">
+                      {memberRows.map(({ uid, memberUser, name }) => (
+                        <div
+                          key={uid}
+                          className="flex items-center justify-between gap-3 rounded-md border border-default-200 bg-content2/60 p-2"
                         >
-                          View profile
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </ModalBody>
-                <ModalFooter>
-                  {emails.length > 0 && (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <UserAvatar
+                              size="sm"
+                              user={memberUser}
+                              name={memberUser ? undefined : name}
+                              alt={name}
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {name}
+                              </div>
+                              {memberUser?.email ? (
+                                <div className="text-[11px] text-foreground-500 truncate">
+                                  {memberUser.email}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="tertiary"
+                            onPress={() => {
+                              setBracketTeamModal(null);
+                              navigate(`/profile/${uid}`);
+                            }}
+                            aria-label={`View profile for ${name}`}
+                          >
+                            View profile
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Modal.Body>
+                  <Modal.Footer>
+                    {emails.length > 0 && (
+                      <Button
+                        variant="tertiary"
+                        
+                        startContent={
+                          <Icon icon="lucide:copy" className="w-4 h-4" />
+                        }
+                        onPress={() => copyOrMailtoEmails(emails)}
+                      >
+                        Copy emails
+                      </Button>
+                    )}
                     <Button
-                      variant="flat"
-                      color="primary"
-                      startContent={
-                        <Icon icon="lucide:copy" className="w-4 h-4" />
-                      }
-                      onPress={() => copyOrMailtoEmails(emails)}
+                      variant="ghost"
+                      
+                      onPress={() => setBracketTeamModal(null)}
                     >
-                      Copy emails
+                      Close
                     </Button>
-                  )}
-                  <Button variant="light" color="default" onPress={onClose}>
-                    Close
-                  </Button>
-                </ModalFooter>
-              </>
-            );
-          }}
-        </ModalContent>
+                  </Modal.Footer>
+                </>
+              );
+            })()}
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal>
     </>
   );

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, Button, Chip, Skeleton } from "@heroui/react";
+import { Card,  Button, Chip, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { BlogPost } from "@/types/blog";
 import { onPublishedBlogPosts, mapBlogPostDoc } from "@/api/blog";
@@ -63,7 +63,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Array.from({ length: limit }).map((_, idx) => (
             <Card key={idx} className="w-full h-full">
-              <CardBody className="p-0">
+              <Card.Content className="p-0">
                 <div className="h-32 w-full">
                   <Skeleton className="h-full w-full rounded-t-lg" />
                 </div>
@@ -79,7 +79,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                     <Skeleton className="h-4 w-2/3 rounded-lg" />
                   </div>
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
           ))}
         </div>
@@ -103,7 +103,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
         {showViewAll && (
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => navigate("/announcements")}
             endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
             className="self-start sm:self-auto"
@@ -117,11 +117,11 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
         {posts.map((post) => (
           <Card
             key={post.id}
-            isPressable
+           
             onPress={() => navigate(`/announcements/${post.slug}`)}
             className="w-full h-full"
           >
-            <CardBody className="p-0">
+            <Card.Content className="p-0">
               <div className="flex flex-col h-full">
                 {post.featuredImage && (
                   <div className="h-32 w-full shrink-0 overflow-hidden">
@@ -139,8 +139,8 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                     {post.isPinned && (
                       <Chip
                         size="sm"
-                        color="warning"
-                        variant="flat"
+                        
+                        variant="tertiary"
                         startContent={
                           <Icon icon="lucide:pin" className="w-3 h-3" />
                         }
@@ -148,7 +148,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                         Pinned
                       </Chip>
                     )}
-                    <Chip size="sm" variant="flat">
+                    <Chip size="sm" variant="tertiary">
                       {post.category}
                     </Chip>
                   </div>
@@ -175,7 +175,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                   </div>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>

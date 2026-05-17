@@ -184,7 +184,7 @@ export default function PastChampions({
           <p className="text-danger">
             Error loading championships: {error?.message || "Unknown error"}
           </p>
-          <Button color="primary" onPress={() => refetch()} className="mt-4">
+          <Button onPress={() => refetch()} className="mt-4">
             Try Again
           </Button>
         </div>
@@ -203,7 +203,7 @@ export default function PastChampions({
                 as={Link}
                 href="/past-champions"
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 endContent={
                   <Icon icon="lucide:arrow-right" className="w-3 h-3" />
                 }
@@ -214,7 +214,6 @@ export default function PastChampions({
             )}
             {isAdmin && showAllYears && (
               <Button
-                color="primary"
                 onPress={handleAddNew}
                 startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
                 className="self-start sm:self-auto"
@@ -259,11 +258,9 @@ export default function PastChampions({
             history
           </p>
           <Button
-            color="primary"
-            variant="bordered"
+            variant="outline"
             size="lg"
             onPress={handleLoadMore}
-            isLoading={isFetchingNextPage}
             startContent={
               !isFetchingNextPage && (
                 <Icon icon="lucide:chevron-down" className="w-5 h-5" />

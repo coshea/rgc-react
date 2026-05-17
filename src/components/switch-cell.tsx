@@ -7,7 +7,7 @@ export type SwitchCellProps = SwitchProps & {
   description: string;
 };
 
-const SwitchCell = React.forwardRef<HTMLInputElement, SwitchCellProps>(
+const SwitchCell = React.forwardRef<HTMLLabelElement, SwitchCellProps>(
   ({ label, description, className, ...props }, ref) => (
     <div
       className={cn(

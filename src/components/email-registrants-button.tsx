@@ -1,10 +1,4 @@
-import {
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { Button, Dropdown } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import { copyOrMailtoEmails } from "@/utils/email";
@@ -72,10 +66,10 @@ export function EmailRegistrantsButton({
 
   return (
     <Dropdown placement="bottom-end">
-      <DropdownTrigger>
+      <Dropdown.Trigger>
         <Button
-          color="secondary"
-          variant="flat"
+          
+          variant="tertiary"
           size={size}
           startContent={<Icon icon="lucide:mail" className="w-4 h-4" />}
           endContent={<Icon icon="lucide:chevron-down" className="w-4 h-4" />}
@@ -83,28 +77,30 @@ export function EmailRegistrantsButton({
         >
           Email Registrants
         </Button>
-      </DropdownTrigger>
-      <DropdownMenu
-        aria-label="Email registrant group"
-        onAction={(key) => openMailto(key as TournamentEmailScope)}
-      >
-        <DropdownItem
-          key="in-tournament"
-          textValue={`In tournament (${inCount})`}
-        >
-          In tournament ({inCount})
-        </DropdownItem>
-        <DropdownItem
-          key="all"
-          textValue={
-            hasWaitlist
-              ? `All incl. waitlist (${allCount})`
-              : `All (${allCount})`
-          }
-        >
-          All{hasWaitlist ? ` incl. waitlist (${allCount})` : ` (${allCount})`}
-        </DropdownItem>
-      </DropdownMenu>
+      </Dropdown.Trigger>
+      <Dropdown.Popover>
+        <Dropdown.Menu aria-label="Email registrant group">
+          <Dropdown.Item
+            id="in-tournament"
+            textValue={`In tournament (${inCount})`}
+            onPress={() => openMailto("in-tournament")}
+          >
+            In tournament ({inCount})
+          </Dropdown.Item>
+          <Dropdown.Item
+            id="all"
+            textValue={
+              hasWaitlist
+                ? `All incl. waitlist (${allCount})`
+                : `All (${allCount})`
+            }
+            onPress={() => openMailto("all")}
+          >
+            All
+            {hasWaitlist ? ` incl. waitlist (${allCount})` : ` (${allCount})`}
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
     </Dropdown>
   );
 }

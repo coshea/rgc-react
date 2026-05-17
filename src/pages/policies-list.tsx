@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { PolicyType, POLICY_LABELS } from "@/types/policy";
 import BackButton from "@/components/back-button";
@@ -41,11 +41,10 @@ export const PoliciesListPage: React.FC = () => {
         {policies.map((policy) => (
           <Card
             key={policy.type}
-            isPressable
             onPress={() => navigate(`/policies/${policy.type}`)}
             className="hover:scale-[1.02] transition-transform"
           >
-            <CardBody className="p-6">
+            <Card.Content className="p-6">
               <div className="flex items-start gap-4">
                 <div className="shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Icon icon={policy.icon} className="w-6 h-6 text-primary" />
@@ -63,7 +62,7 @@ export const PoliciesListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>

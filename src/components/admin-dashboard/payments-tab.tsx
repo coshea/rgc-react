@@ -5,12 +5,10 @@ import {
   Button,
   ButtonGroup,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Input,
+  ListBox,
   Select,
-  SelectItem,
   Spinner,
   cn,
 } from "@heroui/react";
@@ -67,12 +65,12 @@ function methodLabel(method?: string | null) {
 
 function typeColor(
   type?: MembershipType | string | null,
-): "success" | "primary" | "default" {
+): "success" | "accent" | "default" {
   switch (type) {
     case MEMBERSHIP_TYPES.FULL:
       return "success";
     case MEMBERSHIP_TYPES.HANDICAP:
-      return "primary";
+      return "accent";
     default:
       return "default";
   }
@@ -118,7 +116,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [confirmingGroupId, setConfirmingGroupId] = useState<string | null>(
     null,
   );
-  const [reconciling, setReconciling] = useState(false);
+  const [_reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
 
@@ -745,7 +743,6 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <Card
                 key={index}
                 className="dark:border-default-100 relative border border-transparent"
-                shadow="sm"
               >
                 <section className="flex flex-col flex-nowrap">
                   <div className="flex flex-col justify-between gap-y-2 px-4 pt-4">
@@ -860,70 +857,62 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              variant="flat"
-              size="sm"
-              startContent={<Icon icon="lucide:download" className="w-4 h-4" />}
-              onPress={exportPaymentsCsv}
-            >
+            <Button variant="tertiary" size="sm" onPress={exportPaymentsCsv}>
+              <Icon icon="lucide:download" className="w-4 h-4" />
               Export CSV
             </Button>
             <Input
               placeholder="Search by name or email"
               value={search}
-              onValueChange={setSearch}
+              onChange={(e) => setSearch(e.target.value)}
               className="sm:max-w-xs"
-              startContent={<Icon icon="lucide:search" className="w-4 h-4" />}
             />
             <Input
-              label="Year"
               type="number"
               value={String(year)}
-              onValueChange={(v) => {
-                const next = Number(v);
+              onChange={(e) => {
+                const next = Number(e.target.value);
                 if (!Number.isFinite(next)) return;
                 setYear(next);
               }}
               className="w-32"
-              min={2000}
-              max={2100}
             />
           </div>
 
-          <ButtonGroup variant="bordered">
+          <ButtonGroup variant="outline">
             <Button
               onPress={() => setFilter("all")}
-              color={filter === "all" ? "primary" : "default"}
+              variant={filter === "all" ? "primary" : "outline"}
             >
               All
             </Button>
             <Button
               onPress={() => setFilter("yearly")}
-              color={filter === "yearly" ? "primary" : "default"}
+              variant={filter === "yearly" ? "primary" : "outline"}
             >
               Full
             </Button>
             <Button
               onPress={() => setFilter("handicap")}
-              color={filter === "handicap" ? "primary" : "default"}
+              variant={filter === "handicap" ? "primary" : "outline"}
             >
               Handicap
             </Button>
             <Button
               onPress={() => setFilter("donation")}
-              color={filter === "donation" ? "primary" : "default"}
+              variant={filter === "donation" ? "primary" : "outline"}
             >
               Donation
             </Button>
           </ButtonGroup>
         </div>
 
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
+        <Card className="mt-8 overflow-hidden">
+          <Card.Header className="flex items-center justify-between">
             <div className="font-semibold">Paid Members</div>
             {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
+          </Card.Header>
+          <Card.Content className="p-0">
             {isMobileView ? (
               <div className="px-2 py-2">
                 {!isLoading && filteredRows.length === 0 ? (
@@ -931,7 +920,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     No payments found.
                   </div>
                 ) : (
-                  <Accordion selectionMode="multiple" variant="splitted">
+                  <Accordion selectionMode="multiple" variant="surface">
                     {paginatedRows.map((row) => (
                       <AccordionItem
                         key={row.id}
@@ -952,7 +941,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                           <div>
                             <Chip
                               size="sm"
-                              variant="flat"
+                              variant="tertiary"
                               color={typeColor(row.membershipType)}
                             >
                               {typeLabel(row.membershipType)}
@@ -1012,7 +1001,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="hidden px-4 py-3 sm:table-cell">
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="tertiary"
                             color={typeColor(row.membershipType)}
                           >
                             {typeLabel(row.membershipType)}
@@ -1047,7 +1036,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </table>
               </div>
             )}
-          </CardBody>
+          </Card.Content>
           {filteredRows.length > PAGE_SIZE ? (
             <div className="flex items-center justify-between border-t border-default-200 px-4 py-3">
               <span className="text-sm text-default-500">
@@ -1058,7 +1047,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   isDisabled={page === 1}
                   onPress={() => setPage((p) => p - 1)}
                 >
@@ -1069,7 +1058,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </span>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   isDisabled={page === totalPages}
                   onPress={() => setPage((p) => p + 1)}
                 >
@@ -1080,12 +1069,12 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           ) : null}
         </Card>
 
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
+        <Card className="mt-8 overflow-hidden">
+          <Card.Header className="flex items-center justify-between">
             <div className="font-semibold">Pending Check Payments</div>
             {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
+          </Card.Header>
+          <Card.Content className="p-0">
             <div className="overflow-x-hidden">
               <table className="w-full table-fixed text-left text-sm">
                 <thead className="bg-default-100">
@@ -1133,7 +1122,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="hidden px-4 py-3 sm:table-cell">
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="tertiary"
                             color={typeColor(r.membershipType)}
                           >
                             {typeLabel(r.membershipType)}
@@ -1151,9 +1140,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="px-3 py-3 sm:px-4">
                           <Button
                             size="sm"
-                            color="primary"
                             className="w-full sm:w-auto"
-                            isLoading={
+                            isDisabled={
                               confirmingGroupId === (r.groupId ?? r.id)
                             }
                             onPress={() =>
@@ -1180,19 +1168,19 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </tbody>
               </table>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {isAdmin ? (
-          <Card className="mt-8" shadow="sm">
-            <CardHeader className="flex flex-col items-start gap-2">
+          <Card className="mt-8">
+            <Card.Header className="flex flex-col items-start gap-2">
               <div className="font-semibold">Bulk Record Check Payments</div>
               <div className="text-sm text-default-500">
                 Search for members and add them to the queue, then submit all at
                 once. Members already paid this year are excluded.
               </div>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
               {/* Add member row */}
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 min-w-0">
@@ -1217,29 +1205,36 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   aria-label="Membership type"
                   placeholder="Type"
                   className="sm:w-44"
-                  selectedKeys={new Set([bulkMembershipType])}
-                  onSelectionChange={(keys) => {
-                    const val = Array.from(
-                      keys as Set<string>,
-                    )[0] as MembershipType;
+                  value={bulkMembershipType}
+                  onChange={(key) => {
+                    const val = key as MembershipType;
                     if (val) setBulkMembershipType(val);
                   }}
                 >
-                  <SelectItem
-                    key={MEMBERSHIP_TYPES.FULL}
-                    textValue="Full Membership"
-                  >
-                    Full Membership
-                  </SelectItem>
-                  <SelectItem
-                    key={MEMBERSHIP_TYPES.HANDICAP}
-                    textValue="Handicap Only"
-                  >
-                    Handicap Only
-                  </SelectItem>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item
+                        id={MEMBERSHIP_TYPES.FULL}
+                        textValue="Full Membership"
+                      >
+                        Full Membership
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item
+                        id={MEMBERSHIP_TYPES.HANDICAP}
+                        textValue="Handicap Only"
+                      >
+                        Handicap Only
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <Button
-                  color="primary"
                   isDisabled={!bulkSelectedUserId}
                   onPress={() => {
                     if (!bulkSelectedUserId) return;
@@ -1296,7 +1291,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             <td className="px-4 py-2">
                               <Chip
                                 size="sm"
-                                variant="flat"
+                                variant="tertiary"
                                 color={typeColor(item.membershipType)}
                               >
                                 {typeLabel(item.membershipType)}
@@ -1306,8 +1301,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             <td className="px-2 py-2">
                               <Button
                                 size="sm"
-                                variant="light"
-                                color="danger"
+                                variant="ghost"
                                 isIconOnly
                                 aria-label={`Remove ${name}`}
                                 onPress={() =>
@@ -1338,8 +1332,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 {bulkQueue.length > 0 ? (
                   <Button
                     size="sm"
-                    variant="light"
-                    color="danger"
+                    variant="ghost"
                     onPress={() => setBulkQueue([])}
                     isDisabled={submittingBulk}
                   >
@@ -1349,22 +1342,20 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   <span />
                 )}
                 <Button
-                  color="success"
                   isDisabled={bulkQueue.length === 0}
-                  isLoading={submittingBulk}
                   onPress={handleBulkSubmit}
                 >
                   Submit {bulkQueue.length > 0 ? bulkQueue.length : ""}{" "}
                   {bulkQueue.length === 1 ? "payment" : "payments"} by check
                 </Button>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ) : null}
 
         {isAdmin ? (
-          <Card className="mt-8" shadow="sm">
-            <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="mt-8">
+            <Card.Header className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="font-semibold">PayPal Reconciliation</div>
                 <div className="text-sm text-default-500">
@@ -1372,16 +1363,11 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   days.
                 </div>
               </div>
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleReconcilePayPal}
-                isLoading={reconciling}
-              >
+              <Button variant="tertiary" onPress={handleReconcilePayPal}>
                 Check PayPal orders
               </Button>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               {reconcileResult ? (
                 <div className="space-y-3 text-sm">
                   <div>
@@ -1423,7 +1409,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   No reconciliation run yet.
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
         ) : null}
       </div>

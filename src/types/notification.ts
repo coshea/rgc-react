@@ -13,13 +13,7 @@ export const NOTIFICATION_TYPE_META: Record<
   {
     label: string;
     icon: string;
-    color:
-      | "default"
-      | "primary"
-      | "success"
-      | "warning"
-      | "danger"
-      | "secondary";
+    color: "default" | "accent" | "success" | "warning" | "danger";
   }
 > = {
   announcement: {
@@ -27,7 +21,7 @@ export const NOTIFICATION_TYPE_META: Record<
     icon: "lucide:megaphone",
     color: "default",
   },
-  tournament: { label: "Tournament", icon: "lucide:trophy", color: "primary" },
+  tournament: { label: "Tournament", icon: "lucide:trophy", color: "accent" },
   new_features: {
     label: "New Features",
     icon: "lucide:sparkles",
