@@ -6,6 +6,18 @@ import { cleanup } from "@testing-library/react";
 // Polyfill CSS.escape used by @react-aria in jsdom
 vi.stubGlobal("CSS", { escape: (s: string) => s });
 
+// Polyfill window.matchMedia (not implemented in jsdom)
+vi.stubGlobal("matchMedia", (query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
 // Polyfill ResizeObserver which jsdom does not implement (used by @heroui/tabs and others)
 vi.stubGlobal(
   "ResizeObserver",

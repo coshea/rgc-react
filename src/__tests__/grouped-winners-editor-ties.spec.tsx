@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { useState } from "react";
 import { render, screen, fireEvent, within, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import type { WinnerGroup } from "@/types/winner";
 import { pickOptionForCombobox } from "./helpers/autocomplete";
-import React from "react";
 
 // Minimal Auth + Users mocks
 vi.mock("@/providers/AuthProvider", () => ({
@@ -41,7 +41,7 @@ afterAll(() => {
 });
 
 function Harness({ initial = [] as WinnerGroup[] }) {
-  const [groups, setGroups] = React.useState<WinnerGroup[]>(initial);
+  const [groups, setGroups] = useState<WinnerGroup[]>(initial);
   return (
     <GroupedWinnersEditor
       groups={groups}
@@ -68,7 +68,7 @@ function HarnessWithRegs({
   initial?: WinnerGroup[];
   onChange?: (g: WinnerGroup[]) => void;
 }) {
-  const [groups, setGroups] = React.useState<WinnerGroup[]>(initial);
+  const [groups, setGroups] = useState<WinnerGroup[]>(initial);
   return (
     <GroupedWinnersEditor
       groups={groups}
@@ -286,13 +286,13 @@ describe("GroupedWinnersEditor - registered team multi-select", () => {
     );
 
     // effectiveTeamSize should be 4 (max competitors in saved data)
-    // Find the "Winners per place" label then scope to its container to get the input value
-    const label = screen.getByText(/Winners per place/i);
-    const container = label.closest('[data-slot="base"]') as HTMLElement;
-    expect(container).toBeTruthy();
-    const inputs = container.querySelectorAll("input");
-    const values = Array.from(inputs).map((i) => i.value);
-    expect(values).toContain("4");
+    // HeroUI v3 Input renders `label` as a DOM attribute on the <input> element,
+    // not as a visible text node — query by the attribute directly.
+    const winnersPerPlaceInput = document.querySelector(
+      'input[label="Winners per place"]',
+    ) as HTMLInputElement | null;
+    expect(winnersPerPlaceInput).not.toBeNull();
+    expect(winnersPerPlaceInput?.value).toBe("4");
   });
 });
 

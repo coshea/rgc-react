@@ -1,11 +1,4 @@
-import {
-  Card,
-  
-  
-  Separator,
-  Chip,
-  Button,
-} from "@heroui/react";
+import { Card, Separator, Chip, Button } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
@@ -112,17 +105,13 @@ export function ChampionshipCard({
                   </div>
                   {winnerId && canViewProfiles && (
                     <div className="ml-auto">
-                      <Button
-                        as={Link}
+                      <Link
                         to={`/profile/${winnerId}`}
-                        size="sm"
-                        variant="tertiary"
-                        
-                        isIconOnly
-                        className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800"
+                        aria-label={`View ${winnerName}'s profile`}
+                        className="inline-flex items-center justify-center size-8 rounded-md bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 dark:hover:bg-amber-800 text-amber-700 dark:text-amber-300"
                       >
                         <Icon icon="lucide:user" className="w-4 h-4" />
-                      </Button>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -187,17 +176,13 @@ export function ChampionshipCard({
                     </div>
                     {runnerUpId && canViewProfiles && (
                       <div className="ml-auto">
-                        <Button
-                          as={Link}
+                        <Link
                           to={`/profile/${runnerUpId}`}
-                          size="sm"
-                          variant="tertiary"
-                          
-                          isIconOnly
-                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+                          aria-label={`View ${runnerUpName}'s profile`}
+                          className="inline-flex items-center justify-center size-8 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400"
                         >
                           <Icon icon="lucide:user" className="w-4 h-4" />
-                        </Button>
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -233,7 +218,7 @@ export function ChampionshipYearGroup({
       acc[key].push(championship);
       return acc;
     },
-    {} as Record<string, UnifiedChampionship[]>
+    {} as Record<string, UnifiedChampionship[]>,
   );
 
   return (
@@ -243,7 +228,6 @@ export function ChampionshipYearGroup({
         <Chip
           size="lg"
           variant="primary"
-          
           className="text-lg font-bold px-6 py-2 bg-linear-to-r from-primary to-primary/80"
         >
           {year}
@@ -262,7 +246,7 @@ export function ChampionshipYearGroup({
                 showEditButton={showEditButtons}
                 onEdit={onEdit}
               />
-            ))
+            )),
           )}
       </div>
     </div>
@@ -291,7 +275,7 @@ export function ChampionshipsList({
       acc[championship.year].push(championship);
       return acc;
     },
-    {} as Record<number, UnifiedChampionship[]>
+    {} as Record<number, UnifiedChampionship[]>,
   );
 
   // Sort years in descending order

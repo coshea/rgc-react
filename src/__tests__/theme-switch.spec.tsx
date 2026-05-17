@@ -1,57 +1,34 @@
 /**
- * Pre-migration baseline: verifies ThemeSwitch renders with the correct
- * aria-label for the current theme and calls setTheme when activated.
+ * ThemeSwitch unit tests.
  *
- * ThemeSwitch imports from @heroui/switch and @heroui/use-theme — individual
- * packages that have no HeroUI v3 equivalents. After migration those imports
- * will move to @heroui/react; update the mock paths below and this test should
- * still pass if the component contract is preserved.
+ * The component uses Switch and useTheme from @heroui/react (v3).
+ * We mock useTheme to control the current theme in tests, and mock
+ * the icons to use data-testid for querying.
+ *
+ * HeroUI v3 Switch renders as role="switch", not role="checkbox".
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-// ── theme hook mock ──────────────────────────────────────────────────────────
 const setThemeMock = vi.fn();
 let currentTheme = "light";
 
-vi.mock("@heroui/use-theme", () => ({
-  useTheme: () => ({ theme: currentTheme, setTheme: setThemeMock }),
-}));
+// Mock useTheme from the package the component actually uses
+vi.mock("@heroui/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@heroui/react")>();
+  return {
+    ...actual,
+    useTheme: () => ({ theme: currentTheme, setTheme: setThemeMock }),
+  };
+});
 
-// ── useSwitch mock ───────────────────────────────────────────────────────────
-// Provides the minimal shape ThemeSwitch destructures from useSwitch.
-vi.mock("@heroui/switch", () => ({
-  useSwitch: ({
-    isSelected,
-    onChange,
-  }: {
-    isSelected: boolean;
-    onChange: () => void;
-  }) => ({
-    Component: "label" as React.ElementType,
-    slots: {
-      wrapper: ({ class: cls }: { class: string }) => cls ?? "",
-    },
-    isSelected,
-    getBaseProps: ({ className }: { className?: string }) => ({ className }),
-    getInputProps: () => ({
-      type: "checkbox" as const,
-      checked: isSelected,
-      onChange,
-      readOnly: false,
-    }),
-    getWrapperProps: () => ({}),
-  }),
-}));
-
-// ── icons mock ────────────────────────────────────────────────────────────────
+// ── icons mock ───────────────────────────────────────────────────────────────
 vi.mock("@/components/icons", () => ({
   SunFilledIcon: () => <span data-testid="sun-icon" />,
   MoonFilledIcon: () => <span data-testid="moon-icon" />,
 }));
 
-import React from "react";
 import { ThemeSwitch } from "@/components/theme-switch";
 
 describe("ThemeSwitch", () => {
@@ -66,8 +43,9 @@ describe("ThemeSwitch", () => {
     // isMounted guard: wait for the useEffect to flip isMounted to true
     await act(async () => {});
 
-    expect(screen.getByRole("checkbox", { hidden: true })).toBeInTheDocument();
-    expect(screen.getByLabelText("Switch to dark mode")).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Switch to dark mode" }),
+    ).toBeInTheDocument();
   });
 
   it("renders 'Switch to light mode' aria-label when theme is dark", async () => {
@@ -75,7 +53,9 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     await act(async () => {});
 
-    expect(screen.getByLabelText("Switch to light mode")).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Switch to light mode" }),
+    ).toBeInTheDocument();
   });
 
   it("shows sun icon when in dark mode (selecting = switching to light)", async () => {
@@ -101,8 +81,8 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     await act(async () => {});
 
-    const checkbox = screen.getByRole("checkbox", { hidden: true });
-    fireEvent.click(checkbox);
+    const switchEl = screen.getByRole("switch");
+    fireEvent.click(switchEl);
 
     expect(setThemeMock).toHaveBeenCalledWith("dark");
   });
@@ -112,8 +92,8 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     await act(async () => {});
 
-    const checkbox = screen.getByRole("checkbox", { hidden: true });
-    fireEvent.click(checkbox);
+    const switchEl = screen.getByRole("switch");
+    fireEvent.click(switchEl);
 
     expect(setThemeMock).toHaveBeenCalledWith("light");
   });

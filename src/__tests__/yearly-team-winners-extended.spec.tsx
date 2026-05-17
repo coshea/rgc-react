@@ -3,6 +3,28 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
+// Shim SearchInput so fireEvent.change triggers the onChange prop
+vi.mock("@/components/search-input", () => ({
+  SearchInput: ({ value, onChange, ariaLabel, placeholder }: any) => (
+    <input
+      type="text"
+      aria-label={ariaLabel ?? placeholder ?? "Search"}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+  default: ({ value, onChange, ariaLabel, placeholder }: any) => (
+    <input
+      type="text"
+      aria-label={ariaLabel ?? placeholder ?? "Search"}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 // Shared mutable mock data so each test can shape the tournaments & loading state
 let mockData: { isLoading: boolean; tournaments: any[] } = {
   isLoading: false,
@@ -30,7 +52,7 @@ function makeTournament(
   id: string,
   title: string,
   date: Date,
-  winners: WinnerInput[]
+  winners: WinnerInput[],
 ) {
   return {
     firestoreId: id,
@@ -142,7 +164,7 @@ describe("YearlyTeamWinners - extended coverage", () => {
     ];
     const { container } = render(<YearlyTeamWinners year={2025} />);
     const chipTexts = Array.from(
-      container.querySelectorAll(".flex.flex-wrap span.flex-1")
+      container.querySelectorAll(".flex.flex-wrap [data-slot='chip']"),
     )
       .map((el) => (el.textContent || "").trim())
       .filter((t) => /Event: /.test(t));
@@ -169,7 +191,7 @@ describe("YearlyTeamWinners - extended coverage", () => {
     ];
     const { container } = render(<YearlyTeamWinners year={2025} />);
     const chipTexts = Array.from(
-      container.querySelectorAll(".flex.flex-wrap span, .flex.flex-wrap div")
+      container.querySelectorAll(".flex.flex-wrap span, .flex.flex-wrap div"),
     )
       .map((el) => el.textContent || "")
       .filter((t) => /(One|Two|Three|Four):/.test(t));

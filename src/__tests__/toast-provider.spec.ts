@@ -4,10 +4,15 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const toastMock = Object.assign(vi.fn(), {
-  success: vi.fn(),
-  danger: vi.fn(),
-  warning: vi.fn(),
+// vi.mock is hoisted to the top of the file, so we must use vi.hoisted()
+// to declare any variables referenced inside the factory.
+const { toastMock } = vi.hoisted(() => {
+  const toastMock = Object.assign(vi.fn(), {
+    success: vi.fn(),
+    danger: vi.fn(),
+    warning: vi.fn(),
+  });
+  return { toastMock };
 });
 
 vi.mock("@heroui/react", async (importOriginal) => {

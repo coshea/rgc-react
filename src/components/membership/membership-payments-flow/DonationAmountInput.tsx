@@ -73,6 +73,11 @@ export function DonationAmountInput({
         isDisabled={isDisabled}
         required={required}
       />
+      {isInvalid && errorMessage ? (
+        <div className="text-danger text-xs" data-slot="error-message">
+          {errorMessage}
+        </div>
+      ) : null}
       {description ? (
         <div className="text-xs text-default-500">{description}</div>
       ) : null}

@@ -39,11 +39,30 @@ vi.mock("@/api/membership", () => ({
   },
 }));
 
+vi.mock("@/providers/toast", () => ({
+  addToast: (args: any) => addToastMock(args),
+}));
+
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {
     ...mod,
-    addToast: (args: any) => addToastMock(args),
+    Checkbox: ({
+      children,
+      isSelected,
+      onValueChange,
+      className,
+      classNames: _classNames,
+    }: any) => (
+      <label className={className}>
+        <input
+          type="checkbox"
+          checked={isSelected ?? false}
+          onChange={(e) => onValueChange?.(e.target.checked)}
+        />
+        {children}
+      </label>
+    ),
   };
 });
 

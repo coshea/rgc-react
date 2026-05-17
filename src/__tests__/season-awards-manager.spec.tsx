@@ -30,6 +30,44 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
+// HeroUI v3 Input renders <input label="..."> without aria-label.
+// Provide accessible shims so getByLabelText works in tests.
+vi.mock("@heroui/react", async (importOriginal) => {
+  const mod: any = await importOriginal();
+  return {
+    ...mod,
+    Input: ({
+      label,
+      value,
+      onChange,
+      onValueChange,
+      type,
+      min,
+      max,
+      isInvalid,
+      errorMessage,
+      ...rest
+    }: any) => (
+      <div>
+        {label && <label htmlFor={`input-${label}`}>{label}</label>}
+        <input
+          id={`input-${label}`}
+          aria-label={label}
+          type={type || "text"}
+          value={value ?? ""}
+          min={min}
+          max={max}
+          onChange={(e) => {
+            if (onChange) onChange(e);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+      </div>
+    ),
+  };
+});
+
 // provide a lightweight typed mock for UserSelect used by tests
 interface UserSelectMockProps {
   value: string;

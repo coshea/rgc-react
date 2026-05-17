@@ -105,9 +105,7 @@ vi.mock("@/api/brackets", () => ({
     apiListeners[key] = apiListeners[key] || [];
     apiListeners[key].push(next);
     return () => {
-      apiListeners[key] = (apiListeners[key] || []).filter(
-        (fn) => fn !== next,
-      );
+      apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
     };
   },
 }));
@@ -127,6 +125,72 @@ vi.mock("remark-gfm", () => ({}));
 vi.mock("@/components/tournament-editor", () => ({
   TournamentEditor: () => <div data-testid="editor">Editor</div>,
 }));
+
+// Shim HeroUI v3 Input so fireEvent.change triggers onValueChange
+// Shim HeroUI v3 Card so onPress works as a native onClick in tests
+vi.mock("@heroui/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@heroui/react")>();
+
+  const CardMock = ({
+    children,
+    onPress,
+    "aria-label": ariaLabel,
+    className,
+    role,
+    tabIndex,
+    ...rest
+  }: any) => (
+    <div
+      role={onPress ? "button" : role}
+      tabIndex={onPress ? 0 : tabIndex}
+      aria-label={ariaLabel}
+      className={className}
+      onClick={onPress}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+  (CardMock as any).Content = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+  (CardMock as any).Header = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+  (CardMock as any).Footer = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+
+  return {
+    ...actual,
+    Card: CardMock,
+    Input: ({
+      label,
+      "aria-label": ariaLabel,
+      value,
+      onChange,
+      onValueChange,
+      isClearable: _isClearable,
+      onClear: _onClear,
+      startContent: _startContent,
+      ...rest
+    }: any) => (
+      <div>
+        {label && <label htmlFor={`input-${label}`}>{label}</label>}
+        <input
+          id={label ? `input-${label}` : undefined}
+          aria-label={ariaLabel ?? label}
+          value={value ?? ""}
+          onChange={(e) => {
+            if (onChange) onChange(e);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+      </div>
+    ),
+  };
+});
 
 function renderWithRoute(
   id: string,
@@ -684,7 +748,10 @@ describe("TournamentDetailPage", () => {
     it("non-admin does not see bracket section when bracketPublished is false", async () => {
       isAdminMock = false;
       renderWithRoute("bv1");
-      emitDoc("tournaments/bv1", { ...baseTournament, bracketPublished: false });
+      emitDoc("tournaments/bv1", {
+        ...baseTournament,
+        bracketPublished: false,
+      });
       emitBracket("bv1", minimalBracket);
       await screen.findByText("Club Championship");
       expect(screen.queryByText("Tournament Bracket")).toBeNull();

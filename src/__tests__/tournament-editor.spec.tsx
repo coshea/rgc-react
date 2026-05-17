@@ -25,6 +25,60 @@ vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   return {
     ...mod,
+    // HeroUI v3 Input renders <input label="..."> without aria-label.
+    // Provide an accessible shim so getByLabelText works in tests.
+    Input: ({
+      label,
+      value,
+      onChange,
+      onValueChange,
+      type,
+      min,
+      max,
+      isInvalid,
+      errorMessage,
+      ...rest
+    }: any) => (
+      <div>
+        {label && <label htmlFor={`input-${label}`}>{label}</label>}
+        <input
+          id={`input-${label}`}
+          aria-label={label}
+          type={type || "text"}
+          value={value ?? ""}
+          min={min}
+          max={max}
+          aria-invalid={isInvalid || undefined}
+          onChange={(e) => {
+            if (onChange) onChange(e);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+        {isInvalid && errorMessage && <span role="alert">{errorMessage}</span>}
+      </div>
+    ),
+    TextArea: ({
+      label,
+      value,
+      onValueChange,
+      isInvalid,
+      errorMessage,
+      ...rest
+    }: any) => (
+      <div>
+        {label && <label htmlFor={`textarea-${label}`}>{label}</label>}
+        <textarea
+          id={`textarea-${label}`}
+          aria-label={label}
+          value={value ?? ""}
+          aria-invalid={isInvalid || undefined}
+          onChange={(e) => onValueChange?.(e.target.value)}
+          {...rest}
+        />
+        {isInvalid && errorMessage && <span role="alert">{errorMessage}</span>}
+      </div>
+    ),
     DatePicker: ({ label, value, onChange, granularity }: any) => (
       <div>
         <label>{label}</label>
@@ -293,7 +347,6 @@ describe("TournamentEditor - edge cases", () => {
   });
 
   it("allows submission when canceled and completed toggled (no winners)", async () => {
-
     const onSave = vi.fn();
     const qc = new QueryClient();
     render(

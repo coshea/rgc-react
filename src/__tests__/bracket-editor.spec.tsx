@@ -10,7 +10,6 @@
  *  - "Not enough teams" empty state
  */
 
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -269,8 +268,8 @@ describe("seed re-numbering", () => {
   it("seed 1 badge retains a warning colour class", () => {
     renderEditor([TEAM_A, TEAM_B]);
     const seed1 = screen.getByText("#1");
-    // HeroUI Chip with color="warning" applies bg-warning/* to the container div
-    expect(seed1.closest("div")?.className).toContain("warning");
+    // HeroUI v3 Chip with color="warning" renders as <span data-slot="chip" class="chip chip--warning ...">
+    expect(seed1.closest("[data-slot='chip']")?.className).toContain("warning");
   });
 });
 

@@ -5,6 +5,38 @@ import "@testing-library/jest-dom";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
 import type { Tournament } from "@/types/tournament";
 
+// Shim HeroUI v3 Table components — React Aria collection system fails in jsdom
+vi.mock("@heroui/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@heroui/react")>();
+  return {
+    ...actual,
+    Table: ({ children, "aria-label": ariaLabel, className }: any) => (
+      <table role="grid" aria-label={ariaLabel} className={className}>
+        {children}
+      </table>
+    ),
+    TableHeader: ({ children }: any) => (
+      <thead>
+        <tr>{children}</tr>
+      </thead>
+    ),
+    TableColumn: ({ children, className }: any) => (
+      <th className={className}>{children}</th>
+    ),
+    TableBody: ({ children, items, emptyContent }: any) => (
+      <tbody>
+        {items && typeof children === "function"
+          ? items.map((item: any) => children(item))
+          : (children ?? emptyContent)}
+      </tbody>
+    ),
+    TableRow: ({ children }: any) => <tr>{children}</tr>,
+    TableCell: ({ children, className }: any) => (
+      <td className={className}>{children}</td>
+    ),
+  };
+});
+
 // Mock auth to enable queries
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ userLoggedIn: true, user: { uid: "u-admin" } }),
@@ -148,7 +180,7 @@ function renderComponent() {
   render(
     <QueryClientProvider client={qc}>
       <TournamentBreakdown year={2024} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -192,7 +224,7 @@ describe("TournamentBreakdown (redesigned)", () => {
     fireEvent.click(btn);
     // After expansion, HeroUI Table renders with role="grid" rather than native table role
     expect(
-      screen.getByRole("grid", { name: /Winter Classic full results/i })
+      screen.getByRole("grid", { name: /Winter Classic full results/i }),
     ).toBeInTheDocument();
     // Team prize shows $100 ea for Alice since team of 2 with 100 each (component labels prizeAmount directly per player) => $100 ea appears in podium but table cell just $100 (no ea since logic uses teamSize >1). In table, we assert raw prize.
     expect(screen.getAllByText(/\$100/).length).toBeGreaterThan(0);

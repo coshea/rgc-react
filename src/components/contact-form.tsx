@@ -1,5 +1,15 @@
 import React from "react";
-import { Form, Input, TextArea, Button, Alert, Card } from "@heroui/react";
+import {
+  Form,
+  TextField,
+  Label,
+  InputGroup,
+  TextArea,
+  FieldError,
+  Button,
+  Alert,
+  Card,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import emailjs from "@emailjs/browser";
 import { EMAILJS_CONFIG, isEmailJSConfigured } from "@/config/emailjs";
@@ -112,43 +122,57 @@ export const ContactForm = () => {
                   className="space-y-3 sm:space-y-4"
                   onSubmit={handleSubmit}
                 >
-                  <Input
-                    isRequired
-                    label="Name"
-                    placeholder="Enter your name"
-                    startContent={
-                      <Icon icon="lucide:user" className="text-default-400" />
-                    }
-                    value={formData.name}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, name: value })
-                    }
-                  />
+                  <TextField isRequired name="name" className="w-full">
+                    <Label>Name</Label>
+                    <InputGroup>
+                      <InputGroup.Prefix>
+                        <Icon icon="lucide:user" className="text-default-400" />
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder="Enter your name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                      />
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
 
-                  <Input
+                  <TextField
                     isRequired
+                    name="email"
                     type="email"
-                    label="Email"
-                    placeholder="Enter your email"
-                    startContent={
-                      <Icon icon="lucide:mail" className="text-default-400" />
-                    }
-                    value={formData.email}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, email: value })
-                    }
-                  />
+                    className="w-full"
+                  >
+                    <Label>Email</Label>
+                    <InputGroup>
+                      <InputGroup.Prefix>
+                        <Icon icon="lucide:mail" className="text-default-400" />
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder="Enter your email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                      />
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
 
-                  <TextArea
-                    isRequired
-                    label="Message"
-                    placeholder="Enter your message"
-                    minRows={4}
-                    value={formData.message}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, message: value })
-                    }
-                  />
+                  <TextField isRequired name="message" className="w-full">
+                    <Label>Message</Label>
+                    <TextArea
+                      placeholder="Enter your message"
+                      rows={4}
+                      value={formData.message}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
+                    />
+                    <FieldError />
+                  </TextField>
 
                   <Button
                     type="submit"

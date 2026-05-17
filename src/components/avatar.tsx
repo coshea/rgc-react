@@ -29,6 +29,17 @@ export interface UserAvatarProps {
   tabIndex?: number;
 }
 
+/** Generate up to 2 initials from a display name or email. */
+function getInitials(name?: string): string {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 /**
  * Central user avatar component ensuring consistent fallback behavior.
  * If no `src` provided, we seed a generic generated avatar using userId or name.
@@ -81,21 +92,25 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
     return (
       <Avatar
         ref={ref}
-        showFallback
-        radius={squared ? "sm" : "full"}
-        name={resolvedName}
         size={size}
-        className={clsx(className)}
-        src={resolvedSrc}
-        alt={alt || resolvedName}
-        isBordered={isBordered}
+        className={clsx(
+          className,
+          isBordered && "ring-2 ring-background",
+          squared && "rounded-sm",
+        )}
         color={color}
         as={as}
         role={finalRole}
         tabIndex={finalTabIndex}
         onClick={handleClick}
+        name={resolvedName}
         {...rest}
-      />
+      >
+        {resolvedSrc && (
+          <Avatar.Image src={resolvedSrc} alt={alt || resolvedName} />
+        )}
+        <Avatar.Fallback>{getInitials(resolvedName)}</Avatar.Fallback>
+      </Avatar>
     );
   },
 );

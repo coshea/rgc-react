@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card,  Button, Chip, Skeleton } from "@heroui/react";
+import { Card, Button, Chip, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { BlogPost } from "@/types/blog";
 import { onPublishedBlogPosts, mapBlogPostDoc } from "@/api/blog";
@@ -115,67 +115,67 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {posts.map((post) => (
-          <Card
-            key={post.id}
-           
-            onPress={() => navigate(`/announcements/${post.slug}`)}
-            className="w-full h-full"
-          >
-            <Card.Content className="p-0">
-              <div className="flex flex-col h-full">
-                {post.featuredImage && (
-                  <div className="h-32 w-full shrink-0 overflow-hidden">
-                    <img
-                      src={post.featuredImage}
-                      alt={post.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 p-3 flex flex-col justify-between">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    {post.isPinned && (
-                      <Chip
-                        size="sm"
-                        
-                        variant="tertiary"
-                        startContent={
-                          <Icon icon="lucide:pin" className="w-3 h-3" />
-                        }
-                      >
-                        Pinned
-                      </Chip>
-                    )}
-                    <Chip size="sm" variant="tertiary">
-                      {post.category}
-                    </Chip>
-                  </div>
-
-                  <h3 className="text-lg font-bold mb-1.5 line-clamp-2">
-                    {post.title}
-                  </h3>
-
-                  {post.excerpt && (
-                    <p className="text-foreground-600 text-sm mb-2 line-clamp-2">
-                      {post.excerpt}
-                    </p>
+          <Card key={post.id} className="w-full h-full">
+            <button
+              type="button"
+              className="w-full cursor-pointer text-left"
+              onClick={() => navigate(`/announcements/${post.slug}`)}
+            >
+              <Card.Content className="p-0">
+                <div className="flex flex-col h-full">
+                  {post.featuredImage && (
+                    <div className="h-32 w-full shrink-0 overflow-hidden">
+                      <img
+                        src={post.featuredImage}
+                        alt={post.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   )}
+                  <div className="flex-1 p-3 flex flex-col justify-between">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      {post.isPinned && (
+                        <Chip
+                          size="sm"
+                          variant="tertiary"
+                          startContent={
+                            <Icon icon="lucide:pin" className="w-3 h-3" />
+                          }
+                        >
+                          Pinned
+                        </Chip>
+                      )}
+                      <Chip size="sm" variant="tertiary">
+                        {post.category}
+                      </Chip>
+                    </div>
 
-                  <div className="flex items-center gap-2 text-xs text-foreground-500 mt-auto">
-                    <span className="flex items-center gap-1">
-                      <Icon icon="lucide:user" className="w-3 h-3" />
-                      {post.authorName}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Icon icon="lucide:calendar" className="w-3 h-3" />
-                      {formatDate(post.publishedAt)}
-                    </span>
+                    <h3 className="text-lg font-bold mb-1.5 line-clamp-2">
+                      {post.title}
+                    </h3>
+
+                    {post.excerpt && (
+                      <p className="text-foreground-600 text-sm mb-2 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 text-xs text-foreground-500 mt-auto">
+                      <span className="flex items-center gap-1">
+                        <Icon icon="lucide:user" className="w-3 h-3" />
+                        {post.authorName}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Icon icon="lucide:calendar" className="w-3 h-3" />
+                        {formatDate(post.publishedAt)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card.Content>
+              </Card.Content>
+            </button>
           </Card>
         ))}
       </div>

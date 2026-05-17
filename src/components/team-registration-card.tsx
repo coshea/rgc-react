@@ -68,6 +68,8 @@ export function TeamRegistrationCard({
             : `Open spot details for Team ${teamNumber}`
           : undefined
       }
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
       onPress={isInteractive ? onPress : undefined}
     >
       <Card.Content className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
