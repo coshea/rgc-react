@@ -21,7 +21,7 @@ export default defineConfig({
       // internally, and if @heroui loads as native ESM those sub-imports
       // bypass the mock registry, causing LazyMotion async work to fire
       // after jsdom teardown ("window is not defined").
-      inline: ["framer-motion", /@heroui/],
+      inline: [/framer-motion/, /@heroui/],
     },
     // Explicitly exclude compiled output and node_modules so Vitest doesn't pick
     // up tests from dependencies or built artifacts (these were running in
