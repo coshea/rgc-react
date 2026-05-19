@@ -56,7 +56,7 @@ export function RenewConfirmStep(props: {
       </Card.Header>
       <Separator />
       <Card.Content className="space-y-3">
-        <div className="text-sm text-default-600">
+        <div className="text-sm text-foreground">
           Signed in as {email}
           {loadingUserProfile ? " (loading profile…)" : ""}
         </div>
@@ -75,18 +75,18 @@ export function RenewConfirmStep(props: {
           </Alert>
         ) : null}
 
-        <div className="text-sm text-default-600">Name</div>
+        <div className="text-sm text-foreground">Name</div>
         <div className="text-base font-semibold">{membershipFoundName}</div>
 
         <Separator />
 
-        <div className="text-sm text-default-600">Membership</div>
+        <div className="text-sm text-foreground">Membership</div>
         <div className="text-base">Annual Club Membership</div>
 
         <Alert >
           <div className="space-y-2">
             <div className="font-semibold">Referral program</div>
-            <p className="text-sm text-foreground-600">
+            <p className="text-sm text-muted">
               If you are doing the referral for a new member, they will need to
               complete the application before we can apply the referral. To
               receive the discount, choose the "Pay by check (mail)" option on
@@ -119,7 +119,7 @@ export function RenewConfirmStep(props: {
 
         <div className="space-y-4">
           <div>
-            <div className="text-sm text-default-600">Annual dues</div>
+            <div className="text-sm text-foreground">Annual dues</div>
             <div className="text-base font-semibold">
               {currency(membershipAmountDue)}
             </div>

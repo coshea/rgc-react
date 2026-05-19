@@ -30,19 +30,19 @@ export function AnnualStartStep(props: {
   } = props;
 
   const renewingCardClass = hasPriorMembership
-    ? "rounded-2xl border-2 border-primary shadow-md"
-    : "rounded-2xl border border-default-200";
+    ? "rounded-2xl border-2 border-accent shadow-md"
+    : "rounded-2xl border";
 
   const newMemberCardClass = hasPriorMembership
-    ? "rounded-2xl border border-default-200"
-    : "rounded-2xl border-2 border-primary shadow-md";
+    ? "rounded-2xl border"
+    : "rounded-2xl border-2 border-accent shadow-md";
 
   return (
     <Card className="w-full max-w-4xl">
       <Card.Header className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
-          <p className="text-sm text-default-600">
+          <p className="text-sm text-foreground">
             New members should choose the application option.
           </p>
         </div>
@@ -56,7 +56,7 @@ export function AnnualStartStep(props: {
               I’m renewing (existing member)
             </h3>
           </Card.Header>
-          <Card.Content className="pt-2 text-sm text-default-600 space-y-3">
+          <Card.Content className="pt-2 text-sm text-foreground space-y-3">
             <p>
               Renewals require signing in so we can automatically record your
               payment to your account.
@@ -82,7 +82,7 @@ export function AnnualStartStep(props: {
           <Card.Header className="pb-0">
             <h3 className="text-base font-semibold">I’m new (apply to join)</h3>
           </Card.Header>
-          <Card.Content className="pt-2 text-sm text-default-600 space-y-3">
+          <Card.Content className="pt-2 text-sm text-foreground space-y-3">
             <p>
               First time joining? Choose this option. You’ll fill out a short
               application and then pay your dues.

@@ -25,7 +25,7 @@ const BoardOfGovernorsPage: React.FC = () => {
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
           Board of Governors
         </h1>
-        <p className="max-w-2xl mx-auto text-foreground-500 text-sm md:text-base leading-relaxed">
+        <p className="max-w-2xl mx-auto text-muted text-sm md:text-base leading-relaxed">
           Meet the elected board guiding the Ridgefield Golf Club. The board is
           responsible for governance, tournament oversight, and ensuring a
           vibrant, competitive, and welcoming community.
@@ -36,11 +36,11 @@ const BoardOfGovernorsPage: React.FC = () => {
         <div className="flex justify-center py-20">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-3xl text-primary"
+            className="animate-spin text-3xl text-accent"
           />
         </div>
       ) : boardMembers.length === 0 ? (
-        <p className="text-center text-foreground-500">
+        <p className="text-center text-muted">
           No board member data available.
         </p>
       ) : (
@@ -50,20 +50,23 @@ const BoardOfGovernorsPage: React.FC = () => {
             const isPresident = member.isPresident;
             const chipStart =
               !isPresident && meta ? (
-                <Icon icon={meta.icon} className="w-3 h-3" />
+                <Icon
+                  icon={meta.icon}
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
               ) : undefined;
 
             return (
               <Card
                 key={member.id}
                 onPress={() => navigate(`/profile/${member.id}`)}
-                className={`relative border border-default-200 bg-content1/60 hover:bg-content2 transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
+                className={`relative border bg-surface/60 hover:bg-surface-secondary transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
               >
                 <Card.Header className="py-3 flex flex-col items-center text-center">
                   <div className="relative mb-2">
                     <UserAvatar
                       user={member}
-                      className={`w-10 h-10 text-small ${isPresident ? "border-2 border-warning" : ""}`}
+                      className={`w-10 h-10 text-sm ${isPresident ? "border-2 border-warning" : ""}`}
                       size="sm"
                       alt={member.displayName || member.email}
                     />
@@ -77,8 +80,8 @@ const BoardOfGovernorsPage: React.FC = () => {
                         size="sm"
                         color={meta.color}
                         variant={isPresident ? "primary" : "tertiary"}
-                        startContent={chipStart}
                       >
+                        {chipStart}
                         {meta.label || member.roleLabel}
                       </Chip>
                     ) : (
@@ -100,7 +103,7 @@ const BoardOfGovernorsPage: React.FC = () => {
             <Icon icon="lucide:crown" className="w-6 h-6 text-warning" />
             Club President
           </h2>
-          <p className="text-foreground-600 text-sm md:text-base leading-relaxed mb-4">
+          <p className="text-muted text-sm md:text-base leading-relaxed mb-4">
             {president.displayName || president.email} leads the board in
             supporting member experience, fairness in competition, and long-term
             club success.

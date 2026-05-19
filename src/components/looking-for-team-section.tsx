@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Card,   Separator } from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
@@ -202,18 +202,15 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
               size="sm"
               variant={currentUserHasPost ? "tertiary" : "primary"}
               color={currentUserHasPost ? "default" : "secondary"}
-             
               onPress={handleTogglePost}
-              startContent={
-                !saving && (
-                  <Icon
-                    icon={currentUserHasPost ? "lucide:x" : "lucide:plus"}
-                    className="w-4 h-4"
-                    aria-hidden="true"
-                  />
-                )
-              }
             >
+              {!saving && (
+                <Icon
+                  icon={currentUserHasPost ? "lucide:x" : "lucide:plus"}
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                />
+              )}
               {currentUserHasPost ? "Remove my post" : "I'm looking for a team"}
             </Button>
           )}
@@ -222,10 +219,10 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
         <Card.Content className="pt-4">
           {isUserRegistered && currentUserHasPost ? (
             // User just joined a team — their post is hidden but give them a prompt to clean up
-            <div className="text-sm text-foreground-500 flex items-start gap-2">
+            <div className="text-sm text-muted flex items-start gap-2">
               <Icon
                 icon="lucide:check-circle"
-                className="w-4 h-4 mt-0.5 text-success-500"
+                className="w-4 h-4 mt-0.5 text-success"
                 aria-hidden="true"
               />
               <p>
@@ -233,18 +230,18 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
               </p>
             </div>
           ) : loading ? (
-            <p className="text-sm text-foreground-500">Loading...</p>
+            <p className="text-sm text-muted">Loading...</p>
           ) : visiblePosts.length === 0 ? (
-            <p className="text-sm text-foreground-500">
+            <p className="text-sm text-muted">
               Members who haven't found a team yet can post here. Post your own
               listing or email someone to connect.
             </p>
           ) : (
             <>
-              <div className="mb-3 text-xs text-foreground-500 flex items-start gap-2">
+              <div className="mb-3 text-xs text-muted flex items-start gap-2">
                 <Icon
                   icon="lucide:info"
-                  className="w-4 h-4 mt-0.5 text-foreground-400"
+                  className="w-4 h-4 mt-0.5 text-muted"
                   aria-hidden="true"
                 />
                 <p>
@@ -267,7 +264,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                   return (
                     <li
                       key={post.id}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-default-200 px-3 py-2 bg-default-50"
+                      className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 bg-default/60"
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <UserAvatar
@@ -287,12 +284,12 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                           <p className="text-sm font-medium truncate">
                             {displayName}
                             {isCurrentUser && (
-                              <span className="ml-1.5 text-xs font-normal text-foreground-400">
+                              <span className="ml-1.5 text-xs font-normal text-muted">
                                 (you)
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-foreground-400">
+                          <p className="text-xs text-muted">
                             Posted{" "}
                             {post.createdAt.toLocaleDateString("en-US", {
                               month: "short",
@@ -323,8 +320,6 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                             isIconOnly
                             size="sm"
                             variant="ghost"
-                            
-                           
                             onPress={() => handleAdminDelete(post)}
                             aria-label={`Remove post for ${displayName}`}
                           >

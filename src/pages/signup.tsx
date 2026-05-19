@@ -1,5 +1,16 @@
 import React from "react";
-import { Button, Input, Checkbox, Link, Separator, Modal } from "@heroui/react";
+import {
+  Button,
+  Input,
+  InputGroup,
+  Checkbox,
+  Link,
+  Separator,
+  Modal,
+  TextField,
+  Label,
+  FieldError,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getAdditionalUserInfo } from "firebase/auth";
 
@@ -296,7 +307,7 @@ export default function SignUpPage() {
           <>
             <Modal.Header className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">{title}</h2>
-              <p className="text-small text-default-500">
+              <p className="text-sm text-muted">
                 Last updated: January 2026
               </p>
             </Modal.Header>
@@ -304,7 +315,7 @@ export default function SignUpPage() {
               {sections.map((section) => (
                 <div key={section.title}>
                   <p className="font-semibold">{section.title}</p>
-                  <p className="text-sm text-default-600">{section.body}</p>
+                  <p className="text-sm text-foreground">{section.body}</p>
                 </div>
               ))}
             </Modal.Body>
@@ -318,7 +329,6 @@ export default function SignUpPage() {
                 target="_blank"
                 rel="noreferrer"
                 variant="tertiary"
-                
                 onPress={() => onOpenChange(false)}
               >
                 View Full Page
@@ -337,11 +347,11 @@ export default function SignUpPage() {
   return (
     <>
       <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small">
+        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-surface px-8 pb-10 pt-6 shadow-small">
           <div className="flex flex-col items-center pb-6">
             <RGCLogo size={240} />
             <p className="text-xl font-medium">Welcome</p>
-            <p className="text-small text-default-500">
+            <p className="text-sm text-muted">
               Create an account to get started
             </p>
           </div>
@@ -352,16 +362,13 @@ export default function SignUpPage() {
           )}
           <div className="flex flex-col gap-2">
             <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
               variant="outline"
               onPress={handleGoogleSignUp}
               isDisabled={authLoading || isSubmitting}
-             
             >
+              {!isSubmitting && (
+                <Icon icon="flat-color-icons:google" width={24} />
+              )}
               {authLoading || isSubmitting
                 ? "Processing..."
                 : "Sign Up with Google"}
@@ -370,7 +377,7 @@ export default function SignUpPage() {
 
           <div className="flex items-center gap-4 py-2">
             <Separator className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
+            <p className="shrink-0 text-xs text-muted">OR</p>
             <Separator className="flex-1" />
           </div>
 
@@ -403,84 +410,86 @@ export default function SignUpPage() {
                 type="email"
                 variant="outline"
                 value={signupEmail}
-                onValueChange={setSignupEmail}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setSignupEmail(e.target.value)
+                }
               />
               {signupMode === "password" && (
                 <>
-                  <Input
-                    isRequired
-                    classNames={{
-                      base: "-mb-[2px]",
-                      inputWrapper:
-                        "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-                    }}
-                    endContent={
-                      <Button
-                        isIconOnly
-                        variant="ghost"
-                        size="sm"
-                        onPress={toggleVisibility}
-                        aria-label={
-                          isVisible ? "Hide password" : "Show password"
-                        }
-                        className="min-w-0 h-auto"
-                      >
-                        {isVisible ? (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-closed-linear"
-                          />
-                        ) : (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-bold"
-                          />
-                        )}
-                      </Button>
-                    }
-                    label="Password"
-                    name="password"
-                    placeholder="Enter your password"
-                    type={isVisible ? "text" : "password"}
-                    variant="outline"
-                  />
-                  <Input
-                    isRequired
-                    classNames={{
-                      inputWrapper: "rounded-t-none",
-                    }}
-                    endContent={
-                      <Button
-                        isIconOnly
-                        variant="ghost"
-                        size="sm"
-                        onPress={toggleConfirmVisibility}
-                        aria-label={
-                          isConfirmVisible
-                            ? "Hide confirm password"
-                            : "Show confirm password"
-                        }
-                        className="min-w-0 h-auto"
-                      >
-                        {isConfirmVisible ? (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-closed-linear"
-                          />
-                        ) : (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-bold"
-                          />
-                        )}
-                      </Button>
-                    }
-                    label="Confirm Password"
+                  <TextField name="password" isRequired className="w-full">
+                    <Label>Password</Label>
+                    <InputGroup>
+                      <InputGroup.Input
+                        placeholder="Enter your password"
+                        type={isVisible ? "text" : "password"}
+                      />
+                      <InputGroup.Suffix>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          onPress={toggleVisibility}
+                          aria-label={
+                            isVisible ? "Hide password" : "Show password"
+                          }
+                          className="min-w-0 h-auto"
+                        >
+                          {isVisible ? (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-closed-linear"
+                            />
+                          ) : (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-bold"
+                            />
+                          )}
+                        </Button>
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
+                  <TextField
                     name="confirmPassword"
-                    placeholder="Confirm your password"
-                    type={isConfirmVisible ? "text" : "password"}
-                    variant="outline"
-                  />
+                    isRequired
+                    className="w-full"
+                  >
+                    <Label>Confirm Password</Label>
+                    <InputGroup>
+                      <InputGroup.Input
+                        placeholder="Confirm your password"
+                        type={isConfirmVisible ? "text" : "password"}
+                      />
+                      <InputGroup.Suffix>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          onPress={toggleConfirmVisibility}
+                          aria-label={
+                            isConfirmVisible
+                              ? "Hide confirm password"
+                              : "Show confirm password"
+                          }
+                          className="min-w-0 h-auto"
+                        >
+                          {isConfirmVisible ? (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-closed-linear"
+                            />
+                          ) : (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-bold"
+                            />
+                          )}
+                        </Button>
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
                 </>
               )}
             </div>
@@ -514,12 +523,7 @@ export default function SignUpPage() {
                 Privacy Policy
               </Link>
             </Checkbox>
-            <Button
-              
-              type="submit"
-              isDisabled={authLoading || isSubmitting}
-             
-            >
+            <Button type="submit" isDisabled={authLoading || isSubmitting}>
               {authLoading || isSubmitting
                 ? "Processing..."
                 : signupMode === "magic-link"
@@ -532,7 +536,7 @@ export default function SignUpPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-default-500"
+              className="text-muted"
               onPress={() =>
                 setSignupMode(
                   signupMode === "magic-link" ? "password" : "magic-link",
@@ -544,7 +548,7 @@ export default function SignUpPage() {
                 : "Sign up with email link instead"}
             </Button>
           </div>
-          <p className="text-center text-small">
+          <p className="text-center text-sm">
             Already have an account?&nbsp;
             <Link href={siteConfig.pages.login.link} size="sm">
               {siteConfig.pages.login.title}
@@ -561,12 +565,12 @@ export default function SignUpPage() {
                 Check your email
               </Modal.Header>
               <Modal.Body className="space-y-3">
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   We sent a sign-up link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
                   finish creating your account.
                 </p>
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">

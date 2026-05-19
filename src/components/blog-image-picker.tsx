@@ -150,7 +150,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               dragActive
-                ? "border-primary bg-primary/10"
+                ? "border-accent bg-accent/10"
                 : "border-foreground-300"
             }`}
             onDragEnter={handleDrag}
@@ -168,7 +168,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Spinner size="lg" />
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   Uploading image...
                 </p>
               </div>
@@ -187,9 +187,6 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   value={customFilename}
                   onValueChange={setCustomFilename}
                   description="Enter a descriptive name to easily find this image later"
-                  startContent={
-                    <Icon icon="lucide:tag" className="text-foreground-400" />
-                  }
                 />
                 <div className="flex gap-2 justify-center">
                   <Button
@@ -202,12 +199,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    
-                    onPress={handleConfirmUpload}
-                    startContent={<Icon icon="lucide:upload" />}
-                  >
+                  <Button size="sm" onPress={handleConfirmUpload}>
+                    <Icon icon="lucide:upload" />
                     Upload
                   </Button>
                 </div>
@@ -216,17 +209,17 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
               <>
                 <Icon
                   icon="lucide:upload-cloud"
-                  className="text-4xl text-foreground-400 mx-auto mb-3"
+                  className="text-4xl text-muted mx-auto mb-3"
                 />
-                <p className="text-sm text-foreground-600 mb-2">
+                <p className="text-sm text-muted mb-2">
                   Drag and drop an image here, or click to browse
                 </p>
                 <Button
                   size="sm"
                   variant="tertiary"
                   onPress={() => fileInputRef.current?.click()}
-                  startContent={<Icon icon="lucide:image-plus" />}
                 >
+                  <Icon icon="lucide:image-plus" />
                   Choose Image
                 </Button>
               </>
@@ -272,7 +265,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                     />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm truncate">{img.name}</div>
-                      <div className="text-xs text-foreground-500">
+                      <div className="text-xs text-muted">
                         {new Date(img.uploadedAt).toLocaleDateString()}
                       </div>
                     </div>
@@ -284,7 +277,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
           </Select.Popover>
         </Select>
       ) : (
-        <p className="text-sm text-foreground-500 text-center">
+        <p className="text-sm text-muted text-center">
           No images uploaded yet. Upload your first image above.
         </p>
       )}
@@ -294,13 +287,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Selected Image:</p>
-            <Button
-              size="sm"
-              variant="tertiary"
-              
-              onPress={() => onChange("")}
-              startContent={<Icon icon="lucide:x" />}
-            >
+            <Button size="sm" variant="tertiary" onPress={() => onChange("")}>
+              <Icon icon="lucide:x" />
               Remove
             </Button>
           </div>

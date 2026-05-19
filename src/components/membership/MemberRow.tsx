@@ -31,31 +31,31 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
             src={(user.photoURL as string) || undefined}
             alt={user.displayName || user.email}
           />
-          <div className="text-sm text-default-500 hover:text-primary">
+          <div className="text-sm text-muted hover:text-accent">
             {user.displayName || "(no name)"}
           </div>
         </Link>
       </div>
-      <div className="text-sm text-default-500 whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="text-sm text-muted whitespace-nowrap overflow-hidden text-ellipsis">
         {user.email}
       </div>
-      <div className="text-sm text-default-500 whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="text-sm text-muted whitespace-nowrap overflow-hidden text-ellipsis">
         {user.phone ? formatPhone(user.phone) : "—"}
       </div>
       {isAdmin && (
-        <div className="text-sm text-default-500 whitespace-nowrap flex items-center gap-2">
+        <div className="text-sm text-muted whitespace-nowrap flex items-center gap-2">
           {user.membershipType ? (
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                 user.membershipType === "full"
-                  ? "bg-success-100 text-success-600"
-                  : "bg-primary-100 text-primary-600"
+                  ? "bg-success text-success-600"
+                  : "bg-accent-soft text-accent"
               }`}
             >
               {user.membershipType}
             </span>
           ) : (
-            <span className="text-default-400 text-xs">—</span>
+            <span className="text-muted text-xs">—</span>
           )}
         </div>
       )}
@@ -78,7 +78,7 @@ export function MemberRow({ user, isAdmin, onEdit, onDelete }: MemberRowProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-4 h-4 text-default-600"
+                className="w-4 h-4 text-foreground"
               >
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />

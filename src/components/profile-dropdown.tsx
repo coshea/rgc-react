@@ -62,7 +62,7 @@ export const ProfileDropdown = () => {
               isReadOnly
               textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
             >
-              <span className="block text-xs text-default-500">
+              <span className="block text-xs text-muted">
                 Signed in as
               </span>
               <span className="block truncate max-w-[200px] text-sm">
@@ -103,13 +103,11 @@ export const ProfileDropdown = () => {
                   onPress={() => {
                     window.location.href = siteConfig.pages.adminDashboard.link;
                   }}
-                  startContent={
-                    <Icon
-                      icon="lucide:layout-dashboard"
-                      className="text-base text-default-500"
-                    />
-                  }
                 >
+                  <Icon
+                    icon="lucide:layout-dashboard"
+                    className="inline-block text-base text-muted mr-1.5 align-middle"
+                  />
                   Admin Dashboard
                 </Dropdown.Item>
               </Dropdown.Section>

@@ -160,7 +160,7 @@ export default function FindAGamePostModal({
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           onTimeChange(e.target.value)
                         }
-                        className="w-40 rounded border border-default-300 p-1 text-sm"
+                        className="w-40 rounded border p-1 text-sm"
                       />
                     </div>
                     <Select

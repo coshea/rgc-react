@@ -253,7 +253,7 @@ export function TournamentBreakdown({ year }: Props) {
   if (!tournamentBundles.length) {
     return (
       <div className="flex flex-col items-start gap-4">
-        <div className="flex items-center gap-2 text-default-500 text-sm">
+        <div className="flex items-center gap-2 text-muted text-sm">
           <Icon icon="lucide:calendar-x" className="w-5 h-5" />
           <span>No tournament results for {year}.</span>
         </div>
@@ -266,36 +266,36 @@ export function TournamentBreakdown({ year }: Props) {
       {/* Stats Bar */}
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-          <Icon icon="lucide:layout-grid" className="text-primary" />
+          <Icon icon="lucide:layout-grid" className="text-accent" />
           {year} Tournament Results
         </h2>
         <div className="flex flex-wrap gap-2">
-          <Chip
-            size="sm"
-            variant="tertiary"
-            startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary">
+            <Icon
+              icon="lucide:trophy"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.withResults} events
           </Chip>
-          <Chip
-            size="sm"
-            variant="tertiary"
-            startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary">
+            <Icon
+              icon="lucide:users"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.unique} unique winners
           </Chip>
-          <Chip
-            size="sm"
-            variant="tertiary"
-            startContent={<Icon icon="lucide:banknote" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary">
+            <Icon
+              icon="lucide:banknote"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {formatPrize(globalStats.totalPrize)}
           </Chip>
-          <Chip
-            size="sm"
-            variant="tertiary"
-            startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary">
+            <Icon
+              icon="lucide:award"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.avgWinners.toFixed(1)} winners / event
           </Chip>
         </div>
@@ -382,7 +382,7 @@ export function TournamentBreakdown({ year }: Props) {
           return (
             <article
               key={id}
-              className="relative overflow-hidden rounded-lg border border-default-200/60 dark:border-default-100/10 bg-content1 shadow-sm hover:shadow-md transition-shadow"
+              className="relative overflow-hidden rounded-lg border/60 dark:/10 bg-surface shadow-sm hover:shadow-md transition-shadow"
               aria-labelledby={`tournament-${id}`}
             >
               <div className="h-1 w-full bg-linear-to-r from-primary/40 via-primary/10 to-transparent" />
@@ -402,7 +402,7 @@ export function TournamentBreakdown({ year }: Props) {
                           />
                           {tournament.title}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-default-500">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:calendar" className="w-3 h-3" />
                             {tournament.date.toLocaleDateString(undefined, {
@@ -410,9 +410,9 @@ export function TournamentBreakdown({ year }: Props) {
                               day: "numeric",
                             })}
                           </span>
-                          <span className="h-1 w-1 rounded-full bg-default-300" />
+                          <span className="h-1 w-1 rounded-full bg-default/60" />
                           <TeeBadge tee={tournament.tee} size="xs" />
-                          <span className="h-1 w-1 rounded-full bg-default-300" />
+                          <span className="h-1 w-1 rounded-full bg-default/60" />
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:award" className="w-3 h-3" />
                             {winnersCount}{" "}
@@ -518,7 +518,7 @@ export function TournamentBreakdown({ year }: Props) {
                             .map((p) => p.userId || p.name)
                             .join("_")}`}
                           className={
-                            "flex items-center gap-3 p-2 rounded-md bg-default-100/50 dark:bg-default-50/5" +
+                            "flex items-center gap-3 p-2 rounded-md bg-default/60/50 dark:bg-default/60/5" +
                             (champion
                               ? " ring-1 ring-amber-400/40 dark:ring-amber-300/30"
                               : "")
@@ -570,7 +570,7 @@ export function TournamentBreakdown({ year }: Props) {
                               {nameContent}
                             </p>
                             <p
-                              className="text-[11px] text-default-500 text-center"
+                              className="text-[11px] text-muted text-center"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
                               {g.players[0].score
@@ -591,7 +591,7 @@ export function TournamentBreakdown({ year }: Props) {
                               {nameContent}
                             </p>
                             <p
-                              className="text-[11px] text-default-500"
+                              className="text-[11px] text-muted"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
                               {g.players[0].score
@@ -603,7 +603,7 @@ export function TournamentBreakdown({ year }: Props) {
                           {g.players.length > 4 && (
                             <Tooltip>
                               <Tooltip.Trigger>
-                                <span className="text-[10px] text-default-400">
+                                <span className="text-[10px] text-muted">
                                   +{g.players.length - 4}
                                 </span>
                               </Tooltip.Trigger>
@@ -627,17 +627,16 @@ export function TournamentBreakdown({ year }: Props) {
                       variant="ghost"
                       radius="sm"
                       onPress={() => toggle(id)}
-                      endContent={
-                        <Icon
-                          icon={
-                            isOpen ? "lucide:chevron-up" : "lucide:chevron-down"
-                          }
-                          className="w-4 h-4"
-                        />
-                      }
                       aria-expanded={isOpen}
                       aria-controls={`results-${id}`}
                     >
+                      {isOpen ? "Hide full results" : "Show full results"}
+                      <Icon
+                        icon={
+                          isOpen ? "lucide:chevron-up" : "lucide:chevron-down"
+                        }
+                        className="w-4 h-4"
+                      />
                       {isOpen ? "Hide full results" : "Show full results"}
                     </Button>
                   </div>
@@ -658,7 +657,7 @@ export function TournamentBreakdown({ year }: Props) {
                         removeWrapper
                         isStriped
                         classNames={{
-                          th: "bg-default-100 text-default-600 font-medium",
+                          th: "bg-default/60 text-foreground font-medium",
                         }}
                       >
                         <TableHeader>
@@ -716,7 +715,7 @@ export function TournamentBreakdown({ year }: Props) {
                                         );
                                       })}
                                       {userIds.length > 4 && (
-                                        <span className="w-7 h-7 rounded-full bg-default-100 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
+                                        <span className="w-7 h-7 rounded-full bg-default/60 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
                                           +{userIds.length - 4}
                                         </span>
                                       )}
@@ -726,7 +725,7 @@ export function TournamentBreakdown({ year }: Props) {
                                         {names.join(" • ")}
                                       </p>
                                       {/* On small screens, show meta under the name to avoid extra columns */}
-                                      <p className="sm:hidden text-[11px] text-default-500">
+                                      <p className="sm:hidden text-[11px] text-muted">
                                         {(score || "—") +
                                           " • " +
                                           formatPrize(totalPrize)}

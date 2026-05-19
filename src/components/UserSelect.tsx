@@ -145,7 +145,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
               return (
                 <div
                   key={id}
-                  className="inline-flex items-center gap-1 bg-content2 rounded-full px-2 py-1 text-sm"
+                  className="inline-flex items-center gap-1 bg-surface-secondary rounded-full px-2 py-1 text-sm"
                 >
                   <span className="truncate max-w-[200px]">{labelText}</span>
                   <Button

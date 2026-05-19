@@ -2,6 +2,7 @@ import React from "react";
 import {
   Card,
   Input,
+  InputGroup,
   TextArea,
   Button,
   DatePicker,
@@ -654,7 +655,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     <h3 className="text-sm font-semibold">
                       Registration Window
                     </h3>
-                    <span className="text-xs text-foreground-500">
+                    <span className="text-xs text-muted">
                       Stored in UTC
                     </span>
                   </div>
@@ -687,7 +688,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       isInvalid={!!errors.registrationWindow}
                       errorMessage={errors.registrationWindow}
                     />
-                    <p className="text-xs text-foreground-500">
+                    <p className="text-xs text-muted">
                       Times are displayed in your local timezone and saved in
                       UTC.
                     </p>
@@ -724,23 +725,27 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.maxTeams}
                 errorMessage={errors.maxTeams}
               />
-              <Input
-                type="number"
-                label="Prize Pool ($)"
-                placeholder="Enter prize amount"
-                value={String(prizePool)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPrizePool(parseFloat(e.target.value) || 0)
-                }
-                min={0}
-                startContent={
-                  <div className="pointer-events-none flex items-center">
-                    <span className="text-default-400 text-small">$</span>
-                  </div>
-                }
-                isInvalid={!!errors.prizePool}
-                errorMessage={errors.prizePool}
-              />
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm">Prize Pool ($)</Label>
+                <InputGroup>
+                  <InputGroup.Prefix>
+                    <span className="text-muted text-sm px-1">$</span>
+                  </InputGroup.Prefix>
+                  <InputGroup.Input
+                    type="number"
+                    placeholder="Enter prize amount"
+                    value={String(prizePool)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPrizePool(parseFloat(e.target.value) || 0)
+                    }
+                    min={0}
+                    aria-invalid={!!errors.prizePool}
+                  />
+                </InputGroup>
+                {errors.prizePool && (
+                  <p className="text-xs text-danger">{errors.prizePool}</p>
+                )}
+              </div>
               <Select
                 value={tee}
                 onChange={(val) => {
@@ -764,7 +769,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                               opt === "Blue"
                                 ? "w-3 h-3 rounded-full bg-blue-500 inline-block"
                                 : opt === "White"
-                                  ? "w-3 h-3 rounded-full bg-default-300 inline-block border border-default-400"
+                                  ? "w-3 h-3 rounded-full bg-default/60 inline-block border"
                                   : opt === "Gold"
                                     ? "w-3 h-3 rounded-full bg-yellow-500 inline-block"
                                     : opt === "Red"
@@ -777,7 +782,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                               opt === "Blue"
                                 ? "text-blue-600 dark:text-blue-300"
                                 : opt === "White"
-                                  ? "text-default-700 dark:text-default-300"
+                                  ? "text-foreground dark:text-muted"
                                   : opt === "Gold"
                                     ? "text-yellow-600 dark:text-yellow-400"
                                     : opt === "Red"
@@ -849,7 +854,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                           >
                             <div className="flex flex-col">
                               <span>{t.title}</span>
-                              <span className="text-xs text-default-400">
+                              <span className="text-xs text-muted">
                                 {year}
                               </span>
                             </div>
@@ -873,42 +878,40 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       variant="tertiary"
                       onPress={handleFetchWeather}
                       isDisabled={!date}
-                      startContent={
-                        !fetchingWeather && (
-                          <Icon icon="lucide:cloud" className="w-4 h-4" />
-                        )
-                      }
                     >
+                      {!fetchingWeather && (
+                        <Icon icon="lucide:cloud" className="w-4 h-4" />
+                      )}
                       {weather ? "Refresh" : "Fetch"} Weather
                     </Button>
                   </div>
                   {weather ? (
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-foreground-500 text-xs">Condition</p>
+                        <p className="text-muted text-xs">Condition</p>
                         <p className="font-medium">{weather.condition}</p>
                       </div>
                       <div>
-                        <p className="text-foreground-500 text-xs">
+                        <p className="text-muted text-xs">
                           Temperature
                         </p>
                         <p className="font-medium">{weather.temperature}°F</p>
                       </div>
                       <div>
-                        <p className="text-foreground-500 text-xs">
+                        <p className="text-muted text-xs">
                           Wind Speed
                         </p>
                         <p className="font-medium">{weather.windSpeed} mph</p>
                       </div>
                       <div>
-                        <p className="text-foreground-500 text-xs">
+                        <p className="text-muted text-xs">
                           Precipitation
                         </p>
                         <p className="font-medium">{weather.precipitation}"</p>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground-500">
+                    <p className="text-sm text-muted">
                       {date
                         ? "Click 'Fetch Weather' to load historical weather data"
                         : "Set a tournament date to fetch weather"}
@@ -1006,21 +1009,18 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 <h3 className="text-lg font-medium">Registrations</h3>
                 <Icon
                   icon="lucide:chevron-down"
-                  className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${regsOpen ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 text-muted transition-transform duration-200 ${regsOpen ? "rotate-180" : ""}`}
                 />
               </button>
               {regsOpen && (
                 <div className="pt-2">
                   {isAdmin && (
                     <div className="mb-4 flex items-center gap-3">
-                      <Button
-                        size="sm"
-                        startContent={<PlusIcon className="w-4 h-4" />}
-                        onPress={() => setAddOpen(true)}
-                      >
+                      <Button size="sm" onPress={() => setAddOpen(true)}>
+                        <PlusIcon className="w-4 h-4" />
                         Add Registration
                       </Button>
-                      <div className="text-xs text-foreground-500">
+                      <div className="text-xs text-muted">
                         Team size: {players}
                       </div>
                     </div>
@@ -1028,7 +1028,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   {regsLoading ? (
                     <div>Loading registrations...</div>
                   ) : registrations.length === 0 ? (
-                    <div className="text-sm text-foreground-500">
+                    <div className="text-sm text-muted">
                       No registrations yet.
                     </div>
                   ) : (
@@ -1104,25 +1104,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   <h3 className="text-lg font-medium">Tournament Bracket</h3>
                   <Icon
                     icon="lucide:chevron-down"
-                    className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
+                    className={`w-5 h-5 text-muted transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
                   />
                 </button>
                 <Button
                   size="sm"
                   variant="tertiary"
                   color={tournament.bracketPublished ? "success" : "default"}
-                  startContent={
-                    !publishingBracket ? (
-                      <Icon
-                        icon={
-                          tournament.bracketPublished
-                            ? "lucide:eye"
-                            : "lucide:eye-off"
-                        }
-                        className="w-4 h-4"
-                      />
-                    ) : undefined
-                  }
                   onPress={async () => {
                     if (!tournament.firestoreId) return;
                     setPublishingBracket(true);
@@ -1149,6 +1137,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     }
                   }}
                 >
+                  {!publishingBracket && (
+                    <Icon
+                      icon={
+                        tournament.bracketPublished
+                          ? "lucide:eye"
+                          : "lucide:eye-off"
+                      }
+                      className="w-4 h-4"
+                    />
+                  )}
                   {tournament.bracketPublished ? "Published" : "Publish"}
                 </Button>
               </div>
@@ -1176,7 +1174,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 }
               }}
             />
-            <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-lg z-10">
+            <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-lg z-10">
               <h3 className="text-lg font-medium mb-2">Add Registration</h3>
               <RegistrationEditor
                 value={newMembers}
@@ -1223,7 +1221,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               className="absolute inset-0 bg-black/40"
               onClick={() => setDetailsPopoutOpen(false)}
             />
-            <div className="bg-background dark:bg-default-100 rounded-lg p-4 w-full max-w-5xl z-10 max-h-[80vh]">
+            <div className="bg-background dark:bg-default/60 rounded-lg p-4 w-full max-w-5xl z-10 max-h-[80vh]">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-medium">Details (Popout Editor)</h3>
                 <Button
@@ -1248,13 +1246,13 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     />
                   </div>
                 </div>
-                <div className="col-span-1 border rounded-md p-3 bg-content2 h-full overflow-auto prose dark:prose-invert">
+                <div className="col-span-1 border rounded-md p-3 bg-surface-secondary h-full overflow-auto prose dark:prose-invert">
                   {detailsMarkdown.trim() ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {detailsMarkdown}
                     </ReactMarkdown>
                   ) : (
-                    <div className="text-foreground-500 italic">No content</div>
+                    <div className="text-muted italic">No content</div>
                   )}
                 </div>
               </div>
@@ -1266,11 +1264,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         <Button variant="tertiary" onPress={onCancel}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          form="tournament-editor-form"
-          startContent={!isSubmitting && <Icon icon="lucide:save" />}
-        >
+        <Button type="submit" form="tournament-editor-form">
+          {!isSubmitting && <Icon icon="lucide:save" />}
           {isEditing ? "Update Tournament" : "Create Tournament"}
         </Button>
       </Card.Footer>

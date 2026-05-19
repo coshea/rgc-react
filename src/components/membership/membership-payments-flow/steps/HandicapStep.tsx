@@ -56,17 +56,17 @@ export function HandicapStep(props: {
       <Separator />
       <Card.Content className="space-y-4">
         <h3 className="text-base font-semibold">Handicap Only</h3>
-        <p className="text-sm text-default-600">
+        <p className="text-sm text-foreground">
           Provide your details below. If you don’t know your GHIN yet, you can
           leave it blank.
         </p>
 
         <div className="space-y-1 text-sm">
           <div>
-            <span className="text-default-600">Name:</span> {profileName}
+            <span className="text-foreground">Name:</span> {profileName}
           </div>
           <div>
-            <span className="text-default-600">Email:</span> {profileEmail}
+            <span className="text-foreground">Email:</span> {profileEmail}
           </div>
         </div>
 
@@ -82,7 +82,7 @@ export function HandicapStep(props: {
           inputMode="numeric"
           pattern="[0-9]*"
         />
-        <div className="text-xs text-default-500">
+        <div className="text-xs text-muted">
           We’ll save this GHIN to your profile for future renewals.
         </div>
         <div className="text-sm">

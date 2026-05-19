@@ -204,7 +204,7 @@ export default function AdminBackfillCreatedAtPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Backfill Member Since Date</h1>
-          <p className="mt-1 text-default-500 text-sm">
+          <p className="mt-1 text-muted text-sm">
             One-time migration to populate the <strong>member since</strong>{" "}
             date for members who joined before this field was tracked. Defaults
             to each member's earliest confirmed membership payment date.
@@ -213,10 +213,10 @@ export default function AdminBackfillCreatedAtPage() {
 
         {/* Criteria card */}
         <Card className="mb-6">
-          <Card.Content className="gap-2 text-sm text-default-600">
+          <Card.Content className="gap-2 text-sm text-foreground">
             <p>
               <strong>Included:</strong> Users missing a member-since date with{" "}
-              <code className="text-xs bg-default-100 px-1 py-0.5 rounded">
+              <code className="text-xs bg-default/60 px-1 py-0.5 rounded">
                 migrationEligible ≠ true
               </code>
               .
@@ -224,7 +224,7 @@ export default function AdminBackfillCreatedAtPage() {
             <p>
               <strong>Proposed date:</strong> Earliest confirmed membership dues
               payment (
-              <code className="text-xs bg-default-100 px-1 py-0.5 rounded">
+              <code className="text-xs bg-default/60 px-1 py-0.5 rounded">
                 paidAt
               </code>
               ). Members with no payment record appear as warnings and are{" "}
@@ -233,7 +233,7 @@ export default function AdminBackfillCreatedAtPage() {
             <p>
               <strong>Safe to re-run:</strong> Reload preview anytime;
               already-updated members will no longer appear (their{" "}
-              <code className="text-xs bg-default-100 px-1 py-0.5 rounded">
+              <code className="text-xs bg-default/60 px-1 py-0.5 rounded">
                 createdAt
               </code>{" "}
               is set).
@@ -243,27 +243,20 @@ export default function AdminBackfillCreatedAtPage() {
 
         {/* Action bar */}
         <div className="flex gap-3 mb-6">
-          <Button
-            variant="tertiary"
-            startContent={<Icon icon="lucide:search" className="w-4 h-4" />}
-            onPress={loadPreview}
-            isDisabled={running}
-          >
+          <Button variant="tertiary" onPress={loadPreview} isDisabled={running}>
+            <Icon icon="lucide:search" className="w-4 h-4" />
             Load Preview
           </Button>
 
           {loaded && readyCount > 0 && !running && (
-            <Button
-              startContent={<Icon icon="lucide:play" className="w-4 h-4" />}
-              onPress={runBackfill}
-              isDisabled={loading}
-            >
+            <Button onPress={runBackfill} isDisabled={loading}>
+              <Icon icon="lucide:play" className="w-4 h-4" />
               Backfill {readyCount} {readyCount === 1 ? "Member" : "Members"}
             </Button>
           )}
 
           {running && (
-            <div className="flex items-center gap-2 text-default-500 text-sm">
+            <div className="flex items-center gap-2 text-muted text-sm">
               <Spinner size="sm" />
               <span>Writing updates…</span>
             </div>
@@ -282,7 +275,7 @@ export default function AdminBackfillCreatedAtPage() {
 
         {/* Loading indicator */}
         {loading && (
-          <div className="flex items-center gap-2 text-default-500 text-sm">
+          <div className="flex items-center gap-2 text-muted text-sm">
             <Spinner size="sm" />
             <span>Loading users and payment history…</span>
           </div>
@@ -311,7 +304,7 @@ export default function AdminBackfillCreatedAtPage() {
 
             {rows.length === 0 ? (
               <Card>
-                <Card.Content className="flex flex-col items-center gap-2 py-12 text-default-400">
+                <Card.Content className="flex flex-col items-center gap-2 py-12 text-muted">
                   <Icon icon="lucide:check-circle-2" className="w-10 h-10" />
                   <p className="font-medium">
                     All eligible members already have a member-since date.
@@ -332,7 +325,7 @@ export default function AdminBackfillCreatedAtPage() {
                       <TableCell className="font-medium">
                         {resolveDisplayName(row.user)}
                       </TableCell>
-                      <TableCell className="text-default-500 text-sm">
+                      <TableCell className="text-muted text-sm">
                         {row.user.email || "—"}
                       </TableCell>
                       <TableCell>
@@ -343,7 +336,7 @@ export default function AdminBackfillCreatedAtPage() {
                             year: "numeric",
                           })
                         ) : (
-                          <span className="text-default-400">
+                          <span className="text-muted">
                             No payment on record
                           </span>
                         )}

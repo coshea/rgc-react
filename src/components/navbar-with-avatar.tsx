@@ -91,15 +91,15 @@ export const MainNavbar = () => {
 
   return (
     <>
-      <nav className="z-40 w-full border-b border-default-200 bg-background/70 backdrop-blur-lg sticky top-0">
+      <nav className="z-40 w-full border-b bg-background/70 backdrop-blur-lg sticky top-0">
         <div
-          className={`flex h-[60px] w-full items-center justify-between px-4 transition-colors ${isMenuOpen ? "bg-default-200/50 dark:bg-default-100/50" : ""}`}
+          className={`flex h-[60px] w-full items-center justify-between px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
         >
           {/* Left: mobile toggle + logo */}
           <div className="flex items-center gap-2">
             {/* Mobile hamburger */}
             <button
-              className="text-default-400 md:hidden p-1"
+              className="text-muted md:hidden p-1"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
               onClick={() => setIsMenuOpen((v) => !v)}
@@ -132,7 +132,7 @@ export const MainNavbar = () => {
                   />
                 ) : (
                   <a
-                    className="text-default-500 flex items-center gap-1 px-2 py-1 text-sm hover:text-foreground transition-colors rounded"
+                    className="text-muted flex items-center gap-1 px-2 py-1 text-sm hover:text-foreground transition-colors rounded"
                     href={
                       Array.isArray(items) && items[0] ? items[0].link : "#"
                     }
@@ -155,7 +155,7 @@ export const MainNavbar = () => {
               radius="full"
               size="sm"
               aria-label="Search"
-              className="text-default-500"
+              className="text-muted"
               onPress={() => setIsSearchOpen(true)}
             >
               <Icon icon="lucide:search" className="text-lg" />
@@ -168,7 +168,7 @@ export const MainNavbar = () => {
             ) : (
               <div className="ml-2 flex gap-2">
                 <Button
-                  className="text-default-500"
+                  className="text-muted"
                   radius="full"
                   variant="ghost"
                   as={Link}
@@ -178,14 +178,13 @@ export const MainNavbar = () => {
                 </Button>
                 <Button
                   className="bg-foreground font-medium text-background"
-                  
-                  endContent={<ChevronRightIcon />}
                   radius="full"
                   variant="tertiary"
                   as={Link}
                   href={siteConfig.pages.signup.link}
                 >
                   {siteConfig.pages.signup.title}
+                  <ChevronRightIcon />
                 </Button>
               </div>
             )}
@@ -194,11 +193,11 @@ export const MainNavbar = () => {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-background pb-6 pt-4 shadow-large border-b border-default-200/60 dark:border-default-100/10">
+          <div className="md:hidden bg-background pb-6 pt-4 shadow-large border-b/60 dark:/10">
             {/* Search row */}
             <div className="px-4 mb-2">
               <button
-                className="w-full rounded-lg px-2 py-2 text-foreground hover:bg-default-100 flex items-center gap-2"
+                className="w-full rounded-lg px-2 py-2 text-foreground hover:bg-default/60 flex items-center gap-2"
                 onClick={() => {
                   setIsMenuOpen(false);
                   setIsSearchOpen(true);
@@ -206,11 +205,11 @@ export const MainNavbar = () => {
               >
                 <Icon
                   icon="lucide:search"
-                  className="text-base text-default-500"
+                  className="text-base text-muted"
                 />
                 <span>Search</span>
               </button>
-              <hr className="border-default-200/50 mt-2" />
+              <hr className="/50 mt-2" />
             </div>
 
             <ul className="px-4">
@@ -225,7 +224,7 @@ export const MainNavbar = () => {
                     />
                   ) : (
                     <a
-                      className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default-100 flex"
+                      className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default/60 flex"
                       href={
                         Array.isArray(items) && items[0] ? items[0].link : "#"
                       }
@@ -238,7 +237,7 @@ export const MainNavbar = () => {
                   )}
 
                   {idx < Object.keys(menuItemsMobile).length - 1 && (
-                    <hr className="border-default-200/50 my-1" />
+                    <hr className="/50 my-1" />
                   )}
                 </li>
               ))}

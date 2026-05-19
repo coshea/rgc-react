@@ -391,7 +391,7 @@ export function NotificationsTab() {
   return (
     <div className="max-w-3xl">
       {/* ── Compose form ──────────────────────────────────────────────── */}
-      <section className="bg-content1 rounded-xl p-6 mb-8 border border-default-200">
+      <section className="bg-surface rounded-xl p-6 mb-8 border">
         <h2 className="text-base font-semibold text-foreground mb-4">
           Compose &amp; Send
         </h2>
@@ -430,8 +430,8 @@ export function NotificationsTab() {
                 setTitle(defaults.title);
                 setBody(defaults.body);
               }}
-              startContent={<Icon icon="lucide:wand-2" className="text-sm" />}
             >
+              <Icon icon="lucide:wand-2" className="text-sm" />
               Fill defaults
             </Button>
           </div>
@@ -633,12 +633,8 @@ export function NotificationsTab() {
           />
 
           <div className="flex justify-end">
-            <Button
-              onPress={handleSend}
-              startContent={
-                !sending && <Icon icon="lucide:send" className="text-base" />
-              }
-            >
+            <Button onPress={handleSend}>
+              {!sending && <Icon icon="lucide:send" className="text-base" />}
               Send Notification
             </Button>
           </div>
@@ -646,29 +642,23 @@ export function NotificationsTab() {
       </section>
 
       {/* ── Recent sent notifications ──────────────────────────────────── */}
-      <section className="bg-content1 rounded-xl p-6 border border-default-200">
+      <section className="bg-surface rounded-xl p-6 border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-foreground">
             Recent Sent
           </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={refreshRecent}
-            startContent={
-              !loadingRecent && (
-                <Icon icon="lucide:refresh-cw" className="text-sm" />
-              )
-            }
-          >
+          <Button variant="ghost" size="sm" onPress={refreshRecent}>
+            {!loadingRecent && (
+              <Icon icon="lucide:refresh-cw" className="text-sm" />
+            )}
             Refresh
           </Button>
         </div>
 
         {loadingRecent ? (
-          <p className="text-default-400 text-sm text-center py-6">Loading…</p>
+          <p className="text-muted text-sm text-center py-6">Loading…</p>
         ) : recentNotifications.length === 0 ? (
-          <p className="text-default-400 text-sm text-center py-6">
+          <p className="text-muted text-sm text-center py-6">
             No notifications sent yet.
           </p>
         ) : (
@@ -685,21 +675,19 @@ export function NotificationsTab() {
                     color={TYPE_COLORS[n.type as NotificationType] ?? "default"}
                     variant="tertiary"
                     className="shrink-0 sm:mt-0.5"
-                    startContent={
-                      <Icon
-                        icon={
-                          NOTIFICATION_TYPES.find((t) => t.value === n.type)
-                            ?.icon ?? "lucide:bell"
-                        }
-                        className="text-xs"
-                      />
-                    }
                   >
+                    <Icon
+                      icon={
+                        NOTIFICATION_TYPES.find((t) => t.value === n.type)
+                          ?.icon ?? "lucide:bell"
+                      }
+                      className="inline-block text-xs mr-0.5"
+                    />
                     {NOTIFICATION_TYPES.find((t) => t.value === n.type)
                       ?.label ?? n.type}
                   </Chip>
                   <div className="flex items-center gap-0.5 sm:hidden">
-                    <span className="text-xs text-default-400 whitespace-nowrap">
+                    <span className="text-xs text-muted whitespace-nowrap">
                       {formatShortDate(n.createdAt)}
                     </span>
                     <Button
@@ -721,17 +709,17 @@ export function NotificationsTab() {
                   <p className="text-sm font-medium text-foreground">
                     {n.title}
                   </p>
-                  <p className="text-xs text-default-400 line-clamp-2 sm:line-clamp-1">
+                  <p className="text-xs text-muted line-clamp-2 sm:line-clamp-1">
                     {n.body}
                   </p>
                 </div>
 
                 {/* Desktop-only: full date + uid + delete */}
                 <div className="hidden sm:flex text-right shrink-0 flex-col items-end gap-1">
-                  <p className="text-[10px] text-default-300 whitespace-nowrap">
+                  <p className="text-[10px] text-muted whitespace-nowrap">
                     {formatSentAt(n.createdAt)}
                   </p>
-                  <p className="text-[10px] text-default-300 truncate max-w-[120px]">
+                  <p className="text-[10px] text-muted truncate max-w-[120px]">
                     {n.uid}
                   </p>
                   <Button

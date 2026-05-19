@@ -41,12 +41,8 @@ export default function BackButton({
   };
 
   return (
-    <Button
-      variant="tertiary"
-      size="sm"
-      startContent={<Icon icon="lucide:arrow-left" className="w-4 h-4" />}
-      onPress={handlePress}
-    >
+    <Button variant="tertiary" size="sm" onPress={handlePress}>
+      <Icon icon="lucide:arrow-left" className="w-4 h-4" />
       <span className={showLabelOnMobile ? "" : "hidden sm:inline"}>
         {label}
       </span>

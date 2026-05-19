@@ -177,7 +177,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
         >
           Add Teammate
         </Button>
-        <div className="text-sm text-foreground-500">
+        <div className="text-sm text-muted">
           {ids.length}/{maxSize}
         </div>
       </div>

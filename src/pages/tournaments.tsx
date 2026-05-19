@@ -184,8 +184,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               </RadioGroup>
               {createMethod === "copy" && (
                 <Select
-                  value={templateId ?? undefined}
-                  onChange={(key) => {
+                  selectedKey={templateId ?? undefined}
+                  onSelectionChange={(key) => {
                     setTemplateId(key ? String(key) : null);
                   }}
                 >
@@ -227,7 +227,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 Cancel
               </Button>
               <Button
-                
                 isDisabled={createMethod === "copy" && !templateId}
                 onPress={onContinueCreate}
               >
@@ -245,9 +244,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               <div className="p-8 flex flex-col items-center gap-3">
                 <Icon
                   icon="lucide:loader"
-                  className="animate-spin text-2xl text-primary"
+                  className="animate-spin text-2xl text-accent"
                 />
-                <p className="text-sm text-foreground-500">Loading editor...</p>
+                <p className="text-sm text-muted">Loading editor...</p>
               </div>
             }
           >
@@ -259,8 +258,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             />
           </React.Suspense>
         ) : (
-          <div className="p-6 bg-content1 rounded-lg border border-default-200">
-            <p className="text-foreground-500">
+          <div className="p-6 bg-surface rounded-lg border">
+            <p className="text-muted">
               You do not have permission to create or edit tournaments.
             </p>
           </div>
@@ -279,12 +278,10 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 rel="noreferrer"
                 size="sm"
                 variant="tertiary"
-                startContent={
-                  <Icon icon="lucide:calendar" className="w-4 h-4" />
-                }
                 aria-label="Subscribe to Google Calendar"
                 title="Subscribe to the club Google Calendar"
               >
+                <Icon icon="lucide:calendar" className="w-4 h-4" />
                 Subscribe
               </Button>
               {isAdmin && (
@@ -293,27 +290,22 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                     variant="tertiary"
                     size="sm"
                     onPress={() => navigate("/season-awards")}
-                    startContent={
-                      <Icon icon="lucide:medal" className="w-4 h-4" />
-                    }
                     aria-label="Go to season awards"
                   >
+                    <Icon icon="lucide:medal" className="w-4 h-4" />
                     Awards
                   </Button>
                   <Button
-                    
                     size="sm"
-                    startContent={
-                      <Icon
-                        icon="lucide:plus"
-                        className="w-4 h-4 sm:w-5 sm:h-5"
-                      />
-                    }
                     className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
                     onPress={handleCreateTournament}
                     isDisabled={isLoading}
                     aria-label="Create new tournament"
                   >
+                    <Icon
+                      icon="lucide:plus"
+                      className="w-4 h-4 sm:w-5 sm:h-5"
+                    />
                     <span className="hidden xs:inline sm:inline">
                       New Tournament
                     </span>
@@ -329,9 +321,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               <div className="flex flex-col items-center gap-2">
                 <Icon
                   icon="lucide:loader"
-                  className="text-3xl text-primary animate-spin"
+                  className="text-3xl text-accent animate-spin"
                 />
-                <p className="text-foreground-500">Loading tournaments...</p>
+                <p className="text-muted">Loading tournaments...</p>
               </div>
             </div>
           ) : (

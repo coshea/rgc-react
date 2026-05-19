@@ -48,26 +48,26 @@ export function HandicapConfirmStep(props: {
       <Separator />
       <Card.Content className="space-y-4">
         <div className="space-y-1">
-          <div className="text-sm text-default-600">Membership</div>
+          <div className="text-sm text-foreground">Membership</div>
           <div className="text-base font-semibold">Handicap Only</div>
         </div>
 
         <div className="space-y-1">
-          <div className="text-sm text-default-600">Details</div>
+          <div className="text-sm text-foreground">Details</div>
           <div className="text-sm">
             <div>
-              <span className="text-default-600">Name:</span> {profileName}
+              <span className="text-foreground">Name:</span> {profileName}
             </div>
             <div>
-              <span className="text-default-600">Email:</span> {profileEmail}
+              <span className="text-foreground">Email:</span> {profileEmail}
             </div>
             {handicap.ghin?.trim() ? (
               <div>
-                <span className="text-default-600">GHIN:</span> {handicap.ghin}
+                <span className="text-foreground">GHIN:</span> {handicap.ghin}
               </div>
             ) : (
               <div>
-                <span className="text-default-600">GHIN:</span> (not provided)
+                <span className="text-foreground">GHIN:</span> (not provided)
               </div>
             )}
           </div>
@@ -77,7 +77,7 @@ export function HandicapConfirmStep(props: {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-default-600">Handicap fee</span>
+            <span className="text-sm text-foreground">Handicap fee</span>
             <span className="font-semibold">{currency(handicapFee)}</span>
           </div>
           <div className="mb-2">

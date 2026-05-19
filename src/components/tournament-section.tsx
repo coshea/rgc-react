@@ -1,6 +1,6 @@
 import { TournamentStatusCard } from "./tournament-status-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { Button, Card,  Skeleton } from "@heroui/react";
+import { Button, Card, Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@iconify/react";
@@ -14,7 +14,7 @@ export function TournamentSection() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
-  const { data: latestYear,  isLoading: latestYearLoading } = useQuery<
+  const { data: latestYear, isLoading: latestYearLoading } = useQuery<
     number | null
   >({
     queryKey: ["latestTournamentYear"],
@@ -39,7 +39,7 @@ export function TournamentSection() {
   });
 
   const yearToShow = latestYear ?? currentYear;
-  const { tournaments,  isLoading: tournamentsLoading } = useYearlyTournaments({
+  const { tournaments, isLoading: tournamentsLoading } = useYearlyTournaments({
     year: yearToShow,
     enabled: !latestYearLoading,
   });
@@ -82,7 +82,7 @@ export function TournamentSection() {
             <h2 className="text-2xl font-bold mb-1">
               {yearToShow} Featured Tournaments
             </h2>
-            <p className="text-sm text-default-600">
+            <p className="text-sm text-foreground">
               Click on a tournament to view details and register
             </p>
           </div>
@@ -90,10 +90,10 @@ export function TournamentSection() {
             size="sm"
             variant="tertiary"
             onPress={() => navigate("/tournaments")}
-            endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
             className="self-start sm:self-auto"
           >
             View All
+            <Icon icon="lucide:arrow-right" className="w-3 h-3" />
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

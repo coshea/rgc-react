@@ -120,7 +120,7 @@ export const RegistrationsList: React.FC<Props> = ({
                           user={memberUser}
                           name={memberUser ? undefined : label}
                           alt={label}
-                          className="border border-default-200"
+                          className="border"
                         />
                       );
                     })}
@@ -142,16 +142,16 @@ export const RegistrationsList: React.FC<Props> = ({
                           setDeletingId(null);
                         }}
                       />
-                      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+                      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10">
                         <h3 className="text-lg font-medium mb-2">
                           Remove registration
                         </h3>
-                        <p className="text-sm text-foreground-500 mb-4">
+                        <p className="text-sm text-muted mb-4">
                           Are you sure you want to remove this registration?
                           This cannot be undone.
                         </p>
                         {selectedRegistration && (
-                          <div className="text-sm text-foreground-500 mb-4">
+                          <div className="text-sm text-muted mb-4">
                             <p className="font-medium">Owner:</p>
                             <p>
                               {ownerUser
@@ -203,11 +203,9 @@ export const RegistrationsList: React.FC<Props> = ({
                                 localGoldTees[reg.id] ?? [],
                               )
                             }
-                            startContent={
-                              <Icon icon="lucide:save" className="w-4 h-4" />
-                            }
                             aria-label="Save registration"
                           >
+                            <Icon icon="lucide:save" className="w-4 h-4" />
                             <span className="hidden sm:inline">Save</span>
                           </Button>
                         </Tooltip.Trigger>
@@ -221,11 +219,9 @@ export const RegistrationsList: React.FC<Props> = ({
                             size="sm"
                             variant="tertiary"
                             onPress={() => onCancelEdit()}
-                            startContent={
-                              <Icon icon="lucide:x" className="w-4 h-4" />
-                            }
                             aria-label="Cancel editing"
                           >
+                            <Icon icon="lucide:x" className="w-4 h-4" />
                             <span className="hidden sm:inline">Cancel</span>
                           </Button>
                         </Tooltip.Trigger>
@@ -242,11 +238,9 @@ export const RegistrationsList: React.FC<Props> = ({
                             size="sm"
                             variant="tertiary"
                             onPress={() => startEditing(reg)}
-                            startContent={
-                              <Icon icon="lucide:edit" className="w-4 h-4" />
-                            }
                             aria-label="Edit registration"
                           >
+                            <Icon icon="lucide:edit" className="w-4 h-4" />
                             <span className="hidden sm:inline">Edit</span>
                           </Button>
                         </Tooltip.Trigger>
@@ -263,11 +257,9 @@ export const RegistrationsList: React.FC<Props> = ({
                               setDeletingId(reg.id);
                               setConfirmOpen(true);
                             }}
-                            startContent={
-                              <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                            }
                             aria-label="Delete registration"
                           >
+                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
                             <span className="hidden sm:inline">Delete</span>
                           </Button>
                         </Tooltip.Trigger>

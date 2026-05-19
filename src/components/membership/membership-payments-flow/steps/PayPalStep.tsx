@@ -57,12 +57,12 @@ export function PayPalStep(props: {
         )}
 
         <div>
-          <div className="text-sm text-default-600">{title}</div>
+          <div className="text-sm text-foreground">{title}</div>
           <div className="text-base font-semibold">{description}</div>
         </div>
 
         <div>
-          <div className="text-sm text-default-600">Amount</div>
+          <div className="text-sm text-foreground">Amount</div>
           <div className="text-base font-semibold">{currency(amount)}</div>
         </div>
 
@@ -74,7 +74,7 @@ export function PayPalStep(props: {
 
         {paypalEnabled ? (
           <div className="w-full">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Pay online (PayPal or card)
             </div>
             <PayPalScriptProvider
@@ -97,20 +97,20 @@ export function PayPalStep(props: {
             </PayPalScriptProvider>
           </div>
         ) : (
-          <div className="text-sm text-default-600">
+          <div className="text-sm text-foreground">
             PayPal is not configured (missing `VITE_PAYPAL_CLIENT_ID`).
           </div>
         )}
 
         {/* Pay by check option */}
-        <div className="mt-6 rounded-md border border-default-200 bg-content1/50 p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+        <div className="mt-6 rounded-md border bg-surface/50 p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
             Pay by check (mail)
           </div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <div>
               <div className="font-semibold">Pay by check</div>
-              <p className="mt-2 text-sm text-default-600 whitespace-pre-line">
+              <p className="mt-2 text-sm text-foreground whitespace-pre-line">
                 {`Please make your check payable to "${siteConfig.contactAddress.name}" and mail to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street}\n${siteConfig.contactAddress.cityStateZip}\n\nPlease include your full name and the membership year in the memo so we can match it to your account.`}
               </p>
             </div>
@@ -139,7 +139,7 @@ export function PayPalStep(props: {
           />
           <div className="relative z-10 w-full max-w-md rounded-lg bg-background p-6 shadow-large">
             <h3 className="text-lg font-semibold">Confirm check payment</h3>
-            <p className="mt-2 text-sm text-default-600">
+            <p className="mt-2 text-sm text-foreground">
               Please confirm you’ve mailed your check to{" "}
               {siteConfig.contactAddress.name}. We’ll mark your membership as
               pending until it’s received.

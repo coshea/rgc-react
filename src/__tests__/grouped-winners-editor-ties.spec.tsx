@@ -105,7 +105,7 @@ describe("GroupedWinnersEditor - ties and selection", () => {
     // Find the specific row that shows "Place 2" and click its Tie button
     const place2Label = screen.getAllByText(/Place 2/i)[0];
     const place2Row = place2Label.closest(
-      "div.rounded-md.bg-content2.p-3",
+      "div.rounded-md.bg-surface-secondary.p-3",
     ) as HTMLElement;
     const tieBtn = within(place2Row).getByRole("button", { name: /Tie/i });
     fireEvent.click(tieBtn);
@@ -117,7 +117,10 @@ describe("GroupedWinnersEditor - ties and selection", () => {
     // Each row contains a combobox labeled Winner; select different users
     const place2Rows = screen
       .getAllByText(/Place 2/i)
-      .map((el) => el.closest("div.rounded-md.bg-content2.p-3") as HTMLElement);
+      .map(
+        (el) =>
+          el.closest("div.rounded-md.bg-surface-secondary.p-3") as HTMLElement,
+      );
     expect(place2Rows.length).toBe(2);
     const comboA = within(place2Rows[0]).getByRole("combobox", {
       name: /Winner|Team Members/i,

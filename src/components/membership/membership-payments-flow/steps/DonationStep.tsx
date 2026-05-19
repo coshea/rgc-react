@@ -44,7 +44,7 @@ export function DonationStep(props: {
       <Separator />
       <Card.Content className="space-y-4">
         <h3 className="text-base font-semibold">Support the Club</h3>
-        <p className="text-sm text-default-600">
+        <p className="text-sm text-foreground">
           Your contribution helps support club events, improvements, and
           operations.
         </p>

@@ -10,11 +10,11 @@ export default function CookiePolicyPage() {
     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10 px-4">
       <div className="w-full max-w-2xl">
         <h1 className={title()}>Cookie Policy</h1>
-        <p className="text-default-500 mt-2">
+        <p className="text-muted mt-2">
           Last updated: {new Date().getFullYear()}
         </p>
 
-        <div className="prose prose-invert max-w-none mt-6 text-foreground-600">
+        <div className="prose prose-invert max-w-none mt-6 text-muted">
           <p>
             We use only essential cookies by default to run this website (for
             example, to keep you logged in and secure your session). With your

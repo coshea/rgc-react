@@ -15,7 +15,7 @@ export default function SeasonAwardsPage() {
       <Card>
         <Card.Header className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-medium">Season Awards</h1>
-          <p className="text-sm text-foreground-500">
+          <p className="text-sm text-muted">
             Manage season awards by award year.
           </p>
         </Card.Header>

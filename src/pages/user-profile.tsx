@@ -187,7 +187,7 @@ const UserProfilePage: React.FC = () => {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-content1 border-default-200"
+                        className="flex items-center justify-between p-3 rounded-lg border bg-surface"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Skeleton className="w-4 h-4 rounded" />
@@ -220,15 +220,15 @@ const UserProfilePage: React.FC = () => {
           <Card.Content>
             <Icon
               icon="lucide:user-x"
-              className="w-16 h-16 mx-auto mb-4 text-default-400"
+              className="w-16 h-16 mx-auto mb-4 text-muted"
             />
             <h2 className="text-xl font-semibold mb-2">User Not Found</h2>
-            <p className="text-default-600 mb-4">
+            <p className="text-foreground mb-4">
               The user profile you're looking for doesn't exist.
             </p>
             <Link
               href={siteConfig.pages.directory.link}
-              className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium border border-default-200 hover:bg-default-100 transition-colors"
+              className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium border hover:bg-default/60 transition-colors"
             >
               Browse Member Directory
             </Link>
@@ -254,17 +254,16 @@ const UserProfilePage: React.FC = () => {
             <Button
               variant="tertiary"
               size="sm"
-              startContent={<Icon icon="lucide:bell" className="w-4 h-4" />}
               onPress={() =>
                 navigate(siteConfig.pages.notificationSettings.link)
               }
             >
+              <Icon icon="lucide:bell" className="w-4 h-4" />
               Notifications
             </Button>
             <Button
               variant="tertiary"
               size="sm"
-              startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
               onPress={() => {
                 if (isMobile) {
                   navigate("/profile/edit");
@@ -273,6 +272,7 @@ const UserProfilePage: React.FC = () => {
                 onOpen();
               }}
             >
+              <Icon icon="lucide:edit" className="w-4 h-4" />
               Edit Profile
             </Button>
           </div>
@@ -310,58 +310,50 @@ const UserProfilePage: React.FC = () => {
                       }
                       variant="tertiary"
                       size="sm"
-                      startContent={
-                        <Icon
-                          icon={
-                            profileUser.role &&
-                            BOARD_ROLE_META[
-                              profileUser.role as keyof typeof BOARD_ROLE_META
-                            ]
-                              ? BOARD_ROLE_META[
-                                  profileUser.role as keyof typeof BOARD_ROLE_META
-                                ].icon
-                              : "lucide:shield"
-                          }
-                          className="w-3 h-3"
-                        />
-                      }
                     >
+                      <Icon
+                        icon={
+                          profileUser.role &&
+                          BOARD_ROLE_META[
+                            profileUser.role as keyof typeof BOARD_ROLE_META
+                          ]
+                            ? BOARD_ROLE_META[
+                                profileUser.role as keyof typeof BOARD_ROLE_META
+                              ].icon
+                            : "lucide:shield"
+                        }
+                        className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                      />
                       {formatBoardRoleLabel(profileUser.role)}
                     </Chip>
                   )}
 
                   {profileUser.membershipType === "full" && (
-                    <Chip
-                      variant="tertiary"
-                      size="sm"
-                      startContent={
-                        <Icon icon="lucide:badge-check" className="w-3 h-3" />
-                      }
-                    >
+                    <Chip variant="tertiary" size="sm">
+                      <Icon
+                        icon="lucide:badge-check"
+                        className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                      />
                       Full Member
                     </Chip>
                   )}
 
                   {profileUser.membershipType === "handicap" && (
-                    <Chip
-                      variant="tertiary"
-                      size="sm"
-                      startContent={
-                        <Icon icon="lucide:golf" className="w-3 h-3" />
-                      }
-                    >
+                    <Chip variant="tertiary" size="sm">
+                      <Icon
+                        icon="lucide:golf"
+                        className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                      />
                       Handicap Only
                     </Chip>
                   )}
 
                   {!championshipsLoading && majorChampionships.length > 0 && (
-                    <Chip
-                      variant="tertiary"
-                      size="sm"
-                      startContent={
-                        <Icon icon="lucide:crown" className="w-3 h-3" />
-                      }
-                    >
+                    <Chip variant="tertiary" size="sm">
+                      <Icon
+                        icon="lucide:crown"
+                        className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                      />
                       {majorChampionships.length} Major
                       {majorChampionships.length !== 1 ? "s" : ""}
                     </Chip>
@@ -370,7 +362,7 @@ const UserProfilePage: React.FC = () => {
 
                 {/* Member since display */}
                 {profileUser.createdAt && (
-                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-default-600">
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-foreground">
                     <Icon icon="lucide:calendar" className="w-4 h-4" />
                     <span>
                       Member since{" "}
@@ -386,10 +378,10 @@ const UserProfilePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 {profileUser.email && (
                   <div className="flex items-center gap-2">
-                    <Icon icon="lucide:mail" className="w-4 h-4 text-primary" />
+                    <Icon icon="lucide:mail" className="w-4 h-4 text-accent" />
                     <Link
                       href={`mailto:${profileUser.email}`}
-                      className="text-default-700 underline decoration-dotted underline-offset-2"
+                      className="text-foreground underline decoration-dotted underline-offset-2"
                     >
                       {profileUser.email}
                     </Link>
@@ -399,9 +391,9 @@ const UserProfilePage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Icon
                       icon="lucide:phone"
-                      className="w-4 h-4 text-primary"
+                      className="w-4 h-4 text-accent"
                     />
-                    <span className="text-default-700">
+                    <span className="text-foreground">
                       {formatPhone(profileUser.phone)}
                     </span>
                   </div>
@@ -449,22 +441,22 @@ const UserProfilePage: React.FC = () => {
                   <div className="text-2xl font-bold text-success">
                     ${winnings?.lifetime.toLocaleString() || 0}
                   </div>
-                  <p className="text-sm text-default-600">Lifetime Winnings</p>
+                  <p className="text-sm text-foreground">Lifetime Winnings</p>
                 </div>
 
                 <Separator />
 
                 <div className="text-center space-y-2">
-                  <div className="text-xl font-semibold text-primary">
+                  <div className="text-xl font-semibold text-accent">
                     ${currentYearWinnings.toLocaleString()}
                   </div>
-                  <p className="text-sm text-default-600">
+                  <p className="text-sm text-foreground">
                     {currentYear} Winnings
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-default-700">
+                  <h4 className="text-sm font-medium text-foreground">
                     Recent Years
                   </h4>
                   {winnings?.yearly.slice(0, 4).map((yearData) => (
@@ -472,7 +464,7 @@ const UserProfilePage: React.FC = () => {
                       key={yearData.year}
                       className="flex justify-between items-center"
                     >
-                      <span className="text-sm text-default-600">
+                      <span className="text-sm text-foreground">
                         {yearData.year}
                       </span>
                       <span className="text-sm font-medium">
@@ -534,7 +526,7 @@ const UserProfilePage: React.FC = () => {
                       className={`w-8 h-8 mb-2 ${
                         championship.placement === "champion"
                           ? "text-warning"
-                          : "text-default-500"
+                          : "text-muted"
                       }`}
                     />
                     <h4 className="font-semibold text-foreground text-sm mb-1">
@@ -546,7 +538,7 @@ const UserProfilePage: React.FC = () => {
                       className={`text-lg font-bold mb-1 ${
                         championship.placement === "champion"
                           ? "text-warning"
-                          : "text-default-700"
+                          : "text-foreground"
                       }`}
                     >
                       {championship.year}
@@ -571,9 +563,9 @@ const UserProfilePage: React.FC = () => {
               <div className="text-center py-8">
                 <Icon
                   icon="lucide:trophy"
-                  className="w-12 h-12 mx-auto mb-3 text-default-300"
+                  className="w-12 h-12 mx-auto mb-3 text-muted"
                 />
-                <p className="text-default-500">No championships yet</p>
+                <p className="text-muted">No championships yet</p>
               </div>
             )}
           </Card.Content>
@@ -585,7 +577,7 @@ const UserProfilePage: React.FC = () => {
         <Card.Header className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Icon icon="lucide:award" className="w-5 h-5 text-primary" />
+              <Icon icon="lucide:award" className="w-5 h-5 text-accent" />
               <h3 className="text-lg font-semibold">Tournament Wins</h3>
               {!winsLoading && (
                 <Chip size="sm" variant="tertiary">
@@ -608,7 +600,7 @@ const UserProfilePage: React.FC = () => {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-content1 border-default-200"
+                        className="flex items-center justify-between p-3 rounded-lg border bg-surface"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Skeleton className="w-4 h-4 rounded" />
@@ -643,7 +635,7 @@ const UserProfilePage: React.FC = () => {
                 .map(([year, tournaments]) => (
                   <div key={year} className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-lg font-semibold text-primary">
+                      <h4 className="text-lg font-semibold text-accent">
                         {year}
                       </h4>
                       <Chip size="sm" variant="tertiary">
@@ -655,12 +647,12 @@ const UserProfilePage: React.FC = () => {
                       {tournaments.map((tournament) => (
                         <div
                           key={tournament.id}
-                          className="flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-content2/50 bg-content1 border-default-200"
+                          className="flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-surface-secondary/50 bg-surface"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <Icon
                               icon="lucide:trophy"
-                              className="w-4 h-4 text-primary shrink-0"
+                              className="w-4 h-4 text-accent shrink-0"
                             />
                             <h5 className="font-semibold text-foreground text-sm truncate">
                               {tournament.tournamentName}
@@ -693,12 +685,12 @@ const UserProfilePage: React.FC = () => {
             <div className="text-center py-12">
               <Icon
                 icon="lucide:trophy"
-                className="w-16 h-16 mx-auto mb-4 text-default-300"
+                className="w-16 h-16 mx-auto mb-4 text-muted"
               />
-              <h4 className="text-lg font-medium text-default-600 mb-2">
+              <h4 className="text-lg font-medium text-foreground mb-2">
                 No tournament wins yet
               </h4>
-              <p className="text-default-500">
+              <p className="text-muted">
                 Check back later for tournament victories!
               </p>
             </div>
@@ -712,7 +704,7 @@ const UserProfilePage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Icon
               icon="lucide:calendar-check"
-              className="w-5 h-5 text-primary"
+              className="w-5 h-5 text-accent"
             />
             <h3 className="text-lg font-semibold">
               Current Registration Status
@@ -730,7 +722,7 @@ const UserProfilePage: React.FC = () => {
               {[1, 2].map((i) => (
                 <div
                   key={i}
-                  className="rounded-lg border border-default-200 p-3 space-y-2"
+                  className="rounded-lg border p-3 space-y-2"
                 >
                   <Skeleton className="h-5 w-40 rounded" />
                   <Skeleton className="h-4 w-28 rounded" />
@@ -745,9 +737,9 @@ const UserProfilePage: React.FC = () => {
             <div className="text-center py-8">
               <Icon
                 icon="lucide:calendar-x"
-                className="w-12 h-12 mx-auto mb-3 text-default-300"
+                className="w-12 h-12 mx-auto mb-3 text-muted"
               />
-              <p className="text-default-500">
+              <p className="text-muted">
                 Not registered for any upcoming tournaments
               </p>
             </div>
@@ -783,20 +775,20 @@ const UserProfilePage: React.FC = () => {
                     onPress={() =>
                       navigate(`/tournaments/${tournament.firestoreId}`)
                     }
-                    className="border border-default-200 hover:border-primary/40 transition-colors"
+                    className="border hover:border-accent/40 transition-colors"
                   >
                     <Card.Header className="pb-1 flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground text-sm truncate">
                           {tournament.title}
                         </p>
-                        <p className="text-xs text-foreground-500">
+                        <p className="text-xs text-muted">
                           {tournamentDateStr}
                         </p>
                       </div>
                       <Icon
                         icon="lucide:chevron-right"
-                        className="w-4 h-4 text-foreground-400 shrink-0 mt-0.5"
+                        className="w-4 h-4 text-muted shrink-0 mt-0.5"
                         aria-hidden="true"
                       />
                     </Card.Header>
@@ -828,7 +820,7 @@ const UserProfilePage: React.FC = () => {
             <>
               <Modal.Header className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">Edit Profile</h2>
-                <p className="text-sm text-default-500">
+                <p className="text-sm text-muted">
                   Update your profile information and settings
                 </p>
               </Modal.Header>

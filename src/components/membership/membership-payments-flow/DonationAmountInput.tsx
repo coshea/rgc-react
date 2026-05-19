@@ -79,7 +79,7 @@ export function DonationAmountInput({
         </div>
       ) : null}
       {description ? (
-        <div className="text-xs text-default-500">{description}</div>
+        <div className="text-xs text-muted">{description}</div>
       ) : null}
     </div>
   );

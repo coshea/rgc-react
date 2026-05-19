@@ -489,16 +489,16 @@ const TournamentRegister: React.FC = () => {
               <h2 className="text-xl font-medium">
                 Register for {tournament.title}
               </h2>
-              <p className="text-sm text-foreground-500">
+              <p className="text-sm text-muted">
                 Maximum players: {maxTeamSize}
               </p>
               {minTeamSize > 1 ? (
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   Minimum players: {minTeamSize}
                 </p>
               ) : null}
               {registrationId ? (
-                <p className="text-sm text-foreground-500 mt-2">
+                <p className="text-sm text-muted mt-2">
                   You're already registered — update your team below.
                 </p>
               ) : null}
@@ -515,8 +515,8 @@ const TournamentRegister: React.FC = () => {
                   . You can&apos;t create a new team. Contact your team leader
                   to make changes.
                 </Alert>
-                <div className="rounded-md border border-default-200 bg-content1/50 p-4">
-                  <div className="text-sm text-default-600">Your team</div>
+                <div className="rounded-md border bg-surface/50 p-4">
+                  <div className="text-sm text-foreground">Your team</div>
                   <ul className="mt-2 space-y-1 text-sm">
                     {memberTeam.map(
                       (member: { id?: string; displayName?: string }) => (
@@ -569,14 +569,14 @@ const TournamentRegister: React.FC = () => {
                     className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
-                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                        : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
                     <div
                       className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
                         openSpotsOptIn
                           ? "bg-warning/15 text-warning"
-                          : "bg-default-100 text-foreground-400"
+                          : "bg-default/60 text-muted"
                       }`}
                     >
                       <Icon icon="lucide:user-plus" className="w-4 h-4" />
@@ -585,7 +585,7 @@ const TournamentRegister: React.FC = () => {
                       <div className="text-sm font-medium">
                         Open to new players
                       </div>
-                      <div className="text-xs text-foreground-500 mt-0.5">
+                      <div className="text-xs text-muted mt-0.5">
                         Let others know your team has open spots and contact you
                         to join.
                       </div>
@@ -602,14 +602,14 @@ const TournamentRegister: React.FC = () => {
                     className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
-                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                        : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
                     <div
                       className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
                         openSpotsOptIn
                           ? "bg-warning/15 text-warning"
-                          : "bg-default-100 text-foreground-400"
+                          : "bg-default/60 text-muted"
                       }`}
                     >
                       <Icon icon="lucide:users" className="w-4 h-4" />
@@ -618,7 +618,7 @@ const TournamentRegister: React.FC = () => {
                       <div className="text-sm font-medium">
                         Looking for a partner team
                       </div>
-                      <div className="text-xs text-foreground-500 mt-0.5">
+                      <div className="text-xs text-muted mt-0.5">
                         Advertise that your pair is looking for another team to
                         form a foursome.
                       </div>
@@ -708,7 +708,7 @@ const TournamentRegister: React.FC = () => {
                   <>
                     <Modal.Header>Cancel registration</Modal.Header>
                     <Modal.Body>
-                      <p className="text-sm text-foreground-500">
+                      <p className="text-sm text-muted">
                         Are you sure you want to cancel your registration? This
                         cannot be undone.
                       </p>
@@ -747,7 +747,7 @@ const TournamentRegister: React.FC = () => {
                 <>
                   <Modal.Header>Player Already Registered</Modal.Header>
                   <Modal.Body>
-                    <p className="text-sm text-foreground-500">
+                    <p className="text-sm text-muted">
                       One or more selected teammates already appear on another
                       registered team.
                     </p>
@@ -770,7 +770,7 @@ const TournamentRegister: React.FC = () => {
                         return (
                           <Card
                             key={c.playerId + idx}
-                            className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
+                            className="p-3 border border-warning-300/50 bg-warning dark:bg-warning/10"
                             data-testid="conflict-team-card"
                           >
                             <Card.Content className="p-0">
@@ -784,7 +784,7 @@ const TournamentRegister: React.FC = () => {
                                     return (
                                       <div
                                         key={mid}
-                                        className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
+                                        className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
                                         aria-label={label}
                                       >
                                         {memberUser?.displayName
@@ -810,7 +810,7 @@ const TournamentRegister: React.FC = () => {
                                     is already on this team:
                                   </p>
                                   <div
-                                    className="text-xs text-foreground-600 space-y-0.5"
+                                    className="text-xs text-muted space-y-0.5"
                                     data-testid="conflict-team-names"
                                   >
                                     {teamMemberIds.map((id) => (
@@ -824,7 +824,7 @@ const TournamentRegister: React.FC = () => {
                         );
                       })}
                     </div>
-                    <p className="text-sm text-warning-600 dark:text-warning-500">
+                    <p className="text-sm text-warning-600 dark:text-warning">
                       Continuing will register a team containing a player
                       already on another team.
                     </p>

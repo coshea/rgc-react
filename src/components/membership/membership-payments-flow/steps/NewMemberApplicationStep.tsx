@@ -1,12 +1,4 @@
-import {
-  Button,
-  Card,
-  
-  
-  
-  Checkbox,
-  Separator,
-} from "@heroui/react";
+import { Button, Card, Checkbox, Separator } from "@heroui/react";
 import { useState } from "react";
 import type { NewMemberState } from "../types";
 import BackButton from "@/components/back-button";
@@ -70,13 +62,13 @@ export function NewMemberApplicationStep(props: {
       <Card.Content className="space-y-6">
         <div className="space-y-2">
           <h3 className="text-base font-semibold">New Member Application</h3>
-          <p className="text-sm text-default-600">
+          <p className="text-sm text-foreground">
             Thank you for your interest in joining the club. New member
             applications are accepted by mail only.
           </p>
         </div>
 
-        <div className="rounded-medium border border-warning/40 bg-warning/10 p-4">
+        <div className="rounded-md border border-warning/40 bg-warning/10 p-4">
           <div className="flex items-start gap-3">
             <Icon
               icon="lucide:alert-triangle"
@@ -88,7 +80,7 @@ export function NewMemberApplicationStep(props: {
               <p className="font-semibold text-foreground">
                 Mailing the application is mandatory.
               </p>
-              <p className="text-sm text-foreground-600 mt-1">
+              <p className="text-sm text-muted mt-1">
                 We cannot process new member requests without a completed paper
                 application mailed to the club.
               </p>
@@ -98,7 +90,7 @@ export function NewMemberApplicationStep(props: {
 
         <div className="space-y-3">
           <h4 className="font-semibold">Step 1: Download the application</h4>
-          <p className="text-sm text-default-600">
+          <p className="text-sm text-foreground">
             Fill out the PDF application and include any required signatures.
           </p>
           <Button
@@ -106,13 +98,10 @@ export function NewMemberApplicationStep(props: {
             href={hasApplicationUrl ? membershipApplicationUrl : undefined}
             target={hasApplicationUrl ? "_blank" : undefined}
             rel={hasApplicationUrl ? "noreferrer" : undefined}
-            
             variant="tertiary"
             isDisabled={!hasApplicationUrl}
-            startContent={
-              <Icon icon="lucide:file-text" width={16} height={16} />
-            }
           >
+            <Icon icon="lucide:file-text" width={16} height={16} />
             {hasApplicationUrl ? "Download Application PDF" : "PDF unavailable"}
           </Button>
           {!hasApplicationUrl ? (
@@ -130,20 +119,20 @@ export function NewMemberApplicationStep(props: {
 
         <div className="space-y-3">
           <h4 className="font-semibold">Step 2: Mail the application</h4>
-          <p className="text-sm text-default-600">
+          <p className="text-sm text-foreground">
             Mail your completed application to the same address used for check
             payments:
           </p>
-          <div className="rounded-medium border border-content3 bg-content2 px-4 py-3 text-sm">
+          <div className="rounded-md border border-content3 bg-surface-secondary px-4 py-3 text-sm">
             <div className="font-semibold text-foreground">
               {contactAddress.name}
             </div>
-            <div className="text-foreground-600">{contactAddress.street}</div>
-            <div className="text-foreground-600">
+            <div className="text-muted">{contactAddress.street}</div>
+            <div className="text-muted">
               {contactAddress.cityStateZip}
             </div>
           </div>
-          <p className="text-xs text-default-500">
+          <p className="text-xs text-muted">
             Applications are not accepted by email or in-person drop-off.
           </p>
         </div>
@@ -172,12 +161,7 @@ export function NewMemberApplicationStep(props: {
       </Card.Content>
       <Separator />
       <Card.Footer className="flex justify-end">
-        <Button
-          
-          onPress={handleSubmit}
-         
-          isDisabled={!hasApplicationUrl}
-        >
+        <Button onPress={handleSubmit} isDisabled={!hasApplicationUrl}>
           Continue to Payment
         </Button>
       </Card.Footer>

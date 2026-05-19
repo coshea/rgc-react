@@ -1,13 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  
-  
-  Button,
-  Separator,
-  Spinner,
-} from "@heroui/react";
+import { Card, Button, Separator, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -99,14 +92,14 @@ export const PolicyPage: React.FC = () => {
           <Card.Content className="text-center py-12">
             <Icon
               icon="lucide:file-text"
-              className="w-16 h-16 mx-auto mb-4 text-default-300"
+              className="w-16 h-16 mx-auto mb-4 text-muted"
             />
             <h2 className="text-xl font-semibold mb-2">Policy Not Found</h2>
-            <p className="text-default-500 mb-4">
+            <p className="text-muted mb-4">
               This policy document hasn't been created yet.
             </p>
             {isAdmin && (
-              <Button  onPress={handleEdit}>
+              <Button onPress={handleEdit}>
                 <Icon icon="lucide:plus" className="w-4 h-4" />
                 Create Policy
               </Button>
@@ -127,27 +120,22 @@ export const PolicyPage: React.FC = () => {
             <div className="flex items-center gap-3">
               <Icon
                 icon="lucide:file-text"
-                className="w-8 h-8 text-primary shrink-0"
+                className="w-8 h-8 text-accent shrink-0"
               />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {policy.title || POLICY_LABELS[policy.type]}
               </h1>
             </div>
             {isAdmin && (
-              <Button
-                
-                variant="tertiary"
-                size="sm"
-                onPress={handleEdit}
-                startContent={<Icon icon="lucide:pencil" className="w-4 h-4" />}
-              >
+              <Button variant="tertiary" size="sm" onPress={handleEdit}>
+                <Icon icon="lucide:pencil" className="w-4 h-4" />
                 Edit
               </Button>
             )}
           </div>
 
           {policy.updatedAt && (
-            <div className="flex items-center gap-2 text-sm text-default-500 w-full">
+            <div className="flex items-center gap-2 text-sm text-muted w-full">
               <Icon icon="lucide:calendar" className="w-4 h-4" />
               <span>Last updated: {formatDate(toDate(policy.updatedAt))}</span>
               {policy.lastUpdatedByName && (
@@ -163,7 +151,7 @@ export const PolicyPage: React.FC = () => {
         <Separator />
 
         <Card.Content className="py-6">
-          <div className="max-w-none [&_a]:text-primary [&_a]:underline [&_a]:cursor-pointer hover:[&_a]:text-primary-600 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_li]:mb-1 [&_strong]:font-semibold">
+          <div className="max-w-none [&_a]:text-accent [&_a]:underline [&_a]:cursor-pointer hover:[&_a]:text-accent [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4 [&_li]:mb-1 [&_strong]:font-semibold">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {policy.content}
             </ReactMarkdown>

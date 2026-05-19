@@ -92,7 +92,7 @@ export function TournamentStatusTab() {
             </ListBox>
           </Select.Popover>
         </Select>
-        <p className="text-sm text-default-500">
+        <p className="text-sm text-muted">
           {isLoading
             ? "Loading…"
             : tournaments.length === 0
@@ -106,7 +106,7 @@ export function TournamentStatusTab() {
           <Spinner size="lg" />
         </div>
       ) : tournaments.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-default-400">
+        <div className="flex flex-col items-center gap-3 py-12 text-muted">
           <Icon icon="lucide:calendar-check" className="w-12 h-12 opacity-40" />
           <p className="text-sm">No tournaments found for {selectedYear}.</p>
         </div>

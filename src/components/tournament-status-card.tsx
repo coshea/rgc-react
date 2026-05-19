@@ -44,24 +44,19 @@ export function TournamentStatusCard({
     timeZone: "UTC",
   });
 
-  return (
-    <Card
-      as={tournament.firestoreId ? Link : undefined}
-      to={
-        tournament.firestoreId
-          ? `/tournaments/${tournament.firestoreId}`
-          : undefined
-      }
-    >
-      <Card.Header className="flex items-start justify-between gap-2 pb-2">
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{tournament.title}</p>
-          <p className="text-sm text-default-400 mt-0.5">{formattedDate}</p>
+  const cardBody = (
+    <Card>
+      <Card.Header className="pb-2">
+        <div className="flex items-start justify-between gap-2 w-full">
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold leading-snug">{tournament.title}</p>
+            <p className="text-sm text-muted mt-0.5">{formattedDate}</p>
+          </div>
+          <TournamentStatusChip tournament={tournament} />
         </div>
-        <TournamentStatusChip tournament={tournament} />
       </Card.Header>
       <Card.Content className="pt-0 space-y-3">
-        <div className="flex items-center gap-4 text-sm text-default-500">
+        <div className="flex items-center gap-4 text-sm text-muted">
           <span className="flex items-center gap-1">
             <Icon icon="lucide:users" className="w-3.5 h-3.5" />
             {tournament.players}-player teams
@@ -77,30 +72,27 @@ export function TournamentStatusCard({
           )}
           {tournament.prizePool > 0 && (
             <span className="flex items-center gap-1">
-              <Icon
-                icon="lucide:trophy"
-                className="w-3.5 h-3.5 text-warning-500"
-              />
+              <Icon icon="lucide:trophy" className="w-3.5 h-3.5 text-warning" />
               ${tournament.prizePool.toLocaleString()}
             </span>
           )}
         </div>
         {tournament.description && (
-          <p className="text-xs text-default-500 line-clamp-2">
+          <p className="text-xs text-muted line-clamp-2">
             {tournament.description}
           </p>
         )}
 
         {/* Registration fill rate — only shown to authenticated users */}
         {user && isLoading ? (
-          <div className="flex items-center gap-2 text-xs text-default-400">
+          <div className="flex items-center gap-2 text-xs text-muted">
             <Spinner size="sm" />
             Loading registrations…
           </div>
         ) : user ? (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-default-600">
+              <span className="text-foreground">
                 {tournament.players === 1
                   ? "Players registered"
                   : "Teams registered"}
@@ -108,7 +100,7 @@ export function TournamentStatusCard({
               <span className="font-semibold">
                 {teamCount}
                 {cap !== undefined && (
-                  <span className="text-default-400 font-normal"> / {cap}</span>
+                  <span className="text-muted font-normal"> / {cap}</span>
                 )}
                 {!registrationClosed && isFull && (
                   <Chip
@@ -137,15 +129,15 @@ export function TournamentStatusCard({
                 aria-valuenow={fillPct}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                className="h-2 w-full rounded-full bg-default-200 overflow-hidden"
+                className="h-2 w-full rounded-full bg-default/60 overflow-hidden"
               >
                 <div
                   className={`h-full rounded-full transition-all ${
                     isFull
-                      ? "bg-danger-500"
+                      ? "bg-danger"
                       : isNearFull
-                        ? "bg-warning-500"
-                        : "bg-success-500"
+                        ? "bg-warning"
+                        : "bg-success"
                   }`}
                   style={{ width: `${fillPct}%` }}
                 />
@@ -157,11 +149,9 @@ export function TournamentStatusCard({
         {/* Registration window */}
         {!registrationClosed &&
           (registrationWindowInfo.start || registrationWindowInfo.end) && (
-            <div className="text-xs text-default-400 flex items-center gap-1">
+            <div className="text-xs text-muted flex items-center gap-1">
               <Icon icon="lucide:calendar-clock" className="w-3 h-3" />
-              <span className="font-medium text-default-500">
-                Registration:
-              </span>
+              <span className="font-medium text-muted">Registration:</span>
               {registrationWindowInfo.start && (
                 <span>
                   Opens{" "}
@@ -187,5 +177,19 @@ export function TournamentStatusCard({
           )}
       </Card.Content>
     </Card>
+  );
+
+  if (!tournament.firestoreId) return cardBody;
+
+  return (
+    <Link
+      to={`/tournaments/${tournament.firestoreId}`}
+      className="block group"
+      aria-label={`View details for ${tournament.title}`}
+    >
+      <div className="transition-transform group-hover:scale-[1.01]">
+        {cardBody}
+      </div>
+    </Link>
   );
 }

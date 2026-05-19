@@ -169,7 +169,7 @@ export function BracketView({
             pointerEvents: "none",
           }}
           aria-hidden="true"
-          className="text-default-300"
+          className="text-muted"
         >
           {connectorLines.map(({ x1, y1, x2, y2, key }) => (
             <line
@@ -199,7 +199,7 @@ export function BracketView({
               }}
               className="flex items-center justify-center"
             >
-              <span className="text-xs font-semibold text-default-500 uppercase tracking-wide">
+              <span className="text-xs font-semibold text-muted uppercase tracking-wide">
                 {roundLabel(r, numRounds)}
               </span>
             </div>

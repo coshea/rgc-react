@@ -105,7 +105,7 @@ export const ContactForm = () => {
                   <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
                     Contact Us
                   </h1>
-                  <p className="text-sm sm:text-base text-default-500 mt-2">
+                  <p className="text-sm sm:text-base text-muted mt-2">
                     Let us know if you have any questions!
                   </p>
                 </div>
@@ -126,7 +126,7 @@ export const ContactForm = () => {
                     <Label>Name</Label>
                     <InputGroup>
                       <InputGroup.Prefix>
-                        <Icon icon="lucide:user" className="text-default-400" />
+                        <Icon icon="lucide:user" className="text-muted" />
                       </InputGroup.Prefix>
                       <InputGroup.Input
                         placeholder="Enter your name"
@@ -148,7 +148,7 @@ export const ContactForm = () => {
                     <Label>Email</Label>
                     <InputGroup>
                       <InputGroup.Prefix>
-                        <Icon icon="lucide:mail" className="text-default-400" />
+                        <Icon icon="lucide:mail" className="text-muted" />
                       </InputGroup.Prefix>
                       <InputGroup.Input
                         placeholder="Enter your email"

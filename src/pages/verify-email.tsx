@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Card,  Spinner, Link } from "@heroui/react";
+import { Button, Card, Spinner, Link } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { siteConfig } from "@/config/site";
 import { sendEmailVerification, ActionCodeSettings } from "firebase/auth";
@@ -79,7 +79,6 @@ export default function VerifyEmailPage() {
           <Card.Content>
             <p className="text-sm mb-4">You need to sign in first.</p>
             <Button
-              
               onPress={() =>
                 window.location.replace(siteConfig.pages.login.link)
               }
@@ -96,11 +95,11 @@ export default function VerifyEmailPage() {
     <div className="flex items-center justify-center h-full p-4">
       <Card className="max-w-lg w-full">
         <Card.Content className="space-y-5">
-          <div className="flex items-center gap-2 text-large font-medium">
+          <div className="flex items-center gap-2 text-lg font-medium">
             <Icon icon="lucide:mail" className="w-5 h-5" />
             Verify Your Email
           </div>
-          <p className="text-small text-default-500 leading-relaxed">
+          <p className="text-sm text-muted leading-relaxed">
             We sent a verification link to{" "}
             <span className="font-medium">{user.email}</span>. Please click the
             link in that email to verify your address. Once verified, refresh
@@ -108,22 +107,15 @@ export default function VerifyEmailPage() {
             your spam folder.
           </p>
           {message && (
-            <div className="text-tiny text-default-600 bg-content2 rounded-medium px-3 py-2">
+            <div className="text-xs text-foreground bg-surface-secondary rounded-md px-3 py-2">
               {message}
             </div>
           )}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              fullWidth
-              
-              onPress={checkStatus}
-             
-              startContent={
-                !checking && (
-                  <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
-                )
-              }
-            >
+            <Button fullWidth onPress={checkStatus}>
+              {!checking && (
+                <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
+              )}
               {checking ? "Checking..." : "I Verified / Refresh"}
             </Button>
             <Button
@@ -131,19 +123,16 @@ export default function VerifyEmailPage() {
               variant="tertiary"
               onPress={triggerResend}
               isDisabled={remainingMs > 0 || resendLoading}
-             
-              startContent={
-                !resendLoading && (
-                  <Icon icon="lucide:send" className="w-4 h-4" />
-                )
-              }
             >
+              {!resendLoading && (
+                <Icon icon="lucide:send" className="w-4 h-4" />
+              )}
               {remainingMs > 0
                 ? `Resend (${remainingSeconds}s)`
                 : "Resend Email"}
             </Button>
           </div>
-          <div className="text-tiny text-default-400">
+          <div className="text-xs text-muted">
             Wrong email?{" "}
             <Link href={siteConfig.pages.profile.link}>Go to profile</Link> or{" "}
             <Link href={siteConfig.pages.login.link}>log out</Link> and sign up

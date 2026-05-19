@@ -201,14 +201,14 @@ export function EditMemberModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium">
               {editing ? "Edit Member" : "Add Member"}
             </h3>
             {editing && (
-              <p className="text-xs text-default-400 mt-0.5 font-mono select-all">
+              <p className="text-xs text-muted mt-0.5 font-mono select-all">
                 {editing.id}
               </p>
             )}
@@ -219,7 +219,7 @@ export function EditMemberModal({
             variant="ghost"
             aria-label="Close"
             onPress={onClose}
-            className="text-default-500"
+            className="text-muted"
           >
             ×
           </Button>
@@ -256,7 +256,7 @@ export function EditMemberModal({
             onChange={(e: any) => onChange({ ...form, phone: e.target.value })}
             onBlur={() => onChange({ ...form, phone: formatPhone(form.phone) })}
           />
-          <div className="pt-2 border-t border-default-200 space-y-3">
+          <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -285,7 +285,7 @@ export function EditMemberModal({
                     : ROLE_OPTIONS;
                   return (
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-default-600">
+                      <label className="text-xs font-medium text-foreground">
                         Role <span className="text-danger">*</span>
                       </label>
                       <Select
@@ -330,7 +330,7 @@ export function EditMemberModal({
                 })()}
               </div>
             ) : (
-              <p className="text-[11px] text-default-500">
+              <p className="text-[11px] text-muted">
                 Check "Board Member" to assign a role (e.g. President,
                 Treasurer).
               </p>
@@ -338,12 +338,12 @@ export function EditMemberModal({
           </div>
         </div>
         {isAdmin && (
-          <div className="mt-6 pt-4 border-t border-default-200 space-y-3 text-sm">
+          <div className="mt-6 pt-4 border-t space-y-3 text-sm">
             <h4 className="text-sm font-medium">
               Membership Payment ({currentYear})
             </h4>
             {loadingPayment ? (
-              <p className="text-xs text-default-500">Loading payment…</p>
+              <p className="text-xs text-muted">Loading payment…</p>
             ) : (
               <div className="space-y-3">
                 <div className="flex gap-3">
@@ -438,12 +438,12 @@ export function EditMemberModal({
                     </Select.Popover>
                   </Select>
                 </div>
-                <p className="text-[11px] text-default-500 leading-snug">
+                <p className="text-[11px] text-muted leading-snug">
                   Marking Paid will create/update a membership payment record
                   for {currentYear}. Leaving it unchecked keeps status pending.
                 </p>
                 {editing && payment.status && (
-                  <div className="pt-2 border-t border-default-200">
+                  <div className="pt-2 border-t">
                     {confirmingDelete ? (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-danger">
@@ -469,12 +469,10 @@ export function EditMemberModal({
                       <Button
                         size="sm"
                         variant="ghost"
-                        startContent={
-                          <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
-                        }
                         isDisabled={saving}
                         onPress={() => setConfirmingDelete(true)}
                       >
+                        <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
                         Delete Payment
                       </Button>
                     )}

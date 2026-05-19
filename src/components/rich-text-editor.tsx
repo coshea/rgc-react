@@ -50,7 +50,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <label className="text-sm font-medium">{label}</label>
 
       {/* Markdown Toolbar */}
-      <div className="flex flex-wrap gap-1 p-2 border border-divider rounded-lg bg-default-50">
+      <div className="flex flex-wrap gap-1 p-2 border border-divider rounded-lg bg-default/60">
         <Button
           size="sm"
           variant="tertiary"
@@ -120,10 +120,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             size="sm"
             variant="tertiary"
             onPress={() => setShowPreview(!showPreview)}
-            startContent={
-              <Icon icon={showPreview ? "lucide:edit" : "lucide:eye"} />
-            }
           >
+            <Icon icon={showPreview ? "lucide:edit" : "lucide:eye"} />
             {showPreview ? "Edit" : "Preview"}
           </Button>
         </div>
@@ -150,7 +148,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         />
       )}
 
-      <p className="text-xs text-foreground-500">
+      <p className="text-xs text-muted">
         Supports Markdown formatting. Use the toolbar buttons or type markdown
         directly.
       </p>

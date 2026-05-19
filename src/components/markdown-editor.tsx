@@ -212,17 +212,17 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           )
         ) : (
           <div
-            className={`border rounded-md p-3 bg-content2 overflow-auto prose dark:prose-invert text-sm ${fillHeight ? "h-full" : "max-h-80"}`}
+            className={`border rounded-md p-3 bg-surface-secondary overflow-auto prose dark:prose-invert text-sm ${fillHeight ? "h-full" : "max-h-80"}`}
           >
             {value.trim() ? (
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
             ) : (
-              <div className="text-foreground-500 italic">No content</div>
+              <div className="text-muted italic">No content</div>
             )}
           </div>
         )}
       </div>
-      <p className="text-[11px] text-foreground-500">
+      <p className="text-[11px] text-muted">
         Supports Markdown & GFM (tables, strikethrough, task lists).
       </p>
     </div>

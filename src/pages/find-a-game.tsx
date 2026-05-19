@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
-import {
-  Card,
-  
-  
-  
-  Chip,
-  Button,
-} from "@heroui/react";
+import { Card, Chip, Button } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -192,7 +185,7 @@ export default function FindAGamePage() {
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">Find a Game</h1>
-        <p className="text-default-600 text-sm">
+        <p className="text-foreground text-sm">
           Post that you're looking for partners or a group, or browse posts for
           a future date.
         </p>
@@ -205,17 +198,16 @@ export default function FindAGamePage() {
               <Icon icon="lucide:calendar" className="w-4 h-4" /> Upcoming posts
             </h3>
             {!userLoggedIn ? (
-              <Chip size="sm" variant="tertiary" >
+              <Chip size="sm" variant="tertiary">
                 You must be logged in to post
               </Chip>
             ) : null}
           </div>
           <Button
-            
             isDisabled={!userLoggedIn}
             onPress={() => setCreateOpen(true)}
-            startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
           >
+            <Icon icon="lucide:plus" className="w-4 h-4" />
             New Post
           </Button>
         </Card.Header>
@@ -227,7 +219,7 @@ export default function FindAGamePage() {
           />
         </Card.Content>
         <Card.Footer>
-          <div className="text-[11px] text-default-500">
+          <div className="text-[11px] text-muted">
             Please update or delete your post if plans change. Admins may remove
             stale content.
           </div>

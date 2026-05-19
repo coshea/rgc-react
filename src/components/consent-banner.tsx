@@ -12,8 +12,8 @@ export default function ConsentBanner() {
       className="fixed inset-x-0 bottom-0 px-4 pb-4"
       style={{ zIndex: 10000 }}
     >
-      <div className="mx-auto max-w-3xl rounded-large border border-default-200/60 dark:border-default-100/10 bg-background/95 backdrop-blur p-4 shadow-large flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="flex-1 text-sm text-foreground-600">
+      <div className="mx-auto max-w-3xl rounded-lg border/60 dark:/10 bg-background/95 backdrop-blur p-4 shadow-large flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex-1 text-sm text-muted">
           <div className="flex items-center gap-2 mb-1">
             <Chip  variant="tertiary" size="sm">
               Privacy

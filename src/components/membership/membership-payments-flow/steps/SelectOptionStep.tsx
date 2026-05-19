@@ -27,16 +27,16 @@ export function SelectOptionStep(props: {
         <h2 className="text-2xl font-bold tracking-tight">
           Step 1: Membership &amp; Support
         </h2>
-        <p className="mt-2 text-sm text-default-600">
+        <p className="mt-2 text-sm text-foreground">
           Choose a membership option or support the club with a donation.
         </p>
       </div>
 
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        <Card className="relative order-2 rounded-2xl border border-default-200 md:order-1">
+        <Card className="relative order-2 rounded-2xl border md:order-1">
           <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-xl font-semibold">Handicap Only</h3>
-            <p className="text-sm text-default-600">
+            <p className="text-sm text-foreground">
               Players looking only for a GHIN Handicap Index.
             </p>
           </Card.Header>
@@ -55,12 +55,12 @@ export function SelectOptionStep(props: {
                   <span>{feature}</span>
                 </li>
               ))}
-              <li className="flex items-start gap-2 text-default-500">
+              <li className="flex items-start gap-2 text-muted">
                 <Icon
                   icon="lucide:x"
                   width={16}
                   height={16}
-                  className="mt-0.5 text-danger-500"
+                  className="mt-0.5 text-danger"
                 />
                 <span>Play in club tournaments</span>
               </li>
@@ -83,10 +83,10 @@ export function SelectOptionStep(props: {
           </Card.Footer>
         </Card>
 
-        <Card className="relative order-1 rounded-2xl border-2 border-primary shadow-lg md:order-2 md:scale-[1.02]">
+        <Card className="relative order-1 rounded-2xl border-2 border-accent shadow-lg md:order-2 md:scale-[1.02]">
           <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-2xl font-bold">{currentYear} Membership</h3>
-            <p className="text-sm text-default-600">
+            <p className="text-sm text-foreground">
               Full access to club benefits for one year.
             </p>
           </Card.Header>
@@ -127,10 +127,10 @@ export function SelectOptionStep(props: {
           </Card.Footer>
         </Card>
 
-        <Card className="relative order-3 rounded-2xl border border-default-200">
+        <Card className="relative order-3 rounded-2xl border">
           <Card.Header className="flex flex-col items-start gap-1">
             <h3 className="text-xl font-semibold">Donation Only</h3>
-            <p className="text-sm text-default-600">
+            <p className="text-sm text-foreground">
               Support the course through the Ridgefield Golf Club Improvement
               Fund (RGCIF) with a donation.
             </p>

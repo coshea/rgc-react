@@ -1038,7 +1038,7 @@ export default function MembershipPaymentsFlow({
       )}
 
       <div className="h-8" />
-      <div className="w-full max-w-4xl text-center text-sm text-default-500 space-y-2">
+      <div className="w-full max-w-4xl text-center text-sm text-muted space-y-2">
         <div>For questions, please contact the club directly.</div>
         <div className="italic">
           Thank you for being part of our club community.

@@ -48,7 +48,7 @@ export const TeeBadge: React.FC<TeeBadgeProps> = ({
         iconOnly ? (size === "xs" ? "p-0" : "p-0.5") : sizing,
         !compact && !iconOnly && colors,
         compact &&
-          "bg-transparent text-foreground-500 dark:text-foreground-400 px-0 py-0 gap-1",
+          "bg-transparent text-muted dark:text-muted px-0 py-0 gap-1",
         variant === "solid" &&
           !compact &&
           !iconOnly &&

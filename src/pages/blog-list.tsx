@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   Card,
   Button,
-  Input,
   Chip,
   Label,
   ListBox,
+  SearchField,
   Select,
   Modal,
 } from "@heroui/react";
@@ -127,10 +127,8 @@ export const BlogListPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-3xl font-bold">Club Announcements</h1>
           {isAdmin && (
-            <Button
-              onPress={() => navigate("/announcements/new")}
-              startContent={<Icon icon="lucide:plus" />}
-            >
+            <Button onPress={() => navigate("/announcements/new")}>
+              <Icon icon="lucide:plus" />
               New Post
             </Button>
           )}
@@ -138,21 +136,23 @@ export const BlogListPage: React.FC = () => {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Input
+          <SearchField
             className="flex-1"
-            placeholder="Search posts..."
             value={searchTerm}
-            onValueChange={setSearchTerm}
-            startContent={
-              <Icon icon="lucide:search" className="text-foreground-500" />
-            }
-            isClearable
+            onChange={setSearchTerm}
             onClear={() => setSearchTerm("")}
-          />
+            aria-label="Search posts"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Search posts..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
           <Select
             className="sm:w-64"
-            value={filterCategory}
-            onChange={(key) => {
+            selectedKey={filterCategory}
+            onSelectionChange={(key) => {
               if (key) setFilterCategory(key as BlogCategory | "all");
             }}
           >
@@ -180,10 +180,8 @@ export const BlogListPage: React.FC = () => {
             <Button
               variant={showAllPosts ? "primary" : "tertiary"}
               onPress={() => setShowAllPosts(!showAllPosts)}
-              startContent={
-                <Icon icon={showAllPosts ? "lucide:eye" : "lucide:eye-off"} />
-              }
             >
+              <Icon icon={showAllPosts ? "lucide:eye" : "lucide:eye-off"} />
               {showAllPosts ? "All" : "Published"}
             </Button>
           )}
@@ -195,7 +193,7 @@ export const BlogListPage: React.FC = () => {
         <div className="flex justify-center py-24">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
+            className="animate-spin text-4xl text-accent"
           />
         </div>
       )}
@@ -206,15 +204,15 @@ export const BlogListPage: React.FC = () => {
           <Card.Content className="text-center py-12">
             <Icon
               icon="lucide:file-text"
-              className="text-6xl text-foreground-300 mx-auto mb-4"
+              className="text-6xl text-muted mx-auto mb-4"
             />
-            <p className="text-xl text-foreground-500">No blog posts found</p>
+            <p className="text-xl text-muted">No blog posts found</p>
             {isAdmin && (
               <Button
                 className="mt-4"
                 onPress={() => navigate("/announcements/new")}
-                startContent={<Icon icon="lucide:plus" />}
               >
+                <Icon icon="lucide:plus" />
                 Create Your First Post
               </Button>
             )}
@@ -254,11 +252,11 @@ export const BlogListPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {post.isPinned && (
-                          <Chip
-                            size="sm"
-                            variant="tertiary"
-                            startContent={<Icon icon="lucide:pin" />}
-                          >
+                          <Chip size="sm" variant="tertiary">
+                            <Icon
+                              icon="lucide:pin"
+                              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                            />
                             Pinned
                           </Chip>
                         )}
@@ -297,11 +295,11 @@ export const BlogListPage: React.FC = () => {
                         </h2>
                       )}
                       {post.excerpt && (
-                        <p className="text-foreground-600 mb-3 line-clamp-2">
+                        <p className="text-muted mb-3 line-clamp-2">
                           {post.excerpt}
                         </p>
                       )}
-                      <div className="flex items-center gap-3 text-sm text-foreground-500">
+                      <div className="flex items-center gap-3 text-sm text-muted">
                         <span className="flex items-center gap-1">
                           <Icon icon="lucide:user" className="w-4 h-4" />
                           {post.authorName}

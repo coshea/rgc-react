@@ -335,7 +335,7 @@ export function ChampionshipEditorModal({
             <h2 className="text-xl font-bold">
               {isEditing ? "Edit Championship" : "Create Championship"}
             </h2>
-            <p className="text-sm text-default-500 font-normal">
+            <p className="text-sm text-muted font-normal">
               {isEditing
                 ? "Update championship details"
                 : "Add a new championship record"}
@@ -345,7 +345,7 @@ export function ChampionshipEditorModal({
           <Modal.Body className="gap-6">
             {/* Form errors */}
             {errors.submit && (
-              <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
+              <div className="p-3 bg-danger border border-danger-200 rounded-lg">
                 <p className="text-danger text-sm">{errors.submit}</p>
               </div>
             )}
@@ -444,12 +444,8 @@ export function ChampionshipEditorModal({
             >
               Cancel
             </Button>
-            <Button
-              onPress={handleSubmit}
-              startContent={
-                !isSubmitting && <Icon icon="lucide:save" className="w-4 h-4" />
-              }
-            >
+            <Button onPress={handleSubmit}>
+              {!isSubmitting && <Icon icon="lucide:save" className="w-4 h-4" />}
               {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
             </Button>
           </Modal.Footer>

@@ -142,7 +142,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
             <div className="flex items-center px-4 py-3 gap-3">
               <Icon
                 icon="lucide:search"
-                className="text-default-400 shrink-0 text-xl"
+                className="text-muted shrink-0 text-xl"
               />
               <Input
                 ref={inputRef}
@@ -152,7 +152,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                   base: "flex-1",
                   inputWrapper:
                     "bg-transparent shadow-none border-none px-0 hover:bg-transparent data-[hover=true]:bg-transparent group-data-[focus=true]:bg-transparent",
-                  input: "text-base placeholder:text-default-400",
+                  input: "text-base placeholder:text-muted",
                 }}
                 placeholder="Search pages and tournaments…"
                 value={searchQuery}
@@ -163,7 +163,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                   }
                 }}
               />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-default-200 bg-default-100 px-1.5 py-0.5 text-[11px] text-default-500 font-mono shrink-0">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border bg-default/60 px-1.5 py-0.5 text-[11px] text-muted font-mono shrink-0">
                 <span className="text-sm">⌘</span>K
               </kbd>
               <Button
@@ -172,7 +172,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                 radius="full"
                 size="sm"
                 aria-label="Close search"
-                className="sm:hidden text-default-400 shrink-0"
+                className="sm:hidden text-muted shrink-0"
                 onPress={onClose}
               >
                 <Icon icon="lucide:x" className="text-lg" />
@@ -190,7 +190,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               )}
 
               {!loading && noResults && (
-                <p className="py-8 text-center text-sm text-default-400">
+                <p className="py-8 text-center text-sm text-muted">
                   No results for &ldquo;{searchQuery}&rdquo;
                 </p>
               )}
@@ -198,26 +198,26 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               {/* Pages section */}
               {!loading && showPages && (
                 <section>
-                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                     Pages
                   </p>
                   {filteredPages.map((page) => (
                     <button
                       key={page.link}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default/60 transition-colors cursor-pointer"
                       onClick={() => handleSelect(page.link)}
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default/60">
                         <Icon
                           icon={page.icon ?? "lucide:file"}
-                          className="text-default-500 text-base"
+                          className="text-muted text-base"
                         />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-foreground">
                           {page.title}
                         </span>
-                        <span className="block truncate text-xs text-default-400">
+                        <span className="block truncate text-xs text-muted">
                           {page.description}
                         </span>
                       </span>
@@ -234,28 +234,28 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               {/* Tournaments section */}
               {!loading && showTournaments && (
                 <section>
-                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                     Tournaments
                   </p>
                   {filteredTournaments.map((t) => (
                     <button
                       key={t.firestoreId}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default/60 transition-colors cursor-pointer"
                       onClick={() =>
                         handleSelect(`/tournaments/${t.firestoreId}`)
                       }
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default/60">
                         <Icon
                           icon="lucide:calendar"
-                          className="text-default-500 text-base"
+                          className="text-muted text-base"
                         />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-foreground">
                           {t.title}
                         </span>
-                        <span className="block text-xs text-default-400">
+                        <span className="block text-xs text-muted">
                           {formatDate(t.date)}
                         </span>
                       </span>
@@ -274,7 +274,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
 
               {/* Default state: hint when no query entered */}
               {!loading && !trimmedQuery && !noResults && (
-                <p className="py-5 text-center text-xs text-default-400">
+                <p className="py-5 text-center text-xs text-muted">
                   Type to search pages and tournaments
                 </p>
               )}

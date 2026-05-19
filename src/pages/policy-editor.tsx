@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card,   Button, Input } from "@heroui/react";
+import { Card, Button, Input } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Policy, PolicyType, POLICY_LABELS } from "@/types/policy";
 import { getPolicyByType, updatePolicy } from "@/api/policy";
@@ -124,8 +124,8 @@ export const PolicyEditorPage: React.FC = () => {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-default-500">Loading policy...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-muted">Loading policy...</p>
         </div>
       </div>
     );
@@ -141,7 +141,7 @@ export const PolicyEditorPage: React.FC = () => {
             <div className="flex items-center gap-3 w-full">
               <Icon
                 icon="lucide:pencil"
-                className="w-8 h-8 text-primary shrink-0"
+                className="w-8 h-8 text-accent shrink-0"
               />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 {policy ? "Edit Policy" : "Create Policy"}
@@ -181,14 +181,8 @@ export const PolicyEditorPage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button
-                
-                onPress={handleSave}
-               
-                startContent={
-                  !isSaving && <Icon icon="lucide:save" className="w-4 h-4" />
-                }
-              >
+              <Button onPress={handleSave}>
+                {!isSaving && <Icon icon="lucide:save" className="w-4 h-4" />}
                 {isSaving ? "Saving..." : "Save Policy"}
               </Button>
             </div>

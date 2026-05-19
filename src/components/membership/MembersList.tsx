@@ -35,8 +35,8 @@ export function MembersList({
       <div
         className={
           isAdmin
-            ? "hidden md:grid items-center gap-4 p-4 border-b text-sm text-default-500 font-medium grid-cols-[2fr_3fr_2fr_2fr_2fr]"
-            : "hidden md:grid items-center gap-4 p-4 border-b text-sm text-default-500 font-medium grid-cols-[2fr_3fr_2fr]"
+            ? "hidden md:grid items-center gap-4 p-4 border-b text-sm text-muted font-medium grid-cols-[2fr_3fr_2fr_2fr_2fr]"
+            : "hidden md:grid items-center gap-4 p-4 border-b text-sm text-muted font-medium grid-cols-[2fr_3fr_2fr]"
         }
       >
         <div>NAME</div>

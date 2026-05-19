@@ -44,7 +44,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-3 mb-6">
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="mt-1 text-default-500 text-sm">
+            <p className="mt-1 text-muted text-sm">
               Club membership reporting, payments, and tournament status.
             </p>
           </div>

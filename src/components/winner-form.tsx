@@ -39,7 +39,7 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
   prizePool,
   isCompleted,
 }) => {
-  const { users,  isLoading: usersLoading } = useUsers();
+  const { users, isLoading: usersLoading } = useUsers();
 
   const addWinner = () => {
     const nextPlace =
@@ -138,10 +138,10 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
 
   if (!isCompleted) {
     return (
-      <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+      <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
         <Icon
           icon="lucide:trophy"
-          className="mx-auto text-2xl mb-2 text-default-400"
+          className="mx-auto text-2xl mb-2 text-muted"
         />
         <p>Winners can be added once the tournament is marked as completed</p>
       </div>
@@ -156,32 +156,29 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
           <Tooltip>
             <Tooltip.Trigger>
               <Chip
-              color={remainingPrizePool < 0 ? "danger" : "success"}
-              variant="tertiary"
-              className="min-w-[100px] justify-center"
-            >
-              ${remainingPrizePool.toLocaleString()}
-            </Chip>
+                color={remainingPrizePool < 0 ? "danger" : "success"}
+                variant="tertiary"
+                className="min-w-[100px] justify-center"
+              >
+                ${remainingPrizePool.toLocaleString()}
+              </Chip>
             </Tooltip.Trigger>
-            <Tooltip.Content>
-              Remaining prize pool
-            </Tooltip.Content>
+            <Tooltip.Content>Remaining prize pool</Tooltip.Content>
           </Tooltip>
           <Button
             size="sm"
-            
             variant="tertiary"
-            startContent={<Icon icon="lucide:plus" />}
             onPress={addWinner}
             isDisabled={remainingPrizePool <= 0}
           >
+            <Icon icon="lucide:plus" />
             Add Winner
           </Button>
         </div>
       </div>
 
       {sortedWinners.length === 0 ? (
-        <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
           <p>No winners added yet. Click "Add Winner" to get started.</p>
         </div>
       ) : (
@@ -207,7 +204,6 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                   <Button
                     size="sm"
                     isIconOnly
-                    
                     variant="ghost"
                     onPress={() => removeWinner(winner.place)}
                     aria-label={`Remove ${getPlaceLabel(winner.place)}`}
@@ -289,11 +285,6 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                         }
                       }}
                       min={0}
-                      startContent={
-                        <div className="pointer-events-none flex items-center">
-                          <span className="text-default-400 text-small">$</span>
-                        </div>
-                      }
                     />
                   </div>
                 </div>
@@ -313,18 +304,13 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
                   <div className="mt-3">
                     <div className="flex flex-wrap gap-2">
                       {winner.displayNames.map((name, index) => (
-                        <Chip
-                          key={index}
-                          
-                          variant="tertiary"
-                          size="sm"
-                        >
+                        <Chip key={index} variant="tertiary" size="sm">
                           {name}
                         </Chip>
                       ))}
                     </div>
 
-                    <div className="mt-2 text-sm text-foreground-500">
+                    <div className="mt-2 text-sm text-muted">
                       Total prize: $
                       {calculateTotalPrize(winner).toLocaleString()}
                     </div>

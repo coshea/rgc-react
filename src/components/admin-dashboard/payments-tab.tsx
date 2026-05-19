@@ -678,7 +678,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <BackButton />
             </div>
             <h1 className="text-3xl font-bold">Membership Dashboard</h1>
-            <p className="mt-2 text-default-500">
+            <p className="mt-2 text-muted">
               Payments recorded for {year}. Donations are tracked as separate
               transactions.
             </p>
@@ -742,7 +742,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             ) => (
               <Card
                 key={index}
-                className="dark:border-default-100 relative border border-transparent"
+                className="dark:relative border border-transparent"
               >
                 <section className="flex flex-col flex-nowrap">
                   <div className="flex flex-col justify-between gap-y-2 px-4 pt-4">
@@ -751,7 +751,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <Icon
                           icon={icon}
                           className={cn({
-                            "text-primary": color === "primary",
+                            "text-accent": color === "primary",
                             "text-success": color === "success",
                             "text-warning": color === "warning",
                             "text-secondary": color === "secondary",
@@ -760,19 +760,19 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                           height={18}
                         />
                         <div className="flex flex-col gap-y-0">
-                          <dt className="text-default-600 text-sm font-medium">
+                          <dt className="text-foreground text-sm font-medium">
                             {title}
                           </dt>
-                          <dd className="text-tiny text-default-400 font-normal">
+                          <dd className="text-xs text-muted font-normal">
                             {subtitle}
                           </dd>
                         </div>
                       </div>
                       <div className="flex items-baseline gap-x-2">
-                        <dd className="text-default-700 text-xl font-semibold">
+                        <dd className="text-foreground text-xl font-semibold">
                           {value}
                         </dd>
-                        <span className="text-sm text-default-500">
+                        <span className="text-sm text-muted">
                           {amount}
                         </span>
                       </div>
@@ -916,7 +916,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             {isMobileView ? (
               <div className="px-2 py-2">
                 {!isLoading && filteredRows.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-default-500">
+                  <div className="px-4 py-10 text-center text-muted">
                     No payments found.
                   </div>
                 ) : (
@@ -930,14 +930,14 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             <div className="font-medium break-words">
                               {row.name}
                             </div>
-                            <div className="text-xs text-default-500 break-all">
+                            <div className="text-xs text-muted break-all">
                               {row.email || "—"}
                             </div>
                           </div>
                         }
                       >
                         <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
-                          <div className="text-default-500">Membership</div>
+                          <div className="text-muted">Membership</div>
                           <div>
                             <Chip
                               size="sm"
@@ -947,13 +947,13 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                               {typeLabel(row.membershipType)}
                             </Chip>
                           </div>
-                          <div className="text-default-500">Method</div>
+                          <div className="text-muted">Method</div>
                           <div>{methodLabel(row.method)}</div>
-                          <div className="text-default-500">Payment</div>
+                          <div className="text-muted">Payment</div>
                           <div>{currency(row.paymentAmount)}</div>
-                          <div className="text-default-500">Donation</div>
+                          <div className="text-muted">Donation</div>
                           <div>{currency(row.donationAmount)}</div>
-                          <div className="text-default-500">Paid</div>
+                          <div className="text-muted">Paid</div>
                           <div>{formatDate(row.paidAt)}</div>
                         </div>
                       </AccordionItem>
@@ -964,7 +964,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             ) : (
               <div className="overflow-x-hidden">
                 <table className="w-full table-fixed text-left text-sm">
-                  <thead className="bg-default-100">
+                  <thead className="bg-default/60">
                     <tr>
                       <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                         Name
@@ -991,7 +991,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   </thead>
                   <tbody>
                     {paginatedRows.map((row) => (
-                      <tr key={row.id} className="border-t border-default-200">
+                      <tr key={row.id} className="border-t">
                         <td className="px-3 py-3 break-words sm:px-4">
                           {row.name}
                         </td>
@@ -1026,7 +1026,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       <tr>
                         <td
                           colSpan={7}
-                          className="px-4 py-10 text-center text-default-500"
+                          className="px-4 py-10 text-center text-muted"
                         >
                           No payments found.
                         </td>
@@ -1038,8 +1038,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             )}
           </Card.Content>
           {filteredRows.length > PAGE_SIZE ? (
-            <div className="flex items-center justify-between border-t border-default-200 px-4 py-3">
-              <span className="text-sm text-default-500">
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <span className="text-sm text-muted">
                 {(page - 1) * PAGE_SIZE + 1}–
                 {Math.min(page * PAGE_SIZE, filteredRows.length)} of{" "}
                 {filteredRows.length}
@@ -1077,7 +1077,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           <Card.Content className="p-0">
             <div className="overflow-x-hidden">
               <table className="w-full table-fixed text-left text-sm">
-                <thead className="bg-default-100">
+                <thead className="bg-default/60">
                   <tr>
                     <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                       Name
@@ -1112,7 +1112,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       r.userId;
 
                     return (
-                      <tr key={r.id} className="border-t border-default-200">
+                      <tr key={r.id} className="border-t">
                         <td className="px-3 py-3 break-words sm:px-4">
                           {name}
                         </td>
@@ -1159,7 +1159,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-4 py-6 text-center text-default-500"
+                        className="px-4 py-6 text-center text-muted"
                       >
                         No pending check payments.
                       </td>
@@ -1175,7 +1175,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           <Card className="mt-8">
             <Card.Header className="flex flex-col items-start gap-2">
               <div className="font-semibold">Bulk Record Check Payments</div>
-              <div className="text-sm text-default-500">
+              <div className="text-sm text-muted">
                 Search for members and add them to the queue, then submit all at
                 once. Members already paid this year are excluded.
               </div>
@@ -1254,9 +1254,9 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
               {/* Queue table */}
               {bulkQueue.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg border border-default-200">
+                <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-default-100">
+                    <thead className="bg-default/60">
                       <tr>
                         <th className="px-4 py-2 font-medium">Name</th>
                         <th className="px-4 py-2 font-medium">Email</th>
@@ -1282,10 +1282,10 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         return (
                           <tr
                             key={item.userId}
-                            className="border-t border-default-200"
+                            className="border-t"
                           >
                             <td className="px-4 py-2">{name}</td>
-                            <td className="px-4 py-2 text-default-500">
+                            <td className="px-4 py-2 text-muted">
                               {member?.email || "—"}
                             </td>
                             <td className="px-4 py-2">
@@ -1322,7 +1322,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   </table>
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-default-300 py-8 text-center text-sm text-default-500">
+                <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted">
                   No members queued. Use the search above to add members.
                 </div>
               )}
@@ -1358,7 +1358,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             <Card.Header className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="font-semibold">PayPal Reconciliation</div>
-                <div className="text-sm text-default-500">
+                <div className="text-sm text-muted">
                   Checks for missed PayPal membership orders from the last 14
                   days.
                 </div>
@@ -1389,10 +1389,10 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   ) : null}
                   {reconcileResult.skippedItems.length > 0 ? (
                     <div>
-                      <div className="font-medium text-default-600">
+                      <div className="font-medium text-foreground">
                         Skipped
                       </div>
-                      <ul className="mt-2 list-disc pl-5 text-default-500">
+                      <ul className="mt-2 list-disc pl-5 text-muted">
                         {reconcileResult.skippedItems.map((item, index) => (
                           <li
                             key={`skip-${item.orderId ?? "unknown"}-${index}`}
@@ -1405,7 +1405,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   ) : null}
                 </div>
               ) : (
-                <div className="text-sm text-default-500">
+                <div className="text-sm text-muted">
                   No reconciliation run yet.
                 </div>
               )}

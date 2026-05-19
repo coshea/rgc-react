@@ -349,9 +349,9 @@ export function SeasonAwardsManager() {
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Awards for {selectedYear}</h3>
         {awardsLoading ? (
-          <p className="text-sm text-foreground-500">Loading awards...</p>
+          <p className="text-sm text-muted">Loading awards...</p>
         ) : seasonAwards.length === 0 ? (
-          <p className="text-sm text-foreground-500">
+          <p className="text-sm text-muted">
             No season awards recorded yet.
           </p>
         ) : (
@@ -359,13 +359,13 @@ export function SeasonAwardsManager() {
             {seasonAwards.map((award) => (
               <div
                 key={award.id}
-                className="rounded-md border border-default-200 p-3 flex items-center justify-between gap-3"
+                className="rounded-md border p-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {award.userDisplayName}
                   </p>
-                  <p className="text-xs text-foreground-500">
+                  <p className="text-xs text-muted">
                     {SEASON_AWARD_LABELS[award.awardType]} • ${award.amount} •{" "}
                     {award.date.toLocaleDateString("en-US")}
                   </p>
@@ -392,7 +392,7 @@ export function SeasonAwardsManager() {
         )}
       </div>
 
-      <div className="flex items-center text-xs text-foreground-500 gap-2">
+      <div className="flex items-center text-xs text-muted gap-2">
         <Icon icon="lucide:info" className="w-4 h-4" />
         Awards are standalone season entries and are not tied to a tournament.
       </div>

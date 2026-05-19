@@ -35,7 +35,7 @@ export function ChampionshipCard({
     <Card
       className={`w-full transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
         isClubChampion
-          ? "border-2 border-primary bg-linear-to-br from-primary/5 to-primary/10"
+          ? "border-2 border-accent bg-linear-to-br from-primary/5 to-primary/10"
           : "bg-linear-to-br from-content1 to-content2/50 hover:bg-linear-to-br hover:from-content1 hover:to-content2"
       }`}
       shadow={isClubChampion ? "lg" : "md"}
@@ -44,10 +44,10 @@ export function ChampionshipCard({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             {isClubChampion && (
-              <Icon icon="lucide:trophy" className="w-6 h-6 text-primary" />
+              <Icon icon="lucide:trophy" className="w-6 h-6 text-accent" />
             )}
             <h3
-              className={`text-xl font-bold ${isClubChampion ? "text-primary" : ""}`}
+              className={`text-xl font-bold ${isClubChampion ? "text-accent" : ""}`}
             >
               {championshipTitle}
             </h3>
@@ -57,8 +57,8 @@ export function ChampionshipCard({
               size="sm"
               variant="tertiary"
               onPress={() => onEdit(championship)}
-              startContent={<Icon icon="lucide:edit" className="w-4 h-4" />}
             >
+              <Icon icon="lucide:edit" className="w-4 h-4" />
               Edit
             </Button>
           )}
@@ -287,9 +287,9 @@ export function ChampionshipsList({
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
-          <Icon icon="lucide:trophy" className="w-8 h-8 text-default-400" />
+          <Icon icon="lucide:trophy" className="w-8 h-8 text-muted" />
         </div>
-        <h3 className="text-lg font-semibold text-default-600 mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           {emptyMessage}
         </h3>
       </div>

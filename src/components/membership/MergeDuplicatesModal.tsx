@@ -208,7 +208,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
 
     return (
       <Card
-        className={`${primary ? "border-2 border-primary" : "border border-default-200"}`}
+        className={`${primary ? "border-2 border-accent" : "border"}`}
       >
         <Card.Content className="p-4">
           <div className="flex items-start gap-3">
@@ -224,7 +224,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   </Chip>
                 )}
               </div>
-              <div className="space-y-1 text-sm text-default-600">
+              <div className="space-y-1 text-sm text-foreground">
                 <div className="flex items-center gap-2">
                   <Icon icon="lucide:mail" className="w-4 h-4 shrink-0" />
                   <span className="truncate">{user.email || "No email"}</span>
@@ -258,7 +258,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   </div>
                 )}
               </div>
-              <div className="mt-2 text-xs text-default-400 break-all">
+              <div className="mt-2 text-xs text-muted break-all">
                 ID: {user.id}
               </div>
             </div>
@@ -316,12 +316,12 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                       <h3 className="text-lg font-semibold mb-2">
                         No Duplicates Found
                       </h3>
-                      <p className="text-default-600">
+                      <p className="text-foreground">
                         All users have unique emails and names.
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-warning-50 dark:bg-warning-100/10 border border-warning-200 rounded-lg p-3">
+                    <div className="bg-warning dark:bg-warning/10 border border-warning-200 rounded-lg p-3">
                       <div className="flex items-start gap-2">
                         <Icon
                           icon="lucide:alert-triangle"
@@ -341,16 +341,16 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                     </div>
                   )}
 
-                  <Card className="border border-default-200">
+                  <Card className="border">
                     <Card.Content className="space-y-4">
                       <div className="flex items-start gap-3">
                         <Icon
                           icon="lucide:sparkles"
-                          className="w-5 h-5 text-primary shrink-0"
+                          className="w-5 h-5 text-accent shrink-0"
                         />
                         <div>
                           <h3 className="font-semibold">Manual Merge</h3>
-                          <p className="text-sm text-default-600">
+                          <p className="text-sm text-foreground">
                             Pick any two users to merge, even if they were not
                             detected automatically.
                           </p>
@@ -394,17 +394,17 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   {duplicateGroups.length > 0 && (
                     <div className="space-y-3">
                       {duplicateGroups.map((group, idx) => (
-                        <Card key={idx} className="border border-default-200">
+                        <Card key={idx} className="border">
                           <Card.Content className="p-4">
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   {renderReasonChip(group.reason)}
-                                  <span className="text-sm text-default-600">
+                                  <span className="text-sm text-foreground">
                                     {group.users.length} users
                                   </span>
                                 </div>
-                                <p className="text-sm font-mono text-default-700">
+                                <p className="text-sm font-mono text-foreground">
                                   {group.matchValue}
                                 </p>
                               </div>
@@ -412,14 +412,12 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                                 size="sm"
                                 variant="tertiary"
                                 onPress={() => handleReviewGroup(group)}
-                                endContent={
-                                  <Icon
-                                    icon="lucide:arrow-right"
-                                    className="w-4 h-4"
-                                  />
-                                }
                               >
                                 Review
+                                <Icon
+                                  icon="lucide:arrow-right"
+                                  className="w-4 h-4"
+                                />
                               </Button>
                             </div>
                             <div className="space-y-2">
@@ -448,17 +446,17 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
               {/* Review Step: Select primary user */}
               {step === "review" && selectedGroup && (
                 <div className="space-y-4">
-                  <div className="bg-primary-50 dark:bg-primary-100/10 border border-primary-200 rounded-lg p-3">
+                  <div className="bg-accent-soft dark:bg-accent-soft/10 border border-accent rounded-lg p-3">
                     <div className="flex items-start gap-2">
                       <Icon
                         icon="lucide:info"
-                        className="w-5 h-5 text-primary shrink-0 mt-0.5"
+                        className="w-5 h-5 text-accent shrink-0 mt-0.5"
                       />
                       <div className="text-sm">
-                        <p className="font-semibold text-primary-800 dark:text-primary-200 mb-1">
+                        <p className="font-semibold text-accent dark:text-accent mb-1">
                           Select Primary User
                         </p>
-                        <p className="text-primary-700 dark:text-primary-300">
+                        <p className="text-accent dark:text-accent">
                           Choose which user record to keep. All tournament and
                           championship data from the other user(s) will be
                           merged into the primary user.
@@ -470,7 +468,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       {renderReasonChip(selectedGroup.reason)}
-                      <span className="text-sm text-default-600">
+                      <span className="text-sm text-foreground">
                         {selectedGroup.matchValue}
                       </span>
                     </div>
@@ -499,7 +497,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
               {/* Confirm Step: Final confirmation before merge */}
               {step === "confirm" && selectedGroup && (
                 <div className="space-y-4">
-                  <div className="bg-danger-50 dark:bg-danger-100/10 border border-danger-200 rounded-lg p-3">
+                  <div className="bg-danger dark:bg-danger/10 border border-danger-200 rounded-lg p-3">
                     <div className="flex items-start gap-2">
                       <Icon
                         icon="lucide:alert-triangle"
@@ -549,7 +547,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   <h3 className="text-lg font-semibold mb-2">
                     Merging Users...
                   </h3>
-                  <p className="text-default-600">
+                  <p className="text-foreground">
                     Updating championships and tournament records. Please wait.
                   </p>
                 </div>
@@ -582,12 +580,8 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                   <Button variant="tertiary" onPress={() => setStep("review")}>
                     Back
                   </Button>
-                  <Button
-                    onPress={handleConfirmMerge}
-                    startContent={
-                      <Icon icon="lucide:git-merge" className="w-4 h-4" />
-                    }
-                  >
+                  <Button onPress={handleConfirmMerge}>
+                    <Icon icon="lucide:git-merge" className="w-4 h-4" />
                     Confirm Merge
                   </Button>
                 </>

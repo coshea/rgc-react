@@ -96,7 +96,7 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
       <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold mb-1">Latest News</h2>
-          <p className="text-sm text-foreground-500">
+          <p className="text-sm text-muted">
             Stay updated with club announcements and tournament results
           </p>
         </div>
@@ -105,10 +105,10 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
             size="sm"
             variant="tertiary"
             onPress={() => navigate("/announcements")}
-            endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
             className="self-start sm:self-auto"
           >
             View All
+            <Icon icon="lucide:arrow-right" className="w-3 h-3" />
           </Button>
         )}
       </div>
@@ -137,13 +137,11 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                   <div className="flex-1 p-3 flex flex-col justify-between">
                     <div className="flex items-center gap-1.5 mb-2">
                       {post.isPinned && (
-                        <Chip
-                          size="sm"
-                          variant="tertiary"
-                          startContent={
-                            <Icon icon="lucide:pin" className="w-3 h-3" />
-                          }
-                        >
+                        <Chip size="sm" variant="tertiary">
+                          <Icon
+                            icon="lucide:pin"
+                            className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                          />
                           Pinned
                         </Chip>
                       )}
@@ -157,12 +155,12 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                     </h3>
 
                     {post.excerpt && (
-                      <p className="text-foreground-600 text-sm mb-2 line-clamp-2">
+                      <p className="text-muted text-sm mb-2 line-clamp-2">
                         {post.excerpt}
                       </p>
                     )}
 
-                    <div className="flex items-center gap-2 text-xs text-foreground-500 mt-auto">
+                    <div className="flex items-center gap-2 text-xs text-muted mt-auto">
                       <span className="flex items-center gap-1">
                         <Icon icon="lucide:user" className="w-3 h-3" />
                         {post.authorName}

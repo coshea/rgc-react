@@ -73,7 +73,7 @@ export function WinnerDisplay({
   return (
     <div
       className={
-        "flex items-center gap-3 p-2 rounded-md bg-default-100/50 dark:bg-default-50/5" +
+        "flex items-center gap-3 p-2 rounded-md bg-default/60/50 dark:bg-default/60/5" +
         (isChampion ? " ring-1 ring-amber-400/40 dark:ring-amber-300/30" : "")
       }
     >
@@ -123,7 +123,7 @@ export function WinnerDisplay({
           {nameContent}
         </p>
         {(score !== undefined || prize) && (
-          <p className="text-[11px] text-default-500 text-center">
+          <p className="text-[11px] text-muted text-center">
             {score !== undefined ? `Score: ${score}` : ""}
             {score !== undefined && prize ? " • " : ""}
             {prize ? formatPrize(prize) : ""}
@@ -142,7 +142,7 @@ export function WinnerDisplay({
           {nameContent}
         </p>
         {(score !== undefined || prize) && (
-          <p className="text-[11px] text-default-500">
+          <p className="text-[11px] text-muted">
             {score !== undefined ? `Score: ${score}` : ""}
             {score !== undefined && prize ? " • " : ""}
             {prize ? formatPrize(prize) : ""}

@@ -10,7 +10,7 @@ export default function AboutPage() {
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-12">
       <div className="inline-block max-w-3xl text-center justify-center">
         <h1 className={title()}>About Ridgefield Golf Club</h1>
-        <p className="mt-3 text-default-600">
+        <p className="mt-3 text-foreground">
           Founded in 1974, the Ridgefield Golf Club is a lively community of
           roughly 300 golfers—residents and non-residents alike—ranging from
           weekend hackers to serious competitors. We exist to create great golf,
@@ -22,7 +22,7 @@ export default function AboutPage() {
         <Card>
           <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Tournaments & Events</h2>
-            <p className="text-default-600">
+            <p className="text-foreground">
               Each season we run about 15 member tournaments—from quick fun
               formats to full competitive events. Winners earn Pro‑Shop credit
               to redeem on gear and merchandise.
@@ -32,9 +32,9 @@ export default function AboutPage() {
                 as={Link}
                 href={siteConfig.pages.tournaments.link}
                 variant="tertiary"
-                endContent={<Icon icon="lucide:chevron-right" />}
               >
                 View Tournaments
+                <Icon icon="lucide:chevron-right" />
               </Button>
             </div>
           </Card.Content>
@@ -43,7 +43,7 @@ export default function AboutPage() {
         <Card>
           <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Membership</h2>
-            <p className="text-default-600">
+            <p className="text-foreground">
               Whether you’re new in town or a long-time local, our club offers
               organized play, social events, and opportunities to improve your
               game in an inclusive atmosphere.
@@ -53,16 +53,16 @@ export default function AboutPage() {
                 as={Link}
                 href={siteConfig.pages.membership.link}
                 variant="tertiary"
-                endContent={<Icon icon="lucide:user-plus" />}
               >
                 Become a Member
+                <Icon icon="lucide:user-plus" />
               </Button>
             </div>
           </Card.Content>
         </Card>
       </div>
 
-      <div className="max-w-3xl text-center text-default-500 text-sm">
+      <div className="max-w-3xl text-center text-muted text-sm">
         <p>
           Have questions? You can reach us any time via the contact section on
           the home page.
@@ -70,7 +70,7 @@ export default function AboutPage() {
         <p>
           <a
             href={siteConfig.pages.contact.link}
-            className="text-primary hover:underline"
+            className="text-accent hover:underline"
           >
             Contact us
           </a>

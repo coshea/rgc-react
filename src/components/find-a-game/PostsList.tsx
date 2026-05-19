@@ -103,21 +103,21 @@ export function PostsList({
     return (
       <Card
         key={p.id}
-        className="border border-default-200 h-full hover:shadow-lg hover:border-primary-200 transition-all duration-200 cursor-pointer group bg-linear-to-br from-background to-default-50"
+        className="border h-full hover:shadow-lg hover:border-accent transition-all duration-200 cursor-pointer group bg-linear-to-br from-background to-default-50"
       >
         <Card.Content className="p-0 overflow-hidden">
           {/* Header with gradient background */}
           <div
             className={`px-4 py-3 ${
               isNeedPlayers
-                ? "bg-linear-to-r from-primary-50 to-primary-100/50 border-b border-primary-100"
+                ? "bg-linear-to-r from-primary-50 to-primary-100/50 border-b border-accent"
                 : "bg-linear-to-r from-secondary-50 to-secondary-100/50 border-b border-secondary-100"
             }`}
           >
             <div className="flex items-center justify-between">
               {/* Enhanced date badge */}
               <div
-                className={`flex items-center gap-3 ${isNeedPlayers ? "text-primary-700" : "text-secondary-700"}`}
+                className={`flex items-center gap-3 ${isNeedPlayers ? "text-accent" : "text-secondary-700"}`}
               >
                 <div
                   className={`w-14 h-14 rounded-xl ${
@@ -216,25 +216,25 @@ export function PostsList({
 
             {/* Actions area */}
             {canEdit(p) && (
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-default-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t">
                 <Button
                   size="sm"
                   variant="tertiary"
                   onPress={() => onEditRequest?.(p)}
-                  startContent={<Icon icon="lucide:edit" />}
                   aria-label="Edit post"
                   className="text-xs"
                 >
+                  <Icon icon="lucide:edit" />
                   <span className="hidden sm:inline">Edit</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="tertiary"
                   onPress={() => removePost(p)}
-                  startContent={<Icon icon="lucide:trash-2" />}
                   aria-label="Delete post"
                   className="text-xs"
                 >
+                  <Icon icon="lucide:trash-2" />
                   <span className="hidden sm:inline">Delete</span>
                 </Button>
               </div>
@@ -252,13 +252,13 @@ export function PostsList({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
             <Icon
               icon="lucide:calendar-search"
-              className="w-8 h-8 text-default-400"
+              className="w-8 h-8 text-muted"
             />
           </div>
-          <h3 className="text-lg font-semibold text-default-600 mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             No upcoming games
           </h3>
-          <p className="text-sm text-default-500 max-w-sm mx-auto">
+          <p className="text-sm text-muted max-w-sm mx-auto">
             Be the first to post a game! Click "New Post" to organize a round or
             find playing partners.
           </p>
@@ -267,15 +267,15 @@ export function PostsList({
 
       {needPlayers.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-3 pb-2 border-b border-primary-100">
+          <div className="flex items-center gap-3 pb-2 border-b border-accent">
             <div className="p-2 rounded-lg bg-linear-to-r from-primary-500 to-primary-600 text-white">
               <Icon icon="lucide:user-plus" className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-primary-700">
+              <h4 className="text-lg font-bold text-accent">
                 Need Players
               </h4>
-              <p className="text-xs text-default-500">
+              <p className="text-xs text-muted">
                 Join these groups looking for more players
               </p>
             </div>
@@ -296,7 +296,7 @@ export function PostsList({
               <h4 className="text-lg font-bold text-secondary-700">
                 Need A Group
               </h4>
-              <p className="text-xs text-default-500">
+              <p className="text-xs text-muted">
                 Players looking to join existing groups
               </p>
             </div>

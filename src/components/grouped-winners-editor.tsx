@@ -4,6 +4,7 @@ import {
   Card,
   Chip,
   Input,
+  InputGroup,
   Select,
   Label,
   ListBox,
@@ -290,10 +291,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
 
   if (!isCompleted) {
     return (
-      <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+      <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
         <Icon
           icon="lucide:trophy"
-          className="mx-auto text-2xl mb-2 text-default-400"
+          className="mx-auto text-2xl mb-2 text-muted"
         />
         <p>Winners can be added once the tournament is marked as completed</p>
       </div>
@@ -397,7 +398,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       </div>
 
       {sorted.length === 0 ? (
-        <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
           <p>No winner groups yet. Add one to get started.</p>
         </div>
       ) : (
@@ -494,7 +495,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                 </div>
 
                 {g.winners.length === 0 ? (
-                  <div className="bg-content2 p-3 rounded text-sm text-foreground-500">
+                  <div className="bg-surface-secondary p-3 rounded text-sm text-muted">
                     No places yet.
                   </div>
                 ) : (
@@ -508,7 +509,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       return sortedPlaces.map((w, index) => (
                         <div
                           key={w.id || `${w.place}-${index}`}
-                          className="rounded-md bg-content2 p-3"
+                          className="rounded-md bg-surface-secondary p-3"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -522,10 +523,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                 }
                                 className={`text-xl ${
                                   g.type === "closestToPin"
-                                    ? "text-primary"
+                                    ? "text-accent"
                                     : w.place === 1
                                       ? "text-warning"
-                                      : "text-default-400"
+                                      : "text-muted"
                                 }`}
                               />
                               <span className="font-medium">
@@ -688,31 +689,38 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                               />
                             )}
 
-                            <Input
-                              type="number"
-                              label="Prize Amount (per person)"
-                              min={0}
-                              value={String(w.prizeAmount ?? "")}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>,
-                              ) =>
-                                updatePlace(g.id, w.id || w.place, {
-                                  prizeAmount: parseFloat(e.target.value) || 0,
-                                })
-                              }
-                              onFocus={(e) => {
-                                if (e.target instanceof HTMLInputElement) {
-                                  e.target.select();
-                                }
-                              }}
-                              startContent={
-                                <div className="pointer-events-none flex items-center">
-                                  <span className="text-default-400 text-small">
-                                    $
-                                  </span>
-                                </div>
-                              }
-                            />
+                            <div className="flex flex-col gap-1">
+                              <Label className="text-sm">
+                                Prize Amount (per person)
+                              </Label>
+                              <InputGroup>
+                                <InputGroup.Prefix>
+                                  <div className="pointer-events-none flex items-center">
+                                    <span className="text-muted text-sm">
+                                      $
+                                    </span>
+                                  </div>
+                                </InputGroup.Prefix>
+                                <InputGroup.Input
+                                  type="number"
+                                  min={0}
+                                  value={String(w.prizeAmount ?? "")}
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>,
+                                  ) =>
+                                    updatePlace(g.id, w.id || w.place, {
+                                      prizeAmount:
+                                        parseFloat(e.target.value) || 0,
+                                    })
+                                  }
+                                  onFocus={(e) => {
+                                    if (e.target instanceof HTMLInputElement) {
+                                      e.target.select();
+                                    }
+                                  }}
+                                />
+                              </InputGroup>
+                            </div>
                           </div>
 
                           <div className="mt-2">

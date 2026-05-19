@@ -68,14 +68,13 @@ export function EmailRegistrantsButton({
     <Dropdown placement="bottom-end">
       <Dropdown.Trigger>
         <Button
-          
           variant="tertiary"
           size={size}
-          startContent={<Icon icon="lucide:mail" className="w-4 h-4" />}
-          endContent={<Icon icon="lucide:chevron-down" className="w-4 h-4" />}
           className={`font-medium whitespace-nowrap${className ? ` ${className}` : ""}`}
         >
+          <Icon icon="lucide:mail" className="w-4 h-4" />
           Email Registrants
+          <Icon icon="lucide:chevron-down" className="w-4 h-4" />
         </Button>
       </Dropdown.Trigger>
       <Dropdown.Popover>

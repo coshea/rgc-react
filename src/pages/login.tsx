@@ -2,11 +2,15 @@ import React, { useEffect, useRef } from "react";
 import {
   Button,
   Input,
+  InputGroup,
   Checkbox,
   Link,
   Form,
   Separator,
   Modal,
+  TextField,
+  Label,
+  FieldError,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
@@ -503,12 +507,12 @@ export default function LoginPage() {
     <>
       <div className="flex h-full w-full items-center justify-center">
         <div
-          className="flex w-full max-w-sm flex-col gap-4 rounded-large 
-        bg-content1 px-8 pb-10 pt-6 shadow-small"
+          className="flex w-full max-w-sm flex-col gap-4 rounded-lg 
+        bg-surface px-8 pb-10 pt-6 shadow-small"
         >
           <div className="flex flex-col gap-1">
-            <h1 className="text-large font-medium">Sign in to your account</h1>
-            <p className="text-small text-default-500">
+            <h1 className="text-lg font-medium">Sign in to your account</h1>
+            <p className="text-sm text-muted">
               to continue to Ridgefield Golf Club
             </p>
             {state?.message ? (
@@ -526,16 +530,13 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2">
             {/* Google Sign-In Button */}
             <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
               variant="outline"
               onPress={handleGoogleSignIn}
               isDisabled={authLoading || isSubmitting}
-             
             >
+              {!isSubmitting && (
+                <Icon icon="flat-color-icons:google" width={24} />
+              )}
               {authLoading || isSubmitting
                 ? "Signing in..."
                 : "Continue with Google"}
@@ -544,7 +545,7 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-4 py-2">
             <Separator className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
+            <p className="shrink-0 text-xs text-muted">OR</p>
             <Separator className="flex-1" />
           </div>
 
@@ -561,41 +562,47 @@ export default function LoginPage() {
               type="email"
               variant="outline"
               value={email}
-              onValueChange={setEmail}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.target.value)
+              }
             />
             {loginMode === "password" && (
-              <Input
-                isRequired
-                endContent={
-                  <Button
-                    isIconOnly
-                    variant="ghost"
-                    size="sm"
-                    onPress={toggleVisibility}
-                    aria-label={isVisible ? "Hide password" : "Show password"}
-                    className="min-w-0 h-auto"
-                  >
-                    {isVisible ? (
-                      <Icon
-                        className="text-2xl text-default-400"
-                        icon="solar:eye-closed-linear"
-                      />
-                    ) : (
-                      <Icon
-                        className="text-2xl text-default-400"
-                        icon="solar:eye-bold"
-                      />
-                    )}
-                  </Button>
-                }
-                label="Password"
-                name="password"
-                placeholder="Enter your password"
-                type={isVisible ? "text" : "password"}
-                variant="outline"
-                value={password}
-                onValueChange={setPassword}
-              />
+              <TextField name="password" isRequired className="w-full">
+                <Label>Password</Label>
+                <InputGroup>
+                  <InputGroup.Input
+                    placeholder="Enter your password"
+                    type={isVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(e.target.value)
+                    }
+                  />
+                  <InputGroup.Suffix>
+                    <Button
+                      isIconOnly
+                      variant="ghost"
+                      size="sm"
+                      onPress={toggleVisibility}
+                      aria-label={isVisible ? "Hide password" : "Show password"}
+                      className="min-w-0 h-auto"
+                    >
+                      {isVisible ? (
+                        <Icon
+                          className="text-2xl text-muted"
+                          icon="solar:eye-closed-linear"
+                        />
+                      ) : (
+                        <Icon
+                          className="text-2xl text-muted"
+                          icon="solar:eye-bold"
+                        />
+                      )}
+                    </Button>
+                  </InputGroup.Suffix>
+                </InputGroup>
+                <FieldError />
+              </TextField>
             )}
 
             {loginMode === "password" ? (
@@ -604,7 +611,7 @@ export default function LoginPage() {
                   Remember me
                 </Checkbox>
                 <Link
-                  className="text-default-500"
+                  className="text-muted"
                   onPress={handleForgotPassword}
                   size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
@@ -619,7 +626,7 @@ export default function LoginPage() {
             ) : (
               <div className="flex w-full justify-end px-1 py-1">
                 <Link
-                  className="text-default-500"
+                  className="text-muted"
                   onPress={handleForgotPassword}
                   size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
@@ -635,10 +642,8 @@ export default function LoginPage() {
 
             <Button
               className="w-full"
-              
               type="submit"
               isDisabled={authLoading || isSubmitting}
-             
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -652,7 +657,7 @@ export default function LoginPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-default-500"
+              className="text-muted"
               onPress={() => {
                 const nextMode =
                   loginMode === "magic-link" ? "password" : "magic-link";
@@ -667,7 +672,7 @@ export default function LoginPage() {
                 : "Sign in with email link instead"}
             </Button>
           </div>
-          <p className="text-center text-small">
+          <p className="text-center text-sm">
             Need to create an account?&nbsp;
             <Link href={siteConfig.pages.signup.link} size="sm">
               Sign Up
@@ -684,12 +689,12 @@ export default function LoginPage() {
                 Check your email
               </Modal.Header>
               <Modal.Body className="space-y-3">
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   We sent a sign-in link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the link
                   to finish signing in.
                 </p>
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">
@@ -735,7 +740,7 @@ export default function LoginPage() {
                   : "Confirm your email"}
               </Modal.Header>
               <Modal.Body className="flex flex-col gap-3">
-                <p className="text-small text-default-500">
+                <p className="text-sm text-muted">
                   {linkNeedsResend
                     ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
                     : "Enter the email address you used to request the sign-in link so we can complete your login."}
@@ -767,12 +772,7 @@ export default function LoginPage() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  
-                  type="submit"
-                 
-                  isDisabled={magicLinkSubmitting}
-                >
+                <Button type="submit" isDisabled={magicLinkSubmitting}>
                   {magicLinkSubmitting
                     ? linkNeedsResend
                       ? "Sending..."

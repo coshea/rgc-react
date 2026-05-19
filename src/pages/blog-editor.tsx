@@ -344,7 +344,7 @@ export const BlogEditorPage: React.FC = () => {
         <div className="flex justify-center items-center py-24">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
+            className="animate-spin text-4xl text-accent"
           />
         </div>
       </div>
@@ -360,18 +360,12 @@ export const BlogEditorPage: React.FC = () => {
             size="sm"
             variant="tertiary"
             onPress={() => handleSave(false)}
-           
-            startContent={!saving && <Icon icon="lucide:save" />}
           >
+            {!saving && <Icon icon="lucide:save" />}
             Save Draft
           </Button>
-          <Button
-            size="sm"
-            
-            onPress={() => handleSave(true)}
-           
-            startContent={!saving && <Icon icon="lucide:send" />}
-          >
+          <Button size="sm" onPress={() => handleSave(true)}>
+            {!saving && <Icon icon="lucide:send" />}
             Publish
           </Button>
         </div>
@@ -477,30 +471,26 @@ export const BlogEditorPage: React.FC = () => {
                       variant="tertiary"
                       onPress={applyTemplate}
                       isDisabled={!selectedTournamentId}
-                      startContent={<Icon icon="lucide:wand-2" />}
                     >
+                      <Icon icon="lucide:wand-2" />
                       Apply Template
                     </Button>
                     {formData.templateType ===
                       BlogTemplateType.TournamentResults && (
                       <Button
                         size="sm"
-                        
                         variant="tertiary"
                         onPress={handleAiWriteup}
-                       
                         isDisabled={
                           !selectedTournamentId ||
                           !tournaments.find(
                             (t) => t.firestoreId === selectedTournamentId,
                           )?.winnerGroups?.length
                         }
-                        startContent={
-                          !generatingAi && (
-                            <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                          )
-                        }
                       >
+                        {!generatingAi && (
+                          <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                        )}
                         AI Write-Up
                       </Button>
                     )}
@@ -510,12 +500,8 @@ export const BlogEditorPage: React.FC = () => {
 
               {formData.templateType ===
                 BlogTemplateType.GeneralAnnouncement && (
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={applyTemplate}
-                  startContent={<Icon icon="lucide:wand-2" />}
-                >
+                <Button size="sm" variant="tertiary" onPress={applyTemplate}>
+                  <Icon icon="lucide:wand-2" />
                   Apply Template
                 </Button>
               )}
@@ -560,22 +546,18 @@ export const BlogEditorPage: React.FC = () => {
                 </Select>
                 <Button
                   size="sm"
-                  
                   variant="tertiary"
                   onPress={handleAiWriteup}
-                 
                   isDisabled={
                     !selectedTournamentId ||
                     !tournaments.find(
                       (t) => t.firestoreId === selectedTournamentId,
                     )?.winnerGroups?.length
                   }
-                  startContent={
-                    !generatingAi && (
-                      <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                    )
-                  }
                 >
+                  {!generatingAi && (
+                    <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                  )}
                   AI Write-Up
                 </Button>
               </div>
@@ -669,7 +651,7 @@ export const BlogEditorPage: React.FC = () => {
 
           {/* Status Badge */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground-500">Status:</span>
+            <span className="text-sm text-muted">Status:</span>
             <Chip
               color={
                 formData.status === BlogPostStatus.Published
@@ -691,7 +673,7 @@ export const BlogEditorPage: React.FC = () => {
             <Card.Header>
               <div className="flex flex-col gap-0.5">
                 <h2 className="text-xl font-semibold">Tournament Results</h2>
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   This section is automatically displayed below the post
                   content. It does not need to be added to the text above.
                 </p>
@@ -708,7 +690,7 @@ export const BlogEditorPage: React.FC = () => {
                   );
                 }
                 return (
-                  <p className="text-foreground-500">
+                  <p className="text-muted">
                     No winners data available for this tournament.
                   </p>
                 );

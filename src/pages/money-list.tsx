@@ -18,7 +18,7 @@ export default function MoneyListPage() {
   if (loading) return <div className="p-4">Loading...</div>;
   if (!userLoggedIn)
     return (
-      <div className="p-4 text-sm text-default-500">
+      <div className="p-4 text-sm text-muted">
         Please sign in to view the money list.
       </div>
     );
@@ -30,13 +30,15 @@ export default function MoneyListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="space-y-1">
           <h1 className="text-lg font-semibold tracking-tight">Money List</h1>
-          <p className="text-[11px] text-default-500">
+          <p className="text-[11px] text-muted">
             Yearly earnings (tournament winnings + season awards).
           </p>
         </div>
         <Select
-          value={String(year)}
-          onChange={(key) => { if (key) setYear(Number(key)); }}
+          selectedKey={String(year)}
+          onSelectionChange={(key) => {
+            if (key) setYear(Number(key));
+          }}
           className="w-32"
         >
           <Label>Year</Label>
@@ -61,8 +63,10 @@ export default function MoneyListPage() {
       <div className="sm:hidden mb-4">
         <Select
           aria-label="Select leaderboard view"
-          value={tab}
-          onChange={(key) => { if (key) setTab(String(key)); }}
+          selectedKey={tab}
+          onSelectionChange={(key) => {
+            if (key) setTab(String(key));
+          }}
           className="max-w-xs"
         >
           <Label>View</Label>
@@ -91,10 +95,7 @@ export default function MoneyListPage() {
 
       {/* Desktop tabs */}
       <div className="hidden sm:block mb-6">
-        <Tabs
-          selectedKey={tab}
-          onSelectionChange={(k) => setTab(String(k))}
-        >
+        <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(String(k))}>
           <Tabs.ListContainer>
             <Tabs.List aria-label="Leaderboard views">
               <Tabs.Tab id="yearly">
@@ -123,7 +124,7 @@ export default function MoneyListPage() {
         {tab === "teams" && <YearlyTeamWinners year={year} />}
       </div>
 
-      <p className="text-[10px] text-default-400 leading-relaxed">
+      <p className="text-[10px] text-muted leading-relaxed">
         Prize amounts are per-person shares; team winnings shown per member.
         Totals include season awards (e.g. hole in one). Data updates live from
         tournaments and awards.

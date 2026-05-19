@@ -5,7 +5,6 @@ import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
-import { PiGolf } from "react-icons/pi";
 import { saveUserProfile, type UserProfilePayload } from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -307,7 +306,7 @@ export function ProfileForm({
                 user?.email ||
                 "User"
               }
-              className="w-24 h-24 text-large transition-transform duration-200 group-hover:scale-105 border-2 border-default-200"
+              className="w-24 h-24 text-lg transition-transform duration-200 group-hover:scale-105 border-2"
               size="lg"
               alt={
                 formData.displayName ||
@@ -336,7 +335,7 @@ export function ProfileForm({
             className="hidden"
             onChange={handleFileChange}
           />
-          <p className="text-default-500 text-sm">
+          <p className="text-muted text-sm">
             Click to upload profile picture
           </p>
 
@@ -346,10 +345,11 @@ export function ProfileForm({
                 size="sm"
                 variant="tertiary"
                 color={membershipTypeChip.color}
-                startContent={
-                  <Icon icon={membershipTypeChip.icon} className="w-3 h-3" />
-                }
               >
+                <Icon
+                  icon={membershipTypeChip.icon}
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {membershipTypeChip.label}
               </Chip>
             </div>
@@ -366,9 +366,6 @@ export function ProfileForm({
               isRequired
               isInvalid={!!errors.firstName}
               errorMessage={errors.firstName}
-              startContent={
-                <Icon icon="lucide:user" className="text-default-400 text-lg" />
-              }
             />
             <Input
               label="Last Name"
@@ -378,9 +375,6 @@ export function ProfileForm({
               isRequired
               isInvalid={!!errors.lastName}
               errorMessage={errors.lastName}
-              startContent={
-                <Icon icon="lucide:user" className="text-default-400 text-lg" />
-              }
             />
           </div>
 
@@ -393,9 +387,6 @@ export function ProfileForm({
             isRequired
             isInvalid={!!errors.email}
             errorMessage={errors.email}
-            startContent={
-              <Icon icon="lucide:mail" className="text-default-400 text-lg" />
-            }
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -407,12 +398,6 @@ export function ProfileForm({
               type="tel"
               isInvalid={!!errors.phone}
               errorMessage={errors.phone}
-              startContent={
-                <Icon
-                  icon="lucide:phone"
-                  className="text-default-400 text-lg"
-                />
-              }
             />
 
             <Input
@@ -423,7 +408,6 @@ export function ProfileForm({
               type="text"
               isInvalid={!!errors.ghinNumber}
               errorMessage={errors.ghinNumber}
-              startContent={<PiGolf className="text-default-400 text-lg" />}
             />
           </div>
         </div>
@@ -450,13 +434,13 @@ export function ProfileForm({
         )}
 
         {isSuccess && (
-          <div className="mt-4 p-3 bg-success-100 text-success-700 rounded-medium flex items-center gap-2">
+          <div className="mt-4 p-3 bg-success text-success-700 rounded-md flex items-center gap-2">
             <Icon icon="lucide:check-circle" />
             <span>Profile updated successfully!</span>
           </div>
         )}
         {saveError && (
-          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-medium flex items-center gap-2">
+          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-md flex items-center gap-2">
             <Icon icon="lucide:alert-circle" />
             <span>
               There was an error uploading your avatar or saving profile. Please

@@ -143,7 +143,7 @@ export const BlogPostPage: React.FC = () => {
         <div className="flex justify-center items-center py-24">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
+            className="animate-spin text-4xl text-accent"
           />
         </div>
       </div>
@@ -173,8 +173,8 @@ export const BlogPostPage: React.FC = () => {
             size="sm"
             variant="tertiary"
             onPress={() => navigate(`/announcements/edit/${post.id}`)}
-            startContent={<Icon icon="lucide:edit" />}
           >
+            <Icon icon="lucide:edit" />
             Edit
           </Button>
         )}
@@ -197,11 +197,11 @@ export const BlogPostPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           {post.isPinned && (
-            <Chip
-              size="sm"
-              variant="tertiary"
-              startContent={<Icon icon="lucide:pin" />}
-            >
+            <Chip size="sm" variant="tertiary">
+              <Icon
+                icon="lucide:pin"
+                className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+              />
               Pinned
             </Chip>
           )}
@@ -217,7 +217,7 @@ export const BlogPostPage: React.FC = () => {
 
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
 
-        <div className="flex items-center gap-4 text-sm text-foreground-500">
+        <div className="flex items-center gap-4 text-sm text-muted">
           <div className="flex items-center gap-2">
             <UserAvatar
               src={post.authorPhotoURL || undefined}
@@ -252,7 +252,7 @@ export const BlogPostPage: React.FC = () => {
             <Card.Content className="pt-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
-                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                  <p className="text-muted text-xs uppercase tracking-wide">
                     Condition
                   </p>
                   <p className="font-semibold text-base">
@@ -260,7 +260,7 @@ export const BlogPostPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                  <p className="text-muted text-xs uppercase tracking-wide">
                     Temperature
                   </p>
                   <p className="font-semibold text-base">
@@ -268,7 +268,7 @@ export const BlogPostPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                  <p className="text-muted text-xs uppercase tracking-wide">
                     Wind Speed
                   </p>
                   <p className="font-semibold text-base">
@@ -276,7 +276,7 @@ export const BlogPostPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-foreground-500 text-xs uppercase tracking-wide">
+                  <p className="text-muted text-xs uppercase tracking-wide">
                     Precipitation
                   </p>
                   <p className="font-semibold text-base">
@@ -313,11 +313,8 @@ export const BlogPostPage: React.FC = () => {
 
       {/* Navigation Footer */}
       <div className="mt-8 flex justify-center">
-        <Button
-          variant="tertiary"
-          onPress={() => navigate("/announcements")}
-          startContent={<Icon icon="lucide:arrow-left" />}
-        >
+        <Button variant="tertiary" onPress={() => navigate("/announcements")}>
+          <Icon icon="lucide:arrow-left" />
           Back to Announcements
         </Button>
       </div>

@@ -51,7 +51,7 @@ export function TeamRegistrationCard({
   const cardClassName = `rounded-md border transition-colors ${
     isInteractive
       ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
-      : "border-default-200 bg-content2/60 hover:bg-content2"
+      : "bg-surface-secondary/60 hover:bg-surface-secondary"
   }${
     isInteractive
       ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-warning/60"
@@ -76,11 +76,11 @@ export function TeamRegistrationCard({
         {/* Header: team number + date + waitlist chip */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium shrink-0">
+            <p className="text-[11px] uppercase tracking-wide text-muted font-medium shrink-0">
               Team {teamNumber}
             </p>
             {dateStr && (
-              <span className="text-[11px] text-foreground-400 truncate">
+              <span className="text-[11px] text-muted truncate">
                 · {dateStr}
               </span>
             )}
@@ -110,14 +110,14 @@ export function TeamRegistrationCard({
                   name={memberUser ? undefined : label}
                   className={
                     isLeader
-                      ? "shrink-0 border border-default-200 ring-2 ring-primary ring-offset-1 ring-offset-background"
-                      : "shrink-0 border border-default-200"
+                      ? "shrink-0 border ring-2 ring-primary ring-offset-1 ring-offset-background"
+                      : "shrink-0 border"
                   }
                   alt={label}
                 />
                 <span
                   className={`text-[13px] sm:text-sm font-medium truncate min-w-0 ${
-                    isLeader ? "text-primary" : ""
+                    isLeader ? "text-accent" : ""
                   }`}
                 >
                   {m.displayName || m.id}
