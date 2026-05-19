@@ -681,46 +681,47 @@ export default function LoginPage() {
         </div>
       </div>
       <Modal isOpen={linkSent}>
-        <Modal.Backdrop isDismissable={false} />
-        <Modal.Container>
-          <Modal.Dialog>
-            <>
-              <Modal.Header className="flex flex-col gap-1">
-                Check your email
-              </Modal.Header>
-              <Modal.Body className="space-y-3">
-                <p className="text-sm text-foreground">
-                  We sent a sign-in link
-                  {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the link
-                  to finish signing in.
-                </p>
-                <p className="text-sm text-foreground">
-                  If you don't see it, check your spam folder and look for an
-                  email from{" "}
-                  <span className="font-mono text-xs">
-                    {siteConfig.notificationEmail}
-                  </span>
-                  .
-                </p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button
-                  variant="ghost"
-                  onPress={() => {
-                    setLinkSent(false);
-                    setLinkSentEmail("");
-                    if (typeof window !== "undefined") {
-                      window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
-                      window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
-                    }
-                  }}
-                >
-                  Close
-                </Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
+        <Modal.Backdrop isDismissable={false}>
+          <Modal.Container>
+            <Modal.Dialog>
+              <>
+                <Modal.Header className="flex flex-col gap-1">
+                  Check your email
+                </Modal.Header>
+                <Modal.Body className="space-y-3">
+                  <p className="text-sm text-foreground">
+                    We sent a sign-in link
+                    {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the
+                    link to finish signing in.
+                  </p>
+                  <p className="text-sm text-foreground">
+                    If you don't see it, check your spam folder and look for an
+                    email from{" "}
+                    <span className="font-mono text-xs">
+                      {siteConfig.notificationEmail}
+                    </span>
+                    .
+                  </p>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    variant="ghost"
+                    onPress={() => {
+                      setLinkSent(false);
+                      setLinkSentEmail("");
+                      if (typeof window !== "undefined") {
+                        window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
+                        window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Modal.Footer>
+              </>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
       <Modal
         isOpen={isEmailConfirmationModalOpen}
@@ -730,61 +731,66 @@ export default function LoginPage() {
           }
         }}
       >
-        <Modal.Backdrop isDismissable={!magicLinkSubmitting} />
-        <Modal.Container>
-          <Modal.Dialog>
-            <form onSubmit={handleEmailConfirmationSubmit}>
-              <Modal.Header className="flex flex-col gap-1">
-                {linkNeedsResend
-                  ? "Sign-in link no longer valid"
-                  : "Confirm your email"}
-              </Modal.Header>
-              <Modal.Body className="flex flex-col gap-3">
-                <p className="text-sm text-muted">
+        <Modal.Backdrop isDismissable={!magicLinkSubmitting}>
+          <Modal.Container>
+            <Modal.Dialog>
+              <form onSubmit={handleEmailConfirmationSubmit}>
+                <Modal.Header className="flex flex-col gap-1">
                   {linkNeedsResend
-                    ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
-                    : "Enter the email address you used to request the sign-in link so we can complete your login."}
-                </p>
-                <Input
-                  autoFocus
-                  isRequired
-                  label="Email Address"
-                  type="email"
-                  value={emailConfirmationValue}
-                  onValueChange={(value) => {
-                    setEmailConfirmationValue(value);
-                    if (emailConfirmationError) {
-                      setEmailConfirmationError(null);
-                    }
-                  }}
-                  isInvalid={Boolean(emailConfirmationError)}
-                  errorMessage={emailConfirmationError || undefined}
-                  isDisabled={magicLinkSubmitting}
-                  variant="outline"
-                />
-              </Modal.Body>
-              <Modal.Footer>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onPress={handleEmailPromptClose}
-                  isDisabled={magicLinkSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" isDisabled={magicLinkSubmitting}>
-                  {magicLinkSubmitting
-                    ? linkNeedsResend
-                      ? "Sending..."
-                      : "Signing in..."
-                    : linkNeedsResend
-                      ? "Send new link"
-                      : "Confirm"}
-                </Button>
-              </Modal.Footer>
-            </form>
-          </Modal.Dialog>
-        </Modal.Container>
+                    ? "Sign-in link no longer valid"
+                    : "Confirm your email"}
+                </Modal.Header>
+                <Modal.Body className="flex flex-col gap-3">
+                  <p className="text-sm text-muted">
+                    {linkNeedsResend
+                      ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
+                      : "Enter the email address you used to request the sign-in link so we can complete your login."}
+                  </p>
+                  <Input
+                    autoFocus
+                    isRequired
+                    label="Email Address"
+                    type="email"
+                    value={emailConfirmationValue}
+                    onValueChange={(value) => {
+                      setEmailConfirmationValue(value);
+                      if (emailConfirmationError) {
+                        setEmailConfirmationError(null);
+                      }
+                    }}
+                    isInvalid={Boolean(emailConfirmationError)}
+                    errorMessage={emailConfirmationError || undefined}
+                    isDisabled={magicLinkSubmitting}
+                    variant="outline"
+                  />
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onPress={handleEmailPromptClose}
+                    isDisabled={magicLinkSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isDisabled={magicLinkSubmitting}
+                  >
+                    {magicLinkSubmitting
+                      ? linkNeedsResend
+                        ? "Sending..."
+                        : "Signing in..."
+                      : linkNeedsResend
+                        ? "Send new link"
+                        : "Confirm"}
+                  </Button>
+                </Modal.Footer>
+              </form>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

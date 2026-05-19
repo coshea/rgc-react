@@ -17,7 +17,7 @@ export const teeColorClasses = (tee: TeeName): string => {
     switch (kind) {
       case "white":
         // White tee: subtle neutral background, lighten text in dark mode for contrast
-        return "bg-default-100 text-default-700 dark:bg-default-200/40 dark:text-default-200";
+        return "bg-gray-200/60 text-gray-600 dark:bg-gray-200/20 dark:text-gray-300";
       case "blue":
         // Increase background opacity slightly in dark mode for contrast
         return "bg-blue-500/15 text-blue-600 dark:bg-blue-500/25 dark:text-blue-200";

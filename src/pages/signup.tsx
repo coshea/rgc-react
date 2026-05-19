@@ -307,9 +307,7 @@ export default function SignUpPage() {
           <>
             <Modal.Header className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">{title}</h2>
-              <p className="text-sm text-muted">
-                Last updated: January 2026
-              </p>
+              <p className="text-sm text-muted">Last updated: January 2026</p>
             </Modal.Header>
             <Modal.Body className="space-y-4">
               {sections.map((section) => (
@@ -557,46 +555,47 @@ export default function SignUpPage() {
         </div>
       </div>
       <Modal isOpen={linkSent}>
-        <Modal.Backdrop isDismissable={false} />
-        <Modal.Container>
-          <Modal.Dialog>
-            <>
-              <Modal.Header className="flex flex-col gap-1">
-                Check your email
-              </Modal.Header>
-              <Modal.Body className="space-y-3">
-                <p className="text-sm text-foreground">
-                  We sent a sign-up link
-                  {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
-                  finish creating your account.
-                </p>
-                <p className="text-sm text-foreground">
-                  If you don't see it, check your spam folder and look for an
-                  email from{" "}
-                  <span className="font-mono text-xs">
-                    {siteConfig.notificationEmail}
-                  </span>
-                  .
-                </p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button
-                  variant="ghost"
-                  onPress={() => {
-                    setLinkSent(false);
-                    setLinkSentEmail("");
-                    if (typeof window !== "undefined") {
-                      window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
-                      window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
-                    }
-                  }}
-                >
-                  Close
-                </Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
+        <Modal.Backdrop isDismissable={false}>
+          <Modal.Container>
+            <Modal.Dialog>
+              <>
+                <Modal.Header className="flex flex-col gap-1">
+                  Check your email
+                </Modal.Header>
+                <Modal.Body className="space-y-3">
+                  <p className="text-sm text-foreground">
+                    We sent a sign-up link
+                    {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
+                    finish creating your account.
+                  </p>
+                  <p className="text-sm text-foreground">
+                    If you don't see it, check your spam folder and look for an
+                    email from{" "}
+                    <span className="font-mono text-xs">
+                      {siteConfig.notificationEmail}
+                    </span>
+                    .
+                  </p>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    variant="ghost"
+                    onPress={() => {
+                      setLinkSent(false);
+                      setLinkSentEmail("");
+                      if (typeof window !== "undefined") {
+                        window.sessionStorage.removeItem(MAGIC_LINK_SENT_KEY);
+                        window.sessionStorage.removeItem(MAGIC_LINK_EMAIL_KEY);
+                      }
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Modal.Footer>
+              </>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
       <PolicyModal
         title="Terms of Use"

@@ -23,7 +23,7 @@ body {
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    border-color: var(--border, currentColor);
   }
 
   /* Prevent iOS Safari from auto-zooming when tapping inputs (triggered when font-size < 16px) */

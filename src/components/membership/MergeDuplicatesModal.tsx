@@ -207,9 +207,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
     const primary = isPrimary && primaryUserId === user.id;
 
     return (
-      <Card
-        className={`${primary ? "border-2 border-accent" : "border"}`}
-      >
+      <Card className={`${primary ? "border-2 border-accent" : "border"}`}>
         <Card.Content className="p-4">
           <div className="flex items-start gap-3">
             <UserAvatar user={user} size="lg" />
@@ -292,304 +290,310 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
         if (!open) handleClose();
       }}
     >
-      <Modal.Backdrop isDismissable={!merging} />
-      <Modal.Container size="lg" scroll="inside">
-        <Modal.Dialog>
-          <>
-            <Modal.Header className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Icon icon="lucide:users" className="w-5 h-5 text-warning" />
-                <span>Merge Duplicate Users</span>
-              </div>
-            </Modal.Header>
+      <Modal.Backdrop isDismissable={!merging}>
+        <Modal.Container size="lg" scroll="inside">
+          <Modal.Dialog>
+            <>
+              <Modal.Header className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:users" className="w-5 h-5 text-warning" />
+                  <span>Merge Duplicate Users</span>
+                </div>
+              </Modal.Header>
 
-            <Modal.Body>
-              {/* Scan Step: Show duplicate groups and manual form */}
-              {step === "scan" && (
-                <div className="space-y-4">
-                  {duplicateGroups.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Icon
-                        icon="lucide:check-circle"
-                        className="w-12 h-12 mx-auto mb-3 text-success"
-                      />
-                      <h3 className="text-lg font-semibold mb-2">
-                        No Duplicates Found
-                      </h3>
-                      <p className="text-foreground">
-                        All users have unique emails and names.
-                      </p>
+              <Modal.Body>
+                {/* Scan Step: Show duplicate groups and manual form */}
+                {step === "scan" && (
+                  <div className="space-y-4">
+                    {duplicateGroups.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Icon
+                          icon="lucide:check-circle"
+                          className="w-12 h-12 mx-auto mb-3 text-success"
+                        />
+                        <h3 className="text-lg font-semibold mb-2">
+                          No Duplicates Found
+                        </h3>
+                        <p className="text-foreground">
+                          All users have unique emails and names.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-warning/15 border border-warning/40 rounded-lg p-3">
+                        <div className="flex items-start gap-2">
+                          <Icon
+                            icon="lucide:alert-triangle"
+                            className="w-5 h-5 text-warning shrink-0 mt-0.5"
+                          />
+                          <div className="text-sm">
+                            <p className="font-semibold text-warning mb-1">
+                              {duplicateGroups.length} Duplicate Group
+                              {duplicateGroups.length !== 1 ? "s" : ""} Found
+                            </p>
+                            <p className="text-warning/80">
+                              Users with matching emails or identical first and
+                              last names may be duplicates.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Card className="border">
+                      <Card.Content className="space-y-4">
+                        <div className="flex items-start gap-3">
+                          <Icon
+                            icon="lucide:sparkles"
+                            className="w-5 h-5 text-accent shrink-0"
+                          />
+                          <div>
+                            <h3 className="font-semibold">Manual Merge</h3>
+                            <p className="text-sm text-foreground">
+                              Pick any two users to merge, even if they were not
+                              detected automatically.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <UserSelect
+                            label="User A"
+                            placeholder="Type to search members"
+                            users={usersForManualA}
+                            value={manualUserA}
+                            onChange={(val) =>
+                              setManualUserA(normalizeToSingleValue(val))
+                            }
+                          />
+
+                          <UserSelect
+                            label="User B"
+                            placeholder="Type to search members"
+                            users={usersForManualB}
+                            value={manualUserB}
+                            onChange={(val) =>
+                              setManualUserB(normalizeToSingleValue(val))
+                            }
+                          />
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            variant="primary"
+                            isDisabled={!manualSelectionReady}
+                            onPress={handleManualReview}
+                          >
+                            Review Manual Selection
+                          </Button>
+                        </div>
+                      </Card.Content>
+                    </Card>
+
+                    {duplicateGroups.length > 0 && (
+                      <div className="space-y-3">
+                        {duplicateGroups.map((group, idx) => (
+                          <Card key={idx} className="border">
+                            <Card.Content className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    {renderReasonChip(group.reason)}
+                                    <span className="text-sm text-foreground">
+                                      {group.users.length} users
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-mono text-foreground">
+                                    {group.matchValue}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  onPress={() => handleReviewGroup(group)}
+                                >
+                                  Review
+                                  <Icon
+                                    icon="lucide:arrow-right"
+                                    className="w-4 h-4"
+                                  />
+                                </Button>
+                              </div>
+                              <div className="space-y-2">
+                                {group.users.map((user) => (
+                                  <div
+                                    key={user.id}
+                                    className="flex items-center gap-2 text-sm"
+                                  >
+                                    <UserAvatar user={user} size="sm" />
+                                    <span className="truncate">
+                                      {user.displayName ||
+                                        user.email ||
+                                        "No name"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </Card.Content>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Review Step: Select primary user */}
+                {step === "review" && selectedGroup && (
+                  <div className="space-y-4">
+                    <div className="bg-accent-soft dark:bg-accent-soft/10 border border-accent rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Icon
+                          icon="lucide:info"
+                          className="w-5 h-5 text-accent shrink-0 mt-0.5"
+                        />
+                        <div className="text-sm">
+                          <p className="font-semibold text-accent dark:text-accent mb-1">
+                            Select Primary User
+                          </p>
+                          <p className="text-accent dark:text-accent">
+                            Choose which user record to keep. All tournament and
+                            championship data from the other user(s) will be
+                            merged into the primary user.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="bg-warning dark:bg-warning/10 border border-warning-200 rounded-lg p-3">
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        {renderReasonChip(selectedGroup.reason)}
+                        <span className="text-sm text-foreground">
+                          {selectedGroup.matchValue}
+                        </span>
+                      </div>
+                    </div>
+
+                    <RadioGroup
+                      value={primaryUserId}
+                      onValueChange={setPrimaryUserId}
+                      className="gap-3"
+                    >
+                      {selectedGroup.users.map((user) => (
+                        <Radio
+                          key={user.id}
+                          value={user.id}
+                          className="max-w-full"
+                        >
+                          {renderUserCard(user, true)}
+                        </Radio>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+
+                {/* Confirm Step: Final confirmation before merge */}
+                {step === "confirm" && selectedGroup && (
+                  <div className="space-y-4">
+                    <div className="bg-danger/15 border border-danger/40 rounded-lg p-3">
                       <div className="flex items-start gap-2">
                         <Icon
                           icon="lucide:alert-triangle"
-                          className="w-5 h-5 text-warning shrink-0 mt-0.5"
+                          className="w-5 h-5 text-danger shrink-0 mt-0.5"
                         />
                         <div className="text-sm">
-                          <p className="font-semibold text-warning-800 dark:text-warning-200 mb-1">
-                            {duplicateGroups.length} Duplicate Group
-                            {duplicateGroups.length !== 1 ? "s" : ""} Found
+                          <p className="font-semibold text-danger mb-1">
+                            Confirm Merge Operation
                           </p>
-                          <p className="text-warning-700 dark:text-warning-300">
-                            Users with matching emails or identical first and
-                            last names may be duplicates.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <Card className="border">
-                    <Card.Content className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Icon
-                          icon="lucide:sparkles"
-                          className="w-5 h-5 text-accent shrink-0"
-                        />
-                        <div>
-                          <h3 className="font-semibold">Manual Merge</h3>
-                          <p className="text-sm text-foreground">
-                            Pick any two users to merge, even if they were not
-                            detected automatically.
+                          <p className="text-danger/80">
+                            This action cannot be undone. The duplicate user
+                            record(s) will remain but will be marked as merged.
                           </p>
                         </div>
                       </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <UserSelect
-                          label="User A"
-                          placeholder="Type to search members"
-                          users={usersForManualA}
-                          value={manualUserA}
-                          onChange={(val) =>
-                            setManualUserA(normalizeToSingleValue(val))
-                          }
-                        />
-
-                        <UserSelect
-                          label="User B"
-                          placeholder="Type to search members"
-                          users={usersForManualB}
-                          value={manualUserB}
-                          onChange={(val) =>
-                            setManualUserB(normalizeToSingleValue(val))
-                          }
-                        />
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button
-                          variant="primary"
-                          isDisabled={!manualSelectionReady}
-                          onPress={handleManualReview}
-                        >
-                          Review Manual Selection
-                        </Button>
-                      </div>
-                    </Card.Content>
-                  </Card>
-
-                  {duplicateGroups.length > 0 && (
-                    <div className="space-y-3">
-                      {duplicateGroups.map((group, idx) => (
-                        <Card key={idx} className="border">
-                          <Card.Content className="p-4">
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  {renderReasonChip(group.reason)}
-                                  <span className="text-sm text-foreground">
-                                    {group.users.length} users
-                                  </span>
-                                </div>
-                                <p className="text-sm font-mono text-foreground">
-                                  {group.matchValue}
-                                </p>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="tertiary"
-                                onPress={() => handleReviewGroup(group)}
-                              >
-                                Review
-                                <Icon
-                                  icon="lucide:arrow-right"
-                                  className="w-4 h-4"
-                                />
-                              </Button>
-                            </div>
-                            <div className="space-y-2">
-                              {group.users.map((user) => (
-                                <div
-                                  key={user.id}
-                                  className="flex items-center gap-2 text-sm"
-                                >
-                                  <UserAvatar user={user} size="sm" />
-                                  <span className="truncate">
-                                    {user.displayName ||
-                                      user.email ||
-                                      "No name"}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </Card.Content>
-                        </Card>
-                      ))}
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* Review Step: Select primary user */}
-              {step === "review" && selectedGroup && (
-                <div className="space-y-4">
-                  <div className="bg-accent-soft dark:bg-accent-soft/10 border border-accent rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <Icon
-                        icon="lucide:info"
-                        className="w-5 h-5 text-accent shrink-0 mt-0.5"
-                      />
-                      <div className="text-sm">
-                        <p className="font-semibold text-accent dark:text-accent mb-1">
-                          Select Primary User
-                        </p>
-                        <p className="text-accent dark:text-accent">
-                          Choose which user record to keep. All tournament and
-                          championship data from the other user(s) will be
-                          merged into the primary user.
-                        </p>
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2 text-success">
+                        ✓ Primary User (Keep This One)
+                      </h4>
+                      {renderUserCard(
+                        selectedGroup.users.find(
+                          (u) => u.id === primaryUserId,
+                        )!,
+                        false,
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2 text-danger">
+                        ✗ Duplicate User(s) (Merge Data From)
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedGroup.users
+                          .filter((u) => u.id !== primaryUserId)
+                          .map((user) => renderUserCard(user, false))}
                       </div>
                     </div>
                   </div>
+                )}
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      {renderReasonChip(selectedGroup.reason)}
-                      <span className="text-sm text-foreground">
-                        {selectedGroup.matchValue}
-                      </span>
-                    </div>
+                {/* Merging Step: Show progress */}
+                {step === "merging" && (
+                  <div className="text-center py-8">
+                    <Spinner size="lg" className="mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      Merging Users...
+                    </h3>
+                    <p className="text-foreground">
+                      Updating championships and tournament records. Please
+                      wait.
+                    </p>
                   </div>
+                )}
+              </Modal.Body>
 
-                  <RadioGroup
-                    value={primaryUserId}
-                    onValueChange={setPrimaryUserId}
-                    classNames={{
-                      wrapper: "gap-3",
-                    }}
-                  >
-                    {selectedGroup.users.map((user) => (
-                      <Radio
-                        key={user.id}
-                        value={user.id}
-                        className="max-w-full"
-                      >
-                        {renderUserCard(user, true)}
-                      </Radio>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* Confirm Step: Final confirmation before merge */}
-              {step === "confirm" && selectedGroup && (
-                <div className="space-y-4">
-                  <div className="bg-danger dark:bg-danger/10 border border-danger-200 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <Icon
-                        icon="lucide:alert-triangle"
-                        className="w-5 h-5 text-danger shrink-0 mt-0.5"
-                      />
-                      <div className="text-sm">
-                        <p className="font-semibold text-danger-800 dark:text-danger-200 mb-1">
-                          Confirm Merge Operation
-                        </p>
-                        <p className="text-danger-700 dark:text-danger-300">
-                          This action cannot be undone. The duplicate user
-                          record(s) will remain but will be marked as merged.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-success-600">
-                      ✓ Primary User (Keep This One)
-                    </h4>
-                    {renderUserCard(
-                      selectedGroup.users.find((u) => u.id === primaryUserId)!,
-                      false,
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-danger-600">
-                      ✗ Duplicate User(s) (Merge Data From)
-                    </h4>
-                    <div className="space-y-2">
-                      {selectedGroup.users
-                        .filter((u) => u.id !== primaryUserId)
-                        .map((user) => renderUserCard(user, false))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Merging Step: Show progress */}
-              {step === "merging" && (
-                <div className="text-center py-8">
-                  <Spinner size="lg" className="mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    Merging Users...
-                  </h3>
-                  <p className="text-foreground">
-                    Updating championships and tournament records. Please wait.
-                  </p>
-                </div>
-              )}
-            </Modal.Body>
-
-            <Modal.Footer>
-              {step === "scan" && (
-                <Button variant="tertiary" onPress={handleClose}>
-                  Close
-                </Button>
-              )}
-
-              {step === "review" && (
-                <>
-                  <Button variant="tertiary" onPress={handleBackToScan}>
-                    Back
+              <Modal.Footer>
+                {step === "scan" && (
+                  <Button variant="tertiary" onPress={handleClose}>
+                    Close
                   </Button>
-                  <Button
-                    onPress={handleProceedToConfirm}
-                    isDisabled={!primaryUserId}
-                  >
-                    Continue
-                  </Button>
-                </>
-              )}
+                )}
 
-              {step === "confirm" && (
-                <>
-                  <Button variant="tertiary" onPress={() => setStep("review")}>
-                    Back
-                  </Button>
-                  <Button onPress={handleConfirmMerge}>
-                    <Icon icon="lucide:git-merge" className="w-4 h-4" />
-                    Confirm Merge
-                  </Button>
-                </>
-              )}
-            </Modal.Footer>
-          </>
-        </Modal.Dialog>
-      </Modal.Container>
+                {step === "review" && (
+                  <>
+                    <Button variant="tertiary" onPress={handleBackToScan}>
+                      Back
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onPress={handleProceedToConfirm}
+                      isDisabled={!primaryUserId}
+                    >
+                      Continue
+                    </Button>
+                  </>
+                )}
+
+                {step === "confirm" && (
+                  <>
+                    <Button
+                      variant="tertiary"
+                      onPress={() => setStep("review")}
+                    >
+                      Back
+                    </Button>
+                    <Button variant="danger" onPress={handleConfirmMerge}>
+                      <Icon icon="lucide:git-merge" className="w-4 h-4" />
+                      Confirm Merge
+                    </Button>
+                  </>
+                )}
+              </Modal.Footer>
+            </>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 };
