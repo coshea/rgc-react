@@ -389,10 +389,7 @@ const UserProfilePage: React.FC = () => {
                 )}
                 {profileUser.phone && (
                   <div className="flex items-center gap-2">
-                    <Icon
-                      icon="lucide:phone"
-                      className="w-4 h-4 text-accent"
-                    />
+                    <Icon icon="lucide:phone" className="w-4 h-4 text-accent" />
                     <span className="text-foreground">
                       {formatPhone(profileUser.phone)}
                     </span>
@@ -720,10 +717,7 @@ const UserProfilePage: React.FC = () => {
           {registrationsLoading ? (
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-lg border p-3 space-y-2"
-                >
+                <div key={i} className="rounded-lg border p-3 space-y-2">
                   <Skeleton className="h-5 w-40 rounded" />
                   <Skeleton className="h-4 w-28 rounded" />
                   <div className="space-y-1.5 pt-1">
@@ -815,35 +809,40 @@ const UserProfilePage: React.FC = () => {
 
       {/* Edit Profile Modal */}
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-        <Modal.Container size="lg" placement="top">
-          <Modal.Dialog>
-            <>
-              <Modal.Header className="flex flex-col gap-1">
-                <h2 className="text-xl font-semibold">Edit Profile</h2>
-                <p className="text-sm text-muted">
-                  Update your profile information and settings
-                </p>
-              </Modal.Header>
-              <Modal.Body>
-                <div className="h-full overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                  <ProfileForm
-                    hideActions
-                    formId="profile-edit-form"
-                    onSaved={() => onOpenChange(false)}
-                  />
-                </div>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button variant="tertiary" onPress={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" form="profile-edit-form">
-                  Save
-                </Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
+        <Modal.Backdrop>
+          <Modal.Container size="lg" placement="top">
+            <Modal.Dialog>
+              <>
+                <Modal.Header className="flex flex-col gap-1">
+                  <h2 className="text-xl font-semibold">Edit Profile</h2>
+                  <p className="text-sm text-muted">
+                    Update your profile information and settings
+                  </p>
+                </Modal.Header>
+                <Modal.Body>
+                  <div className="h-full overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                    <ProfileForm
+                      hideActions
+                      formId="profile-edit-form"
+                      onSaved={() => onOpenChange(false)}
+                    />
+                  </div>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    variant="tertiary"
+                    onPress={() => onOpenChange(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" form="profile-edit-form">
+                    Save
+                  </Button>
+                </Modal.Footer>
+              </>
+            </Modal.Dialog>
+          </Modal.Container>{" "}
+        </Modal.Backdrop>{" "}
       </Modal>
     </div>
   );

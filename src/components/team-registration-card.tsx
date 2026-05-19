@@ -48,7 +48,7 @@ export function TeamRegistrationCard({
   onPress,
 }: TeamRegistrationCardProps) {
   const isInteractive = showOpenSpots || lookingForPartnerTeam;
-  const cardClassName = `rounded-md border transition-colors ${
+  const cardClassName = `rounded-md border shadow-sm transition-colors ${
     isInteractive
       ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
       : "bg-surface-secondary/60 hover:bg-surface-secondary"
@@ -123,13 +123,9 @@ export function TeamRegistrationCard({
                   {m.displayName || m.id}
                 </span>
                 {isLeader && maxPlayers > 1 && (
-                  <Chip
-                    size="sm"
-                    variant="tertiary"
-                    className="h-5 px-2 text-[10px] shrink-0"
-                  >
+                  <span className="text-[10px] text-muted font-medium shrink-0">
                     Leader
-                  </Chip>
+                  </span>
                 )}
                 {m.goldTee && (
                   <TeeBadge

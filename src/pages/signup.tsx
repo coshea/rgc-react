@@ -302,39 +302,41 @@ export default function SignUpPage() {
     viewLink: string;
   }) => (
     <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Modal.Container size="lg" scroll="inside">
-        <Modal.Dialog>
-          <>
-            <Modal.Header className="flex flex-col gap-1">
-              <h2 className="text-xl font-semibold">{title}</h2>
-              <p className="text-sm text-muted">Last updated: January 2026</p>
-            </Modal.Header>
-            <Modal.Body className="space-y-4">
-              {sections.map((section) => (
-                <div key={section.title}>
-                  <p className="font-semibold">{section.title}</p>
-                  <p className="text-sm text-foreground">{section.body}</p>
-                </div>
-              ))}
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="ghost" onPress={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button
-                as="a"
-                href={viewLink}
-                target="_blank"
-                rel="noreferrer"
-                variant="tertiary"
-                onPress={() => onOpenChange(false)}
-              >
-                View Full Page
-              </Button>
-            </Modal.Footer>
-          </>
-        </Modal.Dialog>
-      </Modal.Container>
+      <Modal.Backdrop>
+        <Modal.Container size="lg" scroll="inside">
+          <Modal.Dialog>
+            <>
+              <Modal.Header className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold">{title}</h2>
+                <p className="text-sm text-muted">Last updated: January 2026</p>
+              </Modal.Header>
+              <Modal.Body className="space-y-4">
+                {sections.map((section) => (
+                  <div key={section.title}>
+                    <p className="font-semibold">{section.title}</p>
+                    <p className="text-sm text-foreground">{section.body}</p>
+                  </div>
+                ))}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="ghost" onPress={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button
+                  as="a"
+                  href={viewLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="tertiary"
+                  onPress={() => onOpenChange(false)}
+                >
+                  View Full Page
+                </Button>
+              </Modal.Footer>
+            </>
+          </Modal.Dialog>
+        </Modal.Container>{" "}
+      </Modal.Backdrop>{" "}
     </Modal>
   );
 
@@ -345,7 +347,7 @@ export default function SignUpPage() {
   return (
     <>
       <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-surface px-8 pb-10 pt-6 shadow-small">
+        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-surface px-8 pb-10 pt-6 shadow-sm">
           <div className="flex flex-col items-center pb-6">
             <RGCLogo size={240} />
             <p className="text-xl font-medium">Welcome</p>

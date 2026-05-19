@@ -1620,27 +1620,29 @@ export function BracketEditor({
           if (!open) setShowRegenConfirm(false);
         }}
       >
-        <Modal.Container size="sm">
-          <Modal.Dialog>
-            <Modal.Header>Regenerate Bracket?</Modal.Header>
-            <Modal.Body>
-              <p className="text-sm text-foreground">
-                This will replace the existing bracket with a new draw using the
-                current seed order. All current match results will be lost.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => setShowRegenConfirm(false)}
-                isDisabled={generating}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+        <Modal.Backdrop>
+          <Modal.Container size="sm">
+            <Modal.Dialog>
+              <Modal.Header>Regenerate Bracket?</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-foreground">
+                  This will replace the existing bracket with a new draw using the
+                  current seed order. All current match results will be lost.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => setShowRegenConfirm(false)}
+                  isDisabled={generating}
+                >
+                  Cancel
+                </Button>
+                <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {/* Delete confirmation */}
@@ -1650,8 +1652,9 @@ export function BracketEditor({
           if (!open) setShowDeleteConfirm(false);
         }}
       >
-        <Modal.Container size="sm">
-          <Modal.Dialog>
+        <Modal.Backdrop>
+          <Modal.Container size="sm">
+            <Modal.Dialog>
             <Modal.Header>Delete Bracket?</Modal.Header>
             <Modal.Body>
               <p className="text-sm text-foreground">
@@ -1669,8 +1672,9 @@ export function BracketEditor({
               </Button>
               <Button onPress={handleDelete}>Delete Bracket</Button>
             </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {/* Divider to visually separate from the section below */}

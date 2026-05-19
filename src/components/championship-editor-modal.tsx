@@ -329,6 +329,7 @@ export function ChampionshipEditorModal({
         if (!open) handleClose();
       }}
     >
+      <Modal.Backdrop>
       <Modal.Container size="lg" scroll="inside">
         <Modal.Dialog>
           <Modal.Header className="flex flex-col gap-1">
@@ -451,6 +452,7 @@ export function ChampionshipEditorModal({
           </Modal.Footer>
         </Modal.Dialog>
       </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

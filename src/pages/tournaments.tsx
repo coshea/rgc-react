@@ -168,7 +168,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           if (!open) setCreateModeOpen(false);
         }}
       >
-        <Modal.Container>
+        <Modal.Backdrop>
+          <Modal.Container>
           <Modal.Dialog>
             <Modal.Header className="flex flex-col gap-1">
               New Tournament
@@ -235,6 +236,7 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {isCreating || editingTournament ? (

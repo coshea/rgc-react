@@ -82,6 +82,7 @@ export default function FindAGamePostModal({
         if (!open) onClose();
       }}
     >
+      <Modal.Backdrop>
       <Modal.Container scroll="inside">
         <Modal.Dialog>
           <div ref={setPortalRef} />
@@ -203,6 +204,7 @@ export default function FindAGamePostModal({
           </Modal.Body>
         </Modal.Dialog>
       </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

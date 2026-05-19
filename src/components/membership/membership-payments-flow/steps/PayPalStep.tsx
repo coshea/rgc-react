@@ -137,7 +137,7 @@ export function PayPalStep(props: {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowCheckConfirm(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-lg bg-background p-6 shadow-large">
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
             <h3 className="text-lg font-semibold">Confirm check payment</h3>
             <p className="mt-2 text-sm text-foreground">
               Please confirm you’ve mailed your check to{" "}

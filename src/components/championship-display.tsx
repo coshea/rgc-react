@@ -33,12 +33,9 @@ export function ChampionshipCard({
 
   return (
     <Card
-      className={`w-full transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
-        isClubChampion
-          ? "border-2 border-accent bg-linear-to-br from-primary/5 to-primary/10"
-          : "bg-linear-to-br from-content1 to-content2/50 hover:bg-linear-to-br hover:from-content1 hover:to-content2"
+      className={`w-full shadow-sm transition-all duration-300 hover:shadow-md ${
+        isClubChampion ? "border-2 border-accent" : ""
       }`}
-      shadow={isClubChampion ? "lg" : "md"}
     >
       <Card.Header className="flex flex-col gap-1 pb-2">
         <div className="flex items-center justify-between w-full">
@@ -286,7 +283,7 @@ export function ChampionshipsList({
   if (years.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-default/20 flex items-center justify-center">
           <Icon icon="lucide:trophy" className="w-8 h-8 text-muted" />
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">

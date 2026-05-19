@@ -510,7 +510,7 @@ const TournamentRegister: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isTeamMemberNonLeader ? (
               <div className="space-y-3">
-                <Alert >
+                <Alert>
                   You&apos;re already registered with a team led by {leaderName}
                   . You can&apos;t create a new team. Contact your team leader
                   to make changes.
@@ -534,7 +534,7 @@ const TournamentRegister: React.FC = () => {
             ) : (
               <>
                 {tournament.goldTeesEnabled && (
-                  <Alert  variant="faded">
+                  <Alert variant="faded">
                     <span className="text-sm">
                       <strong>Gold tees</strong> are available for senior
                       players. To opt a player in, click the{" "}
@@ -649,7 +649,6 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full sm:w-auto"
-                      
                       variant="tertiary"
                       onPress={() => setConfirmOpen(true)}
                       isDisabled={deleting}
@@ -665,7 +664,6 @@ const TournamentRegister: React.FC = () => {
                 <div className="w-full sm:w-auto">
                   <Button
                     className="w-full"
-                    
                     variant="tertiary"
                     onPress={() => navigate(-1)}
                   >
@@ -678,7 +676,6 @@ const TournamentRegister: React.FC = () => {
                     <Button
                       className="w-full"
                       type="submit"
-                      
                       isDisabled={
                         submitting ||
                         !user?.uid ||
@@ -703,35 +700,35 @@ const TournamentRegister: React.FC = () => {
               isOpen={confirmOpen}
               onOpenChange={(open) => setConfirmOpen(open)}
             >
-              <Modal.Container size="md">
-                <Modal.Dialog>
-                  <>
-                    <Modal.Header>Cancel registration</Modal.Header>
-                    <Modal.Body>
-                      <p className="text-sm text-muted">
-                        Are you sure you want to cancel your registration? This
-                        cannot be undone.
-                      </p>
-                    </Modal.Body>
-                    <Modal.Footer>
-                      <Button
-                        variant="ghost"
-                        
-                        onPress={() => setConfirmOpen(false)}
-                      >
-                        Close
-                      </Button>
-                      <Button
-                        
-                        onPress={handleConfirmCancel}
-                        isDisabled={deleting}
-                      >
-                        {deleting ? "Cancelling..." : "Yes, cancel"}
-                      </Button>
-                    </Modal.Footer>
-                  </>
-                </Modal.Dialog>
-              </Modal.Container>
+              <Modal.Backdrop>
+                <Modal.Container size="md">
+                  <Modal.Dialog>
+                    <>
+                      <Modal.Header>Cancel registration</Modal.Header>
+                      <Modal.Body>
+                        <p className="text-sm text-muted">
+                          Are you sure you want to cancel your registration?
+                          This cannot be undone.
+                        </p>
+                      </Modal.Body>
+                      <Modal.Footer>
+                        <Button
+                          variant="ghost"
+                          onPress={() => setConfirmOpen(false)}
+                        >
+                          Close
+                        </Button>
+                        <Button
+                          onPress={handleConfirmCancel}
+                          isDisabled={deleting}
+                        >
+                          {deleting ? "Cancelling..." : "Yes, cancel"}
+                        </Button>
+                      </Modal.Footer>
+                    </>
+                  </Modal.Dialog>
+                </Modal.Container>
+              </Modal.Backdrop>
             </Modal>
           </form>
           {/* Duplicate conflict confirmation modal */}
@@ -742,128 +739,132 @@ const TournamentRegister: React.FC = () => {
               if (!open) setConflicts([]);
             }}
           >
-            <Modal.Container size="lg">
-              <Modal.Dialog data-testid="conflict-modal">
-                <>
-                  <Modal.Header>Player Already Registered</Modal.Header>
-                  <Modal.Body>
-                    <p className="text-sm text-muted">
-                      One or more selected teammates already appear on another
-                      registered team.
-                    </p>
-                    <div className="space-y-4 max-h-72 overflow-auto pr-1">
-                      {conflicts.map((c, idx) => {
-                        const resolveName = (id: string) => {
-                          const u = selectableUsers.find((fm) => fm.id === id);
-                          return (
-                            u?.displayName ||
-                            u?.email ||
-                            (id === c.playerId
-                              ? c.playerName
-                              : "Unknown Player")
+            <Modal.Backdrop>
+              <Modal.Container size="lg">
+                <Modal.Dialog data-testid="conflict-modal">
+                  <>
+                    <Modal.Header>Player Already Registered</Modal.Header>
+                    <Modal.Body>
+                      <p className="text-sm text-muted">
+                        One or more selected teammates already appear on another
+                        registered team.
+                      </p>
+                      <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                        {conflicts.map((c, idx) => {
+                          const resolveName = (id: string) => {
+                            const u = selectableUsers.find(
+                              (fm) => fm.id === id,
+                            );
+                            return (
+                              u?.displayName ||
+                              u?.email ||
+                              (id === c.playerId
+                                ? c.playerName
+                                : "Unknown Player")
+                            );
+                          };
+                          const teamMemberIds = Array.from(
+                            new Set(c.teamMembers),
                           );
-                        };
-                        const teamMemberIds = Array.from(
-                          new Set(c.teamMembers),
-                        );
-                        const conflictPlayerResolved = resolveName(c.playerId);
-                        return (
-                          <Card
-                            key={c.playerId + idx}
-                            className="p-3 border border-warning-300/50 bg-warning dark:bg-warning/10"
-                            data-testid="conflict-team-card"
-                          >
-                            <Card.Content className="p-0">
-                              <div className="flex items-start gap-4">
-                                <div className="flex -space-x-2">
-                                  {teamMemberIds.map((mid) => {
-                                    const memberUser = selectableUsers.find(
-                                      (u) => u.id === mid,
-                                    );
-                                    const label = resolveName(mid);
-                                    return (
-                                      <div
-                                        key={mid}
-                                        className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
-                                        aria-label={label}
-                                      >
-                                        {memberUser?.displayName
-                                          ? memberUser.displayName
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)
-                                          : label
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <p className="text-sm">
-                                    <span className="font-medium">
-                                      {conflictPlayerResolved}
-                                    </span>{" "}
-                                    is already on this team:
-                                  </p>
-                                  <div
-                                    className="text-xs text-muted space-y-0.5"
-                                    data-testid="conflict-team-names"
-                                  >
-                                    {teamMemberIds.map((id) => (
-                                      <div key={id}>{resolveName(id)}</div>
-                                    ))}
+                          const conflictPlayerResolved = resolveName(
+                            c.playerId,
+                          );
+                          return (
+                            <Card
+                              key={c.playerId + idx}
+                              className="p-3 border border-warning-300/50 bg-warning dark:bg-warning/10"
+                              data-testid="conflict-team-card"
+                            >
+                              <Card.Content className="p-0">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex -space-x-2">
+                                    {teamMemberIds.map((mid) => {
+                                      const memberUser = selectableUsers.find(
+                                        (u) => u.id === mid,
+                                      );
+                                      const label = resolveName(mid);
+                                      return (
+                                        <div
+                                          key={mid}
+                                          className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
+                                          aria-label={label}
+                                        >
+                                          {memberUser?.displayName
+                                            ? memberUser.displayName
+                                                .split(/\s+/)
+                                                .map((p) => p[0])
+                                                .join("")
+                                                .slice(0, 2)
+                                            : label
+                                                .split(/\s+/)
+                                                .map((p) => p[0])
+                                                .join("")
+                                                .slice(0, 2)}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <p className="text-sm">
+                                      <span className="font-medium">
+                                        {conflictPlayerResolved}
+                                      </span>{" "}
+                                      is already on this team:
+                                    </p>
+                                    <div
+                                      className="text-xs text-muted space-y-0.5"
+                                      data-testid="conflict-team-names"
+                                    >
+                                      {teamMemberIds.map((id) => (
+                                        <div key={id}>{resolveName(id)}</div>
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </Card.Content>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                    <p className="text-sm text-warning-600 dark:text-warning">
-                      Continuing will register a team containing a player
-                      already on another team.
-                    </p>
-                  </Modal.Body>
-                  <Modal.Footer>
-                    <Button
-                      variant="ghost"
-                      
-                      onPress={() => {
-                        setConflictModalOpen(false);
-                        setConflicts([]);
-                      }}
-                    >
-                      Go Back
-                    </Button>
-                    <Button
-                      
-                      onPress={() => {
-                        setConflictModalOpen(false);
-                        setConflicts([]);
-                        setConflictsAcknowledged(true);
-                        const pending = pendingMembersRef.current;
-                        if (pending) {
-                          queueMicrotask(() =>
-                            finalizeRegistration(
-                              pending.members,
-                              pending.ownerId,
-                              pending.openSpotsOptIn,
-                            ),
+                              </Card.Content>
+                            </Card>
                           );
-                        }
-                      }}
-                    >
-                      Continue Anyway
-                    </Button>
-                  </Modal.Footer>
-                </>
-              </Modal.Dialog>
-            </Modal.Container>
+                        })}
+                      </div>
+                      <p className="text-sm text-warning-600 dark:text-warning">
+                        Continuing will register a team containing a player
+                        already on another team.
+                      </p>
+                    </Modal.Body>
+                    <Modal.Footer>
+                      <Button
+                        variant="ghost"
+                        onPress={() => {
+                          setConflictModalOpen(false);
+                          setConflicts([]);
+                        }}
+                      >
+                        Go Back
+                      </Button>
+                      <Button
+                        onPress={() => {
+                          setConflictModalOpen(false);
+                          setConflicts([]);
+                          setConflictsAcknowledged(true);
+                          const pending = pendingMembersRef.current;
+                          if (pending) {
+                            queueMicrotask(() =>
+                              finalizeRegistration(
+                                pending.members,
+                                pending.ownerId,
+                                pending.openSpotsOptIn,
+                              ),
+                            );
+                          }
+                        }}
+                      >
+                        Continue Anyway
+                      </Button>
+                    </Modal.Footer>
+                  </>
+                </Modal.Dialog>
+              </Modal.Container>
+            </Modal.Backdrop>
           </Modal>
         </Card.Content>
       </Card>

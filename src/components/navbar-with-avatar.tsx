@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Button, Link } from "@heroui/react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import NavDropdown from "@/components/nav-dropdown";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal";
@@ -49,6 +50,7 @@ export const MainNavbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { userLoggedIn, loading } = useAuth();
 
+  const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -93,7 +95,7 @@ export const MainNavbar = () => {
     <>
       <nav className="z-40 w-full border-b bg-background/70 backdrop-blur-lg sticky top-0">
         <div
-          className={`flex h-[60px] w-full items-center justify-between px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
+          className={`flex h-[60px] max-w-7xl mx-auto w-full items-center justify-between px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
         >
           {/* Left: mobile toggle + logo */}
           <div className="flex items-center gap-2">
@@ -171,8 +173,7 @@ export const MainNavbar = () => {
                   className="text-muted"
                   radius="full"
                   variant="ghost"
-                  as={Link}
-                  href={siteConfig.pages.login.link}
+                  onPress={() => navigate(siteConfig.pages.login.link)}
                 >
                   {siteConfig.pages.login.title}
                 </Button>
@@ -180,8 +181,7 @@ export const MainNavbar = () => {
                   className="bg-foreground font-medium text-background"
                   radius="full"
                   variant="tertiary"
-                  as={Link}
-                  href={siteConfig.pages.signup.link}
+                  onPress={() => navigate(siteConfig.pages.signup.link)}
                 >
                   {siteConfig.pages.signup.title}
                   <ChevronRightIcon />
@@ -193,7 +193,7 @@ export const MainNavbar = () => {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-background pb-6 pt-4 shadow-large border-b/60 dark:/10">
+          <div className="md:hidden bg-background pb-6 pt-4 shadow-lg border-b/60 dark:/10">
             {/* Search row */}
             <div className="px-4 mb-2">
               <button
@@ -203,10 +203,7 @@ export const MainNavbar = () => {
                   setIsSearchOpen(true);
                 }}
               >
-                <Icon
-                  icon="lucide:search"
-                  className="text-base text-muted"
-                />
+                <Icon icon="lucide:search" className="text-base text-muted" />
                 <span>Search</span>
               </button>
               <hr className="/50 mt-2" />

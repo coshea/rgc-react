@@ -1946,7 +1946,8 @@ img { display: block; max-width: 100%; }
           if (!open) setOpenTeamModalData(null);
         }}
       >
-        <Modal.Container size="md">
+        <Modal.Backdrop>
+          <Modal.Container size="md">
           <Modal.Dialog>
             <>
               <Modal.Header>
@@ -2064,6 +2065,7 @@ img { display: block; max-width: 100%; }
             </>
           </Modal.Dialog>
         </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {/* Bracket team info modal */}
@@ -2076,7 +2078,8 @@ img { display: block; max-width: 100%; }
           }
         }}
       >
-        <Modal.Container size="md">
+        <Modal.Backdrop>
+          <Modal.Container size="md">
           <Modal.Dialog>
             {(() => {
               const team = bracketTeamModal;
@@ -2171,6 +2174,7 @@ img { display: block; max-width: 100%; }
             })()}
           </Modal.Dialog>
         </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

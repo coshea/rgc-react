@@ -356,27 +356,29 @@ export const BlogListPage: React.FC = () => {
           if (!open && !deleting) setDeleteConfirm(null);
         }}
       >
-        <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header>Delete Blog Post</Modal.Header>
-            <Modal.Body>
-              <p>
-                Are you sure you want to delete "{deleteConfirm?.title}"? This
-                cannot be undone.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => !deleting && setDeleteConfirm(null)}
-                isDisabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleDelete}>Delete</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+        <Modal.Backdrop>
+          <Modal.Container>
+            <Modal.Dialog>
+              <Modal.Header>Delete Blog Post</Modal.Header>
+              <Modal.Body>
+                <p>
+                  Are you sure you want to delete "{deleteConfirm?.title}"? This
+                  cannot be undone.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => !deleting && setDeleteConfirm(null)}
+                  isDisabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button onPress={handleDelete}>Delete</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>{" "}
+        </Modal.Backdrop>{" "}
       </Modal>
     </div>
   );

@@ -508,7 +508,7 @@ export default function LoginPage() {
       <div className="flex h-full w-full items-center justify-center">
         <div
           className="flex w-full max-w-sm flex-col gap-4 rounded-lg 
-        bg-surface px-8 pb-10 pt-6 shadow-small"
+        bg-surface px-8 pb-10 pt-6 shadow-sm"
         >
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-medium">Sign in to your account</h1>

@@ -860,10 +860,11 @@ export function BracketTab() {
           if (!open) setShowDeleteConfirm(false);
         }}
       >
-        <Modal.Container size="sm">
-          <Modal.Dialog>
-            <Modal.Header>Delete Bracket?</Modal.Header>
-            <Modal.Body>
+        <Modal.Backdrop>
+          <Modal.Container size="sm">
+            <Modal.Dialog>
+              <Modal.Header>Delete Bracket?</Modal.Header>
+              <Modal.Body>
               <p className="text-sm text-foreground">
                 This will permanently delete the bracket and all match results.
                 This action cannot be undone.
@@ -878,9 +879,10 @@ export function BracketTab() {
                 Cancel
               </Button>
               <Button onPress={handleDelete}>Delete Bracket</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
 
       {/* Regenerate confirmation modal */}
@@ -890,7 +892,8 @@ export function BracketTab() {
           if (!open) setShowRegenConfirm(false);
         }}
       >
-        <Modal.Container size="sm">
+        <Modal.Backdrop>
+          <Modal.Container size="sm">
           <Modal.Dialog>
             <Modal.Header>Regenerate Bracket?</Modal.Header>
             <Modal.Body>
@@ -909,8 +912,7 @@ export function BracketTab() {
               <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
             </Modal.Footer>
           </Modal.Dialog>
-        </Modal.Container>
-      </Modal>
+        </Modal.Container>        </Modal.Backdrop>      </Modal>
     </div>
   );
 }

@@ -249,7 +249,7 @@ export function PostsList({
     <div className="space-y-8">
       {posts.length === 0 && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-linear-to-r from-default-100 to-default-200 flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-default/20 flex items-center justify-center">
             <Icon
               icon="lucide:calendar-search"
               className="w-8 h-8 text-muted"
@@ -272,9 +272,7 @@ export function PostsList({
               <Icon icon="lucide:user-plus" className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-accent">
-                Need Players
-              </h4>
+              <h4 className="text-lg font-bold text-accent">Need Players</h4>
               <p className="text-xs text-muted">
                 Join these groups looking for more players
               </p>

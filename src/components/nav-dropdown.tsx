@@ -73,7 +73,7 @@ export default function NavDropdown({
           {items.map((child) => (
             <Link
               key={child.link}
-              className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-default/60"
+              className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-default/60 no-underline"
               href={child.link}
               onClick={() => onNavigate?.()}
             >
@@ -127,7 +127,7 @@ export default function NavDropdown({
               <Link
                 key={child.link}
                 href={child.link}
-                className="flex items-start gap-3 p-3 rounded hover:bg-default/60"
+                className="flex items-start gap-3 p-3 rounded hover:bg-default/60 no-underline"
                 onClick={() => {
                   setOpen(false);
                   onNavigate?.();
