@@ -78,10 +78,7 @@ export default function NavDropdown({
               onClick={() => onNavigate?.()}
             >
               {child.icon ? (
-                <Icon
-                  icon={child.icon}
-                  className="text-lg text-muted"
-                />
+                <Icon icon={child.icon} className="text-lg text-muted" />
               ) : null}
               <span className="flex-1">{child.title}</span>
             </Link>

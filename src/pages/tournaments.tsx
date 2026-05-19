@@ -170,72 +170,76 @@ const Tournaments: React.FC<TournamentsProps> = () => {
       >
         <Modal.Backdrop>
           <Modal.Container>
-          <Modal.Dialog>
-            <Modal.Header className="flex flex-col gap-1">
-              New Tournament
-            </Modal.Header>
-            <Modal.Body>
-              <RadioGroup
-                label="How would you like to start?"
-                value={createMethod}
-                onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
-              >
-                <Radio value="scratch">Create from scratch</Radio>
-                <Radio value="copy">Copy from previous</Radio>
-              </RadioGroup>
-              {createMethod === "copy" && (
-                <Select
-                  selectedKey={templateId ?? undefined}
-                  onSelectionChange={(key) => {
-                    setTemplateId(key ? String(key) : null);
-                  }}
+            <Modal.Dialog>
+              <Modal.Header className="flex flex-col gap-1">
+                New Tournament
+              </Modal.Header>
+              <Modal.Body>
+                <RadioGroup
+                  label="How would you like to start?"
+                  value={createMethod}
+                  onValueChange={(v) =>
+                    setCreateMethod(v as "scratch" | "copy")
+                  }
                 >
-                  <Label>Choose a previous tournament</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {tournaments
-                        .filter((t) => !!t.firestoreId)
-                        .map((t) => {
-                          const year = t.date
-                            ? new Date(t.date).getFullYear()
-                            : undefined;
-                          const label = year ? `${t.title} (${year})` : t.title;
-                          return (
-                            <ListBox.Item
-                              key={t.firestoreId!}
-                              id={t.firestoreId!}
-                              textValue={label}
-                            >
-                              {label}
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          );
-                        })}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-              )}
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => setCreateModeOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                isDisabled={createMethod === "copy" && !templateId}
-                onPress={onContinueCreate}
-              >
-                Continue
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
+                  <Radio value="scratch">Create from scratch</Radio>
+                  <Radio value="copy">Copy from previous</Radio>
+                </RadioGroup>
+                {createMethod === "copy" && (
+                  <Select
+                    selectedKey={templateId ?? undefined}
+                    onSelectionChange={(key) => {
+                      setTemplateId(key ? String(key) : null);
+                    }}
+                  >
+                    <Label>Choose a previous tournament</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {tournaments
+                          .filter((t) => !!t.firestoreId)
+                          .map((t) => {
+                            const year = t.date
+                              ? new Date(t.date).getFullYear()
+                              : undefined;
+                            const label = year
+                              ? `${t.title} (${year})`
+                              : t.title;
+                            return (
+                              <ListBox.Item
+                                key={t.firestoreId!}
+                                id={t.firestoreId!}
+                                textValue={label}
+                              >
+                                {label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            );
+                          })}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => setCreateModeOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  isDisabled={createMethod === "copy" && !templateId}
+                  onPress={onContinueCreate}
+                >
+                  Continue
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
         </Modal.Backdrop>
       </Modal>
 

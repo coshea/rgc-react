@@ -1511,9 +1511,7 @@ export function BracketEditor({
                           </Select.Popover>
                         </Select>
 
-                        <span className="text-xs text-muted shrink-0">
-                          vs
-                        </span>
+                        <span className="text-xs text-muted shrink-0">vs</span>
 
                         <Select
                           placeholder="— Bye —"
@@ -1626,8 +1624,9 @@ export function BracketEditor({
               <Modal.Header>Regenerate Bracket?</Modal.Header>
               <Modal.Body>
                 <p className="text-sm text-foreground">
-                  This will replace the existing bracket with a new draw using the
-                  current seed order. All current match results will be lost.
+                  This will replace the existing bracket with a new draw using
+                  the current seed order. All current match results will be
+                  lost.
                 </p>
               </Modal.Body>
               <Modal.Footer>
@@ -1655,23 +1654,23 @@ export function BracketEditor({
         <Modal.Backdrop>
           <Modal.Container size="sm">
             <Modal.Dialog>
-            <Modal.Header>Delete Bracket?</Modal.Header>
-            <Modal.Body>
-              <p className="text-sm text-foreground">
-                This will permanently delete the bracket and all match results.
-                This action cannot be undone.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => setShowDeleteConfirm(false)}
-                isDisabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleDelete}>Delete Bracket</Button>
-            </Modal.Footer>
+              <Modal.Header>Delete Bracket?</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-foreground">
+                  This will permanently delete the bracket and all match
+                  results. This action cannot be undone.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => setShowDeleteConfirm(false)}
+                  isDisabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button onPress={handleDelete}>Delete Bracket</Button>
+              </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>

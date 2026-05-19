@@ -865,20 +865,20 @@ export function BracketTab() {
             <Modal.Dialog>
               <Modal.Header>Delete Bracket?</Modal.Header>
               <Modal.Body>
-              <p className="text-sm text-foreground">
-                This will permanently delete the bracket and all match results.
-                This action cannot be undone.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => setShowDeleteConfirm(false)}
-                isDisabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleDelete}>Delete Bracket</Button>
+                <p className="text-sm text-foreground">
+                  This will permanently delete the bracket and all match
+                  results. This action cannot be undone.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => setShowDeleteConfirm(false)}
+                  isDisabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button onPress={handleDelete}>Delete Bracket</Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
@@ -894,25 +894,27 @@ export function BracketTab() {
       >
         <Modal.Backdrop>
           <Modal.Container size="sm">
-          <Modal.Dialog>
-            <Modal.Header>Regenerate Bracket?</Modal.Header>
-            <Modal.Body>
-              <p className="text-sm text-foreground">
-                This will replace the existing bracket with a freshly randomised
-                draw. All current match results will be lost.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="tertiary"
-                onPress={() => setShowRegenConfirm(false)}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>        </Modal.Backdrop>      </Modal>
+            <Modal.Dialog>
+              <Modal.Header>Regenerate Bracket?</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-foreground">
+                  This will replace the existing bracket with a freshly
+                  randomised draw. All current match results will be lost.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="tertiary"
+                  onPress={() => setShowRegenConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>{" "}
+        </Modal.Backdrop>{" "}
+      </Modal>
     </div>
   );
 }

@@ -330,128 +330,132 @@ export function ChampionshipEditorModal({
       }}
     >
       <Modal.Backdrop>
-      <Modal.Container size="lg" scroll="inside">
-        <Modal.Dialog>
-          <Modal.Header className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold">
-              {isEditing ? "Edit Championship" : "Create Championship"}
-            </h2>
-            <p className="text-sm text-muted font-normal">
-              {isEditing
-                ? "Update championship details"
-                : "Add a new championship record"}
-            </p>
-          </Modal.Header>
+        <Modal.Container size="lg" scroll="inside">
+          <Modal.Dialog>
+            <Modal.Header className="flex flex-col gap-1">
+              <h2 className="text-xl font-bold">
+                {isEditing ? "Edit Championship" : "Create Championship"}
+              </h2>
+              <p className="text-sm text-muted font-normal">
+                {isEditing
+                  ? "Update championship details"
+                  : "Add a new championship record"}
+              </p>
+            </Modal.Header>
 
-          <Modal.Body className="gap-6">
-            {/* Form errors */}
-            {errors.submit && (
-              <div className="p-3 bg-danger border border-danger-200 rounded-lg">
-                <p className="text-danger text-sm">{errors.submit}</p>
-              </div>
-            )}
+            <Modal.Body className="gap-6">
+              {/* Form errors */}
+              {errors.submit && (
+                <div className="p-3 bg-danger border border-danger-200 rounded-lg">
+                  <p className="text-danger text-sm">{errors.submit}</p>
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Year */}
-              <Input
-                label="Year"
-                type="number"
-                value={formData.year.toString()}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    year: parseInt(value) || new Date().getFullYear(),
-                  }))
-                }
-                isInvalid={!!errors.year}
-                errorMessage={errors.year}
-                min={1900}
-                max={new Date().getFullYear() + 1}
-              />
-
-              {/* Championship Type */}
-              <Select
-                value={formData.championshipType}
-                onChange={(key) => {
-                  if (key) {
-                    const type = key as ChampionshipType;
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Year */}
+                <Input
+                  label="Year"
+                  type="number"
+                  value={formData.year.toString()}
+                  onValueChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,
-                      championshipType: type,
-                    }));
+                      year: parseInt(value) || new Date().getFullYear(),
+                    }))
                   }
+                  isInvalid={!!errors.year}
+                  errorMessage={errors.year}
+                  min={1900}
+                  max={new Date().getFullYear() + 1}
+                />
+
+                {/* Championship Type */}
+                <Select
+                  value={formData.championshipType}
+                  onChange={(key) => {
+                    if (key) {
+                      const type = key as ChampionshipType;
+                      setFormData((prev) => ({
+                        ...prev,
+                        championshipType: type,
+                      }));
+                    }
+                  }}
+                >
+                  <Label>Championship Type</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {Object.entries(CHAMPIONSHIP_TYPES).map(
+                        ([key, label]) => (
+                          <ListBox.Item key={key} id={key} textValue={label}>
+                            {label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ),
+                      )}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+
+              {/* Winners Section */}
+              <PlayerEntrySection
+                title="Winners"
+                buttonText="Add Winner"
+                entries={formData.winners}
+                users={users}
+                usersLoading={usersLoading}
+                errors={{
+                  names: errors.winnerNames,
+                  ids: errors.winnerIds,
                 }}
+                required={true}
+                onAdd={addWinner}
+                onRemove={removeWinner}
+                onUpdate={updateWinner}
+                onUpdateHistorical={updateWinnerHistorical}
+              />
+
+              {/* Runners-up Section */}
+              <PlayerEntrySection
+                title="Runners-up"
+                buttonText="Add Runner-up"
+                entries={formData.runnersUp}
+                users={users}
+                usersLoading={usersLoading}
+                errors={{
+                  names: errors.runnerUpNames,
+                  ids: errors.runnerUpIds,
+                }}
+                required={false}
+                onAdd={addRunnerUp}
+                onRemove={removeRunnerUp}
+                onUpdate={updateRunnerUp}
+                onUpdateHistorical={updateRunnerUpHistorical}
+              />
+            </Modal.Body>
+
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={handleClose}
+                disabled={isSubmitting}
               >
-                <Label>Championship Type</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {Object.entries(CHAMPIONSHIP_TYPES).map(([key, label]) => (
-                      <ListBox.Item key={key} id={key} textValue={label}>
-                        {label}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
-
-            {/* Winners Section */}
-            <PlayerEntrySection
-              title="Winners"
-              buttonText="Add Winner"
-              entries={formData.winners}
-              users={users}
-              usersLoading={usersLoading}
-              errors={{
-                names: errors.winnerNames,
-                ids: errors.winnerIds,
-              }}
-              required={true}
-              onAdd={addWinner}
-              onRemove={removeWinner}
-              onUpdate={updateWinner}
-              onUpdateHistorical={updateWinnerHistorical}
-            />
-
-            {/* Runners-up Section */}
-            <PlayerEntrySection
-              title="Runners-up"
-              buttonText="Add Runner-up"
-              entries={formData.runnersUp}
-              users={users}
-              usersLoading={usersLoading}
-              errors={{
-                names: errors.runnerUpNames,
-                ids: errors.runnerUpIds,
-              }}
-              required={false}
-              onAdd={addRunnerUp}
-              onRemove={removeRunnerUp}
-              onUpdate={updateRunnerUp}
-              onUpdateHistorical={updateRunnerUpHistorical}
-            />
-          </Modal.Body>
-
-          <Modal.Footer>
-            <Button
-              variant="tertiary"
-              onPress={handleClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onPress={handleSubmit}>
-              {!isSubmitting && <Icon icon="lucide:save" className="w-4 h-4" />}
-              {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
-            </Button>
-          </Modal.Footer>
-        </Modal.Dialog>
-      </Modal.Container>
+                Cancel
+              </Button>
+              <Button onPress={handleSubmit}>
+                {!isSubmitting && (
+                  <Icon icon="lucide:save" className="w-4 h-4" />
+                )}
+                {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
       </Modal.Backdrop>
     </Modal>
   );

@@ -1895,9 +1895,7 @@ img { display: block; max-width: 100%; }
                           icon="lucide:loader"
                           className="animate-spin text-2xl text-accent"
                         />
-                        <p className="text-sm text-muted">
-                          Loading editor...
-                        </p>
+                        <p className="text-sm text-muted">Loading editor...</p>
                       </div>
                     }
                   >
@@ -1948,123 +1946,126 @@ img { display: block; max-width: 100%; }
       >
         <Modal.Backdrop>
           <Modal.Container size="md">
-          <Modal.Dialog>
-            <>
-              <Modal.Header>
-                {openTeamModalData?.lookingForPartnerTeam
-                  ? "Seeking a partner team"
-                  : "Open spot"}
-              </Modal.Header>
-              <Modal.Body>
-                {openTeamModalData ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted">
-                      <div className="font-medium">
-                        Team {openTeamModalData.teamNumber}
+            <Modal.Dialog>
+              <>
+                <Modal.Header>
+                  {openTeamModalData?.lookingForPartnerTeam
+                    ? "Seeking a partner team"
+                    : "Open spot"}
+                </Modal.Header>
+                <Modal.Body>
+                  {openTeamModalData ? (
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted">
+                        <div className="font-medium">
+                          Team {openTeamModalData.teamNumber}
+                        </div>
+                        <div className="text-muted">
+                          {openTeamModalData.lookingForPartnerTeam
+                            ? "Looking for a partner team to complete a foursome"
+                            : openTeamModalData.openSpots === 1
+                              ? "1 spot open"
+                              : `${openTeamModalData.openSpots} spots open`}
+                        </div>
                       </div>
-                      <div className="text-muted">
-                        {openTeamModalData.lookingForPartnerTeam
-                          ? "Looking for a partner team to complete a foursome"
-                          : openTeamModalData.openSpots === 1
-                            ? "1 spot open"
-                            : `${openTeamModalData.openSpots} spots open`}
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      {openTeamModalData.team.map((m) => {
-                        const memberUser = usersMap.get(m.id);
-                        const name =
-                          (m.displayName || memberUser?.displayName || "")
-                            .toString()
-                            .trim() || m.id;
-                        const isLeader =
-                          !!openTeamModalData.leaderId &&
-                          m.id === openTeamModalData.leaderId;
-                        return (
-                          <div
-                            key={m.id}
-                            className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <UserAvatar
-                                size="sm"
-                                user={memberUser}
-                                name={memberUser ? undefined : name}
-                                alt={name}
-                              />
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-sm font-medium truncate">
-                                    {name}
-                                  </span>
-                                  {isLeader &&
-                                  (tournament?.players ?? 1) > 1 ? (
-                                    <Chip
-                                      size="sm"
-                                      variant="tertiary"
-                                      className="h-5 px-2 text-[10px]"
-                                    >
-                                      Leader
-                                    </Chip>
+                      <div className="space-y-2">
+                        {openTeamModalData.team.map((m) => {
+                          const memberUser = usersMap.get(m.id);
+                          const name =
+                            (m.displayName || memberUser?.displayName || "")
+                              .toString()
+                              .trim() || m.id;
+                          const isLeader =
+                            !!openTeamModalData.leaderId &&
+                            m.id === openTeamModalData.leaderId;
+                          return (
+                            <div
+                              key={m.id}
+                              className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <UserAvatar
+                                  size="sm"
+                                  user={memberUser}
+                                  name={memberUser ? undefined : name}
+                                  alt={name}
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">
+                                      {name}
+                                    </span>
+                                    {isLeader &&
+                                    (tournament?.players ?? 1) > 1 ? (
+                                      <Chip
+                                        size="sm"
+                                        variant="tertiary"
+                                        className="h-5 px-2 text-[10px]"
+                                      >
+                                        Leader
+                                      </Chip>
+                                    ) : null}
+                                  </div>
+                                  {memberUser?.email ? (
+                                    <div className="text-[11px] text-muted truncate">
+                                      {memberUser.email}
+                                    </div>
                                   ) : null}
                                 </div>
-                                {memberUser?.email ? (
-                                  <div className="text-[11px] text-muted truncate">
-                                    {memberUser.email}
-                                  </div>
-                                ) : null}
                               </div>
+                              <Button
+                                size="sm"
+                                variant="tertiary"
+                                onPress={() => {
+                                  setOpenTeamModal(false);
+                                  navigate(`/profile/${m.id}`);
+                                }}
+                                aria-label={`View profile for ${name}`}
+                              >
+                                View profile
+                              </Button>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="tertiary"
-                              onPress={() => {
-                                setOpenTeamModal(false);
-                                navigate(`/profile/${m.id}`);
-                              }}
-                              aria-label={`View profile for ${name}`}
-                            >
-                              View profile
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
 
-                    <p className="text-xs text-muted">
-                      Tip: use "View profile" to contact a team member or the
-                      leader.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted">Loading...</p>
-                )}
-              </Modal.Body>
-              <Modal.Footer>
-                {openTeamModalData &&
-                  (() => {
-                    const emails = openTeamModalData.team
-                      .map((m) => usersMap.get(m.id)?.email)
-                      .filter((e): e is string => !!e);
-                    return emails.length > 0 ? (
-                      <Button
-                        as="a"
-                        href={`mailto:${emails.join(",")}`}
-                        variant="tertiary"
-                      >
-                        <Icon icon="lucide:mail" className="w-4 h-4" />
-                        Email team
-                      </Button>
-                    ) : null;
-                  })()}
-                <Button variant="ghost" onPress={() => setOpenTeamModal(false)}>
-                  Close
-                </Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
+                      <p className="text-xs text-muted">
+                        Tip: use "View profile" to contact a team member or the
+                        leader.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted">Loading...</p>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  {openTeamModalData &&
+                    (() => {
+                      const emails = openTeamModalData.team
+                        .map((m) => usersMap.get(m.id)?.email)
+                        .filter((e): e is string => !!e);
+                      return emails.length > 0 ? (
+                        <Button
+                          as="a"
+                          href={`mailto:${emails.join(",")}`}
+                          variant="tertiary"
+                        >
+                          <Icon icon="lucide:mail" className="w-4 h-4" />
+                          Email team
+                        </Button>
+                      ) : null;
+                    })()}
+                  <Button
+                    variant="ghost"
+                    onPress={() => setOpenTeamModal(false)}
+                  >
+                    Close
+                  </Button>
+                </Modal.Footer>
+              </>
+            </Modal.Dialog>
+          </Modal.Container>
         </Modal.Backdrop>
       </Modal>
 
@@ -2080,100 +2081,100 @@ img { display: block; max-width: 100%; }
       >
         <Modal.Backdrop>
           <Modal.Container size="md">
-          <Modal.Dialog>
-            {(() => {
-              const team = bracketTeamModal;
-              if (!team) return null;
+            <Modal.Dialog>
+              {(() => {
+                const team = bracketTeamModal;
+                if (!team) return null;
 
-              const memberRows = team.memberIds.map((uid, i) => {
-                // Prefer the directly-fetched user (not subject to orderBy exclusion)
-                const memberUser =
-                  bracketMemberUsers.get(uid) ?? usersMap.get(uid);
-                const name = (
-                  team.memberNames?.[i] ||
-                  memberUser?.displayName ||
-                  memberUser?.email ||
-                  uid
-                )
-                  .toString()
-                  .trim();
-                return { uid, memberUser, name };
-              });
+                const memberRows = team.memberIds.map((uid, i) => {
+                  // Prefer the directly-fetched user (not subject to orderBy exclusion)
+                  const memberUser =
+                    bracketMemberUsers.get(uid) ?? usersMap.get(uid);
+                  const name = (
+                    team.memberNames?.[i] ||
+                    memberUser?.displayName ||
+                    memberUser?.email ||
+                    uid
+                  )
+                    .toString()
+                    .trim();
+                  return { uid, memberUser, name };
+                });
 
-              const emails = memberRows
-                .map((r) => r.memberUser?.email)
-                .filter((e): e is string => !!e);
+                const emails = memberRows
+                  .map((r) => r.memberUser?.email)
+                  .filter((e): e is string => !!e);
 
-              return (
-                <>
-                  <Modal.Header className="flex flex-col gap-0.5">
-                    <span>{team.name}</span>
-                    <span className="text-sm font-normal text-muted">
-                      Team contact info
-                    </span>
-                  </Modal.Header>
-                  <Modal.Body>
-                    <div className="space-y-2">
-                      {memberRows.map(({ uid, memberUser, name }) => (
-                        <div
-                          key={uid}
-                          className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <UserAvatar
-                              size="sm"
-                              user={memberUser}
-                              name={memberUser ? undefined : name}
-                              alt={name}
-                            />
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {name}
-                              </div>
-                              {memberUser?.email ? (
-                                <div className="text-[11px] text-muted truncate">
-                                  {memberUser.email}
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() => {
-                              setBracketTeamModal(null);
-                              navigate(`/profile/${uid}`);
-                            }}
-                            aria-label={`View profile for ${name}`}
+                return (
+                  <>
+                    <Modal.Header className="flex flex-col gap-0.5">
+                      <span>{team.name}</span>
+                      <span className="text-sm font-normal text-muted">
+                        Team contact info
+                      </span>
+                    </Modal.Header>
+                    <Modal.Body>
+                      <div className="space-y-2">
+                        {memberRows.map(({ uid, memberUser, name }) => (
+                          <div
+                            key={uid}
+                            className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
                           >
-                            View profile
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </Modal.Body>
-                  <Modal.Footer>
-                    {emails.length > 0 && (
+                            <div className="flex items-center gap-2 min-w-0">
+                              <UserAvatar
+                                size="sm"
+                                user={memberUser}
+                                name={memberUser ? undefined : name}
+                                alt={name}
+                              />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium truncate">
+                                  {name}
+                                </div>
+                                {memberUser?.email ? (
+                                  <div className="text-[11px] text-muted truncate">
+                                    {memberUser.email}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="tertiary"
+                              onPress={() => {
+                                setBracketTeamModal(null);
+                                navigate(`/profile/${uid}`);
+                              }}
+                              aria-label={`View profile for ${name}`}
+                            >
+                              View profile
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </Modal.Body>
+                    <Modal.Footer>
+                      {emails.length > 0 && (
+                        <Button
+                          variant="tertiary"
+                          onPress={() => copyOrMailtoEmails(emails)}
+                        >
+                          <Icon icon="lucide:copy" className="w-4 h-4" />
+                          Copy emails
+                        </Button>
+                      )}
                       <Button
-                        variant="tertiary"
-                        onPress={() => copyOrMailtoEmails(emails)}
+                        variant="ghost"
+                        onPress={() => setBracketTeamModal(null)}
                       >
-                        <Icon icon="lucide:copy" className="w-4 h-4" />
-                        Copy emails
+                        Close
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      onPress={() => setBracketTeamModal(null)}
-                    >
-                      Close
-                    </Button>
-                  </Modal.Footer>
-                </>
-              );
-            })()}
-          </Modal.Dialog>
-        </Modal.Container>
+                    </Modal.Footer>
+                  </>
+                );
+              })()}
+            </Modal.Dialog>
+          </Modal.Container>
         </Modal.Backdrop>
       </Modal>
     </>
