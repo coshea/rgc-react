@@ -44,7 +44,7 @@ describe("ThemeSwitch", () => {
     await act(async () => {});
 
     expect(
-      screen.getByRole("switch", { name: "Switch to dark mode" }),
+      screen.getByRole("button", { name: "Switch to dark mode" }),
     ).toBeInTheDocument();
   });
 
@@ -54,7 +54,7 @@ describe("ThemeSwitch", () => {
     await act(async () => {});
 
     expect(
-      screen.getByRole("switch", { name: "Switch to light mode" }),
+      screen.getByRole("button", { name: "Switch to light mode" }),
     ).toBeInTheDocument();
   });
 
@@ -81,7 +81,7 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     await act(async () => {});
 
-    const switchEl = screen.getByRole("switch");
+    const switchEl = screen.getByRole("button");
     fireEvent.click(switchEl);
 
     expect(setThemeMock).toHaveBeenCalledWith("dark");
@@ -92,7 +92,7 @@ describe("ThemeSwitch", () => {
     render(<ThemeSwitch />);
     await act(async () => {});
 
-    const switchEl = screen.getByRole("switch");
+    const switchEl = screen.getByRole("button");
     fireEvent.click(switchEl);
 
     expect(setThemeMock).toHaveBeenCalledWith("light");

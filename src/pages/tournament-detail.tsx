@@ -1518,25 +1518,27 @@ img { display: block; max-width: 100%; }
             <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
               {/* Full Width: Registered Teams (Improved readability) */}
               <Card className="md:col-span-3">
-                <Card.Header className="pb-0 flex flex-wrap items-center justify-between gap-2 overflow-visible relative">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Icon
-                      icon="lucide:users"
-                      className="w-5 h-5 text-accent"
-                      aria-hidden="true"
-                    />
-                    Registered Teams
-                    {!regsLoading && registrations.length > 0 && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent">
-                        {registrations.length}
-                        {typeof tournament.maxTeams === "number" &&
-                        Number.isFinite(tournament.maxTeams) &&
-                        tournament.maxTeams > 0
-                          ? ` / ${tournament.maxTeams}`
-                          : ""}
-                      </span>
-                    )}
-                  </h2>
+                <Card.Header className="pb-0 flex flex-col gap-3 overflow-visible relative">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Icon
+                        icon="lucide:users"
+                        className="w-5 h-5 text-accent"
+                        aria-hidden="true"
+                      />
+                      Registered Teams
+                      {!regsLoading && registrations.length > 0 && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                          {registrations.length}
+                          {typeof tournament.maxTeams === "number" &&
+                          Number.isFinite(tournament.maxTeams) &&
+                          tournament.maxTeams > 0
+                            ? ` / ${tournament.maxTeams}`
+                            : ""}
+                        </span>
+                      )}
+                    </h2>
+                  </div>
                   <div className="flex items-center gap-3 flex-wrap pb-1">
                     {!regsLoading && registrations.length > 0 && (
                       <Input

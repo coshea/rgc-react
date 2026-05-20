@@ -83,14 +83,15 @@ export function ChampionshipCard({
                   key={index}
                   className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md hover:shadow-lg transition-all duration-200"
                 >
-                  <UserAvatar
-                    user={winnerUser}
-                    name={winnerName}
-                    userId={winnerId}
-                    className="w-12 h-12 ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg"
-                    size="md"
-                    alt={winnerName}
-                  />
+                  <span className="rounded-full ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg shrink-0 inline-flex">
+                    <UserAvatar
+                      user={winnerUser}
+                      name={winnerName}
+                      userId={winnerId}
+                      size="lg"
+                      alt={winnerName}
+                    />
+                  </span>
                   <div className="flex flex-col flex-1">
                     <span className="font-bold text-amber-900 dark:text-amber-100">
                       {winnerName}
@@ -116,13 +117,14 @@ export function ChampionshipCard({
             })
           ) : (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-200 dark:border-amber-800 shadow-md">
-              <UserAvatar
-                src={undefined}
-                name="Unknown Champion"
-                className="w-12 h-12 ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg"
-                size="md"
-                alt="Unknown Champion"
-              />
+              <span className="rounded-full ring-2 ring-amber-300 dark:ring-amber-600 shadow-lg shrink-0 inline-flex">
+                <UserAvatar
+                  src={undefined}
+                  name="Unknown Champion"
+                  size="lg"
+                  alt="Unknown Champion"
+                />
+              </span>
               <div className="flex flex-col flex-1">
                 <span className="font-bold text-amber-900 dark:text-amber-100">
                   Unknown Champion
@@ -154,14 +156,15 @@ export function ChampionshipCard({
                     key={index}
                     className="flex items-center gap-3 p-3 rounded-lg bg-linear-to-r from-slate-50 to-stone-50 dark:from-slate-950/30 dark:to-stone-950/30 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
                   >
-                    <UserAvatar
-                      user={runnerUpUser}
-                      name={runnerUpName}
-                      userId={runnerUpId}
-                      className="w-11 h-11 ring-2 ring-slate-300 dark:ring-slate-600"
-                      size="md"
-                      alt={runnerUpName}
-                    />
+                    <span className="rounded-full ring-2 ring-slate-300 dark:ring-slate-600 shrink-0 inline-flex">
+                      <UserAvatar
+                        user={runnerUpUser}
+                        name={runnerUpName}
+                        userId={runnerUpId}
+                        size="md"
+                        alt={runnerUpName}
+                      />
+                    </span>
                     <div className="flex flex-col flex-1">
                       <span className="font-semibold text-slate-700 dark:text-slate-200">
                         {runnerUpName}
