@@ -203,20 +203,22 @@ export default function NotificationSettingsPage() {
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.tournamentRegistration}
-                  onValueChange={() => toggle("tournamentRegistration")}
+                  onChange={() => toggle("tournamentRegistration")}
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Registration"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailTournamentRegistration}
-                  onValueChange={() => toggle("emailTournamentRegistration")}
+                  onChange={() => toggle("emailTournamentRegistration")}
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Registration"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
@@ -233,20 +235,22 @@ export default function NotificationSettingsPage() {
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.tournamentUpdates}
-                  onValueChange={() => toggle("tournamentUpdates")}
+                  onChange={() => toggle("tournamentUpdates")}
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Updates"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailTournamentUpdates}
-                  onValueChange={() => toggle("emailTournamentUpdates")}
+                  onChange={() => toggle("emailTournamentUpdates")}
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Updates"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
@@ -261,20 +265,22 @@ export default function NotificationSettingsPage() {
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.generalAnnouncements}
-                  onValueChange={() => toggle("generalAnnouncements")}
+                  onChange={() => toggle("generalAnnouncements")}
                   isDisabled={isLoading}
                   aria-label="Push: Announcements"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailGeneralAnnouncements}
-                  onValueChange={() => toggle("emailGeneralAnnouncements")}
+                  onChange={() => toggle("emailGeneralAnnouncements")}
                   isDisabled={isLoading}
                   aria-label="Email: Announcements"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
@@ -289,20 +295,22 @@ export default function NotificationSettingsPage() {
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.newFeatures}
-                  onValueChange={() => toggle("newFeatures")}
+                  onChange={() => toggle("newFeatures")}
                   isDisabled={isLoading}
                   aria-label="Push: New Features"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailNewFeatures}
-                  onValueChange={() => toggle("emailNewFeatures")}
+                  onChange={() => toggle("emailNewFeatures")}
                   isDisabled={isLoading}
                   aria-label="Email: New Features"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 

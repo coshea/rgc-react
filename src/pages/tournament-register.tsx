@@ -592,10 +592,14 @@ const TournamentRegister: React.FC = () => {
                     </div>
                     <Checkbox
                       isSelected={openSpotsOptIn}
-                      onValueChange={setOpenSpotsOptIn}
+                      onChange={setOpenSpotsOptIn}
                       aria-label="Let others contact me to fill open spots"
                       className="mt-0.5 shrink-0"
-                    />
+                    >
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox>
                   </label>
                 ) : maxTeamSize === 2 && hasMinTeamSize ? (
                   <label
@@ -625,10 +629,14 @@ const TournamentRegister: React.FC = () => {
                     </div>
                     <Checkbox
                       isSelected={openSpotsOptIn}
-                      onValueChange={setOpenSpotsOptIn}
+                      onChange={setOpenSpotsOptIn}
                       aria-label="Looking for a partner team to join our foursome"
                       className="mt-0.5 shrink-0"
-                    />
+                    >
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox>
                   </label>
                 ) : null}
 

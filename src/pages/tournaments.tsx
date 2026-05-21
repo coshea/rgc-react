@@ -178,16 +178,14 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 <RadioGroup
                   label="How would you like to start?"
                   value={createMethod}
-                  onValueChange={(v) =>
-                    setCreateMethod(v as "scratch" | "copy")
-                  }
+                  onChange={(v) => setCreateMethod(v as "scratch" | "copy")}
                 >
                   <Radio value="scratch">Create from scratch</Radio>
                   <Radio value="copy">Copy from previous</Radio>
                 </RadioGroup>
                 {createMethod === "copy" && (
                   <Select
-                    selectedKey={templateId ?? undefined}
+                    selectedKey={templateId ?? null}
                     onSelectionChange={(key) => {
                       setTemplateId(key ? String(key) : null);
                     }}

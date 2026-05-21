@@ -185,7 +185,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   label="Custom Filename (optional)"
                   placeholder="e.g., spring-tournament-2024"
                   value={customFilename}
-                  onValueChange={setCustomFilename}
+                  onChange={(e) => setCustomFilename(e.target.value)}
                   description="Enter a descriptive name to easily find this image later"
                 />
                 <div className="flex gap-2 justify-center">

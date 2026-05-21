@@ -401,7 +401,7 @@ export function NotificationsTab() {
             label="Title"
             placeholder="Notification title"
             value={title}
-            onValueChange={setTitle}
+            onChange={(e) => setTitle(e.target.value)}
             isInvalid={Boolean(errors.title)}
             errorMessage={errors.title}
             isRequired
@@ -411,7 +411,7 @@ export function NotificationsTab() {
             label="Body"
             placeholder="Notification message"
             value={body}
-            onValueChange={setBody}
+            onChange={(e) => setBody(e.target.value)}
             isInvalid={Boolean(errors.body)}
             errorMessage={errors.body}
             minRows={3}
@@ -603,7 +603,7 @@ export function NotificationsTab() {
                   <RadioGroup
                     label="Who to notify"
                     value={tournamentScope}
-                    onValueChange={(v) =>
+                    onChange={(v) =>
                       setTournamentScope(v as "in-tournament" | "all")
                     }
                     orientation="horizontal"
@@ -620,7 +620,7 @@ export function NotificationsTab() {
             label="Link (optional)"
             placeholder="/tournaments/..."
             value={link}
-            onValueChange={setLink}
+            onChange={(e) => setLink(e.target.value)}
             description="Deep-link opened when user taps the notification."
           />
 

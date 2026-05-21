@@ -185,7 +185,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               placeholder={placeholder}
               minRows={minRows}
               value={value}
-              onValueChange={onChange}
+              onChange={(e) => onChange(e.target.value)}
               fullWidth
               className="font-mono text-sm"
             />
@@ -205,7 +205,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               placeholder={placeholder}
               minRows={minRows}
               value={value}
-              onValueChange={onChange}
+              onChange={(e) => onChange(e.target.value)}
               fullWidth
               className="font-mono text-sm"
             />

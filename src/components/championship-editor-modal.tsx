@@ -357,10 +357,11 @@ export function ChampionshipEditorModal({
                   label="Year"
                   type="number"
                   value={formData.year.toString()}
-                  onValueChange={(value) =>
+                  onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      year: parseInt(value) || new Date().getFullYear(),
+                      year:
+                        parseInt(e.target.value) || new Date().getFullYear(),
                     }))
                   }
                   isInvalid={!!errors.year}

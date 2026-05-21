@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Button, Switch, Tooltip } from "@heroui/react";
+import { Button, Switch, Tooltip, Label } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Icon } from "@iconify/react";
 
@@ -94,10 +94,11 @@ export function DirectoryHeader({
                       <Switch
                         size="sm"
                         isSelected={activeOnly}
-                        onValueChange={onActiveOnlyChange}
+                        onChange={onActiveOnlyChange}
                         aria-label="Toggle active members only"
                       >
-                        Active Last 2 Years
+                        <Switch.Control><Switch.Thumb /></Switch.Control>
+                        <Switch.Content><Label>Active Last 2 Years</Label></Switch.Content>
                       </Switch>
                     </div>
                   )}
@@ -196,11 +197,12 @@ export function DirectoryHeader({
                     <Switch
                       size="sm"
                       isSelected={activeOnly}
-                      onValueChange={onActiveOnlyChange}
+                      onChange={onActiveOnlyChange}
                       aria-label="Toggle active members only"
                       className="whitespace-nowrap"
                     >
-                      Active Last 2 Years
+                      <Switch.Control><Switch.Thumb /></Switch.Control>
+                      <Switch.Content><Label>Active Last 2 Years</Label></Switch.Content>
                     </Switch>
                   )}
                   {onFindDuplicates && (

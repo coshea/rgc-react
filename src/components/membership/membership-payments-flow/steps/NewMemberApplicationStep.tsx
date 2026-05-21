@@ -1,4 +1,4 @@
-import { Button, Card, Checkbox, Separator } from "@heroui/react";
+import { Button, Card, Checkbox, Label, Separator } from "@heroui/react";
 import { useState } from "react";
 import type { NewMemberState } from "../types";
 import BackButton from "@/components/back-button";
@@ -128,9 +128,7 @@ export function NewMemberApplicationStep(props: {
               {contactAddress.name}
             </div>
             <div className="text-muted">{contactAddress.street}</div>
-            <div className="text-muted">
-              {contactAddress.cityStateZip}
-            </div>
+            <div className="text-muted">{contactAddress.cityStateZip}</div>
           </div>
           <p className="text-xs text-muted">
             Applications are not accepted by email or in-person drop-off.
@@ -140,12 +138,19 @@ export function NewMemberApplicationStep(props: {
         <div className="space-y-2">
           <Checkbox
             isSelected={value.acknowledged}
-            onValueChange={(v) => setValue((s) => ({ ...s, acknowledged: v }))}
+            onChange={(v) => setValue((s) => ({ ...s, acknowledged: v }))}
             className="items-start max-w-full"
-            classNames={{ label: "whitespace-normal" }}
+            id="acknowledge-mail"
           >
-            I understand I must mail the completed application before my new
-            member request can be reviewed.
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>
+              <Label htmlFor="acknowledge-mail" className="whitespace-normal">
+                I understand I must mail the completed application before my new
+                member request can be reviewed.
+              </Label>
+            </Checkbox.Content>
           </Checkbox>
           {localErrors.newAcknowledged ? (
             <div className="text-danger text-sm">

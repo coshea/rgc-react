@@ -269,31 +269,34 @@ export default function MembershipAdminModal({
                 </div>
                 <Switch
                   isSelected={registrationOpen}
-                  onValueChange={setRegistrationOpen}
+                  onChange={setRegistrationOpen}
                   size="lg"
                   aria-label="Toggle registration status"
                 >
-                  {registrationOpen ? (
-                    <span className="flex items-center gap-2">
-                      <Icon
-                        icon="lucide:check-circle"
-                        width={20}
-                        height={20}
-                        className="text-success"
-                      />
-                      <span className="font-semibold">Open</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Icon
-                        icon="lucide:alert-circle"
-                        width={20}
-                        height={20}
-                        className="text-warning"
-                      />
-                      <span className="font-semibold">Closed</span>
-                    </span>
-                  )}
+                  <Switch.Control><Switch.Thumb /></Switch.Control>
+                  <Switch.Content>
+                    {registrationOpen ? (
+                      <span className="flex items-center gap-2">
+                        <Icon
+                          icon="lucide:check-circle"
+                          width={20}
+                          height={20}
+                          className="text-success"
+                        />
+                        <span className="font-semibold">Open</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Icon
+                          icon="lucide:alert-circle"
+                          width={20}
+                          height={20}
+                          className="text-warning"
+                        />
+                        <span className="font-semibold">Closed</span>
+                      </span>
+                    )}
+                  </Switch.Content>
                 </Switch>
               </div>
 

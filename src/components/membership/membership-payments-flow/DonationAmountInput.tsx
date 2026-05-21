@@ -58,7 +58,8 @@ export function DonationAmountInput({
         label={label}
         labelPlacement={labelPlacement}
         value={amountFocused ? value : formatCurrency(value)}
-        onValueChange={(nextValue) => {
+        onChange={(e) => {
+          const nextValue = e.target.value;
           if (nextValue.trim().startsWith("-")) return;
           onValueChange(sanitizeAmountInput(nextValue));
         }}

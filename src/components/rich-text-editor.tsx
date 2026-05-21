@@ -139,7 +139,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       ) : (
         <TextArea
           value={value}
-          onValueChange={onChange}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           minRows={minRows}
           classNames={{

@@ -607,8 +607,13 @@ export default function LoginPage() {
 
             {loginMode === "password" ? (
               <div className="flex w-full items-center justify-between px-1 py-2">
-                <Checkbox name="remember" size="sm">
-                  Remember me
+                <Checkbox name="remember" id="remember-me">
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label htmlFor="remember-me">Remember me</Label>
+                  </Checkbox.Content>
                 </Checkbox>
                 <Link
                   className="text-muted"
@@ -752,8 +757,8 @@ export default function LoginPage() {
                     label="Email Address"
                     type="email"
                     value={emailConfirmationValue}
-                    onValueChange={(value) => {
-                      setEmailConfirmationValue(value);
+                    onChange={(e) => {
+                      setEmailConfirmationValue(e.target.value);
                       if (emailConfirmationError) {
                         setEmailConfirmationError(null);
                       }

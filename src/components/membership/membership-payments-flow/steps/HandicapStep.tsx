@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-  Input,
-} from "@heroui/react";
+import { Button, Card, Separator, Input } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import type { HandicapState } from "../types";
 
@@ -73,8 +65,11 @@ export function HandicapStep(props: {
         <Input
           label="GHIN (optional)"
           value={value.ghin}
-          onValueChange={(v) =>
-            setValue((s) => ({ ...s, ghin: v.replace(/\D+/g, "") }))
+          onChange={(e) =>
+            setValue((s) => ({
+              ...s,
+              ghin: e.target.value.replace(/\D+/g, ""),
+            }))
           }
           isInvalid={!!localErrors.handicapGhin}
           errorMessage={localErrors.handicapGhin}
@@ -91,9 +86,7 @@ export function HandicapStep(props: {
       </Card.Content>
       <Separator />
       <Card.Footer className="flex justify-end">
-        <Button  onPress={handlePay}>
-          Continue
-        </Button>
+        <Button onPress={handlePay}>Continue</Button>
       </Card.Footer>
     </Card>
   );

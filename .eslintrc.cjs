@@ -49,5 +49,6 @@ module.exports = {
     "react/no-unescaped-entities": "off",
     "prefer-const": "warn",
     "react-hooks/exhaustive-deps": "warn",
+    "@typescript-eslint/no-deprecated": "error",
   },
 };

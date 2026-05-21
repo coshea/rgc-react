@@ -157,7 +157,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
                   }}
                   placeholder="Search pages and tournaments…"
                   value={searchQuery}
-                  onValueChange={setSearchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
                       onClose();

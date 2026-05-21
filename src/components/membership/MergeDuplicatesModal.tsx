@@ -474,7 +474,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
 
                     <RadioGroup
                       value={primaryUserId}
-                      onValueChange={setPrimaryUserId}
+                      onChange={setPrimaryUserId}
                       className="gap-3"
                     >
                       {selectedGroup.users.map((user) => (

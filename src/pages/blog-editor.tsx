@@ -568,8 +568,8 @@ export const BlogEditorPage: React.FC = () => {
             label="Title"
             placeholder="Enter post title"
             value={formData.title || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, title: value })
+            onChange={(e) =>
+              setFormData({ ...formData, title: e.target.value })
             }
             isRequired
           />
@@ -579,7 +579,7 @@ export const BlogEditorPage: React.FC = () => {
             label="URL Slug"
             placeholder="auto-generated-from-title"
             value={formData.slug || ""}
-            onValueChange={(value) => setFormData({ ...formData, slug: value })}
+            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
             description="Leave empty to auto-generate from title"
           />
 
@@ -620,8 +620,8 @@ export const BlogEditorPage: React.FC = () => {
             label="Excerpt (Optional)"
             placeholder="Short summary (auto-generated if empty)"
             value={formData.excerpt || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, excerpt: value })
+            onChange={(e) =>
+              setFormData({ ...formData, excerpt: e.target.value })
             }
             description="Short summary shown in lists and previews"
           />
@@ -642,11 +642,14 @@ export const BlogEditorPage: React.FC = () => {
           {/* Pin Post */}
           <Switch
             isSelected={formData.isPinned || false}
-            onValueChange={(value) =>
-              setFormData({ ...formData, isPinned: value })
-            }
+            onChange={(value) => setFormData({ ...formData, isPinned: value })}
           >
-            Pin to top of blog list
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <Switch.Content>
+              <Label>Pin to top of blog list</Label>
+            </Switch.Content>
           </Switch>
 
           {/* Status Badge */}

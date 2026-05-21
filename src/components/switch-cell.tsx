@@ -19,7 +19,9 @@ const SwitchCell = React.forwardRef<HTMLLabelElement, SwitchCellProps>(
         <p className="text-base">{label}</p>
         <p className="text-sm text-muted">{description}</p>
       </div>
-      <Switch ref={ref} classNames={{ wrapper: "shrink-0" }} {...props} />
+      <Switch ref={ref} {...props}>
+        <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+      </Switch>
     </div>
   ),
 );

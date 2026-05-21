@@ -496,32 +496,39 @@ export default function SignUpPage() {
             <Checkbox
               isRequired
               className="py-4"
-              size="sm"
+              id="terms-agree"
               aria-describedby="terms-privacy-modal-hint"
             >
-              <span id="terms-privacy-modal-hint" className="sr-only">
-                Terms and Privacy Policy open in-page dialogs.
-              </span>
-              I agree with the&nbsp;
-              <Link
-                className="relative z-1"
-                size="sm"
-                onPress={() => setIsTermsOpen(true)}
-                aria-label="View Terms of Use (opens dialog)"
-                aria-haspopup="dialog"
-              >
-                Terms
-              </Link>
-              &nbsp; and&nbsp;
-              <Link
-                className="relative z-1"
-                size="sm"
-                onPress={() => setIsPrivacyOpen(true)}
-                aria-label="View Privacy Policy (opens dialog)"
-                aria-haspopup="dialog"
-              >
-                Privacy Policy
-              </Link>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Checkbox.Content>
+                <Label htmlFor="terms-agree">
+                  <span id="terms-privacy-modal-hint" className="sr-only">
+                    Terms and Privacy Policy open in-page dialogs.
+                  </span>
+                  I agree with the&nbsp;
+                  <Link
+                    className="relative z-1"
+                    size="sm"
+                    onPress={() => setIsTermsOpen(true)}
+                    aria-label="View Terms of Use (opens dialog)"
+                    aria-haspopup="dialog"
+                  >
+                    Terms
+                  </Link>
+                  &nbsp; and&nbsp;
+                  <Link
+                    className="relative z-1"
+                    size="sm"
+                    onPress={() => setIsPrivacyOpen(true)}
+                    aria-label="View Privacy Policy (opens dialog)"
+                    aria-haspopup="dialog"
+                  >
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </Checkbox.Content>
             </Checkbox>
             <Button type="submit" isDisabled={authLoading || isSubmitting}>
               {authLoading || isSubmitting

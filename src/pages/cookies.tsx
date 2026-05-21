@@ -58,7 +58,6 @@ export default function CookiePolicyPage() {
             </Button>
             <Button
               size="sm"
-              
               onPress={accept}
               isDisabled={status === "accepted"}
             >

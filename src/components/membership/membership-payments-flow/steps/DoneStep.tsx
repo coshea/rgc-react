@@ -1,11 +1,4 @@
-import {
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 
 export function DoneStep(props: {
   title: string;
@@ -30,9 +23,7 @@ export function DoneStep(props: {
       </Card.Content>
       <Separator />
       <Card.Footer className="flex justify-end">
-        <Button  onPress={onBackToOptions}>
-          Back to options
-        </Button>
+        <Button onPress={onBackToOptions}>Back to options</Button>
       </Card.Footer>
     </Card>
   );

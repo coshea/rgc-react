@@ -154,7 +154,7 @@ export const PolicyEditorPage: React.FC = () => {
               label="Title"
               placeholder="Enter policy title"
               value={title}
-              onValueChange={setTitle}
+              onChange={(e) => setTitle(e.target.value)}
               isRequired
               size="lg"
               classNames={{

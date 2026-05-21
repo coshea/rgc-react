@@ -232,8 +232,8 @@ export function SeasonAwardsManager() {
         max={MAX_AWARD_YEAR}
         label="Season year"
         value={String(selectedYear)}
-        onValueChange={(value) => {
-          const next = Number(value);
+        onChange={(e) => {
+          const next = Number(e.target.value);
           if (!Number.isFinite(next)) {
             return;
           }
@@ -294,9 +294,9 @@ export function SeasonAwardsManager() {
           label="Amount override (optional)"
           placeholder={`Default: $${SEASON_AWARD_DEFAULT_AMOUNTS[awardType]}`}
           value={awardAmountOverride}
-          onValueChange={(value) => {
+          onChange={(e) => {
             setAwardError(null);
-            setAwardAmountOverride(value);
+            setAwardAmountOverride(e.target.value);
           }}
           isInvalid={
             Boolean(awardError) &&
@@ -317,9 +317,9 @@ export function SeasonAwardsManager() {
           type="date"
           label="Award date"
           value={awardDate}
-          onValueChange={(value) => {
+          onChange={(e) => {
             setAwardError(null);
-            setAwardDate(value);
+            setAwardDate(e.target.value);
           }}
           isInvalid={Boolean(awardError && !awardDate)}
           errorMessage={awardError && !awardDate ? awardError : undefined}
@@ -351,9 +351,7 @@ export function SeasonAwardsManager() {
         {awardsLoading ? (
           <p className="text-sm text-muted">Loading awards...</p>
         ) : seasonAwards.length === 0 ? (
-          <p className="text-sm text-muted">
-            No season awards recorded yet.
-          </p>
+          <p className="text-sm text-muted">No season awards recorded yet.</p>
         ) : (
           <div className="space-y-2">
             {seasonAwards.map((award) => (

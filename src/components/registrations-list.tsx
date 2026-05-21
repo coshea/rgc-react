@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Button, Checkbox, Tooltip } from "@heroui/react";
+import { Card, Button, Checkbox, Label, Tooltip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
@@ -288,11 +288,19 @@ export const RegistrationsList: React.FC<Props> = ({
                     <div className="mt-3">
                       <Checkbox
                         isSelected={openSpotsValue}
-                        onValueChange={(v) => updateOpenSpots(reg.id, v)}
+                        onChange={(v) => updateOpenSpots(reg.id, v)}
+                        id={`open-spots-${reg.id}`}
                       >
-                        {players === 2
-                          ? "Looking for a partner team / open to new players"
-                          : "Let others contact this team to fill open spots"}
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Label htmlFor={`open-spots-${reg.id}`}>
+                            {players === 2
+                              ? "Looking for a partner team / open to new players"
+                              : "Let others contact this team to fill open spots"}
+                          </Label>
+                        </Checkbox.Content>
                       </Checkbox>
                     </div>
                   ) : null}

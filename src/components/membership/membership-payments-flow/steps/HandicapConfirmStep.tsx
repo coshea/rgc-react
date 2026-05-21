@@ -1,11 +1,4 @@
-import {
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
 import { DonationAmountInput } from "../DonationAmountInput";
@@ -98,7 +91,7 @@ export function HandicapConfirmStep(props: {
       </Card.Content>
       <Separator />
       <Card.Footer className="flex justify-end">
-        <Button  onPress={() => onContinueToPay(donationValue)}>
+        <Button onPress={() => onContinueToPay(donationValue)}>
           Pay Handicap Fee
         </Button>
       </Card.Footer>

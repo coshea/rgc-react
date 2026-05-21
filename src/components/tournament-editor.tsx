@@ -616,7 +616,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 label="Tournament Title"
                 placeholder="Enter tournament title"
                 value={title}
-                onValueChange={setTitle}
+                onChange={(e) => setTitle(e.target.value)}
                 isRequired
                 isInvalid={!!errors.title}
                 errorMessage={errors.title}
@@ -625,7 +625,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 label="Description"
                 placeholder="Enter tournament description"
                 value={description}
-                onValueChange={setDescription}
+                onChange={(e) => setDescription(e.target.value)}
                 isRequired
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
@@ -798,16 +798,30 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
               <Checkbox
                 isSelected={assignedTeeTimes}
-                onValueChange={setAssignedTeeTimes}
+                onChange={setAssignedTeeTimes}
+                id="assigned-tee-times"
               >
-                Assigned tee times
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Checkbox.Content>
+                  <Label htmlFor="assigned-tee-times">Assigned tee times</Label>
+                </Checkbox.Content>
               </Checkbox>
               {isAdmin && (
                 <Checkbox
                   isSelected={goldTeesEnabled}
-                  onValueChange={setGoldTeesEnabled}
+                  onChange={setGoldTeesEnabled}
+                  id="gold-tees-enabled"
                 >
-                  Allow gold tee selection during registration
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label htmlFor="gold-tees-enabled">
+                      Allow gold tee selection during registration
+                    </Label>
+                  </Checkbox.Content>
                 </Checkbox>
               )}
               <Select
@@ -1174,9 +1188,17 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               {players > 1 ? (
                 <Checkbox
                   isSelected={newOpenSpotsOptIn}
-                  onValueChange={setNewOpenSpotsOptIn}
+                  onChange={setNewOpenSpotsOptIn}
+                  id="new-open-spots-opt-in"
                 >
-                  Let others contact this team to fill open spots
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label htmlFor="new-open-spots-opt-in">
+                      Let others contact this team to fill open spots
+                    </Label>
+                  </Checkbox.Content>
                 </Checkbox>
               ) : null}
               <div className="h-4" />

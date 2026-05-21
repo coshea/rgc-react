@@ -362,7 +362,7 @@ export function ProfileForm({
               label="First Name"
               placeholder="Enter first name"
               value={formData.firstName}
-              onValueChange={handleInputChange("firstName")}
+              onChange={(e) => handleInputChange("firstName")(e.target.value)}
               isRequired
               isInvalid={!!errors.firstName}
               errorMessage={errors.firstName}
@@ -371,7 +371,7 @@ export function ProfileForm({
               label="Last Name"
               placeholder="Enter last name"
               value={formData.lastName}
-              onValueChange={handleInputChange("lastName")}
+              onChange={(e) => handleInputChange("lastName")(e.target.value)}
               isRequired
               isInvalid={!!errors.lastName}
               errorMessage={errors.lastName}
@@ -382,7 +382,7 @@ export function ProfileForm({
             label="Email"
             placeholder="Enter your email address"
             value={formData.email}
-            onValueChange={handleInputChange("email")}
+            onChange={(e) => handleInputChange("email")(e.target.value)}
             type="email"
             isRequired
             isInvalid={!!errors.email}
@@ -394,7 +394,7 @@ export function ProfileForm({
               label="Phone Number"
               placeholder="Enter your phone number"
               value={formData.phone}
-              onValueChange={handleInputChange("phone")}
+              onChange={(e) => handleInputChange("phone")(e.target.value)}
               type="tel"
               isInvalid={!!errors.phone}
               errorMessage={errors.phone}
@@ -404,7 +404,7 @@ export function ProfileForm({
               label="GHIN Number"
               placeholder="Enter your GHIN number"
               value={formData.ghinNumber}
-              onValueChange={handleInputChange("ghinNumber")}
+              onChange={(e) => handleInputChange("ghinNumber")(e.target.value)}
               type="text"
               isInvalid={!!errors.ghinNumber}
               errorMessage={errors.ghinNumber}

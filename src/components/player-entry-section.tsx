@@ -67,10 +67,7 @@ export function PlayerEntrySection({
       </div>
 
       {entries.map((entry, index) => (
-        <div
-          key={index}
-          className="space-y-3 p-4 border rounded-lg"
-        >
+        <div key={index} className="space-y-3 p-4 border rounded-lg">
           <div className="flex items-center justify-between">
             <h4 className="text-base font-medium">
               {singular} {index + 1}
@@ -80,8 +77,12 @@ export function PlayerEntrySection({
               <Switch
                 size="sm"
                 isSelected={entry.isHistorical}
-                onValueChange={(value) => onUpdateHistorical(index, value)}
-              />
+                onChange={(value) => onUpdateHistorical(index, value)}
+              >
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch>
             </div>
           </div>
 
@@ -90,7 +91,7 @@ export function PlayerEntrySection({
               <Input
                 label="Name"
                 value={entry.name}
-                onValueChange={(value) => onUpdate(index, "name", value)}
+                onChange={(e) => onUpdate(index, "name", e.target.value)}
                 isInvalid={!!errors?.names}
                 className="flex-1"
               />
