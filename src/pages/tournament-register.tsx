@@ -534,7 +534,7 @@ const TournamentRegister: React.FC = () => {
             ) : (
               <>
                 {tournament.goldTeesEnabled && (
-                  <Alert variant="faded">
+                  <Alert>
                     <span className="text-sm">
                       <strong>Gold tees</strong> are available for senior
                       players. To opt a player in, click the{" "}
@@ -675,6 +675,7 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full"
+                      variant="primary"
                       type="submit"
                       isDisabled={
                         submitting ||
@@ -719,6 +720,7 @@ const TournamentRegister: React.FC = () => {
                           Close
                         </Button>
                         <Button
+                          variant="danger"
                           onPress={handleConfirmCancel}
                           isDisabled={deleting}
                         >

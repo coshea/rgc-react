@@ -878,7 +878,9 @@ export function BracketTab() {
                 >
                   Cancel
                 </Button>
-                <Button onPress={handleDelete}>Delete Bracket</Button>
+                <Button variant="danger" onPress={handleDelete}>
+                  Delete Bracket
+                </Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>
@@ -909,7 +911,9 @@ export function BracketTab() {
                 >
                   Cancel
                 </Button>
-                <Button onPress={handleDeleteAndRegen}>Regenerate</Button>
+                <Button variant="danger" onPress={handleDeleteAndRegen}>
+                  Regenerate
+                </Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>{" "}

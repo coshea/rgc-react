@@ -39,7 +39,12 @@ export function TournamentStatusChip({
 
   if (s === TournamentStatus.InProgress) {
     return (
-      <Chip size={size} color="accent" variant="primary">
+      <Chip
+        size={size}
+        color="accent"
+        variant="primary"
+        className="whitespace-nowrap"
+      >
         <Icon
           icon="lucide:play-circle"
           className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
@@ -55,7 +60,7 @@ export function TournamentStatusChip({
         size={size}
         color="accent"
         variant="primary"
-        className="animate-pulse"
+        className="animate-pulse whitespace-nowrap"
       >
         <Icon
           icon="lucide:user-plus"
@@ -72,7 +77,12 @@ export function TournamentStatusChip({
     windowInfo.start.getTime() - Date.now() <= 7 * 24 * 60 * 60 * 1000
   ) {
     return (
-      <Chip size={size} color="accent" variant="primary">
+      <Chip
+        size={size}
+        color="accent"
+        variant="primary"
+        className="whitespace-nowrap"
+      >
         <Icon
           icon="lucide:calendar-clock"
           className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
@@ -87,7 +97,7 @@ export function TournamentStatusChip({
     windowInfo.state === RegistrationWindowState.Invalid
   ) {
     return (
-      <Chip size={size} variant="tertiary">
+      <Chip size={size} variant="tertiary" className="whitespace-nowrap">
         <Icon
           icon="lucide:lock"
           className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"

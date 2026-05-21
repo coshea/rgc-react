@@ -1932,7 +1932,9 @@ img { display: block; max-width: 100%; }
                 >
                   Cancel
                 </Button>
-                <Button onPress={handleDelete}>Delete</Button>
+                <Button variant="danger" onPress={handleDelete}>
+                  Delete
+                </Button>
               </div>
             </div>
           </div>

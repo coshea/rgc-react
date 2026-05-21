@@ -611,7 +611,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               <Input
                 label="Tournament Title"
                 placeholder="Enter tournament title"
@@ -630,16 +630,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 isInvalid={!!errors.description}
                 errorMessage={errors.description}
               />
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <MarkdownEditor
-                    value={detailsMarkdown}
-                    onChange={setDetailsMarkdown}
-                    placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
-                    minRows={10}
-                    onPopout={() => setDetailsPopoutOpen(true)}
-                  />
-                </div>
+              <div className="min-w-0">
+                <MarkdownEditor
+                  value={detailsMarkdown}
+                  onChange={setDetailsMarkdown}
+                  placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
+                  minRows={10}
+                  onPopout={() => setDetailsPopoutOpen(true)}
+                />
               </div>
               <DatePicker
                 label="Tournament Date"
@@ -655,9 +653,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     <h3 className="text-sm font-semibold">
                       Registration Window
                     </h3>
-                    <span className="text-xs text-muted">
-                      Stored in UTC
-                    </span>
+                    <span className="text-xs text-muted">Stored in UTC</span>
                   </div>
                   <div className="space-y-3">
                     <DatePicker
@@ -696,7 +692,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 </Card.Content>
               </Card>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               <Input
                 type="number"
                 label="Number of Players On A Team"
@@ -854,9 +850,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                           >
                             <div className="flex flex-col">
                               <span>{t.title}</span>
-                              <span className="text-xs text-muted">
-                                {year}
-                              </span>
+                              <span className="text-xs text-muted">{year}</span>
                             </div>
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -892,21 +886,15 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                         <p className="font-medium">{weather.condition}</p>
                       </div>
                       <div>
-                        <p className="text-muted text-xs">
-                          Temperature
-                        </p>
+                        <p className="text-muted text-xs">Temperature</p>
                         <p className="font-medium">{weather.temperature}°F</p>
                       </div>
                       <div>
-                        <p className="text-muted text-xs">
-                          Wind Speed
-                        </p>
+                        <p className="text-muted text-xs">Wind Speed</p>
                         <p className="font-medium">{weather.windSpeed} mph</p>
                       </div>
                       <div>
-                        <p className="text-muted text-xs">
-                          Precipitation
-                        </p>
+                        <p className="text-muted text-xs">Precipitation</p>
                         <p className="font-medium">{weather.precipitation}"</p>
                       </div>
                     </div>

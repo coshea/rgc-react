@@ -26,7 +26,7 @@ const BUTTONS: Array<{
   insert: (
     current: string,
     selection: string,
-    pos: number
+    pos: number,
   ) => { text: string; cursorOffset?: number };
 }> = [
   {
@@ -116,7 +116,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     });
   }
 
-  const wrapperClass = fillHeight ? "flex flex-col h-full" : "space-y-2";
+  const wrapperClass = fillHeight
+    ? "flex flex-col h-full min-w-0"
+    : "space-y-2 min-w-0";
 
   return (
     <div className={wrapperClass}>
@@ -127,18 +129,16 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <Tooltip key={b.label}>
               <Tooltip.Trigger>
                 <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                onPress={() => applyInsertion(b.insert)}
-                aria-label={b.label}
-              >
-                <Icon icon={b.icon} className="w-4 h-4" />
-              </Button>
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => applyInsertion(b.insert)}
+                  aria-label={b.label}
+                >
+                  <Icon icon={b.icon} className="w-4 h-4" />
+                </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content>
-                {b.label}
-              </Tooltip.Content>
+              <Tooltip.Content>{b.label}</Tooltip.Content>
             </Tooltip>
           ))}
           {!hidePreviewToggle && (
@@ -155,23 +155,21 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <Tooltip>
               <Tooltip.Trigger>
                 <Button
-                isIconOnly
-                size="sm"
-                variant="ghost"
-                onPress={onPopout}
-                aria-label="Open popout editor"
-              >
-                <Icon icon="lucide:expand" className="w-4 h-4" />
-              </Button>
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  onPress={onPopout}
+                  aria-label="Open popout editor"
+                >
+                  <Icon icon="lucide:expand" className="w-4 h-4" />
+                </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content>
-                Popout
-              </Tooltip.Content>
+              <Tooltip.Content>Popout</Tooltip.Content>
             </Tooltip>
           )}
         </div>
       </div>
-      <div className={fillHeight ? "flex-1 min-h-0" : ""}>
+      <div className={fillHeight ? "flex-1 min-h-0 min-w-0" : "min-w-0"}>
         {forceEdit ? (
           fillHeight ? (
             <textarea
@@ -188,7 +186,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               minRows={minRows}
               value={value}
               onValueChange={onChange}
-              classNames={{ input: `font-mono text-sm` }}
+              fullWidth
+              className="font-mono text-sm"
             />
           )
         ) : !preview ? (
@@ -207,7 +206,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               minRows={minRows}
               value={value}
               onValueChange={onChange}
-              classNames={{ input: `font-mono text-sm` }}
+              fullWidth
+              className="font-mono text-sm"
             />
           )
         ) : (

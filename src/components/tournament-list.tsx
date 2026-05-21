@@ -202,7 +202,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <div className="flex flex-wrap gap-2">
             <Button
               variant={filterStatus === "all" ? "primary" : "tertiary"}
-              color={filterStatus === "all" ? "primary" : "default"}
               size="sm"
               onPress={() => setFilterStatus("all")}
             >
@@ -210,7 +209,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </Button>
             <Button
               variant={filterStatus === "registration" ? "primary" : "tertiary"}
-              color={filterStatus === "registration" ? "warning" : "default"}
               size="sm"
               onPress={() => setFilterStatus("registration")}
             >
@@ -219,7 +217,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </Button>
             <Button
               variant={filterStatus === "scheduled" ? "primary" : "tertiary"}
-              color={filterStatus === "scheduled" ? "primary" : "default"}
               size="sm"
               onPress={() => setFilterStatus("scheduled")}
             >
@@ -228,7 +225,6 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </Button>
             <Button
               variant={filterStatus === "completed" ? "primary" : "tertiary"}
-              color={filterStatus === "completed" ? "success" : "default"}
               size="sm"
               onPress={() => setFilterStatus("completed")}
             >
@@ -237,8 +233,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             </Button>
             {filterCounts.canceled > 0 && (
               <Button
-                variant={filterStatus === "canceled" ? "primary" : "tertiary"}
-                color={filterStatus === "canceled" ? "danger" : "default"}
+                variant={filterStatus === "canceled" ? "danger" : "tertiary"}
                 size="sm"
                 onPress={() => setFilterStatus("canceled")}
               >

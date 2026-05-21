@@ -176,6 +176,7 @@ export const ContactForm = () => {
 
                   <Button
                     type="submit"
+                    variant="primary"
                     className="w-full"
                     size="md"
                     isDisabled={sending}

@@ -95,7 +95,7 @@ export const MainNavbar = () => {
     <>
       <nav className="z-40 w-full border-b bg-background/70 backdrop-blur-lg sticky top-0">
         <div
-          className={`flex h-[60px] max-w-7xl mx-auto w-full items-center justify-between px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
+          className={`flex h-[45px] max-w-7xl mx-auto w-full items-center justify-between px-3 sm:px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
         >
           {/* Left: mobile toggle + logo */}
           <div className="flex items-center gap-2">
@@ -118,12 +118,12 @@ export const MainNavbar = () => {
               aria-label="Home"
               className="flex items-center gap-2"
             >
-              <RGCLogo />
+              <RGCLogo className="h-9 w-auto" />
             </a>
           </div>
 
           {/* Center: desktop nav */}
-          <ul className="hidden md:flex items-center gap-1">
+          <ul className="hidden md:flex items-center gap-4">
             {Object.entries(menuItemsDesktop).map(([label, items], idx) => (
               <li key={`${label}-${idx}`}>
                 {Array.isArray(items) && items.length > 1 ? (
@@ -134,7 +134,7 @@ export const MainNavbar = () => {
                   />
                 ) : (
                   <a
-                    className="text-muted flex items-center gap-1 px-2 py-1 text-sm hover:text-foreground transition-colors rounded"
+                    className="text-muted flex items-center gap-1 px-3 py-0.5 text-sm hover:text-foreground transition-colors rounded"
                     href={
                       Array.isArray(items) && items[0] ? items[0].link : "#"
                     }

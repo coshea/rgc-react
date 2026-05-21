@@ -75,7 +75,7 @@ export function TournamentSection() {
   const displayTournaments = getDisplayTournaments();
 
   return (
-    <section className="py-8 bg-background overflow-x-hidden" id="tournaments">
+    <section className="py-8 overflow-x-hidden" id="tournaments">
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>

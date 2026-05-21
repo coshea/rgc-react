@@ -127,7 +127,10 @@ export const BlogListPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-3xl font-bold">Club Announcements</h1>
           {isAdmin && (
-            <Button onPress={() => navigate("/announcements/new")}>
+            <Button
+              variant="primary"
+              onPress={() => navigate("/announcements/new")}
+            >
               <Icon icon="lucide:plus" />
               New Post
             </Button>
@@ -209,6 +212,7 @@ export const BlogListPage: React.FC = () => {
             <p className="text-xl text-muted">No blog posts found</p>
             {isAdmin && (
               <Button
+                variant="primary"
                 className="mt-4"
                 onPress={() => navigate("/announcements/new")}
               >
@@ -374,7 +378,9 @@ export const BlogListPage: React.FC = () => {
                 >
                   Cancel
                 </Button>
-                <Button onPress={handleDelete}>Delete</Button>
+                <Button variant="danger" onPress={handleDelete}>
+                  Delete
+                </Button>
               </Modal.Footer>
             </Modal.Dialog>
           </Modal.Container>{" "}

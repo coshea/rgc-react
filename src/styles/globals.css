@@ -97,13 +97,14 @@ body {
 
   /* Restore card surface shadow in light mode.
      HeroUI v3 defaults --surface-shadow to empty (no shadow) in the light theme,
-     which causes Cards to appear flat. This override restores a subtle elevation. */
+     which causes Cards to appear flat. This override restores a visible elevation. */
   :root,
   .light,
   .default,
   [data-theme="light"],
   [data-theme="default"] {
     --surface-shadow:
-      0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+      0 1px 3px 0 rgb(0 0 0 / 0.1), 0 4px 12px 0 rgb(0 0 0 / 0.08),
+      0 0 0 1px rgb(0 0 0 / 0.06);
   }
 }
