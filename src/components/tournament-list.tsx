@@ -363,16 +363,14 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                   <Table.Cell>
                     {tournament.assignedTeeTimes ? (
                       <Tooltip>
-                        <Tooltip.Trigger>
-                          <Button
-                            isIconOnly
-                            variant="ghost"
-                            size="sm"
-                            aria-label="Assigned tee times"
-                          >
-                            <Icon icon="lucide:clock" className="text-accent" />
-                          </Button>
-                        </Tooltip.Trigger>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Assigned tee times"
+                        >
+                          <Icon icon="lucide:clock" className="text-accent" />
+                        </Button>
                         <Tooltip.Content>Assigned tee times</Tooltip.Content>
                       </Tooltip>
                     ) : (

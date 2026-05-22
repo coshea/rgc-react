@@ -191,40 +191,36 @@ export const RegistrationsList: React.FC<Props> = ({
                   {isEditing ? (
                     <>
                       <Tooltip closeDelay={0}>
-                        <Tooltip.Trigger>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() =>
-                              onSave(
-                                reg.id,
-                                (localTeams[reg.id] || []).filter(Boolean),
-                                openSpotsValue,
-                                localGoldTees[reg.id] ?? [],
-                              )
-                            }
-                            aria-label="Save registration"
-                          >
-                            <Icon icon="lucide:save" className="w-4 h-4" />
-                            <span className="hidden sm:inline">Save</span>
-                          </Button>
-                        </Tooltip.Trigger>
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          onPress={() =>
+                            onSave(
+                              reg.id,
+                              (localTeams[reg.id] || []).filter(Boolean),
+                              openSpotsValue,
+                              localGoldTees[reg.id] ?? [],
+                            )
+                          }
+                          aria-label="Save registration"
+                        >
+                          <Icon icon="lucide:save" className="w-4 h-4" />
+                          <span className="hidden sm:inline">Save</span>
+                        </Button>
                         <Tooltip.Content placement="top" offset={6}>
                           Save
                         </Tooltip.Content>
                       </Tooltip>
                       <Tooltip closeDelay={0}>
-                        <Tooltip.Trigger>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() => onCancelEdit()}
-                            aria-label="Cancel editing"
-                          >
-                            <Icon icon="lucide:x" className="w-4 h-4" />
-                            <span className="hidden sm:inline">Cancel</span>
-                          </Button>
-                        </Tooltip.Trigger>
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          onPress={() => onCancelEdit()}
+                          aria-label="Cancel editing"
+                        >
+                          <Icon icon="lucide:x" className="w-4 h-4" />
+                          <span className="hidden sm:inline">Cancel</span>
+                        </Button>
                         <Tooltip.Content placement="top" offset={6}>
                           Cancel
                         </Tooltip.Content>
@@ -233,36 +229,32 @@ export const RegistrationsList: React.FC<Props> = ({
                   ) : (
                     <>
                       <Tooltip closeDelay={0}>
-                        <Tooltip.Trigger>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() => startEditing(reg)}
-                            aria-label="Edit registration"
-                          >
-                            <Icon icon="lucide:edit" className="w-4 h-4" />
-                            <span className="hidden sm:inline">Edit</span>
-                          </Button>
-                        </Tooltip.Trigger>
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          onPress={() => startEditing(reg)}
+                          aria-label="Edit registration"
+                        >
+                          <Icon icon="lucide:edit" className="w-4 h-4" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
                         <Tooltip.Content placement="top" offset={6}>
                           Edit
                         </Tooltip.Content>
                       </Tooltip>
                       <Tooltip closeDelay={0}>
-                        <Tooltip.Trigger>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() => {
-                              setDeletingId(reg.id);
-                              setConfirmOpen(true);
-                            }}
-                            aria-label="Delete registration"
-                          >
-                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                            <span className="hidden sm:inline">Delete</span>
-                          </Button>
-                        </Tooltip.Trigger>
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          onPress={() => {
+                            setDeletingId(reg.id);
+                            setConfirmOpen(true);
+                          }}
+                          aria-label="Delete registration"
+                        >
+                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </Button>
                         <Tooltip.Content placement="top" offset={6}>
                           Delete
                         </Tooltip.Content>

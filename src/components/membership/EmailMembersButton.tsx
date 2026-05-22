@@ -91,13 +91,11 @@ export function EmailMembersButton({
 
   return (
     <Dropdown placement="bottom-end">
-      <Dropdown.Trigger>
-        <Button variant="tertiary" size={size} className="font-medium">
-          <Icon icon="lucide:mail" className="w-4 h-4" />
-          Email Members
-          <Icon icon="lucide:chevron-down" className="w-4 h-4" />
-        </Button>
-      </Dropdown.Trigger>
+      <Button variant="tertiary" size={size} className="font-medium">
+        <Icon icon="lucide:mail" className="w-4 h-4" />
+        Email Members
+        <Icon icon="lucide:chevron-down" className="w-4 h-4" />
+      </Button>
       <Dropdown.Popover>
         <Dropdown.Menu aria-label="Email recipient group">
           <Dropdown.Item

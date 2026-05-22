@@ -119,8 +119,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
           </div>
           {onGoldTeesChange && (
             <Tooltip closeDelay={0}>
-              <Tooltip.Trigger>
-                <Button
+              <Button
                 size="sm"
                 variant={uid && goldTees?.includes(uid) ? "tertiary" : "ghost"}
                 onPress={() => {
@@ -142,13 +141,10 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
                 <Icon icon="lucide:flag" className="text-sm" />
                 Gold
               </Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content placement='top'>
-                {
-                uid
+              <Tooltip.Content placement="top">
+                {uid
                   ? "Playing from the gold (senior) tees"
-                  : "Select a player to set gold tees"
-              }
+                  : "Select a player to set gold tees"}
               </Tooltip.Content>
             </Tooltip>
           )}

@@ -127,17 +127,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         <div className="flex items-center gap-1 flex-wrap">
           {BUTTONS.map((b) => (
             <Tooltip key={b.label}>
-              <Tooltip.Trigger>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="ghost"
-                  onPress={() => applyInsertion(b.insert)}
-                  aria-label={b.label}
-                >
-                  <Icon icon={b.icon} className="w-4 h-4" />
-                </Button>
-              </Tooltip.Trigger>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                onPress={() => applyInsertion(b.insert)}
+                aria-label={b.label}
+              >
+                <Icon icon={b.icon} className="w-4 h-4" />
+              </Button>
               <Tooltip.Content>{b.label}</Tooltip.Content>
             </Tooltip>
           ))}
@@ -153,17 +151,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           )}
           {onPopout && (
             <Tooltip>
-              <Tooltip.Trigger>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="ghost"
-                  onPress={onPopout}
-                  aria-label="Open popout editor"
-                >
-                  <Icon icon="lucide:expand" className="w-4 h-4" />
-                </Button>
-              </Tooltip.Trigger>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                onPress={onPopout}
+                aria-label="Open popout editor"
+              >
+                <Icon icon="lucide:expand" className="w-4 h-4" />
+              </Button>
               <Tooltip.Content>Popout</Tooltip.Content>
             </Tooltip>
           )}

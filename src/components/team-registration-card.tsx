@@ -70,7 +70,17 @@ export function TeamRegistrationCard({
       }
       role={isInteractive ? "button" : undefined}
       tabIndex={isInteractive ? 0 : undefined}
-      onPress={isInteractive ? onPress : undefined}
+      onClick={isInteractive ? onPress : undefined}
+      onKeyDown={
+        isInteractive
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onPress?.();
+              }
+            }
+          : undefined
+      }
     >
       <Card.Content className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
         {/* Header: team number + date + waitlist chip */}

@@ -1,4 +1,4 @@
-import { Dropdown } from "@heroui/react";
+import { Button, Dropdown } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
@@ -21,39 +21,39 @@ export const ProfileDropdown = () => {
     <>
       <NotificationBell />
       <Dropdown placement="bottom-end">
-        <Dropdown.Trigger>
-          <div className="relative inline-block ml-3" aria-label="Profile menu">
-            <UserAvatar
-              as="button"
-              isBordered
-              color={isAdmin ? "accent" : "default"}
-              className="transition-transform"
-              size="sm"
-              user={
-                userProfile ??
-                (user
-                  ? {
-                      id: user.uid,
-                      displayName: user.displayName ?? undefined,
-                      email: user.email ?? undefined,
-                      photoURL: user.photoURL ?? undefined,
-                    }
-                  : undefined)
-              }
-              role="button"
-              tabIndex={0}
-            />
-            {isAdmin && (
-              <span
-                className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-linear-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
-                aria-label="Admin user"
-                title="Admin"
-              >
-                <span className="block w-1.5 h-1.5 rounded-full bg-white/90" />
-              </span>
-            )}
-          </div>
-        </Dropdown.Trigger>
+        <Button
+          isIconOnly
+          variant="ghost"
+          className="relative ml-3"
+          aria-label="Profile menu"
+        >
+          <UserAvatar
+            isBordered
+            color={isAdmin ? "accent" : "default"}
+            className="transition-transform"
+            size="sm"
+            user={
+              userProfile ??
+              (user
+                ? {
+                    id: user.uid,
+                    displayName: user.displayName ?? undefined,
+                    email: user.email ?? undefined,
+                    photoURL: user.photoURL ?? undefined,
+                  }
+                : undefined)
+            }
+          />
+          {isAdmin && (
+            <span
+              className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-linear-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
+              aria-label="Admin user"
+              title="Admin"
+            >
+              <span className="block w-1.5 h-1.5 rounded-full bg-white/90" />
+            </span>
+          )}
+        </Button>
         <Dropdown.Popover>
           <Dropdown.Menu aria-label="Profile Actions">
             <Dropdown.Item
@@ -62,9 +62,7 @@ export const ProfileDropdown = () => {
               isReadOnly
               textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
             >
-              <span className="block text-xs text-muted">
-                Signed in as
-              </span>
+              <span className="block text-xs text-muted">Signed in as</span>
               <span className="block truncate max-w-[200px] text-sm">
                 {user?.email ?? "user@example.com"}
               </span>

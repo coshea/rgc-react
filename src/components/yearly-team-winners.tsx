@@ -201,17 +201,15 @@ export function YearlyTeamWinners({ year }: Props) {
                           : "default";
                   return (
                     <Tooltip key={t.entryKey}>
-                      <Tooltip.Trigger>
-                        <Chip
-                          size="sm"
-                          variant="tertiary"
-                          color={color}
-                          className="text-[10px] font-medium"
-                        >
-                          {t.title}: {t.place === 1 ? "🏆" : `P${t.place}`} $
-                          {t.prizePerPlayer}
-                        </Chip>
-                      </Tooltip.Trigger>
+                      <Chip
+                        size="sm"
+                        variant="tertiary"
+                        color={color}
+                        className="text-[10px] font-medium"
+                      >
+                        {t.title}: {t.place === 1 ? "🏆" : `P${t.place}`} $
+                        {t.prizePerPlayer}
+                      </Chip>
                       <Tooltip.Content>
                         {`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
                       </Tooltip.Content>

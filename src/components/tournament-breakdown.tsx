@@ -602,11 +602,9 @@ export function TournamentBreakdown({ year }: Props) {
                           </div>
                           {g.players.length > 4 && (
                             <Tooltip>
-                              <Tooltip.Trigger>
-                                <span className="text-[10px] text-muted">
-                                  +{g.players.length - 4}
-                                </span>
-                              </Tooltip.Trigger>
+                              <span className="text-[10px] text-muted">
+                                +{g.players.length - 4}
+                              </span>
                               <Tooltip.Content>
                                 {g.players
                                   .slice(4)

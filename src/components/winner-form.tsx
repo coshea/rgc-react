@@ -154,15 +154,13 @@ export const WinnerForm: React.FC<WinnerFormProps> = ({
         <h3 className="text-lg font-medium">Tournament Winners</h3>
         <div className="flex items-center gap-2">
           <Tooltip>
-            <Tooltip.Trigger>
-              <Chip
-                color={remainingPrizePool < 0 ? "danger" : "success"}
-                variant="tertiary"
-                className="min-w-[100px] justify-center"
-              >
-                ${remainingPrizePool.toLocaleString()}
-              </Chip>
-            </Tooltip.Trigger>
+            <Chip
+              color={remainingPrizePool < 0 ? "danger" : "success"}
+              variant="tertiary"
+              className="min-w-[100px] justify-center"
+            >
+              ${remainingPrizePool.toLocaleString()}
+            </Chip>
             <Tooltip.Content>Remaining prize pool</Tooltip.Content>
           </Tooltip>
           <Button

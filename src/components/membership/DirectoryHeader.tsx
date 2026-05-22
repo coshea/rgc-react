@@ -97,8 +97,12 @@ export function DirectoryHeader({
                         onChange={onActiveOnlyChange}
                         aria-label="Toggle active members only"
                       >
-                        <Switch.Control><Switch.Thumb /></Switch.Control>
-                        <Switch.Content><Label>Active Last 2 Years</Label></Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <Switch.Content>
+                          <Label>Active Last 2 Years</Label>
+                        </Switch.Content>
                       </Switch>
                     </div>
                   )}
@@ -134,33 +138,24 @@ export function DirectoryHeader({
           {/* Admin or board: email + export */}
           {isAdminOrBoard && (
             <div className="flex gap-2 items-center">
-              <Tooltip>
-                <Tooltip.Trigger>
-                  <div>
-                    <EmailMembersButton
-                      members={members}
-                      activeSet={activeSet}
-                      currentYear={currentYear}
-                      size="sm"
-                    />
-                  </div>
-                </Tooltip.Trigger>
-                <Tooltip.Content>Email active members</Tooltip.Content>
-              </Tooltip>
+              <EmailMembersButton
+                members={members}
+                activeSet={activeSet}
+                currentYear={currentYear}
+                size="sm"
+              />
               {onExportMembers && (
                 <Tooltip>
-                  <Tooltip.Trigger>
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      onPress={onExportMembers}
-                      isDisabled={members.length === 0}
-                      className="font-medium"
-                    >
-                      <Icon icon="lucide:download" className="w-4 h-4" />
-                      Export
-                    </Button>
-                  </Tooltip.Trigger>
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    onPress={onExportMembers}
+                    isDisabled={members.length === 0}
+                    className="font-medium"
+                  >
+                    <Icon icon="lucide:download" className="w-4 h-4" />
+                    Export
+                  </Button>
                   <Tooltip.Content>Export member list to CSV</Tooltip.Content>
                 </Tooltip>
               )}
@@ -201,8 +196,12 @@ export function DirectoryHeader({
                       aria-label="Toggle active members only"
                       className="whitespace-nowrap"
                     >
-                      <Switch.Control><Switch.Thumb /></Switch.Control>
-                      <Switch.Content><Label>Active Last 2 Years</Label></Switch.Content>
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>
+                        <Label>Active Last 2 Years</Label>
+                      </Switch.Content>
                     </Switch>
                   )}
                   {onFindDuplicates && (
