@@ -192,7 +192,7 @@ export default function FindAGamePage() {
       </header>
 
       <Card>
-        <Card.Header className="flex items-center justify-between pb-2">
+        <Card.Header className="flex flex-row items-center justify-between pb-2">
           <div className="flex flex-col gap-1">
             <h3 className="text-base font-semibold flex items-center gap-2">
               <Icon icon="lucide:calendar" className="w-4 h-4" /> Upcoming posts
