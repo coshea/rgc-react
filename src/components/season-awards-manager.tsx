@@ -246,8 +246,8 @@ export function SeasonAwardsManager() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Select
-          selectedKey={awardType}
-          onSelectionChange={(key) => {
+          value={awardType}
+          onChange={(key) => {
             const next = key as SeasonAwardType | undefined;
             if (!next) return;
             setAwardError(null);

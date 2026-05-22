@@ -8,14 +8,7 @@ import {
   DatePicker,
   Calendar,
 } from "@heroui/react";
-import type { Placement } from "react-aria-components";
-type PopoverProps = {
-  portalContainer?: HTMLElement;
-  containerPadding?: number;
-  placement?: Placement;
-  shouldFlip?: boolean;
-  offset?: number;
-};
+import { UNSAFE_PortalProvider } from "react-aria";
 import { Icon } from "@iconify/react";
 import { type DateValue, parseDate } from "@internationalized/date";
 import { toYMD } from "@/api/find-a-game";
@@ -68,14 +61,6 @@ export default function FindAGamePostModal({
     setPortalContainer(node);
   }, []);
 
-  const popoverProps = useCallback((): Partial<PopoverProps> => {
-    return {
-      portalContainer: portalContainer ?? undefined,
-      // Keep overlays within the modal viewport.
-      containerPadding: 12,
-    };
-  }, [portalContainer]);
-
   return (
     <Modal
       isOpen={isOpen}
@@ -87,130 +72,134 @@ export default function FindAGamePostModal({
         <Modal.Container scroll="inside">
           <Modal.Dialog>
             <div ref={setPortalRef} />
-            <Modal.Header className="flex flex-col gap-1">
-              <div className="text-lg font-semibold">
-                {title || "Create Post"}
-              </div>
-            </Modal.Header>
-            <Modal.Body>
-              <Form
-                className="flex flex-col gap-3"
-                validationBehavior="native"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  await onSubmit();
-                }}
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  <Select
-                    selectedKey={mode}
-                    onSelectionChange={(key) => {
-                      if (key) onModeChange(key as Mode);
-                    }}
-                    className="min-w-[220px] w-60"
-                  >
-                    <Label>Post Type</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover {...popoverProps()}>
-                      <ListBox>
-                        <ListBox.Item id="needPlayers" textValue="Need Players">
-                          <Icon icon="lucide:user-plus" className="w-4 h-4" />
-                          Need Players
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="needGroup" textValue="Need a Group">
-                          <Icon icon="lucide:users" className="w-4 h-4" />
-                          Need a Group
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-
-                  <DatePicker
-                    value={date ? parseDate(date) : null}
-                    onChange={(v: DateValue | null) =>
-                      onDateChange(v ? v.toString() : "")
-                    }
-                    minValue={parseDate(toYMD(new Date()))}
-                    className="w-48"
-                    isRequired
-                  >
-                    <Label>Date</Label>
-                    <DatePicker.Trigger>
-                      <DatePicker.TriggerIndicator />
-                    </DatePicker.Trigger>
-                    <DatePicker.Popover
-                      placement="bottom"
-                      shouldFlip={false}
-                      offset={8}
-                      UNSTABLE_portalContainer={portalContainer ?? undefined}
-                    >
-                      <Calendar />
-                    </DatePicker.Popover>
-                  </DatePicker>
-
-                  {mode === "needPlayers" && (
-                    <>
-                      <div className="flex flex-col gap-1 w-40">
-                        <span className="text-sm">Tee Time</span>
-                        <input
-                          type="time"
-                          value={time || ""}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            onTimeChange(e.target.value)
-                          }
-                          className="w-40 rounded border p-1 text-sm"
-                        />
-                      </div>
-                      <Select
-                        selectedKey={openSpots}
-                        onSelectionChange={(key) =>
-                          onOpenSpotsChange(String(key || "1"))
-                        }
-                        className="w-36"
-                      >
-                        <Label>Open Spots</Label>
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover {...popoverProps()}>
-                          <ListBox>
-                            <ListBox.Item id="1" textValue="1">
-                              1<ListBox.ItemIndicator />
-                            </ListBox.Item>
-                            <ListBox.Item id="2" textValue="2">
-                              2<ListBox.ItemIndicator />
-                            </ListBox.Item>
-                            <ListBox.Item id="3" textValue="3">
-                              3<ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                    </>
-                  )}
+            <UNSAFE_PortalProvider getContainer={() => portalContainer}>
+              <Modal.Header className="flex flex-col gap-1">
+                <div className="text-lg font-semibold">
+                  {title || "Create Post"}
                 </div>
+              </Modal.Header>
+              <Modal.Body>
+                <Form
+                  className="flex flex-col gap-3"
+                  validationBehavior="native"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    await onSubmit();
+                  }}
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Select
+                      value={mode}
+                      onChange={(key) => {
+                        if (key) onModeChange(key as Mode);
+                      }}
+                      className="min-w-[220px] w-60"
+                    >
+                      <Label>Post Type</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item
+                            id="needPlayers"
+                            textValue="Need Players"
+                          >
+                            <Icon icon="lucide:user-plus" className="w-4 h-4" />
+                            Need Players
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="needGroup" textValue="Need a Group">
+                            <Icon icon="lucide:users" className="w-4 h-4" />
+                            Need a Group
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
 
-                <Modal.Footer className="flex items-center justify-between w-full">
-                  <Button variant="tertiary" onPress={onClose}>
-                    Cancel
-                  </Button>
-                  <Button
-                    isDisabled={!canSubmit}
-                    onPress={() => {
-                      void onSubmit();
-                    }}
-                  >
-                    {submitLabel || "Post"}
-                  </Button>
-                </Modal.Footer>
-              </Form>
-            </Modal.Body>
+                    <DatePicker
+                      value={date ? parseDate(date) : null}
+                      onChange={(v: DateValue | null) =>
+                        onDateChange(v ? v.toString() : "")
+                      }
+                      minValue={parseDate(toYMD(new Date()))}
+                      className="w-48"
+                      isRequired
+                    >
+                      <Label>Date</Label>
+                      <DatePicker.Trigger>
+                        <DatePicker.TriggerIndicator />
+                      </DatePicker.Trigger>
+                      <DatePicker.Popover
+                        placement="bottom"
+                        shouldFlip={false}
+                        offset={8}
+                      >
+                        <Calendar />
+                      </DatePicker.Popover>
+                    </DatePicker>
+
+                    {mode === "needPlayers" && (
+                      <>
+                        <div className="flex flex-col gap-1 w-40">
+                          <span className="text-sm">Tee Time</span>
+                          <input
+                            type="time"
+                            value={time || ""}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => onTimeChange(e.target.value)}
+                            className="w-40 rounded border p-1 text-sm"
+                          />
+                        </div>
+                        <Select
+                          value={openSpots}
+                          onChange={(key) =>
+                            onOpenSpotsChange(String(key || "1"))
+                          }
+                          className="w-36"
+                        >
+                          <Label>Open Spots</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="1" textValue="1">
+                                1<ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="2" textValue="2">
+                                2<ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="3" textValue="3">
+                                3<ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </>
+                    )}
+                  </div>
+
+                  <Modal.Footer className="flex items-center justify-between w-full">
+                    <Button variant="tertiary" onPress={onClose}>
+                      Cancel
+                    </Button>
+                    <Button
+                      isDisabled={!canSubmit}
+                      onPress={() => {
+                        void onSubmit();
+                      }}
+                    >
+                      {submitLabel || "Post"}
+                    </Button>
+                  </Modal.Footer>
+                </Form>
+              </Modal.Body>
+            </UNSAFE_PortalProvider>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

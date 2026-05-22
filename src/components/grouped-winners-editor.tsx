@@ -1,4 +1,5 @@
 import React from "react";
+import type { Key } from "react-aria-components";
 import {
   Button,
   Card,
@@ -572,11 +573,13 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                       )
                                     );
                                   })
-                                  .map((r) => r.id)}
+                                  .map((r) => r.id as Key)}
                                 onChange={(val) => {
                                   const selectedIds = Array.isArray(val)
                                     ? (val as string[])
-                                    : [val as string];
+                                    : val
+                                      ? [val as string]
+                                      : [];
                                   const competitors: Competitor[] =
                                     selectedIds.flatMap((key) => {
                                       const reg = registrations.find(

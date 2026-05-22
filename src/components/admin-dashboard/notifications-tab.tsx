@@ -440,8 +440,8 @@ export function NotificationsTab() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              selectedKey={type}
-              onSelectionChange={(key) => {
+              value={type}
+              onChange={(key) => {
                 const val = key as NotificationType;
                 if (val) {
                   setType(val);
@@ -497,8 +497,8 @@ export function NotificationsTab() {
             </Select>
 
             <Select
-              selectedKey={targetUid}
-              onSelectionChange={(key) => {
+              value={targetUid}
+              onChange={(key) => {
                 const val = key as string;
                 if (val) {
                   setTargetUid(val);
@@ -562,8 +562,8 @@ export function NotificationsTab() {
             <>
               <Select
                 placeholder="Select a tournament"
-                selectedKey={selectedTournamentId || undefined}
-                onSelectionChange={(key) => {
+                value={selectedTournamentId || undefined}
+                onChange={(key) => {
                   const val = key as string;
                   if (val) {
                     setSelectedTournamentId(val);

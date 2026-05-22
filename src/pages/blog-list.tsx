@@ -154,8 +154,8 @@ export const BlogListPage: React.FC = () => {
           </SearchField>
           <Select
             className="sm:w-64"
-            selectedKey={filterCategory}
-            onSelectionChange={(key) => {
+            value={filterCategory}
+            onChange={(key) => {
               if (key) setFilterCategory(key as BlogCategory | "all");
             }}
           >

@@ -185,8 +185,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 </RadioGroup>
                 {createMethod === "copy" && (
                   <Select
-                    selectedKey={templateId ?? null}
-                    onSelectionChange={(key) => {
+                    value={templateId ?? null}
+                    onChange={(key) => {
                       setTemplateId(key ? String(key) : null);
                     }}
                   >

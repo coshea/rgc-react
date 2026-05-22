@@ -67,8 +67,8 @@ export function TournamentStatusTab() {
       <div className="flex items-center gap-3">
         <Select
           aria-label="Select year"
-          selectedKey={String(selectedYear)}
-          onSelectionChange={(key) => {
+          value={String(selectedYear)}
+          onChange={(key) => {
             if (key) setSelectedYear(Number(key));
           }}
           className="w-32"

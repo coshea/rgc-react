@@ -24,6 +24,7 @@ Removed (do NOT reference unless intentionally added later): Axios, Styled-compo
 ## Do
 
 - Use HeroUI primitives (`Button`, `Input`, `Avatar`, etc.) and Tailwind utilities.
+- Prefer HeroUI-specific props and compound APIs over direct React Aria primitive usage when the HeroUI component already supports the desired behavior or styling.
 - Keep components focused & small; extract sub-parts into `src/components/`.
 - Use `onPress` instead of `onClick` for HeroUI components. Do NOT attach `onPress` to native elements; if you need a pressable wrapper, use HeroUI `Button`/`Link` and place `onPress` there.
 - Normalize & format phone numbers consistently (see membership directory + `parseUsersCsv`).

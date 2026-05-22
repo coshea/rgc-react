@@ -7,6 +7,7 @@
  *   the migration is complete.
  */
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
+import type { Key } from "react-aria-components";
 
 declare module "@heroui/react" {
   // ── Button ─────────────────────────────────────────────────────────────────
@@ -123,6 +124,14 @@ declare module "@heroui/react" {
     label?: ReactNode;
     disallowEmptySelection?: boolean;
     isRequired?: boolean;
+    /** v3 controlled value (single Key, or array of Keys for multi-select, or null) */
+    value?: Key | Key[] | null;
+    /** v3 change handler – receives the selected Key (or Key[] for multi-select) directly */
+    onChange?: (value: Key | Key[] | null) => void;
+    /** @deprecated v3 – use value instead */
+    selectedKey?: Key | null;
+    /** @deprecated v3 – use onChange instead */
+    onSelectionChange?: (key: Key | null) => void;
   }
 
   // ── RadioGroup ────────────────────────────────────────────────────────────

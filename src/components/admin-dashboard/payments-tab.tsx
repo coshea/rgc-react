@@ -1208,8 +1208,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   aria-label="Membership type"
                   placeholder="Type"
                   className="sm:w-44"
-                  selectedKey={bulkMembershipType}
-                  onSelectionChange={(key) => {
+                  value={bulkMembershipType}
+                  onChange={(key) => {
                     const val = key as MembershipType;
                     if (val) setBulkMembershipType(val);
                   }}

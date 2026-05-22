@@ -291,9 +291,9 @@ export function EditMemberModal({
                       <Select
                         aria-label="Board Role"
                         placeholder="Select a role"
-                        selectedKey={form.role || undefined}
+                        value={form.role || undefined}
                         isDisabled={saving}
-                        onSelectionChange={(key) => {
+                        onChange={(key) => {
                           if (key) onChange({ ...form, role: String(key) });
                         }}
                         className="max-w-full"
@@ -366,9 +366,9 @@ export function EditMemberModal({
                   <Select
                     aria-label="Membership Type"
                     placeholder="Type"
-                    selectedKey={payment.membershipType || undefined}
+                    value={payment.membershipType || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(key) => {
+                    onChange={(key) => {
                       if (key) {
                         setPayment((p) => ({
                           ...p,
@@ -411,9 +411,9 @@ export function EditMemberModal({
                   <Select
                     aria-label="Payment Method"
                     placeholder="Method"
-                    selectedKey={payment.method || undefined}
+                    value={payment.method || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(key) => {
+                    onChange={(key) => {
                       const v = key ? String(key) : "";
                       setPayment((p) => ({ ...p, method: v }));
                       setPaymentDirty(true);

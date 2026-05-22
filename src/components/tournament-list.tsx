@@ -245,12 +245,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <div className="min-w-32">
             <Select
               aria-label="Filter by year"
-              selectedKey={
+              value={
                 availableYears.includes(yearFilter)
                   ? String(yearFilter)
                   : undefined
               }
-              onSelectionChange={(key) => {
+              onChange={(key) => {
                 if (key !== undefined && key !== null)
                   setYearFilter(Number(key));
               }}

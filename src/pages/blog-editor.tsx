@@ -588,8 +588,8 @@ export const BlogEditorPage: React.FC = () => {
 
           {/* Category */}
           <Select
-            selectedKey={formData.category}
-            onSelectionChange={(key) => {
+            value={formData.category}
+            onChange={(key) => {
               if (key)
                 setFormData({ ...formData, category: key as BlogCategory });
             }}

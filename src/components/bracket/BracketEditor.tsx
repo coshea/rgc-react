@@ -909,8 +909,8 @@ export function BracketEditor({
                 </span>
                 <Select
                   aria-label={`Match ${idx + 1} — team 1`}
-                  selectedKey={slot.team1Id ?? "__none__"}
-                  onSelectionChange={(val) => {
+                  value={slot.team1Id ?? "__none__"}
+                  onChange={(val) => {
                     const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
@@ -950,8 +950,8 @@ export function BracketEditor({
                 <span className="text-xs text-muted shrink-0">vs</span>
                 <Select
                   aria-label={`Match ${idx + 1} — team 2`}
-                  selectedKey={slot.team2Id ?? "__none__"}
-                  onSelectionChange={(val) => {
+                  value={slot.team2Id ?? "__none__"}
+                  onChange={(val) => {
                     const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
@@ -1464,8 +1464,8 @@ export function BracketEditor({
                         <Select
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 1`}
-                          selectedKey={slot.team1Id ?? undefined}
-                          onSelectionChange={(val) => {
+                          value={slot.team1Id ?? undefined}
+                          onChange={(val) => {
                             updateMatchupSlot(
                               i,
                               "team1Id",
@@ -1499,8 +1499,8 @@ export function BracketEditor({
                         <Select
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 2`}
-                          selectedKey={slot.team2Id ?? undefined}
-                          onSelectionChange={(val) => {
+                          value={slot.team2Id ?? undefined}
+                          onChange={(val) => {
                             updateMatchupSlot(
                               i,
                               "team2Id",

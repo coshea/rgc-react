@@ -381,8 +381,8 @@ export function BracketTab() {
           ) : (
             <Select
               placeholder="Select a tournament"
-              selectedKey={selectedId || undefined}
-              onSelectionChange={(key) => {
+              value={selectedId || undefined}
+              onChange={(key) => {
                 setSelectedId(typeof key === "string" ? key : "");
               }}
               aria-label="Select tournament"

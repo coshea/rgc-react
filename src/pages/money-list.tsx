@@ -35,8 +35,8 @@ export default function MoneyListPage() {
           </p>
         </div>
         <Select
-          selectedKey={String(year)}
-          onSelectionChange={(key) => {
+          value={String(year)}
+          onChange={(key) => {
             if (key) setYear(Number(key));
           }}
           className="w-32"
@@ -63,8 +63,8 @@ export default function MoneyListPage() {
       <div className="sm:hidden mb-4">
         <Select
           aria-label="Select leaderboard view"
-          selectedKey={tab}
-          onSelectionChange={(key) => {
+          value={tab}
+          onChange={(key) => {
             if (key) setTab(String(key));
           }}
           className="max-w-xs"
