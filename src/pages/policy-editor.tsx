@@ -150,11 +150,7 @@ export const PolicyEditorPage: React.FC = () => {
           </Card.Header>
 
           <Card.Content className="space-y-6">
-            <TextField
-              isRequired
-              value={title}
-              onChange={(v) => setTitle(v)}
-            >
+            <TextField isRequired value={title} onChange={(v) => setTitle(v)}>
               <Label className="text-sm font-medium">Title</Label>
               <Input placeholder="Enter policy title" />
             </TextField>

@@ -280,7 +280,13 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 variant="tertiary"
                 aria-label="Subscribe to Google Calendar"
                 title="Subscribe to the club Google Calendar"
-                onPress={() => window.open(googleCalendarSubscribeUrl, "_blank", "noopener,noreferrer")}
+                onPress={() =>
+                  window.open(
+                    googleCalendarSubscribeUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
               >
                 <Icon icon="lucide:calendar" className="w-4 h-4" />
                 Subscribe

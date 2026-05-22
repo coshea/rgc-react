@@ -2049,7 +2049,9 @@ img { display: block; max-width: 100%; }
                       return emails.length > 0 ? (
                         <Button
                           variant="tertiary"
-                          onPress={() => { window.location.href = `mailto:${emails.join(",")}`; }}
+                          onPress={() => {
+                            window.location.href = `mailto:${emails.join(",")}`;
+                          }}
                         >
                           <Icon icon="lucide:mail" className="w-4 h-4" />
                           Email team

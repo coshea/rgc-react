@@ -381,13 +381,17 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
         </Select>
         <TextField
           value={String(effectiveTeamSize)}
-          onChange={(v) => setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))}
+          onChange={(v) =>
+            setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))
+          }
           className="w-[160px]"
         >
           <Label>Winners per place</Label>
           <Input type="number" min={1} max={20} />
           {teamSize !== effectiveTeamSize && (
-            <p className="text-xs text-muted mt-1">Tournament default: {teamSize}</p>
+            <p className="text-xs text-muted mt-1">
+              Tournament default: {teamSize}
+            </p>
           )}
         </TextField>
       </div>
@@ -437,7 +441,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                     {g.type === "day" && (
                       <TextField
                         value={String(g.dayIndex || 1)}
-                        onChange={(v) => updateGroup(g.id, { dayIndex: parseInt(v, 10) || 1 })}
+                        onChange={(v) =>
+                          updateGroup(g.id, { dayIndex: parseInt(v, 10) || 1 })
+                        }
                         className="w-[120px]"
                       >
                         <Label>Day #</Label>
@@ -446,7 +452,11 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                     )}
                     <TextField
                       value={String(g.order)}
-                      onChange={(v) => updateGroup(g.id, { order: Math.max(0, parseInt(v, 10) || 0) })}
+                      onChange={(v) =>
+                        updateGroup(g.id, {
+                          order: Math.max(0, parseInt(v, 10) || 0),
+                        })
+                      }
                       className="w-[120px]"
                     >
                       <Label>Order</Label>
@@ -710,7 +720,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                           <div className="mt-2">
                             <TextField
                               value={w.score || ""}
-                              onChange={(v) => updatePlace(g.id, w.id || w.place, { score: v })}
+                              onChange={(v) =>
+                                updatePlace(g.id, w.id || w.place, { score: v })
+                              }
                             >
                               <Label>Score</Label>
                               <Input />

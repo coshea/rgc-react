@@ -126,7 +126,12 @@ export default function MembershipPage() {
               variant="tertiary"
               className="shrink-0 sm:mt-1"
               onPress={() => {
-                if (membershipLetterUrl) window.open(membershipLetterUrl, "_blank", "noopener,noreferrer");
+                if (membershipLetterUrl)
+                  window.open(
+                    membershipLetterUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
               }}
             >
               <Icon icon="lucide:file-text" width={16} height={16} />
