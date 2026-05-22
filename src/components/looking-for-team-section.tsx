@@ -201,7 +201,6 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
             <Button
               size="sm"
               variant={currentUserHasPost ? "tertiary" : "primary"}
-              color={currentUserHasPost ? "default" : "secondary"}
               onPress={handleTogglePost}
             >
               {!saving && (
@@ -304,8 +303,9 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                             isIconOnly
                             size="sm"
                             variant="ghost"
-                            as="a"
-                            href={`mailto:${profile.email}`}
+                            onPress={() =>
+                              window.open(`mailto:${profile.email}`)
+                            }
                             aria-label={`Email ${displayName}`}
                           >
                             <Icon

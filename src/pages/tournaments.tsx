@@ -276,14 +276,11 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             </h2>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button
-                as="a"
-                href={googleCalendarSubscribeUrl}
-                target="_blank"
-                rel="noreferrer"
                 size="sm"
                 variant="tertiary"
                 aria-label="Subscribe to Google Calendar"
                 title="Subscribe to the club Google Calendar"
+                onPress={() => window.open(googleCalendarSubscribeUrl, "_blank", "noopener,noreferrer")}
               >
                 <Icon icon="lucide:calendar" className="w-4 h-4" />
                 Subscribe

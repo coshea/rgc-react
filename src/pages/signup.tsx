@@ -323,12 +323,11 @@ export default function SignUpPage() {
                   Close
                 </Button>
                 <Button
-                  as="a"
-                  href={viewLink}
-                  target="_blank"
-                  rel="noreferrer"
                   variant="tertiary"
-                  onPress={() => onOpenChange(false)}
+                  onPress={() => {
+                    window.open(viewLink, "_blank", "noopener,noreferrer");
+                    onOpenChange(false);
+                  }}
                 >
                   View Full Page
                 </Button>
@@ -383,37 +382,38 @@ export default function SignUpPage() {
 
           <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
             <div className="flex flex-col">
-              <Input
+              <TextField isRequired name="firstName">
+                <Label>First Name</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your first name"
+                  type="text"
+                  variant="outline"
+                />
+              </TextField>
+              <TextField isRequired name="lastName">
+                <Label>Last Name</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your last name"
+                  type="text"
+                  variant="outline"
+                />
+              </TextField>
+              <TextField
                 isRequired
-                classNames={stackedInputClassNames}
-                label="First Name"
-                name="firstName"
-                placeholder="Enter your first name"
-                type="text"
-                variant="outline"
-              />
-              <Input
-                isRequired
-                classNames={stackedInputClassNames}
-                label="Last Name"
-                name="lastName"
-                placeholder="Enter your last name"
-                type="text"
-                variant="outline"
-              />
-              <Input
-                isRequired
-                classNames={stackedInputClassNames}
-                label="Email Address"
                 name="email"
-                placeholder="Enter your email"
-                type="email"
-                variant="outline"
                 value={signupEmail}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSignupEmail(e.target.value)
-                }
-              />
+                onChange={(v) => setSignupEmail(v)}
+              >
+                <Label>Email Address</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your email"
+                  type="email"
+                  variant="outline"
+                />
+              </TextField>
               {signupMode === "password" && (
                 <>
                   <TextField name="password" isRequired className="w-full">

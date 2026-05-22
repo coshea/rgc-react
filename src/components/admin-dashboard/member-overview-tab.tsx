@@ -138,10 +138,7 @@ export function MemberOverviewTab() {
                     <p className="mt-1 text-2xl font-bold">{stats.total}</p>
                   </div>
                   <div className="rounded-lg bg-accent/10 p-2">
-                    <Icon
-                      icon="lucide:users"
-                      className="w-5 h-5 text-accent"
-                    />
+                    <Icon icon="lucide:users" className="w-5 h-5 text-accent" />
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted">
@@ -200,9 +197,7 @@ export function MemberOverviewTab() {
                     />
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-muted">
-                  Joined in {year}
-                </p>
+                <p className="mt-2 text-xs text-muted">Joined in {year}</p>
               </Card.Content>
             </Card>
           </div>
@@ -380,19 +375,16 @@ export function MemberOverviewTab() {
                                 </Chip>
                               )}
                               {m.email && (
-                                <Button
-                                  as="a"
+                                <a
                                   href={`mailto:${m.email}`}
-                                  size="sm"
-                                  isIconOnly
-                                  variant="ghost"
+                                  className="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-default/60 transition-colors"
                                   aria-label={`Email ${name}`}
                                 >
                                   <Icon
                                     icon="lucide:mail"
                                     className="w-4 h-4"
                                   />
-                                </Button>
+                                </a>
                               )}
                             </div>
                           </li>

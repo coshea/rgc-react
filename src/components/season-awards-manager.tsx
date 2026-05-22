@@ -4,6 +4,8 @@ import {
   Separator,
   Input,
   Label,
+  TextField,
+  FieldError,
   ListBox,
   Select,
 } from "@heroui/react";
@@ -226,14 +228,10 @@ export function SeasonAwardsManager() {
 
   return (
     <div className="space-y-4">
-      <Input
-        type="number"
-        min={MIN_AWARD_YEAR}
-        max={MAX_AWARD_YEAR}
-        label="Season year"
+      <TextField
         value={String(selectedYear)}
-        onChange={(e) => {
-          const next = Number(e.target.value);
+        onChange={(v) => {
+          const next = Number(v);
           if (!Number.isFinite(next)) {
             return;
           }
@@ -241,12 +239,15 @@ export function SeasonAwardsManager() {
           setAwardError(null);
           resetAwardForm(undefined, next);
         }}
-      />
+      >
+        <Label>Season year</Label>
+        <Input type="number" min={MIN_AWARD_YEAR} max={MAX_AWARD_YEAR} />
+      </TextField>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Select
-          value={awardType}
-          onChange={(key) => {
+          selectedKey={awardType}
+          onSelectionChange={(key) => {
             const next = key as SeasonAwardType | undefined;
             if (!next) return;
             setAwardError(null);
@@ -287,43 +288,49 @@ export function SeasonAwardsManager() {
           invalid={Boolean(awardError && !awardUserId)}
           errorMessage={awardError && !awardUserId ? awardError : undefined}
         />
-        <Input
-          type="number"
-          min={0}
-          step="0.01"
-          label="Amount override (optional)"
-          placeholder={`Default: $${SEASON_AWARD_DEFAULT_AMOUNTS[awardType]}`}
-          value={awardAmountOverride}
-          onChange={(e) => {
-            setAwardError(null);
-            setAwardAmountOverride(e.target.value);
-          }}
+        <TextField
           isInvalid={
             Boolean(awardError) &&
             awardAmountOverride.trim().length > 0 &&
             (!Number.isFinite(Number(awardAmountOverride)) ||
               Number(awardAmountOverride) <= 0)
           }
-          errorMessage={
-            awardError &&
+          value={awardAmountOverride}
+          onChange={(v) => {
+            setAwardError(null);
+            setAwardAmountOverride(v);
+          }}
+        >
+          <Label>Amount override (optional)</Label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder={`Default: $${SEASON_AWARD_DEFAULT_AMOUNTS[awardType]}`}
+          />
+          <FieldError>
+            {awardError &&
             awardAmountOverride.trim().length > 0 &&
             (!Number.isFinite(Number(awardAmountOverride)) ||
               Number(awardAmountOverride) <= 0)
               ? awardError
-              : undefined
-          }
-        />
-        <Input
-          type="date"
-          label="Award date"
-          value={awardDate}
-          onChange={(e) => {
-            setAwardError(null);
-            setAwardDate(e.target.value);
-          }}
+              : undefined}
+          </FieldError>
+        </TextField>
+        <TextField
           isInvalid={Boolean(awardError && !awardDate)}
-          errorMessage={awardError && !awardDate ? awardError : undefined}
-        />
+          value={awardDate}
+          onChange={(v) => {
+            setAwardError(null);
+            setAwardDate(v);
+          }}
+        >
+          <Label>Award date</Label>
+          <Input type="date" />
+          <FieldError>
+            {awardError && !awardDate ? awardError : undefined}
+          </FieldError>
+        </TextField>
       </div>
 
       {awardError && awardUserId && awardDate ? (

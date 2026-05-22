@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Button, Card, Separator, Input } from "@heroui/react";
+import {
+  Button,
+  Card,
+  FieldError,
+  Input,
+  Label,
+  Separator,
+  TextField,
+} from "@heroui/react";
 import BackButton from "@/components/back-button";
 import type { HandicapState } from "../types";
 
@@ -62,21 +70,20 @@ export function HandicapStep(props: {
           </div>
         </div>
 
-        <Input
-          label="GHIN (optional)"
+        <TextField
           value={value.ghin}
-          onChange={(e) =>
+          onChange={(v) =>
             setValue((s) => ({
               ...s,
-              ghin: e.target.value.replace(/\D+/g, ""),
+              ghin: v.replace(/\D+/g, ""),
             }))
           }
           isInvalid={!!localErrors.handicapGhin}
-          errorMessage={localErrors.handicapGhin}
-          variant="outline"
-          inputMode="numeric"
-          pattern="[0-9]*"
-        />
+        >
+          <Label>GHIN (optional)</Label>
+          <Input inputMode="numeric" pattern="[0-9]*" />
+          <FieldError>{localErrors.handicapGhin}</FieldError>
+        </TextField>
         <div className="text-xs text-muted">
           We’ll save this GHIN to your profile for future renewals.
         </div>

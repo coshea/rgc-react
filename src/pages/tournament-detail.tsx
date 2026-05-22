@@ -1542,7 +1542,6 @@ img { display: block; max-width: 100%; }
                   <div className="flex items-center gap-3 flex-wrap pb-1">
                     {!regsLoading && registrations.length > 0 && (
                       <Input
-                        size="sm"
                         placeholder="Search players..."
                         value={teamSearch}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -1556,7 +1555,6 @@ img { display: block; max-width: 100%; }
                       <Button
                         size="sm"
                         variant={showNeedingPlayers ? "primary" : "tertiary"}
-                        color={showNeedingPlayers ? "warning" : "default"}
                         onPress={toggleShowNeedingPlayers}
                         aria-pressed={showNeedingPlayers}
                         aria-label="Toggle show teams needing players"
@@ -1571,7 +1569,6 @@ img { display: block; max-width: 100%; }
                       <Button
                         size="sm"
                         variant={showPartnerTeams ? "primary" : "tertiary"}
-                        color={showPartnerTeams ? "warning" : "default"}
                         onPress={toggleShowPartnerTeams}
                         aria-pressed={showPartnerTeams}
                         aria-label="Toggle show teams seeking a partner team"
@@ -2051,9 +2048,8 @@ img { display: block; max-width: 100%; }
                         .filter((e): e is string => !!e);
                       return emails.length > 0 ? (
                         <Button
-                          as="a"
-                          href={`mailto:${emails.join(",")}`}
                           variant="tertiary"
+                          onPress={() => { window.location.href = `mailto:${emails.join(",")}`; }}
                         >
                           <Icon icon="lucide:mail" className="w-4 h-4" />
                           Email team

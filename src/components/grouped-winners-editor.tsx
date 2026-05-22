@@ -8,6 +8,7 @@ import {
   Select,
   Label,
   ListBox,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useUsers } from "@/hooks/useUsers";
@@ -378,23 +379,17 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
             </ListBox>
           </Select.Popover>
         </Select>
-        <Input
-          type="number"
-          size="sm"
-          label="Winners per place"
-          min={1}
-          max={20}
+        <TextField
           value={String(effectiveTeamSize)}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setEffectiveTeamSize(Math.max(1, parseInt(e.target.value, 10) || 1))
-          }
-          description={
-            teamSize !== effectiveTeamSize
-              ? `Tournament default: ${teamSize}`
-              : undefined
-          }
+          onChange={(v) => setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))}
           className="w-[160px]"
-        />
+        >
+          <Label>Winners per place</Label>
+          <Input type="number" min={1} max={20} />
+          {teamSize !== effectiveTeamSize && (
+            <p className="text-xs text-muted mt-1">Tournament default: {teamSize}</p>
+          )}
+        </TextField>
       </div>
 
       {sorted.length === 0 ? (
@@ -408,15 +403,14 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
               <Card.Content className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3 flex-wrap md:flex-nowrap w-full">
-                    <Input
-                      size="sm"
-                      label="Group Label"
+                    <TextField
                       value={g.label}
-                      onChange={(e: any) =>
-                        updateGroup(g.id, { label: e.target.value })
-                      }
+                      onChange={(v) => updateGroup(g.id, { label: v })}
                       className="w-full md:max-w-[240px] md:flex-[2] min-w-0"
-                    />
+                    >
+                      <Label>Group Label</Label>
+                      <Input />
+                    </TextField>
                     <Select
                       value={g.type}
                       onChange={(val) => {
@@ -441,33 +435,23 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       </Select.Popover>
                     </Select>
                     {g.type === "day" && (
-                      <Input
-                        type="number"
-                        size="sm"
-                        label="Day #"
-                        min={1}
+                      <TextField
                         value={String(g.dayIndex || 1)}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          updateGroup(g.id, {
-                            dayIndex: parseInt(e.target.value, 10) || 1,
-                          })
-                        }
+                        onChange={(v) => updateGroup(g.id, { dayIndex: parseInt(v, 10) || 1 })}
                         className="w-[120px]"
-                      />
+                      >
+                        <Label>Day #</Label>
+                        <Input type="number" min={1} />
+                      </TextField>
                     )}
-                    <Input
-                      type="number"
-                      size="sm"
-                      label="Order"
-                      min={0}
+                    <TextField
                       value={String(g.order)}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        updateGroup(g.id, {
-                          order: Math.max(0, parseInt(e.target.value, 10) || 0),
-                        })
-                      }
+                      onChange={(v) => updateGroup(g.id, { order: Math.max(0, parseInt(v, 10) || 0) })}
                       className="w-[120px]"
-                    />
+                    >
+                      <Label>Order</Label>
+                      <Input type="number" min={0} />
+                    </TextField>
                   </div>
                   <Button
                     size="sm"
@@ -724,15 +708,13 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                           </div>
 
                           <div className="mt-2">
-                            <Input
-                              label="Score"
+                            <TextField
                               value={w.score || ""}
-                              onChange={(e: any) =>
-                                updatePlace(g.id, w.id || w.place, {
-                                  score: e.target.value,
-                                })
-                              }
-                            />
+                              onChange={(v) => updatePlace(g.id, w.id || w.place, { score: v })}
+                            >
+                              <Label>Score</Label>
+                              <Input />
+                            </TextField>
                           </div>
                         </div>
                       ));

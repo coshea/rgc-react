@@ -15,14 +15,6 @@ declare module "@heroui/react" {
     startContent?: ReactNode;
     /** @deprecated v3 – move icon into children */
     endContent?: ReactNode;
-    /** @deprecated v3 – no color prop */
-    color?: string;
-    /** @deprecated v3 – use React Router <Link> wrapper instead */
-    as?: React.ElementType;
-    /** @deprecated pass via native anchor wrapping */
-    href?: string;
-    target?: string;
-    rel?: string;
     /** @deprecated v3 – no radius prop */
     radius?: string;
     /** @deprecated v3 – use isDisabled */
@@ -31,8 +23,6 @@ declare module "@heroui/react" {
     isLoading?: boolean;
     /** @deprecated v3 – use onPress */
     onClick?: React.MouseEventHandler<HTMLButtonElement>;
-    /** @deprecated v3 – no type prop on Button */
-    type?: "button" | "submit" | "reset";
     /** @deprecated v3 – React Router to prop forwarded via as={Link} */
     to?: string;
     title?: string;
@@ -70,8 +60,6 @@ declare module "@heroui/react" {
 
   // ── Input ─────────────────────────────────────────────────────────────────
   interface InputRootProps {
-    /** @deprecated v3 – use <TextField><Label/><Input/></TextField> pattern */
-    label?: ReactNode;
     placeholder?: string;
     /** @deprecated v3 – use onChange */
     onValueChange?: (value: string) => void;
@@ -86,8 +74,6 @@ declare module "@heroui/react" {
     min?: number | string;
     max?: number | string;
     step?: string | number;
-    /** @deprecated v3 – size from InputVariants may conflict with HTML size */
-    size?: string | number;
     onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
     type?: string;
     /** @deprecated v3 – use isDisabled */
@@ -107,8 +93,6 @@ declare module "@heroui/react" {
 
   // ── TextArea ──────────────────────────────────────────────────────────────
   interface TextAreaRootProps {
-    /** @deprecated v3 – use <TextField><Label/><TextArea/></TextField> pattern */
-    label?: ReactNode;
     placeholder?: string;
     /** @deprecated v3 – use onChange */
     onValueChange?: (value: string) => void;
@@ -133,10 +117,6 @@ declare module "@heroui/react" {
     T extends object = object,
     M extends "single" | "multiple" = "single",
   > {
-    /** @deprecated v3 – use selectedKey */
-    value?: string | string[];
-    /** @deprecated v3 – use onSelectionChange */
-    onChange?: (key: import("react-aria-components").Key | null) => void;
     isInvalid?: boolean;
     errorMessage?: ReactNode;
     placeholder?: string;
@@ -193,11 +173,7 @@ declare module "@heroui/react" {
   > {
     label?: ReactNode;
     description?: ReactNode;
-    /** @deprecated v3 – specify granularity differently */
-    granularity?: string;
     minValue?: import("@internationalized/date").CalendarDate;
-    /** @deprecated v3 */
-    popoverProps?: Record<string, unknown>;
     classNames?: Record<string, string>;
     isInvalid?: boolean;
     errorMessage?: ReactNode;
@@ -205,15 +181,6 @@ declare module "@heroui/react" {
   }
 
   // ── Accordion ─────────────────────────────────────────────────────────────
-  interface AccordionRootProps {
-    /** @deprecated v3 – no selectionMode */
-    selectionMode?: string;
-  }
-
-  interface AccordionItemProps {
-    /** @deprecated v3 – use AccordionItem heading content directly */
-    title?: ReactNode;
-  }
 
   // ── Dropdown ──────────────────────────────────────────────────────────────
   interface DropdownRootProps {

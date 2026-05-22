@@ -38,7 +38,6 @@ export default function MinimalRowSteps({
                 radius="full"
                 size="sm"
                 variant={isCurrent ? "primary" : "tertiary"}
-                color={isCurrent || isComplete ? "primary" : "default"}
                 aria-label={`Go to step ${index + 1}`}
                 onPress={() => onStepChange?.(index)}
                 className={

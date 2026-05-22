@@ -1,11 +1,13 @@
 import { title } from "@/components/primitives";
 import { siteConfig } from "@/config/site";
-import { Button, Link, Card } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { useNavigate } from "react-router-dom";
 
 export default function AboutPage() {
   usePageTracking("About");
+  const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-12">
       <div className="inline-block max-w-3xl text-center justify-center">
@@ -29,8 +31,7 @@ export default function AboutPage() {
             </p>
             <div className="pt-2">
               <Button
-                as={Link}
-                href={siteConfig.pages.tournaments.link}
+                onPress={() => navigate(siteConfig.pages.tournaments.link)}
                 variant="tertiary"
               >
                 View Tournaments
@@ -50,8 +51,7 @@ export default function AboutPage() {
             </p>
             <div className="pt-2">
               <Button
-                as={Link}
-                href={siteConfig.pages.membership.link}
+                onPress={() => navigate(siteConfig.pages.membership.link)}
                 variant="tertiary"
               >
                 Become a Member

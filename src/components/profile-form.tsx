@@ -1,6 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Input, Button, Spinner, Chip } from "@heroui/react";
+import {
+  Card,
+  Input,
+  Button,
+  Spinner,
+  Chip,
+  TextField,
+  Label,
+  FieldError,
+} from "@heroui/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
@@ -335,9 +344,7 @@ export function ProfileForm({
             className="hidden"
             onChange={handleFileChange}
           />
-          <p className="text-muted text-sm">
-            Click to upload profile picture
-          </p>
+          <p className="text-muted text-sm">Click to upload profile picture</p>
 
           {membershipTypeChip ? (
             <div className="mt-2 flex justify-center">
@@ -358,57 +365,59 @@ export function ProfileForm({
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="First Name"
-              placeholder="Enter first name"
-              value={formData.firstName}
-              onChange={(e) => handleInputChange("firstName")(e.target.value)}
+            <TextField
               isRequired
               isInvalid={!!errors.firstName}
-              errorMessage={errors.firstName}
-            />
-            <Input
-              label="Last Name"
-              placeholder="Enter last name"
-              value={formData.lastName}
-              onChange={(e) => handleInputChange("lastName")(e.target.value)}
+              value={formData.firstName}
+              onChange={(v) => handleInputChange("firstName")(v)}
+            >
+              <Label>First Name</Label>
+              <Input placeholder="Enter first name" />
+              <FieldError>{errors.firstName}</FieldError>
+            </TextField>
+            <TextField
               isRequired
               isInvalid={!!errors.lastName}
-              errorMessage={errors.lastName}
-            />
+              value={formData.lastName}
+              onChange={(v) => handleInputChange("lastName")(v)}
+            >
+              <Label>Last Name</Label>
+              <Input placeholder="Enter last name" />
+              <FieldError>{errors.lastName}</FieldError>
+            </TextField>
           </div>
 
-          <Input
-            label="Email"
-            placeholder="Enter your email address"
-            value={formData.email}
-            onChange={(e) => handleInputChange("email")(e.target.value)}
-            type="email"
+          <TextField
             isRequired
             isInvalid={!!errors.email}
-            errorMessage={errors.email}
-          />
+            value={formData.email}
+            onChange={(v) => handleInputChange("email")(v)}
+          >
+            <Label>Email</Label>
+            <Input placeholder="Enter your email address" type="email" />
+            <FieldError>{errors.email}</FieldError>
+          </TextField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone")(e.target.value)}
-              type="tel"
+            <TextField
               isInvalid={!!errors.phone}
-              errorMessage={errors.phone}
-            />
+              value={formData.phone}
+              onChange={(v) => handleInputChange("phone")(v)}
+            >
+              <Label>Phone Number</Label>
+              <Input placeholder="Enter your phone number" type="tel" />
+              <FieldError>{errors.phone}</FieldError>
+            </TextField>
 
-            <Input
-              label="GHIN Number"
-              placeholder="Enter your GHIN number"
-              value={formData.ghinNumber}
-              onChange={(e) => handleInputChange("ghinNumber")(e.target.value)}
-              type="text"
+            <TextField
               isInvalid={!!errors.ghinNumber}
-              errorMessage={errors.ghinNumber}
-            />
+              value={formData.ghinNumber}
+              onChange={(v) => handleInputChange("ghinNumber")(v)}
+            >
+              <Label>GHIN Number</Label>
+              <Input placeholder="Enter your GHIN number" type="text" />
+              <FieldError>{errors.ghinNumber}</FieldError>
+            </TextField>
           </div>
         </div>
 

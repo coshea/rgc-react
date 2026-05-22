@@ -94,12 +94,16 @@ export function NewMemberApplicationStep(props: {
             Fill out the PDF application and include any required signatures.
           </p>
           <Button
-            as={hasApplicationUrl ? "a" : "button"}
-            href={hasApplicationUrl ? membershipApplicationUrl : undefined}
-            target={hasApplicationUrl ? "_blank" : undefined}
-            rel={hasApplicationUrl ? "noreferrer" : undefined}
             variant="tertiary"
             isDisabled={!hasApplicationUrl}
+            onPress={() => {
+              if (membershipApplicationUrl)
+                window.open(
+                  membershipApplicationUrl,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+            }}
           >
             <Icon icon="lucide:file-text" width={16} height={16} />
             {hasApplicationUrl ? "Download Application PDF" : "PDF unavailable"}

@@ -381,8 +381,8 @@ export function BracketTab() {
           ) : (
             <Select
               placeholder="Select a tournament"
-              value={selectedId || undefined}
-              onChange={(key) => {
+              selectedKey={selectedId || undefined}
+              onSelectionChange={(key) => {
                 setSelectedId(typeof key === "string" ? key : "");
               }}
               aria-label="Select tournament"
@@ -575,11 +575,6 @@ export function BracketTab() {
                                         ? "primary"
                                         : "tertiary"
                                     }
-                                    color={
-                                      selectedWinner === byeTeamId
-                                        ? "success"
-                                        : "default"
-                                    }
                                     onPress={() =>
                                       setPendingWinners((prev) => ({
                                         ...prev,
@@ -659,11 +654,6 @@ export function BracketTab() {
                                       ? "primary"
                                       : "tertiary"
                                   }
-                                  color={
-                                    selectedWinner === m.team1Id
-                                      ? "success"
-                                      : "default"
-                                  }
                                   onPress={() =>
                                     setPendingWinners((prev) => ({
                                       ...prev,
@@ -691,11 +681,6 @@ export function BracketTab() {
                                     selectedWinner === m.team2Id
                                       ? "primary"
                                       : "tertiary"
-                                  }
-                                  color={
-                                    selectedWinner === m.team2Id
-                                      ? "success"
-                                      : "default"
                                   }
                                   onPress={() =>
                                     setPendingWinners((prev) => ({

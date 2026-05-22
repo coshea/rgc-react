@@ -22,6 +22,8 @@ import {
   RadioGroup,
   Radio,
   DatePicker,
+  TextField,
+  FieldError,
 } from "@heroui/react";
 import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
@@ -397,26 +399,26 @@ export function NotificationsTab() {
         </h2>
 
         <div className="flex flex-col gap-4">
-          <Input
-            label="Title"
-            placeholder="Notification title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            isInvalid={Boolean(errors.title)}
-            errorMessage={errors.title}
-            isRequired
-          />
+          <TextField isInvalid={Boolean(errors.title)} isRequired>
+            <Label>Title</Label>
+            <Input
+              placeholder="Notification title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <FieldError>{errors.title}</FieldError>
+          </TextField>
 
-          <TextArea
-            label="Body"
-            placeholder="Notification message"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            isInvalid={Boolean(errors.body)}
-            errorMessage={errors.body}
-            minRows={3}
-            isRequired
-          />
+          <TextField isInvalid={Boolean(errors.body)} isRequired>
+            <Label>Body</Label>
+            <TextArea
+              placeholder="Notification message"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              minRows={3}
+            />
+            <FieldError>{errors.body}</FieldError>
+          </TextField>
 
           <div className="flex justify-end -mt-2">
             <Button
@@ -438,8 +440,8 @@ export function NotificationsTab() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              value={type}
-              onChange={(key) => {
+              selectedKey={type}
+              onSelectionChange={(key) => {
                 const val = key as NotificationType;
                 if (val) {
                   setType(val);
@@ -495,8 +497,8 @@ export function NotificationsTab() {
             </Select>
 
             <Select
-              value={targetUid}
-              onChange={(key) => {
+              selectedKey={targetUid}
+              onSelectionChange={(key) => {
                 const val = key as string;
                 if (val) {
                   setTargetUid(val);
@@ -560,8 +562,8 @@ export function NotificationsTab() {
             <>
               <Select
                 placeholder="Select a tournament"
-                value={selectedTournamentId || undefined}
-                onChange={(key) => {
+                selectedKey={selectedTournamentId || undefined}
+                onSelectionChange={(key) => {
                   const val = key as string;
                   if (val) {
                     setSelectedTournamentId(val);
@@ -616,13 +618,17 @@ export function NotificationsTab() {
             </>
           )}
 
-          <Input
-            label="Link (optional)"
-            placeholder="/tournaments/..."
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            description="Deep-link opened when user taps the notification."
-          />
+          <TextField>
+            <Label>Link (optional)</Label>
+            <Input
+              placeholder="/tournaments/..."
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+            />
+            <p className="text-xs text-muted">
+              Deep-link opened when user taps the notification.
+            </p>
+          </TextField>
 
           <DatePicker
             label="Expiration (optional)"

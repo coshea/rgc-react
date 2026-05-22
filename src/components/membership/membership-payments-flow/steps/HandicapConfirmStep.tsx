@@ -76,7 +76,6 @@ export function HandicapConfirmStep(props: {
           <div className="mb-2">
             <DonationAmountInput
               label="Optional donation"
-              labelPlacement="inside"
               value={donationAmount}
               onValueChange={onDonationAmountChange}
               description="Add an optional donation to support the course through the Ridgefield Golf Club Improvement Fund (RGCIF)."

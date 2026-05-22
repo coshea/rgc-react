@@ -6,6 +6,7 @@ import {
   ListBox,
   Select,
   DatePicker,
+  Calendar,
 } from "@heroui/react";
 import type { Placement } from "react-aria-components";
 type PopoverProps = {
@@ -102,8 +103,8 @@ export default function FindAGamePostModal({
               >
                 <div className="flex flex-wrap items-center gap-3">
                   <Select
-                    value={mode}
-                    onChange={(key) => {
+                    selectedKey={mode}
+                    onSelectionChange={(key) => {
                       if (key) onModeChange(key as Mode);
                     }}
                     className="min-w-[220px] w-60"
@@ -130,26 +131,27 @@ export default function FindAGamePostModal({
                   </Select>
 
                   <DatePicker
-                    label="Date"
                     value={date ? parseDate(date) : null}
                     onChange={(v: DateValue | null) =>
                       onDateChange(v ? v.toString() : "")
                     }
                     minValue={parseDate(toYMD(new Date()))}
-                    popoverProps={{
-                      ...popoverProps(),
-                      placement: "bottom",
-                      shouldFlip: false,
-                      offset: 8,
-                    }}
                     className="w-48"
-                    classNames={{
-                      // Keep the calendar within the modal/screen on small devices.
-                      popoverContent: "max-w-[90vw] max-h-[55vh] overflow-auto",
-                      calendarContent: "max-w-[90vw]",
-                    }}
                     isRequired
-                  />
+                  >
+                    <Label>Date</Label>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                    <DatePicker.Popover
+                      placement="bottom"
+                      shouldFlip={false}
+                      offset={8}
+                      UNSTABLE_portalContainer={portalContainer ?? undefined}
+                    >
+                      <Calendar />
+                    </DatePicker.Popover>
+                  </DatePicker>
 
                   {mode === "needPlayers" && (
                     <>
@@ -165,8 +167,8 @@ export default function FindAGamePostModal({
                         />
                       </div>
                       <Select
-                        value={openSpots}
-                        onChange={(key) =>
+                        selectedKey={openSpots}
+                        onSelectionChange={(key) =>
                           onOpenSpotsChange(String(key || "1"))
                         }
                         className="w-36"
@@ -198,7 +200,12 @@ export default function FindAGamePostModal({
                   <Button variant="tertiary" onPress={onClose}>
                     Cancel
                   </Button>
-                  <Button isDisabled={!canSubmit} type="submit">
+                  <Button
+                    isDisabled={!canSubmit}
+                    onPress={() => {
+                      void onSubmit();
+                    }}
+                  >
                     {submitLabel || "Post"}
                   </Button>
                 </Modal.Footer>

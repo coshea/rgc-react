@@ -199,16 +199,13 @@ export default function PastChampions({
           <h1 className="text-2xl font-bold">Past Champions</h1>
           <div className="flex flex-wrap items-center gap-2">
             {!showAllYears && (
-              <Button
-                as={Link}
+              <Link
                 href="/past-champions"
-                size="sm"
-                variant="tertiary"
                 className="self-start sm:self-auto"
               >
                 View All
                 <Icon icon="lucide:arrow-right" className="w-3 h-3" />
-              </Button>
+              </Link>
             )}
             {isAdmin && showAllYears && (
               <Button

@@ -186,30 +186,22 @@ export function PostsList({
               {/* Contact actions */}
               <div className="flex items-center gap-1">
                 {owners[p.ownerId]?.email && (
-                  <Button
-                    as="a"
-                    size="sm"
-                    isIconOnly
-                    variant="tertiary"
+                  <a
                     href={`mailto:${owners[p.ownerId]!.email}`}
+                    className="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-default/60 hover:scale-110 transition-transform"
                     aria-label="Email"
-                    className="hover:scale-110 transition-transform"
                   >
                     <Icon icon="lucide:mail" className="w-4 h-4" />
-                  </Button>
+                  </a>
                 )}
                 {owners[p.ownerId]?.phone && (
-                  <Button
-                    as="a"
-                    size="sm"
-                    isIconOnly
-                    variant="tertiary"
+                  <a
                     href={`tel:${normalizePhone(owners[p.ownerId]!.phone)}`}
+                    className="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-default/60 hover:scale-110 transition-transform"
                     aria-label="Call"
-                    className="hover:scale-110 transition-transform"
                   >
                     <Icon icon="lucide:phone" className="w-4 h-4" />
-                  </Button>
+                  </a>
                 )}
               </div>
             </div>

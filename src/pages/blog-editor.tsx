@@ -4,6 +4,7 @@ import {
   Button,
   Input,
   Label,
+  TextField,
   ListBox,
   Select,
   Card,
@@ -564,29 +565,31 @@ export const BlogEditorPage: React.FC = () => {
             )}
 
           {/* Title */}
-          <Input
-            label="Title"
-            placeholder="Enter post title"
-            value={formData.title || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+          <TextField
             isRequired
-          />
+            value={formData.title || ""}
+            onChange={(v) => setFormData({ ...formData, title: v })}
+          >
+            <Label>Title</Label>
+            <Input placeholder="Enter post title" />
+          </TextField>
 
           {/* Slug */}
-          <Input
-            label="URL Slug"
-            placeholder="auto-generated-from-title"
+          <TextField
             value={formData.slug || ""}
-            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-            description="Leave empty to auto-generate from title"
-          />
+            onChange={(v) => setFormData({ ...formData, slug: v })}
+          >
+            <Label>URL Slug</Label>
+            <Input placeholder="auto-generated-from-title" />
+            <p className="text-xs text-muted mt-1">
+              Leave empty to auto-generate from title
+            </p>
+          </TextField>
 
           {/* Category */}
           <Select
-            value={formData.category}
-            onChange={(key) => {
+            selectedKey={formData.category}
+            onSelectionChange={(key) => {
               if (key)
                 setFormData({ ...formData, category: key as BlogCategory });
             }}
@@ -616,15 +619,16 @@ export const BlogEditorPage: React.FC = () => {
           />
 
           {/* Excerpt */}
-          <Input
-            label="Excerpt (Optional)"
-            placeholder="Short summary (auto-generated if empty)"
+          <TextField
             value={formData.excerpt || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, excerpt: e.target.value })
-            }
-            description="Short summary shown in lists and previews"
-          />
+            onChange={(v) => setFormData({ ...formData, excerpt: v })}
+          >
+            <Label>Excerpt (Optional)</Label>
+            <Input placeholder="Short summary (auto-generated if empty)" />
+            <p className="text-xs text-muted mt-1">
+              Short summary shown in lists and previews
+            </p>
+          </TextField>
 
           {/* Featured Image */}
           <div>

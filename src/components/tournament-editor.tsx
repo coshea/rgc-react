@@ -10,6 +10,8 @@ import {
   ListBox,
   Select,
   Checkbox,
+  TextField,
+  FieldError,
 } from "@heroui/react";
 import { Label } from "react-aria-components";
 import { addToast } from "@/providers/toast";
@@ -612,24 +614,26 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6 min-w-0">
-              <Input
-                label="Tournament Title"
-                placeholder="Enter tournament title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+              <TextField
                 isRequired
                 isInvalid={!!errors.title}
-                errorMessage={errors.title}
-              />
-              <TextArea
-                label="Description"
-                placeholder="Enter tournament description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={title}
+                onChange={setTitle}
+              >
+                <Label>Tournament Title</Label>
+                <Input placeholder="Enter tournament title" />
+                <FieldError>{errors.title}</FieldError>
+              </TextField>
+              <TextField
                 isRequired
                 isInvalid={!!errors.description}
-                errorMessage={errors.description}
-              />
+                value={description}
+                onChange={setDescription}
+              >
+                <Label>Description</Label>
+                <TextArea placeholder="Enter tournament description" />
+                <FieldError>{errors.description}</FieldError>
+              </TextField>
               <div className="min-w-0">
                 <MarkdownEditor
                   value={detailsMarkdown}
@@ -693,34 +697,38 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               </Card>
             </div>
             <div className="space-y-6 min-w-0">
-              <Input
-                type="number"
-                label="Number of Players On A Team"
-                placeholder="Enter number of players"
-                value={String(players)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPlayers(parseInt(e.target.value, 10) || 1)
-                }
-                min={1}
-                max={100}
+              <TextField
                 isInvalid={!!errors.players}
-                errorMessage={errors.players}
-              />
-              <Input
-                type="number"
-                label="Max Registered Teams (Optional)"
-                placeholder="Leave blank for unlimited"
+                value={String(players)}
+                onChange={(v) => setPlayers(parseInt(v, 10) || 1)}
+              >
+                <Label>Number of Players On A Team</Label>
+                <Input
+                  type="number"
+                  placeholder="Enter number of players"
+                  min={1}
+                  max={100}
+                />
+                <FieldError>{errors.players}</FieldError>
+              </TextField>
+              <TextField
+                isInvalid={!!errors.maxTeams}
                 value={maxTeams !== undefined ? String(maxTeams) : ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const parsed = parseInt(e.target.value, 10);
+                onChange={(v) => {
+                  const parsed = parseInt(v, 10);
                   setMaxTeams(
                     Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
                   );
                 }}
-                min={1}
-                isInvalid={!!errors.maxTeams}
-                errorMessage={errors.maxTeams}
-              />
+              >
+                <Label>Max Registered Teams (Optional)</Label>
+                <Input
+                  type="number"
+                  placeholder="Leave blank for unlimited"
+                  min={1}
+                />
+                <FieldError>{errors.maxTeams}</FieldError>
+              </TextField>
               <div className="flex flex-col gap-1">
                 <Label className="text-sm">Prize Pool ($)</Label>
                 <InputGroup>
@@ -1111,8 +1119,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 </button>
                 <Button
                   size="sm"
-                  variant="tertiary"
-                  color={tournament.bracketPublished ? "success" : "default"}
+                  variant={tournament.bracketPublished ? "primary" : "tertiary"}
                   onPress={async () => {
                     if (!tournament.firestoreId) return;
                     setPublishingBracket(true);

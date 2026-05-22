@@ -7,6 +7,7 @@ import {
   ListBox,
   Select,
   Spinner,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { uploadBlogImage, listBlogImages } from "@/api/storage";
@@ -168,9 +169,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Spinner size="lg" />
-                <p className="text-sm text-muted">
-                  Uploading image...
-                </p>
+                <p className="text-sm text-muted">Uploading image...</p>
               </div>
             ) : selectedFile ? (
               <div className="space-y-4">
@@ -181,13 +180,16 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   />
                   <p className="text-sm font-medium">{selectedFile.name}</p>
                 </div>
-                <Input
-                  label="Custom Filename (optional)"
-                  placeholder="e.g., spring-tournament-2024"
+                <TextField
                   value={customFilename}
-                  onChange={(e) => setCustomFilename(e.target.value)}
-                  description="Enter a descriptive name to easily find this image later"
-                />
+                  onChange={(v) => setCustomFilename(v)}
+                >
+                  <Label>Custom Filename (optional)</Label>
+                  <Input placeholder="e.g., spring-tournament-2024" />
+                  <p className="text-xs text-muted mt-1">
+                    Enter a descriptive name to easily find this image later
+                  </p>
+                </TextField>
                 <div className="flex gap-2 justify-center">
                   <Button
                     size="sm"

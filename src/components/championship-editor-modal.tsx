@@ -1,4 +1,13 @@
-import { Modal, Button, Input, Label, ListBox, Select } from "@heroui/react";
+import {
+  Modal,
+  Button,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextField,
+} from "@heroui/react";
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
@@ -353,22 +362,24 @@ export function ChampionshipEditorModal({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Year */}
-                <Input
-                  label="Year"
-                  type="number"
+                <TextField
                   value={formData.year.toString()}
-                  onChange={(e) =>
+                  onChange={(v) =>
                     setFormData((prev) => ({
                       ...prev,
-                      year:
-                        parseInt(e.target.value) || new Date().getFullYear(),
+                      year: parseInt(v) || new Date().getFullYear(),
                     }))
                   }
                   isInvalid={!!errors.year}
-                  errorMessage={errors.year}
-                  min={1900}
-                  max={new Date().getFullYear() + 1}
-                />
+                >
+                  <Label>Year</Label>
+                  <Input
+                    type="number"
+                    min={1900}
+                    max={new Date().getFullYear() + 1}
+                  />
+                  <FieldError>{errors.year}</FieldError>
+                </TextField>
 
                 {/* Championship Type */}
                 <Select

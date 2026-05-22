@@ -8,6 +8,7 @@ import {
   Select,
   Switch,
   TextArea,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
@@ -273,7 +274,9 @@ export default function MembershipAdminModal({
                   size="lg"
                   aria-label="Toggle registration status"
                 >
-                  <Switch.Control><Switch.Thumb /></Switch.Control>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
                   <Switch.Content>
                     {registrationOpen ? (
                       <span className="flex items-center gap-2">
@@ -308,9 +311,7 @@ export default function MembershipAdminModal({
                     <Label className="text-sm">Full Membership Price</Label>
                     <InputGroup>
                       <InputGroup.Prefix>
-                        <span className="text-muted text-sm px-1">
-                          $
-                        </span>
+                        <span className="text-muted text-sm px-1">$</span>
                       </InputGroup.Prefix>
                       <InputGroup.Input
                         placeholder="100"
@@ -335,9 +336,7 @@ export default function MembershipAdminModal({
                     <Label className="text-sm">Handicap Index Price</Label>
                     <InputGroup>
                       <InputGroup.Prefix>
-                        <span className="text-muted text-sm px-1">
-                          $
-                        </span>
+                        <span className="text-muted text-sm px-1">$</span>
                       </InputGroup.Prefix>
                       <InputGroup.Input
                         placeholder="50"
@@ -411,11 +410,10 @@ export default function MembershipAdminModal({
                     </ListBox>
                   </Select.Popover>
                 </Select>
-                <Input
-                  label="Selected URL"
-                  value={membershipLetterUrl}
-                  isReadOnly
-                />
+                <TextField value={membershipLetterUrl}>
+                  <Label>Selected URL</Label>
+                  <Input isReadOnly />
+                </TextField>
               </div>
 
               <div className="space-y-3">
@@ -468,11 +466,10 @@ export default function MembershipAdminModal({
                     </ListBox>
                   </Select.Popover>
                 </Select>
-                <Input
-                  label="Selected URL"
-                  value={membershipApplicationUrl}
-                  isReadOnly
-                />
+                <TextField value={membershipApplicationUrl}>
+                  <Label>Selected URL</Label>
+                  <Input isReadOnly />
+                </TextField>
               </div>
 
               {/* Closed Message */}

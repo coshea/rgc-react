@@ -1,5 +1,5 @@
 import { Button, Input, ListBox, Select, Spinner } from "@heroui/react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import {
   getMembershipPayment,
@@ -291,9 +291,9 @@ export function EditMemberModal({
                       <Select
                         aria-label="Board Role"
                         placeholder="Select a role"
-                        value={form.role || undefined}
+                        selectedKey={form.role || undefined}
                         isDisabled={saving}
-                        onChange={(key) => {
+                        onSelectionChange={(key) => {
                           if (key) onChange({ ...form, role: String(key) });
                         }}
                         className="max-w-full"
@@ -366,9 +366,9 @@ export function EditMemberModal({
                   <Select
                     aria-label="Membership Type"
                     placeholder="Type"
-                    value={payment.membershipType || undefined}
+                    selectedKey={payment.membershipType || undefined}
                     isDisabled={saving}
-                    onChange={(key) => {
+                    onSelectionChange={(key) => {
                       if (key) {
                         setPayment((p) => ({
                           ...p,
@@ -397,12 +397,11 @@ export function EditMemberModal({
                     </Select.Popover>
                   </Select>
                   <Input
-                    size="sm"
                     placeholder="Amount"
                     value={payment.amount || ""}
                     className="max-w-[100px]"
                     isDisabled={saving}
-                    onChange={(e: any) => {
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));
                       setPaymentDirty(true);
                     }}
@@ -412,9 +411,9 @@ export function EditMemberModal({
                   <Select
                     aria-label="Payment Method"
                     placeholder="Method"
-                    value={payment.method || undefined}
+                    selectedKey={payment.method || undefined}
                     isDisabled={saving}
-                    onChange={(key) => {
+                    onSelectionChange={(key) => {
                       const v = key ? String(key) : "";
                       setPayment((p) => ({ ...p, method: v }));
                       setPaymentDirty(true);

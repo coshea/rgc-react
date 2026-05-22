@@ -909,8 +909,8 @@ export function BracketEditor({
                 </span>
                 <Select
                   aria-label={`Match ${idx + 1} — team 1`}
-                  value={slot.team1Id ?? "__none__"}
-                  onChange={(val) => {
+                  selectedKey={slot.team1Id ?? "__none__"}
+                  onSelectionChange={(val) => {
                     const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
@@ -950,8 +950,8 @@ export function BracketEditor({
                 <span className="text-xs text-muted shrink-0">vs</span>
                 <Select
                   aria-label={`Match ${idx + 1} — team 2`}
-                  value={slot.team2Id ?? "__none__"}
-                  onChange={(val) => {
+                  selectedKey={slot.team2Id ?? "__none__"}
+                  onSelectionChange={(val) => {
                     const v = val as string;
                     setEditSlots((prev) =>
                       prev.map((s, i) =>
@@ -1151,11 +1151,6 @@ export function BracketEditor({
                                       ? "primary"
                                       : "tertiary"
                                   }
-                                  color={
-                                    selectedWinner === byeTeamId
-                                      ? "success"
-                                      : "default"
-                                  }
                                   onPress={() =>
                                     setPendingWinners((prev) => ({
                                       ...prev,
@@ -1235,11 +1230,6 @@ export function BracketEditor({
                                     ? "primary"
                                     : "tertiary"
                                 }
-                                color={
-                                  selectedWinner === m.team1Id
-                                    ? "success"
-                                    : "default"
-                                }
                                 onPress={() =>
                                   setPendingWinners((prev) => ({
                                     ...prev,
@@ -1267,11 +1257,6 @@ export function BracketEditor({
                                   selectedWinner === m.team2Id
                                     ? "primary"
                                     : "tertiary"
-                                }
-                                color={
-                                  selectedWinner === m.team2Id
-                                    ? "success"
-                                    : "default"
                                 }
                                 onPress={() =>
                                   setPendingWinners((prev) => ({
@@ -1331,7 +1316,6 @@ export function BracketEditor({
                 <Button
                   size="sm"
                   variant={bracketMode === "seeding" ? "primary" : "ghost"}
-                  color={bracketMode === "seeding" ? "primary" : "default"}
                   onPress={() => handleSetBracketMode("seeding")}
                   className="h-7 text-xs"
                 >
@@ -1341,7 +1325,6 @@ export function BracketEditor({
                 <Button
                   size="sm"
                   variant={bracketMode === "matchups" ? "primary" : "ghost"}
-                  color={bracketMode === "matchups" ? "primary" : "default"}
                   onPress={() => handleSetBracketMode("matchups")}
                   className="h-7 text-xs"
                 >
@@ -1481,8 +1464,8 @@ export function BracketEditor({
                         <Select
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 1`}
-                          value={slot.team1Id ?? undefined}
-                          onChange={(val) => {
+                          selectedKey={slot.team1Id ?? undefined}
+                          onSelectionChange={(val) => {
                             updateMatchupSlot(
                               i,
                               "team1Id",
@@ -1516,8 +1499,8 @@ export function BracketEditor({
                         <Select
                           placeholder="— Bye —"
                           aria-label={`Match ${i + 1} team 2`}
-                          value={slot.team2Id ?? undefined}
-                          onChange={(val) => {
+                          selectedKey={slot.team2Id ?? undefined}
+                          onSelectionChange={(val) => {
                             updateMatchupSlot(
                               i,
                               "team2Id",

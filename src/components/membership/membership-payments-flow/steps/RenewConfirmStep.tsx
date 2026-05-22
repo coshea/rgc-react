@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-} from "@heroui/react";
+import { Alert, Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
 import { DonationAmountInput } from "../DonationAmountInput";
@@ -62,13 +54,13 @@ export function RenewConfirmStep(props: {
         </div>
 
         {isPaidForCurrentYear ? (
-          <Alert >
+          <Alert>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 Your annual dues are already recorded for {currentYear}. You
                 don&apos;t need to pay again.
               </div>
-              <Button size="sm"  onPress={onDonation}>
+              <Button size="sm" onPress={onDonation}>
                 Make a donation
               </Button>
             </div>
@@ -83,7 +75,7 @@ export function RenewConfirmStep(props: {
         <div className="text-sm text-foreground">Membership</div>
         <div className="text-base">Annual Club Membership</div>
 
-        <Alert >
+        <Alert>
           <div className="space-y-2">
             <div className="font-semibold">Referral program</div>
             <p className="text-sm text-muted">
@@ -95,13 +87,17 @@ export function RenewConfirmStep(props: {
             </p>
             <div>
               <Button
-                as={hasApplicationUrl ? "a" : "button"}
-                href={hasApplicationUrl ? membershipApplicationUrl : undefined}
-                target={hasApplicationUrl ? "_blank" : undefined}
-                rel={hasApplicationUrl ? "noreferrer" : undefined}
                 size="sm"
                 variant="tertiary"
                 isDisabled={!hasApplicationUrl}
+                onPress={() => {
+                  if (membershipApplicationUrl)
+                    window.open(
+                      membershipApplicationUrl,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                }}
               >
                 {hasApplicationUrl
                   ? "Download Application PDF"
@@ -145,7 +141,6 @@ export function RenewConfirmStep(props: {
       <Separator />
       <Card.Footer className="flex justify-end">
         <Button
-          
           onPress={() => onContinueToPay(donationValue)}
           isDisabled={isPaidForCurrentYear}
         >

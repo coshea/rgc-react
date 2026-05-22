@@ -554,18 +554,15 @@ export default function LoginPage() {
             validationBehavior="native"
             onSubmit={handleSubmit}
           >
-            <Input
+            <TextField
               isRequired
-              label="Email Address"
               name="email"
-              placeholder="Enter your email"
-              type="email"
-              variant="outline"
               value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
-            />
+              onChange={(v) => setEmail(v)}
+            >
+              <Label>Email Address</Label>
+              <Input type="email" placeholder="Enter your email" />
+            </TextField>
             {loginMode === "password" && (
               <TextField name="password" isRequired className="w-full">
                 <Label>Password</Label>
@@ -751,23 +748,23 @@ export default function LoginPage() {
                       ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
                       : "Enter the email address you used to request the sign-in link so we can complete your login."}
                   </p>
-                  <Input
+                  <TextField
                     autoFocus
                     isRequired
-                    label="Email Address"
-                    type="email"
                     value={emailConfirmationValue}
-                    onChange={(e) => {
-                      setEmailConfirmationValue(e.target.value);
+                    onChange={(v) => {
+                      setEmailConfirmationValue(v);
                       if (emailConfirmationError) {
                         setEmailConfirmationError(null);
                       }
                     }}
                     isInvalid={Boolean(emailConfirmationError)}
-                    errorMessage={emailConfirmationError || undefined}
                     isDisabled={magicLinkSubmitting}
-                    variant="outline"
-                  />
+                  >
+                    <Label>Email Address</Label>
+                    <Input type="email" />
+                    <FieldError>{emailConfirmationError}</FieldError>
+                  </TextField>
                 </Modal.Body>
                 <Modal.Footer>
                   <Button

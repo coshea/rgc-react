@@ -772,9 +772,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <dd className="text-foreground text-xl font-semibold">
                           {value}
                         </dd>
-                        <span className="text-sm text-muted">
-                          {amount}
-                        </span>
+                        <span className="text-sm text-muted">{amount}</span>
                       </div>
                     </div>
                   </div>
@@ -920,42 +918,47 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     No payments found.
                   </div>
                 ) : (
-                  <Accordion selectionMode="multiple" variant="surface">
+                  <Accordion allowsMultipleExpanded variant="surface">
                     {paginatedRows.map((row) => (
                       <AccordionItem
                         key={row.id}
                         aria-label={`Paid member ${row.name}`}
-                        title={
-                          <div className="min-w-0">
-                            <div className="font-medium break-words">
-                              {row.name}
-                            </div>
-                            <div className="text-xs text-muted break-all">
-                              {row.email || "—"}
-                            </div>
-                          </div>
-                        }
                       >
-                        <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
-                          <div className="text-muted">Membership</div>
-                          <div>
-                            <Chip
-                              size="sm"
-                              variant="tertiary"
-                              color={typeColor(row.membershipType)}
-                            >
-                              {typeLabel(row.membershipType)}
-                            </Chip>
+                        <Accordion.Heading>
+                          <Accordion.Trigger>
+                            <div className="min-w-0">
+                              <div className="font-medium break-words">
+                                {row.name}
+                              </div>
+                              <div className="text-xs text-muted break-all">
+                                {row.email || "—"}
+                              </div>
+                            </div>
+                            <Accordion.Indicator />
+                          </Accordion.Trigger>
+                        </Accordion.Heading>
+                        <Accordion.Panel>
+                          <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
+                            <div className="text-muted">Membership</div>
+                            <div>
+                              <Chip
+                                size="sm"
+                                variant="tertiary"
+                                color={typeColor(row.membershipType)}
+                              >
+                                {typeLabel(row.membershipType)}
+                              </Chip>
+                            </div>
+                            <div className="text-muted">Method</div>
+                            <div>{methodLabel(row.method)}</div>
+                            <div className="text-muted">Payment</div>
+                            <div>{currency(row.paymentAmount)}</div>
+                            <div className="text-muted">Donation</div>
+                            <div>{currency(row.donationAmount)}</div>
+                            <div className="text-muted">Paid</div>
+                            <div>{formatDate(row.paidAt)}</div>
                           </div>
-                          <div className="text-muted">Method</div>
-                          <div>{methodLabel(row.method)}</div>
-                          <div className="text-muted">Payment</div>
-                          <div>{currency(row.paymentAmount)}</div>
-                          <div className="text-muted">Donation</div>
-                          <div>{currency(row.donationAmount)}</div>
-                          <div className="text-muted">Paid</div>
-                          <div>{formatDate(row.paidAt)}</div>
-                        </div>
+                        </Accordion.Panel>
                       </AccordionItem>
                     ))}
                   </Accordion>
@@ -1205,8 +1208,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   aria-label="Membership type"
                   placeholder="Type"
                   className="sm:w-44"
-                  value={bulkMembershipType}
-                  onChange={(key) => {
+                  selectedKey={bulkMembershipType}
+                  onSelectionChange={(key) => {
                     const val = key as MembershipType;
                     if (val) setBulkMembershipType(val);
                   }}
@@ -1280,10 +1283,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             ? handicapFee
                             : fullFee;
                         return (
-                          <tr
-                            key={item.userId}
-                            className="border-t"
-                          >
+                          <tr key={item.userId} className="border-t">
                             <td className="px-4 py-2">{name}</td>
                             <td className="px-4 py-2 text-muted">
                               {member?.email || "—"}
@@ -1389,9 +1389,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   ) : null}
                   {reconcileResult.skippedItems.length > 0 ? (
                     <div>
-                      <div className="font-medium text-foreground">
-                        Skipped
-                      </div>
+                      <div className="font-medium text-foreground">Skipped</div>
                       <ul className="mt-2 list-disc pl-5 text-muted">
                         {reconcileResult.skippedItems.map((item, index) => (
                           <li

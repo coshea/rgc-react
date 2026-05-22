@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Button, Input } from "@heroui/react";
+import { Card, Button, Input, Label, TextField } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Policy, PolicyType, POLICY_LABELS } from "@/types/policy";
 import { getPolicyByType, updatePolicy } from "@/api/policy";
@@ -150,17 +150,14 @@ export const PolicyEditorPage: React.FC = () => {
           </Card.Header>
 
           <Card.Content className="space-y-6">
-            <Input
-              label="Title"
-              placeholder="Enter policy title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+            <TextField
               isRequired
-              size="lg"
-              classNames={{
-                label: "text-sm font-medium",
-              }}
-            />
+              value={title}
+              onChange={(v) => setTitle(v)}
+            >
+              <Label className="text-sm font-medium">Title</Label>
+              <Input placeholder="Enter policy title" />
+            </TextField>
 
             <div>
               <label className="block text-sm font-medium mb-2">

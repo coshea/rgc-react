@@ -1,4 +1,4 @@
-import { Button, Input, Switch } from "@heroui/react";
+import { Button, Input, Label, Switch, TextField } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
 import { UserSelect } from "@/components/UserSelect";
@@ -88,13 +88,15 @@ export function PlayerEntrySection({
 
           <div className="flex gap-2 items-start">
             {entry.isHistorical && (
-              <Input
-                label="Name"
+              <TextField
                 value={entry.name}
-                onChange={(e) => onUpdate(index, "name", e.target.value)}
+                onChange={(v) => onUpdate(index, "name", v)}
                 isInvalid={!!errors?.names}
                 className="flex-1"
-              />
+              >
+                <Label>Name</Label>
+                <Input />
+              </TextField>
             )}
 
             {!entry.isHistorical && (
