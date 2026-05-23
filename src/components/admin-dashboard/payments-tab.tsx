@@ -10,6 +10,7 @@ import {
   ListBox,
   Select,
   Spinner,
+  SearchField,
   cn,
 } from "@heroui/react";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
@@ -859,12 +860,20 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <Icon icon="lucide:download" className="w-4 h-4" />
               Export CSV
             </Button>
-            <Input
-              placeholder="Search by name or email"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="sm:max-w-xs"
-            />
+            <SearchField name="search">
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  className="sm:max-w-xs"
+                  placeholder="Search by name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Search by name or email"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+
             <Input
               type="number"
               value={String(year)}

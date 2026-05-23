@@ -121,7 +121,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
             <Tooltip closeDelay={0}>
               <Button
                 size="sm"
-                variant={uid && goldTees?.includes(uid) ? "tertiary" : "ghost"}
+                variant="ghost"
                 onPress={() => {
                   if (!uid) return;
                   const isGold = goldTees?.includes(uid) ?? false;
@@ -136,10 +136,14 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
                 } gold tees: ${
                   idx === 0 ? "team leader" : `teammate ${idx + 1}`
                 }`}
-                className="shrink-0 px-2 min-w-0"
+                className={`shrink-0 px-2 min-w-0 ${
+                  uid && goldTees?.includes(uid)
+                    ? "border border-warning/60 bg-warning/10 text-warning"
+                    : ""
+                }`}
               >
                 <Icon icon="lucide:flag" className="text-sm" />
-                Gold
+                {uid && goldTees?.includes(uid) ? "Gold Tees" : "Gold Tees?"}
               </Button>
               <Tooltip.Content placement="top">
                 {uid
