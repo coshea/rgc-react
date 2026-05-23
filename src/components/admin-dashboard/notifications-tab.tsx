@@ -611,8 +611,18 @@ export function NotificationsTab() {
                     orientation="horizontal"
                     size="sm"
                   >
-                    <Radio value="in-tournament">In tournament</Radio>
-                    <Radio value="all">All (includes waitlist)</Radio>
+                    <Radio value="in-tournament">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>In tournament</Radio.Content>
+                    </Radio>
+                    <Radio value="all">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>All (includes waitlist)</Radio.Content>
+                    </Radio>
                   </RadioGroup>
                 )}
             </>

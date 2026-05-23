@@ -1595,73 +1595,68 @@ export function BracketEditor({
       )}
 
       {/* Regenerate confirmation */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showRegenConfirm}
         onOpenChange={(open) => {
           if (!open) setShowRegenConfirm(false);
         }}
       >
-        <Modal.Backdrop>
-          <Modal.Container size="sm">
-            <Modal.Dialog>
-              <Modal.Header>Regenerate Bracket?</Modal.Header>
-              <Modal.Body>
-                <p className="text-sm text-foreground">
-                  This will replace the existing bracket with a new draw using
-                  the current seed order. All current match results will be
-                  lost.
-                </p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button
-                  variant="tertiary"
-                  onPress={() => setShowRegenConfirm(false)}
-                  isDisabled={generating}
-                >
-                  Cancel
-                </Button>
-                <Button variant="danger" onPress={handleDeleteAndRegen}>
-                  Regenerate
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Regenerate Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-foreground">
+                This will replace the existing bracket with a new draw using the
+                current seed order. All current match results will be lost.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowRegenConfirm(false)}
+                isDisabled={generating}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onPress={handleDeleteAndRegen}>
+                Regenerate
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* Delete confirmation */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showDeleteConfirm}
         onOpenChange={(open) => {
           if (!open) setShowDeleteConfirm(false);
         }}
       >
-        <Modal.Backdrop>
-          <Modal.Container size="sm">
-            <Modal.Dialog>
-              <Modal.Header>Delete Bracket?</Modal.Header>
-              <Modal.Body>
-                <p className="text-sm text-foreground">
-                  This will permanently delete the bracket and all match
-                  results. This action cannot be undone.
-                </p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button
-                  variant="tertiary"
-                  onPress={() => setShowDeleteConfirm(false)}
-                  isDisabled={deleting}
-                >
-                  Cancel
-                </Button>
-                <Button variant="danger" onPress={handleDelete}>
-                  Delete Bracket
-                </Button>
-              </Modal.Footer>
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Delete Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-foreground">
+                This will permanently delete the bracket and all match results.
+                This action cannot be undone.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowDeleteConfirm(false)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onPress={handleDelete}>
+                Delete Bracket
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* Divider to visually separate from the section below */}
       <Separator />

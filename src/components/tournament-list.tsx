@@ -300,7 +300,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
             }}
           >
             <Table.Header>
-              <Table.Column>TOURNAMENT</Table.Column>
+              <Table.Column isRowHeader>TOURNAMENT</Table.Column>
               <Table.Column>DATE</Table.Column>
               <Table.Column>
                 <div className="flex items-center gap-1">
