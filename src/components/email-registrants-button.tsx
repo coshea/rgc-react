@@ -67,7 +67,7 @@ export function EmailRegistrantsButton({
   return (
     <Dropdown placement="bottom-end">
       <Button
-        variant="tertiary"
+        variant="primary"
         size={size}
         className={`font-medium whitespace-nowrap${className ? ` ${className}` : ""}`}
       >
