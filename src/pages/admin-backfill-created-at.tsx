@@ -312,7 +312,7 @@ export default function AdminBackfillCreatedAtPage() {
                 </Card.Content>
               </Card>
             ) : (
-              <Table aria-label="Backfill member-since date preview" isStriped>
+              <Table aria-label="Backfill member-since date preview">
                 <TableHeader>
                   <TableColumn>Member</TableColumn>
                   <TableColumn>Email</TableColumn>

@@ -230,35 +230,35 @@ export function YearlyWinningsStandings({ year }: Props) {
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {!isLoading && rows.length > 0 && (
             <>
-              <Chip size="sm" variant="tertiary">
+              <Chip size="sm" variant="tertiary" color="primary">
                 <Icon
                   icon="lucide:trophy"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
                 />
                 {stats.withResults} events
               </Chip>
-              <Chip size="sm" variant="tertiary">
+              <Chip size="sm" variant="tertiary" color="success">
                 <Icon
                   icon="lucide:users"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
                 />
                 {stats.unique} unique winners
               </Chip>
-              <Chip size="sm" variant="tertiary">
+              <Chip size="sm" variant="tertiary" color="warning">
                 <Icon
                   icon="lucide:banknote"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
                 />
                 {`$${stats.totalPrize.toLocaleString("en-US")}`}
               </Chip>
-              <Chip size="sm" variant="tertiary">
+              <Chip size="sm" variant="tertiary" color="secondary">
                 <Icon
                   icon="lucide:award"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
                 />
                 {stats.avgWinners.toFixed(1)} winners / event
               </Chip>
-              <Chip size="sm" variant="tertiary">
+              <Chip size="sm" variant="tertiary" color="danger">
                 <Icon
                   icon="lucide:target"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"

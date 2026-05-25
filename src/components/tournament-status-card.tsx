@@ -46,7 +46,7 @@ export function TournamentStatusCard({
 
   const cardBody = (
     <Card>
-      <Card.Header className="pb-2">
+      <Card.Header className="pb-1">
         <div className="flex items-start justify-between gap-2 w-full">
           <div className="min-w-0 flex-1">
             <p className="font-semibold leading-snug">{tournament.title}</p>
@@ -55,7 +55,7 @@ export function TournamentStatusCard({
           <TournamentStatusChip tournament={tournament} />
         </div>
       </Card.Header>
-      <Card.Content className="pt-0 space-y-3">
+      <Card.Content className="pt-0 space-y-2">
         <div className="flex items-center gap-4 text-sm text-muted">
           <span className="flex items-center gap-1">
             <Icon icon="lucide:users" className="w-3.5 h-3.5" />

@@ -1,18 +1,6 @@
 import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Skeleton,
-  Tooltip,
-  Button,
-  Card,
-} from "@heroui/react";
+import { Chip, Skeleton, Tooltip, Button, Card } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
@@ -270,28 +258,28 @@ export function TournamentBreakdown({ year }: Props) {
           {year} Tournament Results
         </h2>
         <div className="flex flex-wrap gap-2">
-          <Chip size="sm" variant="tertiary">
+          <Chip size="sm" variant="tertiary" color="primary">
             <Icon
               icon="lucide:trophy"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
             />
             {globalStats.withResults} events
           </Chip>
-          <Chip size="sm" variant="tertiary">
+          <Chip size="sm" variant="tertiary" color="success">
             <Icon
               icon="lucide:users"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
             />
             {globalStats.unique} unique winners
           </Chip>
-          <Chip size="sm" variant="tertiary">
+          <Chip size="sm" variant="tertiary" color="warning">
             <Icon
               icon="lucide:banknote"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
             />
             {formatPrize(globalStats.totalPrize)}
           </Chip>
-          <Chip size="sm" variant="tertiary">
+          <Chip size="sm" variant="tertiary" color="secondary">
             <Icon
               icon="lucide:award"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
@@ -650,108 +638,109 @@ export function TournamentBreakdown({ year }: Props) {
                     ].join(" ")}
                   >
                     {isOpen && (
-                      <Table
+                      <table
                         aria-label={`${tournament.title} full results`}
-                        removeWrapper
-                        isStriped
-                        classNames={{
-                          th: "bg-default/60 text-foreground font-medium",
-                        }}
+                        className="w-full text-sm"
                       >
-                        <TableHeader>
-                          <TableColumn key="pos" className="w-12">
-                            POS
-                          </TableColumn>
-                          <TableColumn key="player">PLAYER(S)</TableColumn>
-                          <TableColumn
-                            key="score"
-                            className="hidden sm:table-cell"
-                          >
-                            SCORE
-                          </TableColumn>
-                          <TableColumn
-                            key="winnings"
-                            className="hidden sm:table-cell"
-                          >
-                            WINNINGS
-                          </TableColumn>
-                        </TableHeader>
-                        <TableBody
-                          items={bundle.teamRows}
-                          emptyContent="No results"
-                        >
-                          {(team) => {
-                            const row =
-                              team as TournamentBundle["teamRows"][number];
-                            const rank =
-                              bundle.teamRows.findIndex(
-                                (t) => t.teamKey === row.teamKey,
-                              ) + 1;
-                            const names: string[] = row.names;
-                            const userIds: string[] = row.userIds;
-                            const score: string | undefined = row.score;
-                            const totalPrize: number = row.totalPrize;
-                            return (
-                              <TableRow key={row.id}>
-                                <TableCell>
-                                  <PlaceIndicator pos={rank} compact />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
-                                      {userIds.slice(0, 4).map((uid, i) => {
-                                        const user = usersMap.get(uid);
-                                        const fallback = names[i] || uid;
-                                        return (
-                                          <UserAvatar
-                                            key={uid + i}
-                                            size="sm"
-                                            className="ring-1 ring-background"
-                                            user={user}
-                                            name={user ? undefined : fallback}
-                                          />
-                                        );
-                                      })}
-                                      {userIds.length > 4 && (
-                                        <span className="w-7 h-7 rounded-full bg-default/60 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
-                                          +{userIds.length - 4}
-                                        </span>
-                                      )}
+                        <thead>
+                          <tr>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 w-12">
+                              POS
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2">
+                              PLAYER(S)
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
+                              SCORE
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
+                              WINNINGS
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bundle.teamRows.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="px-3 py-4 text-center text-muted"
+                              >
+                                No results
+                              </td>
+                            </tr>
+                          ) : (
+                            bundle.teamRows.map((row, rowIdx) => {
+                              const rank = rowIdx + 1;
+                              const names: string[] = row.names;
+                              const userIds: string[] = row.userIds;
+                              const score: string | undefined = row.score;
+                              const totalPrize: number = row.totalPrize;
+                              return (
+                                <tr
+                                  key={row.id}
+                                  className={
+                                    rowIdx % 2 === 0 ? "bg-default/20" : ""
+                                  }
+                                >
+                                  <td className="px-3 py-2">
+                                    <PlaceIndicator pos={rank} compact />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
+                                        {userIds.slice(0, 4).map((uid, j) => {
+                                          const user = usersMap.get(uid);
+                                          const fallback = names[j] || uid;
+                                          return (
+                                            <UserAvatar
+                                              key={uid + j}
+                                              size="sm"
+                                              className="ring-1 ring-background"
+                                              user={user}
+                                              name={user ? undefined : fallback}
+                                            />
+                                          );
+                                        })}
+                                        {userIds.length > 4 && (
+                                          <span className="w-7 h-7 rounded-full bg-default/60 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
+                                            +{userIds.length - 4}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-sm leading-tight wrap-break-word">
+                                          {names.join(" • ")}
+                                        </p>
+                                        <p className="sm:hidden text-[11px] text-muted">
+                                          {(score || "—") +
+                                            " • " +
+                                            formatPrize(totalPrize)}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-sm leading-tight wrap-break-word">
-                                        {names.join(" • ")}
-                                      </p>
-                                      {/* On small screens, show meta under the name to avoid extra columns */}
-                                      <p className="sm:hidden text-[11px] text-muted">
-                                        {(score || "—") +
-                                          " • " +
-                                          formatPrize(totalPrize)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                  <span
-                                    className={
-                                      score && score.startsWith("-")
-                                        ? "text-success font-medium"
-                                        : ""
-                                    }
-                                  >
-                                    {score || "—"}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                  <span className="font-semibold text-sm">
-                                    {formatPrize(totalPrize)}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          }}
-                        </TableBody>
-                      </Table>
+                                  </td>
+                                  <td className="px-3 py-2 hidden sm:table-cell">
+                                    <span
+                                      className={
+                                        score && score.startsWith("-")
+                                          ? "text-success font-medium"
+                                          : ""
+                                      }
+                                    >
+                                      {score || "—"}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 hidden sm:table-cell">
+                                    <span className="font-semibold text-sm">
+                                      {formatPrize(totalPrize)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
                     )}
                   </div>
                 </Card.Content>

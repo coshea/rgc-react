@@ -79,7 +79,7 @@ export const PolicyPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" label="Loading policy..." />
+        <Spinner size="lg" aria-label="Loading policy..." />
       </div>
     );
   }

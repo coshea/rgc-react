@@ -82,7 +82,7 @@ export function TeamRegistrationCard({
           : undefined
       }
     >
-      <Card.Content className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
+      <Card.Content className="p-1.5 sm:p-2 flex flex-col gap-1 relative group">
         {/* Header: team number + date + waitlist chip */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">

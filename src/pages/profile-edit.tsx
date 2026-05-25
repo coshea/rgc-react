@@ -32,7 +32,7 @@ const ProfileEditPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" label="Loading profile..." />
+        <Spinner size="lg" aria-label="Loading profile..." />
       </div>
     );
   }

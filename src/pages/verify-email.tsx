@@ -67,7 +67,7 @@ export default function VerifyEmailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-10">
-        <Spinner label="Loading..." />
+        <Spinner aria-label="Loading..." />
       </div>
     );
   }

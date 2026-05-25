@@ -289,7 +289,7 @@ export function ProfileForm({
     return (
       <Card className="p-6">
         <div className="flex justify-center items-center min-h-[400px]">
-          <Spinner size="lg" label="Loading profile data..." />
+          <Spinner size="lg" aria-label="Loading profile data..." />
         </div>
       </Card>
     );
@@ -428,8 +428,8 @@ export function ProfileForm({
                 <Button
                   type="button"
                   className="w-1/3 h-10 text-sm py-1"
-                  onClick={() => navigate(-1)}
-                  disabled={isSubmitting}
+                  onPress={() => navigate(-1)}
+                  isDisabled={isSubmitting}
                 >
                   Cancel
                 </Button>

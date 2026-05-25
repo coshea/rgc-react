@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { PolicyType, POLICY_LABELS } from "@/types/policy";
@@ -7,8 +7,6 @@ import BackButton from "@/components/back-button";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 export const PoliciesListPage: React.FC = () => {
-  const navigate = useNavigate();
-
   usePageTracking("Policies");
 
   const policies = [
@@ -39,31 +37,33 @@ export const PoliciesListPage: React.FC = () => {
 
       <div className="grid gap-4 md:grid-cols-2">
         {policies.map((policy) => (
-          <Card
+          <RouterLink
             key={policy.type}
-            onPress={() => navigate(`/policies/${policy.type}`)}
-            className="hover:scale-[1.02] transition-transform"
+            to={`/policies/${policy.type}`}
+            className="block"
           >
-            <Card.Content className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="shrink-0 w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Icon icon={policy.icon} className="w-6 h-6 text-accent" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">
-                    {POLICY_LABELS[policy.type]}
-                  </h3>
-                  <p className="text-sm text-foreground">
-                    {policy.description}
-                  </p>
-                  <div className="mt-4 flex items-center gap-2 text-sm text-accent">
-                    <span>View policy</span>
-                    <Icon icon="lucide:arrow-right" className="w-4 h-4" />
+            <Card className="hover:scale-[1.02] transition-transform">
+              <Card.Content className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0 w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Icon icon={policy.icon} className="w-6 h-6 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold mb-2">
+                      {POLICY_LABELS[policy.type]}
+                    </h3>
+                    <p className="text-sm text-foreground">
+                      {policy.description}
+                    </p>
+                    <div className="mt-4 flex items-center gap-2 text-sm text-accent">
+                      <span>View policy</span>
+                      <Icon icon="lucide:arrow-right" className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card.Content>
-          </Card>
+              </Card.Content>
+            </Card>
+          </RouterLink>
         ))}
       </div>
     </div>
