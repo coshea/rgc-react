@@ -167,9 +167,11 @@ describe("MembershipPage - new member flow", () => {
       await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
-    fireEvent.change(screen.getByRole("checkbox"), {
-      target: { checked: true },
-    });
+    const applicationAcknowledgement = screen.getByLabelText(
+      /I understand I must mail the completed application/i,
+    );
+    fireEvent.click(applicationAcknowledgement);
+    expect(applicationAcknowledgement).toBeChecked();
 
     fireEvent.click(
       screen.getByRole("button", { name: /Continue to Payment/i }),

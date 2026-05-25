@@ -41,6 +41,7 @@ Concise, project-specific guidance for AI coding agents. Focus on THESE conventi
 ## 6. UI & UX Conventions
 
 - HeroUI v3 usage: Prefer HeroUI primitives and composition; use `onPress` on HeroUI components, not on native DOM elements.
+- Prefer HeroUI-specific props and compound APIs over direct React Aria primitive usage when the HeroUI component already supports the behavior or styling you need.
 - If you need a pressable around a non-HeroUI element, wrap it in a HeroUI `Button` (or `Link`) rather than attaching `onPress` to a `div`/`span`.
 - Specific exception: `UserAvatar` intentionally does NOT forward `onPress` to the DOM to avoid React warnings. If you need a clickable avatar (e.g., dropdown trigger), wrap `UserAvatar` in a HeroUI `Button` and put `onPress` on the button.
 - Toasts: call `addToast({ title, description, color })` (provided globally) for user feedback; prefer success/error semantics already used in editors.
