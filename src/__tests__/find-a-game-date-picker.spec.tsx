@@ -15,9 +15,13 @@ vi.mock("@heroui/react", async (orig) => {
     ({ children, isOpen }: { children?: React.ReactNode; isOpen?: boolean }) =>
       isOpen ? <div data-testid="modal">{children}</div> : null,
     {
-      Backdrop: ({ children }: { children?: React.ReactNode }) => (
-        <div>{children}</div>
-      ),
+      Backdrop: ({
+        children,
+        isOpen,
+      }: {
+        children?: React.ReactNode;
+        isOpen?: boolean;
+      }) => (isOpen ? <div data-testid="modal">{children}</div> : null),
       Container: ({ children }: { children?: React.ReactNode }) => (
         <div>{children}</div>
       ),

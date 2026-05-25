@@ -289,13 +289,12 @@ describe("GroupedWinnersEditor - registered team multi-select", () => {
     );
 
     // effectiveTeamSize should be 4 (max competitors in saved data)
-    // HeroUI v3 Input renders `label` as a DOM attribute on the <input> element,
-    // not as a visible text node — query by the attribute directly.
-    const winnersPerPlaceInput = document.querySelector(
-      'input[label="Winners per place"]',
-    ) as HTMLInputElement | null;
+    // React Aria's TextField associates Label→Input via for/id; use getByRole.
+    const winnersPerPlaceInput = screen.getByRole("spinbutton", {
+      name: /winners per place/i,
+    }) as HTMLInputElement;
     expect(winnersPerPlaceInput).not.toBeNull();
-    expect(winnersPerPlaceInput?.value).toBe("4");
+    expect(winnersPerPlaceInput.value).toBe("4");
   });
 });
 

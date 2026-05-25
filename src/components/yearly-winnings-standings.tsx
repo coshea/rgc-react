@@ -230,7 +230,7 @@ export function YearlyWinningsStandings({ year }: Props) {
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {!isLoading && rows.length > 0 && (
             <>
-              <Chip size="sm" variant="tertiary" color="primary">
+              <Chip size="sm" variant="tertiary" color="accent">
                 <Icon
                   icon="lucide:trophy"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
@@ -251,7 +251,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                 />
                 {`$${stats.totalPrize.toLocaleString("en-US")}`}
               </Chip>
-              <Chip size="sm" variant="tertiary" color="secondary">
+              <Chip size="sm" variant="tertiary" color="default">
                 <Icon
                   icon="lucide:award"
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"

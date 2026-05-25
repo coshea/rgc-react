@@ -222,9 +222,9 @@ describe("TournamentBreakdown (redesigned)", () => {
     });
     const btn = buttons[0];
     fireEvent.click(btn);
-    // After expansion, HeroUI Table renders with role="grid" rather than native table role
+    // After expansion, native <table> renders with role="table"
     expect(
-      screen.getByRole("grid", { name: /Winter Classic full results/i }),
+      screen.getByRole("table", { name: /Winter Classic full results/i }),
     ).toBeInTheDocument();
     // Team prize shows $100 ea for Alice since team of 2 with 100 each (component labels prizeAmount directly per player) => $100 ea appears in podium but table cell just $100 (no ea since logic uses teamSize >1). In table, we assert raw prize.
     expect(screen.getAllByText(/\$100/).length).toBeGreaterThan(0);

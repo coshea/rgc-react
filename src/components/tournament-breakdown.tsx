@@ -258,7 +258,7 @@ export function TournamentBreakdown({ year }: Props) {
           {year} Tournament Results
         </h2>
         <div className="flex flex-wrap gap-2">
-          <Chip size="sm" variant="tertiary" color="primary">
+          <Chip size="sm" variant="tertiary" color="accent">
             <Icon
               icon="lucide:trophy"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
@@ -279,7 +279,7 @@ export function TournamentBreakdown({ year }: Props) {
             />
             {formatPrize(globalStats.totalPrize)}
           </Chip>
-          <Chip size="sm" variant="tertiary" color="secondary">
+          <Chip size="sm" variant="tertiary" color="default">
             <Icon
               icon="lucide:award"
               className="inline-block w-3 h-3 mr-0.5 align-[-1px]"

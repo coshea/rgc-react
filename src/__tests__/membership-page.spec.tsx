@@ -45,24 +45,38 @@ vi.mock("@/providers/toast", () => ({
 
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
-  return {
-    ...mod,
-    Checkbox: ({
+  const MockCheckbox = Object.assign(
+    ({
       children,
       isSelected,
       onValueChange,
+      onChange,
       className,
+      id,
       classNames: _classNames,
     }: any) => (
       <label className={className}>
         <input
+          id={id}
           type="checkbox"
           checked={isSelected ?? false}
-          onChange={(e) => onValueChange?.(e.target.checked)}
+          onChange={(e) => {
+            onValueChange?.(e.target.checked);
+            onChange?.(e.target.checked);
+          }}
         />
         {children}
       </label>
     ),
+    {
+      Control: ({ children }: any) => <>{children}</>,
+      Indicator: () => null,
+      Content: ({ children }: any) => <span>{children}</span>,
+    },
+  );
+  return {
+    ...mod,
+    Checkbox: MockCheckbox,
   };
 });
 
@@ -153,9 +167,9 @@ describe("MembershipPage - new member flow", () => {
       await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
-    fireEvent.click(
-      screen.getByText(/I understand I must mail the completed application/i),
-    );
+    fireEvent.change(screen.getByRole("checkbox"), {
+      target: { checked: true },
+    });
 
     fireEvent.click(
       screen.getByRole("button", { name: /Continue to Payment/i }),
