@@ -103,8 +103,7 @@ declare module "@heroui/react" {
     startContent?: ReactNode;
     endContent?: ReactNode;
     isRequired?: boolean;
-    minRows?: number;
-    maxRows?: number;
+
     classNames?: Record<string, string>;
     onChange?: (e: ChangeEvent<HTMLTextAreaElement>) => void;
     ref?: React.Ref<HTMLTextAreaElement>;

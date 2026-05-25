@@ -1,5 +1,10 @@
 import React from "react";
-import { useParams, Navigate, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  Navigate,
+  useNavigate,
+  Link as RouterLink,
+} from "react-router-dom";
 import {
   Card,
   Chip,
@@ -764,42 +769,43 @@ const UserProfilePage: React.FC = () => {
                 );
 
                 return (
-                  <Card
+                  <RouterLink
                     key={tournament.firestoreId}
-                    onPress={() =>
-                      navigate(`/tournaments/${tournament.firestoreId}`)
-                    }
-                    className="border hover:border-accent/40 transition-colors"
+                    to={`/tournaments/${tournament.firestoreId}`}
+                    className="block"
+                    aria-label={`View details for ${tournament.title}`}
                   >
-                    <Card.Header className="pb-1 flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground text-sm truncate">
-                          {tournament.title}
-                        </p>
+                    <Card className="border hover:border-accent/40 transition-colors">
+                      <Card.Header className="pb-1">
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <p className="font-semibold text-foreground text-sm truncate">
+                            {tournament.title}
+                          </p>
+                          <Icon
+                            icon="lucide:chevron-right"
+                            className="w-4 h-4 text-muted shrink-0"
+                            aria-hidden="true"
+                          />
+                        </div>
                         <p className="text-xs text-muted">
                           {tournamentDateStr}
                         </p>
-                      </div>
-                      <Icon
-                        icon="lucide:chevron-right"
-                        className="w-4 h-4 text-muted shrink-0 mt-0.5"
-                        aria-hidden="true"
-                      />
-                    </Card.Header>
-                    <Card.Content className="pt-0 pb-2 px-2">
-                      <TeamRegistrationCard
-                        teamNumber={1}
-                        displayTeam={registration.team}
-                        leaderId={registration.ownerId}
-                        isWaitlisted={false}
-                        openSpots={openSpots}
-                        showOpenSpots={showOpenSpots}
-                        dateStr={dateStr}
-                        maxPlayers={maxPlayers}
-                        usersMap={usersMap}
-                      />
-                    </Card.Content>
-                  </Card>
+                      </Card.Header>
+                      <Card.Content className="pt-0 pb-2 px-2">
+                        <TeamRegistrationCard
+                          teamNumber={1}
+                          displayTeam={registration.team}
+                          leaderId={registration.ownerId}
+                          isWaitlisted={false}
+                          openSpots={openSpots}
+                          showOpenSpots={showOpenSpots}
+                          dateStr={dateStr}
+                          maxPlayers={maxPlayers}
+                          usersMap={usersMap}
+                        />
+                      </Card.Content>
+                    </Card>
+                  </RouterLink>
                 );
               })}
             </div>

@@ -360,6 +360,7 @@ export default function SignUpPage() {
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
+              className="w-full"
               onPress={handleGoogleSignUp}
               isDisabled={authLoading || isSubmitting}
             >

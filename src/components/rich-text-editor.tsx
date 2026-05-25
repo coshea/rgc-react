@@ -141,7 +141,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          minRows={minRows}
+          rows={minRows}
           classNames={{
             input: "font-mono text-sm",
           }}

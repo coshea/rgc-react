@@ -25,6 +25,7 @@ import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 import { parseDisplayName } from "@/utils/profileCompletion";
+import { RGCLogo } from "@/components/icons";
 
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
 const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
@@ -510,6 +511,7 @@ export default function LoginPage() {
           className="flex w-full max-w-sm flex-col gap-4 rounded-lg 
         bg-surface px-8 pb-10 pt-6 shadow-sm"
         >
+          <RGCLogo size={240} />
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-medium">Sign in to your account</h1>
             <p className="text-sm text-muted">
@@ -530,6 +532,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2">
             {/* Google Sign-In Button */}
             <Button
+              className="w-full"
               variant="outline"
               onPress={handleGoogleSignIn}
               isDisabled={authLoading || isSubmitting}

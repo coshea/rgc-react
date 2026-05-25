@@ -491,7 +491,7 @@ export default function MembershipAdminModal({
                         setErrors((prev) => ({ ...prev, closedMessage: "" }));
                       }
                     }}
-                    minRows={3}
+                    rows={3}
                     isInvalid={!!errors.closedMessage}
                     errorMessage={errors.closedMessage}
                   />

@@ -179,7 +179,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <TextArea
               ref={textareaRef}
               placeholder={placeholder}
-              minRows={minRows}
+              rows={minRows}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               fullWidth
@@ -199,7 +199,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <TextArea
               ref={textareaRef}
               placeholder={placeholder}
-              minRows={minRows}
+              rows={minRows}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               fullWidth

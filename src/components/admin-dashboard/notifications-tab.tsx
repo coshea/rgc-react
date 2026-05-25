@@ -415,7 +415,7 @@ export function NotificationsTab() {
               placeholder="Notification message"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              minRows={3}
+              rows={3}
             />
             <FieldError>{errors.body}</FieldError>
           </TextField>

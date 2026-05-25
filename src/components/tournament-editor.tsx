@@ -6,6 +6,9 @@ import {
   TextArea,
   Button,
   DatePicker,
+  DateField,
+  Calendar,
+  TimeField,
   Separator,
   ListBox,
   Select,
@@ -13,6 +16,7 @@ import {
   TextField,
   FieldError,
 } from "@heroui/react";
+import type { TimeValue } from "react-aria-components";
 import { Label } from "react-aria-components";
 import { addToast } from "@/providers/toast";
 import { Icon } from "@iconify/react";
@@ -25,7 +29,12 @@ import { useAdminFlag } from "@/components/membership/hooks";
 import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
-import { parseDate, parseDateTime, DateValue } from "@internationalized/date";
+import {
+  parseDate,
+  parseDateTime,
+  DateValue,
+  CalendarDateTime,
+} from "@internationalized/date";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import RegistrationsList from "@/components/registrations-list";
 import { MarkdownEditor } from "@/components/markdown-editor";
@@ -56,13 +65,6 @@ const formatForDateTimeInput = (value: unknown) => {
   const minutes = pad(date.getMinutes());
   const seconds = pad(date.getSeconds());
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
-
-const parseDateTimeInputValue = (value: string) => {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  return parsed;
 };
 
 export const TournamentEditor: React.FC<TournamentEditorProps> = ({
@@ -115,12 +117,18 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [previousTournamentId, setPreviousTournamentId] = React.useState<
     string | undefined
   >(seed.previousTournamentId);
-  const [registrationStartInput, setRegistrationStartInput] = React.useState(
-    formatForDateTimeInput(seed.registrationStart),
-  );
-  const [registrationEndInput, setRegistrationEndInput] = React.useState(
-    formatForDateTimeInput(seed.registrationEnd),
-  );
+  const [registrationStart, setRegistrationStart] =
+    React.useState<CalendarDateTime | null>(
+      seed.registrationStart
+        ? parseDateTime(formatForDateTimeInput(seed.registrationStart))
+        : null,
+    );
+  const [registrationEnd, setRegistrationEnd] =
+    React.useState<CalendarDateTime | null>(
+      seed.registrationEnd
+        ? parseDateTime(formatForDateTimeInput(seed.registrationEnd))
+        : null,
+    );
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -171,8 +179,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       newErrors.maxTeams = "Must be at least 1 team";
     }
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
-    const parsedStart = parseDateTimeInputValue(registrationStartInput);
-    const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+    const parsedStart = registrationStart
+      ? new Date(registrationStart.toString())
+      : undefined;
+    const parsedEnd = registrationEnd
+      ? new Date(registrationEnd.toString())
+      : undefined;
     if (
       parsedStart &&
       parsedEnd &&
@@ -294,8 +306,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         goldTeesEnabled,
       };
 
-      const parsedStart = parseDateTimeInputValue(registrationStartInput);
-      const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+      const parsedStart = registrationStart
+        ? new Date(registrationStart.toString())
+        : undefined;
+      const parsedEnd = registrationEnd
+        ? new Date(registrationEnd.toString())
+        : undefined;
 
       if (parsedStart) {
         tournamentData.registrationStart = parsedStart;
@@ -644,13 +660,55 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 />
               </div>
               <DatePicker
-                label="Tournament Date"
                 value={date}
                 onChange={setDate}
                 isRequired
                 isInvalid={!!errors.date}
-                errorMessage={errors.date}
-              />
+                className="w-full"
+              >
+                <Label>Tournament Date</Label>
+                <DateField.Group fullWidth>
+                  <DateField.Input>
+                    {(segment) => <DateField.Segment segment={segment} />}
+                  </DateField.Input>
+                  <DateField.Suffix>
+                    <DatePicker.Trigger>
+                      <DatePicker.TriggerIndicator />
+                    </DatePicker.Trigger>
+                  </DateField.Suffix>
+                </DateField.Group>
+                {errors.date && <FieldError>{errors.date}</FieldError>}
+                <DatePicker.Popover>
+                  <Calendar aria-label="Tournament date">
+                    <Calendar.Header>
+                      <Calendar.YearPickerTrigger>
+                        <Calendar.YearPickerTriggerHeading />
+                        <Calendar.YearPickerTriggerIndicator />
+                      </Calendar.YearPickerTrigger>
+                      <Calendar.NavButton
+                        slot="previous"
+                        aria-label="Previous month"
+                      />
+                      <Calendar.NavButton slot="next" aria-label="Next month" />
+                    </Calendar.Header>
+                    <Calendar.Grid>
+                      <Calendar.GridHeader>
+                        {(day) => (
+                          <Calendar.HeaderCell>{day}</Calendar.HeaderCell>
+                        )}
+                      </Calendar.GridHeader>
+                      <Calendar.GridBody>
+                        {(d) => <Calendar.Cell date={d} />}
+                      </Calendar.GridBody>
+                    </Calendar.Grid>
+                    <Calendar.YearPickerGrid>
+                      <Calendar.YearPickerGridBody>
+                        {({ year }) => <Calendar.YearPickerCell year={year} />}
+                      </Calendar.YearPickerGridBody>
+                    </Calendar.YearPickerGrid>
+                  </Calendar>
+                </DatePicker.Popover>
+              </DatePicker>
               <Card>
                 <Card.Content className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
@@ -661,33 +719,172 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   </div>
                   <div className="space-y-3">
                     <DatePicker
-                      label="Opens"
-                      value={
-                        registrationStartInput
-                          ? parseDateTime(registrationStartInput)
-                          : null
-                      }
-                      onChange={(v: DateValue | null) =>
-                        setRegistrationStartInput(v ? v.toString() : "")
+                      value={registrationStart}
+                      onChange={(v) =>
+                        setRegistrationStart(v as CalendarDateTime | null)
                       }
                       granularity="minute"
                       isInvalid={!!errors.registrationWindow}
-                      errorMessage={errors.registrationWindow}
-                    />
+                    >
+                      {({ state }) => (
+                        <>
+                          <Label>Opens</Label>
+                          <DateField.Group fullWidth>
+                            <DateField.Input>
+                              {(segment) => (
+                                <DateField.Segment segment={segment} />
+                              )}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                              <DatePicker.Trigger>
+                                <DatePicker.TriggerIndicator />
+                              </DatePicker.Trigger>
+                            </DateField.Suffix>
+                          </DateField.Group>
+                          <DatePicker.Popover className="flex flex-col gap-3">
+                            <Calendar aria-label="Registration open date">
+                              <Calendar.Header>
+                                <Calendar.YearPickerTrigger>
+                                  <Calendar.YearPickerTriggerHeading />
+                                  <Calendar.YearPickerTriggerIndicator />
+                                </Calendar.YearPickerTrigger>
+                                <Calendar.NavButton
+                                  slot="previous"
+                                  aria-label="Previous month"
+                                />
+                                <Calendar.NavButton
+                                  slot="next"
+                                  aria-label="Next month"
+                                />
+                              </Calendar.Header>
+                              <Calendar.Grid>
+                                <Calendar.GridHeader>
+                                  {(day) => (
+                                    <Calendar.HeaderCell>
+                                      {day}
+                                    </Calendar.HeaderCell>
+                                  )}
+                                </Calendar.GridHeader>
+                                <Calendar.GridBody>
+                                  {(d) => <Calendar.Cell date={d} />}
+                                </Calendar.GridBody>
+                              </Calendar.Grid>
+                              <Calendar.YearPickerGrid>
+                                <Calendar.YearPickerGridBody>
+                                  {({ year }) => (
+                                    <Calendar.YearPickerCell year={year} />
+                                  )}
+                                </Calendar.YearPickerGridBody>
+                              </Calendar.YearPickerGrid>
+                            </Calendar>
+                            <div className="flex items-center justify-between px-2">
+                              <Label className="text-sm">Time</Label>
+                              <TimeField
+                                aria-label="Opens time"
+                                granularity="minute"
+                                value={state.timeValue}
+                                onChange={(v) =>
+                                  v && state.setTimeValue(v as TimeValue)
+                                }
+                              >
+                                <TimeField.Group variant="secondary">
+                                  <TimeField.Input>
+                                    {(segment) => (
+                                      <TimeField.Segment segment={segment} />
+                                    )}
+                                  </TimeField.Input>
+                                </TimeField.Group>
+                              </TimeField>
+                            </div>
+                          </DatePicker.Popover>
+                        </>
+                      )}
+                    </DatePicker>
                     <DatePicker
-                      label="Closes"
-                      value={
-                        registrationEndInput
-                          ? parseDateTime(registrationEndInput)
-                          : null
-                      }
-                      onChange={(v: DateValue | null) =>
-                        setRegistrationEndInput(v ? v.toString() : "")
+                      value={registrationEnd}
+                      onChange={(v) =>
+                        setRegistrationEnd(v as CalendarDateTime | null)
                       }
                       granularity="minute"
                       isInvalid={!!errors.registrationWindow}
-                      errorMessage={errors.registrationWindow}
-                    />
+                    >
+                      {({ state }) => (
+                        <>
+                          <Label>Closes</Label>
+                          <DateField.Group fullWidth>
+                            <DateField.Input>
+                              {(segment) => (
+                                <DateField.Segment segment={segment} />
+                              )}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                              <DatePicker.Trigger>
+                                <DatePicker.TriggerIndicator />
+                              </DatePicker.Trigger>
+                            </DateField.Suffix>
+                          </DateField.Group>
+                          {errors.registrationWindow && (
+                            <FieldError>{errors.registrationWindow}</FieldError>
+                          )}
+                          <DatePicker.Popover className="flex flex-col gap-3">
+                            <Calendar aria-label="Registration close date">
+                              <Calendar.Header>
+                                <Calendar.YearPickerTrigger>
+                                  <Calendar.YearPickerTriggerHeading />
+                                  <Calendar.YearPickerTriggerIndicator />
+                                </Calendar.YearPickerTrigger>
+                                <Calendar.NavButton
+                                  slot="previous"
+                                  aria-label="Previous month"
+                                />
+                                <Calendar.NavButton
+                                  slot="next"
+                                  aria-label="Next month"
+                                />
+                              </Calendar.Header>
+                              <Calendar.Grid>
+                                <Calendar.GridHeader>
+                                  {(day) => (
+                                    <Calendar.HeaderCell>
+                                      {day}
+                                    </Calendar.HeaderCell>
+                                  )}
+                                </Calendar.GridHeader>
+                                <Calendar.GridBody>
+                                  {(d) => <Calendar.Cell date={d} />}
+                                </Calendar.GridBody>
+                              </Calendar.Grid>
+                              <Calendar.YearPickerGrid>
+                                <Calendar.YearPickerGridBody>
+                                  {({ year }) => (
+                                    <Calendar.YearPickerCell year={year} />
+                                  )}
+                                </Calendar.YearPickerGridBody>
+                              </Calendar.YearPickerGrid>
+                            </Calendar>
+                            <div className="flex items-center justify-between px-2">
+                              <Label className="text-sm">Time</Label>
+                              <TimeField
+                                aria-label="Closes time"
+                                granularity="minute"
+                                value={state.timeValue}
+                                onChange={(v) =>
+                                  v && state.setTimeValue(v as TimeValue)
+                                }
+                              >
+                                <TimeField.Group variant="secondary">
+                                  <TimeField.Input>
+                                    {(segment) => (
+                                      <TimeField.Segment segment={segment} />
+                                    )}
+                                  </TimeField.Input>
+                                </TimeField.Group>
+                              </TimeField>
+                            </div>
+                          </DatePicker.Popover>
+                        </>
+                      )}
+                    </DatePicker>
                     <p className="text-xs text-muted">
                       Times are displayed in your local timezone and saved in
                       UTC.
@@ -841,7 +1038,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       t.firestoreId !== tournament?.firestoreId,
                   )
                     ? previousTournamentId
-                    : undefined
+                    : null
                 }
                 onChange={(val) => {
                   setPreviousTournamentId(val ? String(val) : undefined);
