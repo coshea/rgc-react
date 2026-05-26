@@ -95,7 +95,7 @@ export const MainNavbar = () => {
     <>
       <nav className="z-40 w-full border-b bg-background/70 backdrop-blur-lg sticky top-0">
         <div
-          className={`flex h-[45px] max-w-7xl mx-auto w-full items-center justify-between px-3 sm:px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
+          className={`flex h-[45px] max-w-6xl mx-auto w-full items-center justify-between px-3 sm:px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
         >
           {/* Left: mobile toggle + logo */}
           <div className="flex items-center gap-2">

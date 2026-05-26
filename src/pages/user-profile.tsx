@@ -290,7 +290,7 @@ const UserProfilePage: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center gap-6">
             <UserAvatar
               user={profileUser}
-              className="w-32 h-32 ring-4 ring-primary/20 shadow-xl"
+              className="w-32 h-32 rounded-full ring-1 ring-border/40 shadow-md"
               size="lg"
             />
             <div className="flex-1 text-center md:text-left space-y-3">
