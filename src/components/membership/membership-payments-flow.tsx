@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/react";
 import { logger } from "@/config/sentry";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
-import MinimalRowSteps from "@/components/minimal-row-steps";
+import { Stepper } from "@heroui-pro/react/stepper";
 import {
   verifyAndRecordPayPalDonationPayment,
   verifyAndRecordPayPalMembershipPayment,
@@ -105,7 +105,6 @@ export default function MembershipPaymentsFlow({
 
   // Per-step validation is now handled within individual step components.
 
-  const stepsCount = 5;
   const currentStepIndex = useMemo(() => {
     if (step.kind === "select") return 0;
     if (step.kind === "annual_start") return 1;
@@ -129,10 +128,6 @@ export default function MembershipPaymentsFlow({
     ],
     [],
   );
-
-  const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
-    stepTitles[currentStepIndex]
-  }`;
 
   function onStepperChange(next: number) {
     logger.trace("Membership payment: stepper navigation", {
@@ -715,12 +710,17 @@ export default function MembershipPaymentsFlow({
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
       <div className="w-full max-w-4xl">
-        <MinimalRowSteps
-          currentStep={currentStepIndex}
-          stepsCount={stepsCount}
-          label={stepLabel}
-          onStepChange={onStepperChange}
-        />
+        <Stepper currentStep={currentStepIndex} onStepChange={onStepperChange}>
+          {stepTitles.map((title) => (
+            <Stepper.Step key={title}>
+              <Stepper.Indicator />
+              <Stepper.Content>
+                <Stepper.Title>{title}</Stepper.Title>
+              </Stepper.Content>
+              <Stepper.Separator />
+            </Stepper.Step>
+          ))}
+        </Stepper>
       </div>
 
       <div className="h-6" />

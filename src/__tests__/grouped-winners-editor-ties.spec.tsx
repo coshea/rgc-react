@@ -5,7 +5,10 @@ import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import type { WinnerGroup } from "@/types/winner";
-import { pickOptionForCombobox } from "./helpers/autocomplete";
+import {
+  pickOptionForCombobox,
+  findAutocompleteButton,
+} from "./helpers/autocomplete";
 
 // Minimal Auth + Users mocks
 vi.mock("@/providers/AuthProvider", () => ({
@@ -114,7 +117,7 @@ describe("GroupedWinnersEditor - ties and selection", () => {
     const place2Labels = screen.getAllByText(/Place 2/i);
     expect(place2Labels.length).toBeGreaterThanOrEqual(2);
 
-    // Each row contains a combobox labeled Winner; select different users
+    // Each row contains an Autocomplete trigger button labeled Winner; select different users
     const place2Rows = screen
       .getAllByText(/Place 2/i)
       .map(
@@ -122,24 +125,24 @@ describe("GroupedWinnersEditor - ties and selection", () => {
           el.closest("div.rounded-md.bg-surface-secondary.p-3") as HTMLElement,
       );
     expect(place2Rows.length).toBe(2);
-    const comboA = within(place2Rows[0]).getByRole("combobox", {
-      name: /Winner|Team Members/i,
-    });
-    const comboB = within(place2Rows[1]).getByRole("combobox", {
-      name: /Winner|Team Members/i,
-    });
-    await pickOptionForCombobox(comboA, "Alpha");
-    await pickOptionForCombobox(comboB, "Bravo");
+    const triggerA = findAutocompleteButton(
+      /Winner|Team Members/i,
+      place2Rows[0],
+    );
+    const triggerB = findAutocompleteButton(
+      /Winner|Team Members/i,
+      place2Rows[1],
+    );
+    await pickOptionForCombobox(triggerA, "Alpha");
+    await pickOptionForCombobox(triggerB, "Bravo");
 
     // Selections should be independent — each tied row shows its own selected value
-    const inputA = within(place2Rows[0]).getByRole("combobox", {
-      name: /Winner|Team Members/i,
-    }) as HTMLInputElement;
-    const inputB = within(place2Rows[1]).getByRole("combobox", {
-      name: /Winner|Team Members/i,
-    }) as HTMLInputElement;
-    expect(inputA.value).toMatch(/Alpha/i);
-    expect(inputB.value).toMatch(/Bravo/i);
+    expect(within(place2Rows[0]).getAllByText(/Alpha/i).length).toBeGreaterThan(
+      0,
+    );
+    expect(within(place2Rows[1]).getAllByText(/Bravo/i).length).toBeGreaterThan(
+      0,
+    );
 
     // Display ranks should skip after ties: expect a label "Place 4" present for next distinct place
     expect(screen.getByText(/Place 4/i)).toBeInTheDocument();

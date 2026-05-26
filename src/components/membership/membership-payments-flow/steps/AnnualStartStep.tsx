@@ -1,11 +1,4 @@
-import {
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 
 export function AnnualStartStep(props: {
@@ -39,14 +32,14 @@ export function AnnualStartStep(props: {
 
   return (
     <Card className="w-full max-w-4xl">
-      <Card.Header className="flex items-center justify-between">
-        <div className="space-y-1">
+      <Card.Header className="space-y-1">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
-          <p className="text-sm text-foreground">
-            New members should choose the application option.
-          </p>
+          <BackButton onPress={onBack} />
         </div>
-        <BackButton onPress={onBack} />
+        <p className="text-sm text-foreground">
+          New members should choose the application option.
+        </p>
       </Card.Header>
       <Separator />
       <Card.Content className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -67,13 +60,9 @@ export function AnnualStartStep(props: {
           </Card.Content>
           <Card.Footer className="justify-end">
             {isLoggedIn ? (
-              <Button  onPress={onContinueRenew}>
-                Continue
-              </Button>
+              <Button onPress={onContinueRenew}>Continue</Button>
             ) : (
-              <Button  onPress={onLoginToRenew}>
-                Log in to renew
-              </Button>
+              <Button onPress={onLoginToRenew}>Log in to renew</Button>
             )}
           </Card.Footer>
         </Card>
@@ -98,11 +87,7 @@ export function AnnualStartStep(props: {
             </div>
           </Card.Content>
           <Card.Footer className="justify-end">
-            <Button
-              
-              onPress={onApplyNewMember}
-              isDisabled={hasPriorMembership}
-            >
+            <Button onPress={onApplyNewMember} isDisabled={hasPriorMembership}>
               Apply &amp; Pay Dues
             </Button>
           </Card.Footer>

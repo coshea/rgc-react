@@ -6,6 +6,13 @@ export default defineConfig({
     alias: [
       { find: "@", replacement: resolve(__dirname, "src") },
       { find: "@@", replacement: resolve(__dirname, "functions/src") },
+      {
+        find: "tailwind-variants",
+        replacement: resolve(
+          __dirname,
+          "node_modules/@heroui/react/node_modules/tailwind-variants/dist/index.js",
+        ),
+      },
     ],
   },
   test: {
@@ -21,7 +28,7 @@ export default defineConfig({
       // internally, and if @heroui loads as native ESM those sub-imports
       // bypass the mock registry, causing LazyMotion async work to fire
       // after jsdom teardown ("window is not defined").
-      inline: [/framer-motion/, /@heroui/],
+      inline: [/framer-motion/, /@heroui/, /tailwind-variants/],
     },
     // Explicitly exclude compiled output and node_modules so Vitest doesn't pick
     // up tests from dependencies or built artifacts (these were running in

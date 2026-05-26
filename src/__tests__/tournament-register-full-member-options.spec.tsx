@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TournamentRegister from "@/pages/tournament-register";
+import { findAutocompleteButton } from "./helpers/autocomplete";
 
 // Mock Firebase Firestore functions
 vi.mock("firebase/firestore", () => ({
@@ -85,13 +86,14 @@ describe("TournamentRegister teammate options", () => {
 
     // Open the Autocomplete (Team Leader / You) and type to reveal options
     // The component label used is 'Team Leader / You' via RegistrationEditor labels prop
-    const combo = screen.getByRole("combobox", { name: /Team Leader \/ You/i });
+    const trigger = findAutocompleteButton(/Team Leader/i);
+
+    // Open the dropdown once; reuse the same search input for all filter checks
+    fireEvent.click(trigger);
+    const searchInput = await screen.findByPlaceholderText("Search...");
 
     const openAndExpectOption = async (filter: string, optionName: string) => {
-      fireEvent.click(combo);
-      fireEvent.change(combo, { target: { value: "" } });
-      fireEvent.change(combo, { target: { value: filter } });
-      fireEvent.keyDown(combo, { key: "ArrowDown" });
+      fireEvent.change(searchInput, { target: { value: filter } });
 
       // HeroUI Autocomplete renders options in an overlay; waiting on the option
       // is more stable than waiting on the listbox container in CI.

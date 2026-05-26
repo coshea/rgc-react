@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  
-  
-  
-  Separator,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { DonationAmountInput } from "../DonationAmountInput";
 import type { DonationState } from "../types";
@@ -62,9 +55,7 @@ export function DonationStep(props: {
       </Card.Content>
       <Separator />
       <Card.Footer className="flex justify-end">
-        <Button  onPress={handlePay}>
-          Make Donation
-        </Button>
+        <Button onPress={handlePay}>Make Donation</Button>
       </Card.Footer>
     </Card>
   );

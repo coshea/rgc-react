@@ -1,9 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
+import {
+  findAutocompleteButton,
+  pickOptionForCombobox,
+} from "./helpers/autocomplete";
 
 // Mocks
 vi.mock("@/providers/AuthProvider", () => ({
@@ -109,13 +113,8 @@ describe("TournamentRegister redirect", () => {
     await screen.findByText(/Register for\s+Fall Classic/i);
 
     // Leader is auto-selected by RegistrationEditor effect. Select a second teammate to satisfy min team size.
-    const teammate2 = await screen.findByRole("combobox", {
-      name: /teammate 2/i,
-    });
-    fireEvent.change(teammate2, { target: { value: "Beta" } });
-    fireEvent.keyDown(teammate2, { key: "ArrowDown" });
-    const betaOption = await screen.findByRole("option", { name: "Beta" });
-    fireEvent.click(betaOption);
+    const teammate2Trigger = findAutocompleteButton(/teammate 2/i);
+    await pickOptionForCombobox(teammate2Trigger, "Beta");
 
     // Submit the form
     const submitBtn = screen.getByRole("button", { name: /Register$/i });

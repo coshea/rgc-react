@@ -8,20 +8,16 @@ export function AlreadyPaidNotice(props: {
 
   return (
     <div className="w-full max-w-4xl">
-      <Alert >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+      <Alert status="success">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title className="text-base font-semibold">
             Your annual dues are already recorded for {currentYear}. Thank you!
-          </div>
-          <Button
-            size="sm"
-            
-            variant="tertiary"
-            onPress={onDonationPress}
-          >
-            Make a donation
-          </Button>
-        </div>
+          </Alert.Title>
+        </Alert.Content>
+        <Button size="sm" variant="tertiary" onPress={onDonationPress}>
+          Make a donation
+        </Button>
       </Alert>
       <div className="h-4" />
     </div>

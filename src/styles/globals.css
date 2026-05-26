@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "@heroui-pro/react/css/components/stepper.css";
 
 /* Prevent any overflowing element from causing horizontal page scroll on mobile */
 html,

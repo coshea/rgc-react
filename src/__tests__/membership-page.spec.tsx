@@ -43,6 +43,20 @@ vi.mock("@/providers/toast", () => ({
   addToast: (args: any) => addToastMock(args),
 }));
 
+vi.mock("@heroui-pro/react/stepper", () => {
+  const MockStepper = Object.assign(
+    ({ children }: any) => <div data-testid="stepper">{children}</div>,
+    {
+      Step: ({ children }: any) => <div>{children}</div>,
+      Indicator: () => null,
+      Content: ({ children }: any) => <div>{children}</div>,
+      Title: ({ children }: any) => <span>{children}</span>,
+      Separator: () => null,
+    },
+  );
+  return { Stepper: MockStepper };
+});
+
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
   const MockCheckbox = Object.assign(

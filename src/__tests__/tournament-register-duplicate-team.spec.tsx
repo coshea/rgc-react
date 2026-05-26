@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import {
+  findAutocompleteButton,
+  pickOptionForCombobox,
+} from "./helpers/autocomplete";
 
 // Mock hooks and APIs
 const addToastMock = vi.fn();
@@ -114,13 +118,11 @@ describe("TournamentRegister duplicate teammate detection", () => {
     });
 
     // Select Player Two (conflicting user) as teammate
-    const teammate2Input = await screen.findByRole("combobox", {
-      name: /teammate 2/i,
-    });
-    fireEvent.change(teammate2Input, { target: { value: "Player Two" } });
-    fireEvent.keyDown(teammate2Input, { key: "ArrowDown" });
-    const p2Option = await screen.findByRole("option", { name: "Player Two" });
-    fireEvent.click(p2Option);
+    await waitFor(() =>
+      expect(findAutocompleteButton(/teammate 2/i)).toBeTruthy(),
+    );
+    const teammate2Trigger = findAutocompleteButton(/teammate 2/i);
+    await pickOptionForCombobox(teammate2Trigger, "Player Two");
 
     // Allow state update/microtask flush so selected teammate is in component state
     await new Promise((res) => setTimeout(res, 0));
@@ -165,13 +167,11 @@ describe("TournamentRegister duplicate teammate detection", () => {
       expect(fetchAllRegistrationsMock).toHaveBeenCalled();
     });
 
-    const teammate2Input = await screen.findByRole("combobox", {
-      name: /teammate 2/i,
-    });
-    fireEvent.change(teammate2Input, { target: { value: "Player Two" } });
-    fireEvent.keyDown(teammate2Input, { key: "ArrowDown" });
-    const p2Option = await screen.findByRole("option", { name: "Player Two" });
-    fireEvent.click(p2Option);
+    await waitFor(() =>
+      expect(findAutocompleteButton(/teammate 2/i)).toBeTruthy(),
+    );
+    const teammate2Trigger2 = findAutocompleteButton(/teammate 2/i);
+    await pickOptionForCombobox(teammate2Trigger2, "Player Two");
 
     await new Promise((res) => setTimeout(res, 0));
 
@@ -190,17 +190,11 @@ describe("TournamentRegister duplicate teammate detection", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /add teammate/i }));
 
-    const teammate2InputAgain = await screen.findByRole("combobox", {
-      name: /teammate 2/i,
-    });
-    fireEvent.change(teammate2InputAgain, {
-      target: { value: "Player Three" },
-    });
-    fireEvent.keyDown(teammate2InputAgain, { key: "ArrowDown" });
-    const p3Option = await screen.findByRole("option", {
-      name: "Player Three",
-    });
-    fireEvent.click(p3Option);
+    await waitFor(() =>
+      expect(findAutocompleteButton(/teammate 2/i)).toBeTruthy(),
+    );
+    const teammate2TriggerAgain = findAutocompleteButton(/teammate 2/i);
+    await pickOptionForCombobox(teammate2TriggerAgain, "Player Three");
 
     await new Promise((res) => setTimeout(res, 0));
 

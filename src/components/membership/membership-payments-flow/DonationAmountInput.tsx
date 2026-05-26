@@ -20,7 +20,10 @@ function sanitizeAmountInput(nextValue: string) {
   if (firstDot === -1) return cleaned;
   return (
     cleaned.slice(0, firstDot + 1) +
-    cleaned.slice(firstDot + 1).replace(/\./g, "")
+    cleaned
+      .slice(firstDot + 1)
+      .replace(/\./g, "")
+      .slice(0, 2)
   );
 }
 

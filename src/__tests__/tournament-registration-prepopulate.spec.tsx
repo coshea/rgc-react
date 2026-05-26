@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import type { Tournament } from "@/types/tournament";
 import { openRegistrationWindow } from "./tournament-utils";
+import { findAutocompleteButton } from "./helpers/autocomplete";
 
 // Start with a clean module registry so we can control mocks for this test file
 vi.resetModules();
@@ -106,9 +107,8 @@ vi.mock("firebase/firestore", () => {
 describe("TournamentEditor - Add Registration prepopulate", () => {
   it("pre-populates leader select with current user when opening Add Registration", async () => {
     // Import component after mocks are set up
-    const { default: TournamentEditor } = await import(
-      "@/components/tournament-editor"
-    );
+    const { default: TournamentEditor } =
+      await import("@/components/tournament-editor");
 
     const existing = {
       ...openRegistrationWindow(),
@@ -152,10 +152,11 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
     });
     fireEvent.click(addTeammate);
 
-    const combo = await screen.findByRole("combobox", { name: /Team Leader/i });
-    // Type to filter to Admin User and ensure an option appears
-    fireEvent.change(combo, { target: { value: "Admin" } });
-    fireEvent.keyDown(combo, { key: "ArrowDown" });
+    const trigger = findAutocompleteButton(/Team Leader/i);
+    // Click trigger to open the Autocomplete popover, then type to filter and verify the option appears
+    fireEvent.click(trigger);
+    const searchInput = await screen.findByPlaceholderText("Search...");
+    fireEvent.change(searchInput, { target: { value: "Admin" } });
     const option = await screen.findByRole("option", { name: /Admin User/i });
     expect(option).toBeInTheDocument();
   }, 20000);

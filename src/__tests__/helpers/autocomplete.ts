@@ -1,19 +1,54 @@
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, within } from "@testing-library/react";
 
 /**
- * Open a HeroUI Autocomplete combobox and select an option by its visible text.
+ * Find the Autocomplete indicator button (aria-haspopup="listbox") by its label text.
+ *
+ * In HeroUI v3 the Autocomplete container (`data-slot="autocomplete"`) wraps
+ * both the label span and the trigger group. We locate the label first, walk
+ * up to the autocomplete container, then query for the indicator button inside
+ * it. This avoids false-positive matches against sibling "Remove teammate X"
+ * buttons that share the same label text.
+ */
+export function findAutocompleteButton(
+  labelText: string | RegExp,
+  container: HTMLElement = document.body,
+): HTMLElement {
+  const allText = within(container).getAllByText(labelText);
+  for (const textEl of allText) {
+    const autocompleteDiv = textEl.closest('[data-slot="autocomplete"]');
+    if (autocompleteDiv) {
+      const triggerBtn = autocompleteDiv.querySelector(
+        'button[aria-haspopup="listbox"]',
+      ) as HTMLElement | null;
+      if (triggerBtn) return triggerBtn;
+    }
+  }
+  throw new Error(
+    `No Autocomplete trigger button found with label: ${String(labelText)}`,
+  );
+}
+
+/**
+ * Open a HeroUI v3 Autocomplete trigger button and select an option by its visible text.
+ *
  * Usage:
- *   const boxes = screen.getAllByRole('combobox', { name: /Winner/i });
- *   await pickOptionForCombobox(boxes[0], 'Alpha');
+ *   const trigger = findAutocompleteButton(/Teammate 2/i);
+ *   await pickOptionForCombobox(trigger, 'Beta');
+ *
+ * — or via the combined helper —
+ *
+ *   await pickAutocompleteOption(/Teammate 2/i, 'Beta');
  */
 export async function pickOptionForCombobox(
-  combobox: HTMLElement,
-  optionText: string
+  triggerBtn: HTMLElement,
+  optionText: string,
 ) {
+  // Click the trigger to open the popover
+  fireEvent.click(triggerBtn);
+  // Find the search input inside the opened popover
+  const searchInput = await screen.findByPlaceholderText("Search...");
   // Type to filter options
-  fireEvent.change(combobox, { target: { value: optionText } });
-  // Ensure the menu is open in test env
-  fireEvent.keyDown(combobox, { key: "ArrowDown" });
+  fireEvent.change(searchInput, { target: { value: optionText } });
   // Select the option from the portal menu
   const option = await screen.findByRole("option", {
     name: new RegExp(optionText, "i"),
@@ -22,13 +57,13 @@ export async function pickOptionForCombobox(
 }
 
 /**
- * Find a combobox by label or placeholder text and pick an option.
+ * Find an Autocomplete by its label text and pick an option.
  * Helpful when there is a single Autocomplete on screen.
  */
 export async function pickAutocompleteOption(
-  labelOrPlaceholder: string | RegExp,
-  optionText: string
+  labelText: string | RegExp,
+  optionText: string,
 ) {
-  const combobox = screen.getByRole("combobox", { name: labelOrPlaceholder });
-  await pickOptionForCombobox(combobox, optionText);
+  const trigger = findAutocompleteButton(labelText);
+  await pickOptionForCombobox(trigger, optionText);
 }
