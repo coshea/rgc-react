@@ -719,21 +719,24 @@ describe("TournamentDetailPage", () => {
 
     vi.unstubAllGlobals();
 
-    // Header row should contain goldTee columns
-    expect(capturedCsv).toContain("member1_goldTee");
-    expect(capturedCsv).toContain("member2_goldTee");
-    // Header row should contain ghin columns
-    expect(capturedCsv).toContain("member1_ghin");
-    expect(capturedCsv).toContain("member2_ghin");
-    // Bob's goldTee cell should be "Gold"
-    expect(capturedCsv).toContain('"Gold"');
-    // Parse to verify column positions
+    // Header row should contain new column names
     const lines = capturedCsv.split("\n");
-    const dataLine = lines[1];
-    // Format: date,member1,member1_ghin,member1_goldTee,member2,member2_ghin,member2_goldTee
-    const cells = dataLine.split(",").map((c) => c.replace(/"/g, ""));
-    expect(cells[3]).toBe(""); // Alice goldTee empty
-    expect(cells[6]).toBe("Gold"); // Bob goldTee is Gold
+    expect(lines[0]).toContain("Team ID");
+    expect(lines[0]).toContain("Handle");
+    expect(lines[0]).toContain("GHIN");
+    expect(lines[0]).toContain("Tee");
+    // Bob's Tee cell should be "Gold"
+    expect(capturedCsv).toContain('"Gold"');
+    // One row per player: Alice (row 1) then Bob (row 2), both on team r1
+    // Format per row: Team ID,Handle,First Name,Last Name,Email,HCP Index,GHIN,Tee
+    const aliceCells = lines[1].split(",").map((c) => c.replace(/"/g, ""));
+    expect(aliceCells[0]).toBe("r1"); // Team ID
+    expect(aliceCells[1]).toBe("Alice"); // Handle
+    expect(aliceCells[7]).toBe(""); // Tee empty for Alice
+    const bobCells = lines[2].split(",").map((c) => c.replace(/"/g, ""));
+    expect(bobCells[0]).toBe("r1"); // Team ID
+    expect(bobCells[1]).toBe("Bob"); // Handle
+    expect(bobCells[7]).toBe("Gold"); // Tee is Gold for Bob
   });
 
   describe("Bracket visibility", () => {

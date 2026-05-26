@@ -634,7 +634,7 @@ img { display: block; max-width: 100%; }
     }
   };
 
-  // Export registrations as CSV
+  // Export registrations as CSV — one player per row
   const exportRegistrations = () => {
     if (!isAdmin) return;
     if (!registrations.length) {
@@ -645,34 +645,59 @@ img { display: block; max-width: 100%; }
       });
       return;
     }
-    let maxTeam = 0;
-    registrations.forEach((r) => {
-      const team = Array.isArray(r.team) ? r.team : [];
-      if (team.length > maxTeam) maxTeam = team.length;
-    });
     const headers = [
-      "registeredDate",
-      ...Array.from({ length: maxTeam }, (_, i) => [
-        `member${i + 1}`,
-        `member${i + 1}_ghin`,
-        `member${i + 1}_goldTee`,
-      ]).flat(),
+      "Team ID",
+      "Handle",
+      "First Name",
+      "Last Name",
+      "Email",
+      "HCP Index",
+      "GHIN",
+      "Tee",
     ];
-    const rows = registrations.map((r) => {
+    type PlayerRow = {
+      teamId: string;
+      handle: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      hcpIndex: string;
+      ghin: string;
+      tee: string;
+    };
+    const playerRows: PlayerRow[] = [];
+    registrations.forEach((r) => {
+      const teamId = r.id ?? "";
       const team = Array.isArray(r.team) ? r.team : [];
-      const date = r.registeredAt?.toDate
-        ? new Date(r.registeredAt.toDate()).toISOString()
-        : "";
-      const memberCols: string[] = [];
-      for (let i = 0; i < maxTeam; i++) {
-        const m = team[i];
+      team.forEach((m) => {
         const userProfile = m?.id ? usersMap.get(m.id) : undefined;
-        memberCols.push(m?.displayName || m?.id || "");
-        memberCols.push(userProfile?.ghinNumber || "");
-        memberCols.push(m?.goldTee ? "Gold" : "");
-      }
-      return [date, ...memberCols];
+        playerRows.push({
+          teamId,
+          handle: m?.displayName || userProfile?.displayName || m?.id || "",
+          firstName: userProfile?.firstName || "",
+          lastName: userProfile?.lastName || "",
+          email: userProfile?.email || "",
+          hcpIndex: "",
+          ghin: userProfile?.ghinNumber || "",
+          tee: m?.goldTee ? "Gold" : "",
+        });
+      });
     });
+    playerRows.sort((a, b) => {
+      const teamCmp = a.teamId.localeCompare(b.teamId);
+      if (teamCmp !== 0) return teamCmp;
+      return a.lastName.localeCompare(b.lastName);
+    });
+    const rows = playerRows.map((p) => [
+      p.teamId,
+      p.handle,
+      p.firstName,
+      p.lastName,
+      p.email,
+      p.hcpIndex,
+      p.ghin,
+      p.tee,
+    ]);
     const csvLines = [headers, ...rows].map((line) =>
       line.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","),
     );
@@ -739,7 +764,7 @@ img { display: block; max-width: 100%; }
                     <Dropdown placement="bottom-end">
                       <Button
                         size="sm"
-                        variant="tertiary"
+                        variant="secondary"
                         aria-label="Add tournament to calendar"
                       >
                         <Icon icon="lucide:calendar-plus" />
@@ -783,18 +808,19 @@ img { display: block; max-width: 100%; }
                 {isAdmin && (
                   <div className="flex flex-col gap-2">
                     {/* Toggle row — full-width accordion header */}
-                    <button
-                      onClick={() => setAdminOpen((o) => !o)}
+                    <Button
+                      onPress={() => setAdminOpen((o) => !o)}
                       aria-expanded={adminOpen}
                       aria-label="Toggle admin actions"
-                      className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      variant="secondary"
+                      className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-sm font-medium"
                     >
                       <span>Admin only</span>
                       <Icon
                         icon="lucide:chevron-down"
                         className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
                       />
-                    </button>
+                    </Button>
                     {/* Expanded: 2×2 button grid */}
                     {adminOpen && (
                       <div className="grid grid-cols-2 gap-2">
@@ -854,7 +880,7 @@ img { display: block; max-width: 100%; }
                   <Dropdown placement="bottom-end">
                     <Button
                       size="sm"
-                      variant="tertiary"
+                      variant="secondary"
                       aria-label="Add tournament to calendar"
                     >
                       <Icon icon="lucide:calendar-plus" />
@@ -894,24 +920,19 @@ img { display: block; max-width: 100%; }
 
                   {isAdmin && (
                     <div className="flex items-center gap-2 pl-2 border-l border-divider">
-                      <button
-                        onClick={() => setAdminOpen((o) => !o)}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => setAdminOpen((o) => !o)}
                         aria-expanded={adminOpen}
                         aria-label="Toggle admin actions"
-                        className="rounded-full focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
-                        <Chip
-                          size="sm"
-                          variant="tertiary"
-                          className="cursor-pointer select-none"
-                        >
-                          <Icon
-                            icon="lucide:chevron-right"
-                            className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                          />
-                          Admin only
-                        </Chip>
-                      </button>
+                        <Icon
+                          icon="lucide:chevron-right"
+                          className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                        />
+                        Admin only
+                      </Button>
                       <div
                         className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
                         style={{
@@ -1024,7 +1045,7 @@ img { display: block; max-width: 100%; }
                   <h2 className="text-lg font-semibold">Overview</h2>
                 </Card.Header>
                 <Separator />
-                <Card.Content className="pt-4">
+                <Card.Content className="pt-0">
                   {tournament.detailsMarkdown ? (
                     <div className="prose dark:prose-invert max-w-none text-sm">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -1504,7 +1525,10 @@ img { display: block; max-width: 100%; }
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end pb-1">
                       {!regsLoading && registrations.length > 0 && (
-                        <SearchField name="search">
+                        <SearchField
+                          name="search"
+                          aria-label="Search registered teams"
+                        >
                           <SearchField.Group>
                             <SearchField.SearchIcon />
                             <SearchField.Input

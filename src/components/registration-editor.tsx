@@ -100,7 +100,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   return (
     <div className="space-y-2">
       {ids.map((uid, idx) => (
-        <div key={idx} className="flex items-center gap-2">
+        <div key={idx} className="flex items-end gap-2">
           <div className="flex-1">
             <UserSelect
               users={users}

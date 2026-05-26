@@ -42,7 +42,7 @@ export function TournamentStatusChip({
       <Chip
         size={size}
         color="accent"
-        variant="primary"
+        variant="soft"
         className="whitespace-nowrap"
       >
         <Icon
@@ -58,7 +58,7 @@ export function TournamentStatusChip({
     return (
       <Chip
         size={size}
-        color="accent"
+        color="warning"
         variant="primary"
         className="animate-pulse whitespace-nowrap"
       >
