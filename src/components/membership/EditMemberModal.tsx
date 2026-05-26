@@ -256,6 +256,14 @@ export function EditMemberModal({
             onChange={(e: any) => onChange({ ...form, phone: e.target.value })}
             onBlur={() => onChange({ ...form, phone: formatPhone(form.phone) })}
           />
+          <Input
+            placeholder="GHIN Number"
+            value={form.ghinNumber || ""}
+            isDisabled={saving}
+            onChange={(e: any) =>
+              onChange({ ...form, ghinNumber: e.target.value })
+            }
+          />
           <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">
               <input
