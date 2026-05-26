@@ -4,7 +4,6 @@ import {
   Card,
   Button,
   Chip,
-  Label,
   ListBox,
   SearchField,
   Select,
@@ -154,12 +153,12 @@ export const BlogListPage: React.FC = () => {
           </SearchField>
           <Select
             className="sm:w-64"
+            aria-label="Category"
             value={filterCategory}
             onChange={(key) => {
               if (key) setFilterCategory(key as BlogCategory | "all");
             }}
           >
-            <Label>Category</Label>
             <Select.Trigger>
               <Select.Value />
               <Select.Indicator />

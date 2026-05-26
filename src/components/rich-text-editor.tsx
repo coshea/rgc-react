@@ -46,7 +46,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <label className="text-sm font-medium">{label}</label>
 
       {/* Markdown Toolbar */}
@@ -142,6 +142,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={minRows}
+          fullWidth
           classNames={{
             input: "font-mono text-sm",
           }}

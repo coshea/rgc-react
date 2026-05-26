@@ -263,7 +263,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                       alt={img.name}
                       loading="lazy"
                       decoding="async"
-                      className="w-10 h-10 object-cover rounded"
+                      className="w-16 h-16 object-cover rounded"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm truncate">{img.name}</div>

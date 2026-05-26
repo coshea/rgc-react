@@ -469,7 +469,7 @@ export const BlogEditorPage: React.FC = () => {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="tertiary"
+                      variant="secondary"
                       onPress={applyTemplate}
                       isDisabled={!selectedTournamentId}
                     >
@@ -480,9 +480,10 @@ export const BlogEditorPage: React.FC = () => {
                       BlogTemplateType.TournamentResults && (
                       <Button
                         size="sm"
-                        variant="tertiary"
+                        variant="primary"
                         onPress={handleAiWriteup}
                         isDisabled={
+                          generatingAi ||
                           !selectedTournamentId ||
                           !tournaments.find(
                             (t) => t.firestoreId === selectedTournamentId,
@@ -550,6 +551,7 @@ export const BlogEditorPage: React.FC = () => {
                   variant="tertiary"
                   onPress={handleAiWriteup}
                   isDisabled={
+                    generatingAi ||
                     !selectedTournamentId ||
                     !tournaments.find(
                       (t) => t.firestoreId === selectedTournamentId,
