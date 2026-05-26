@@ -13,6 +13,7 @@ import {
 import { Icon } from "@iconify/react";
 import emailjs from "@emailjs/browser";
 import { EMAILJS_CONFIG, isEmailJSConfigured } from "@/config/emailjs";
+import { siteConfig } from "@/config/site";
 import golfBallHoleImage from "@/assets/golf_ball_hole.jpg";
 import { executeRecaptcha } from "@/utils/recaptcha";
 
@@ -111,12 +112,34 @@ export const ContactForm = () => {
                 </div>
 
                 {submitted && (
-                  <Alert className="mb-4">
-                    Thanks for reaching out! We'll get back to you soon.
+                  <Alert className="mb-4" status="success">
+                    <Alert.Indicator />
+                    <Alert.Content>
+                      <Alert.Title>
+                        Thanks for reaching out! We'll get back to you soon.
+                      </Alert.Title>
+                    </Alert.Content>
                   </Alert>
                 )}
 
-                {error && <Alert className="mb-4">{error}</Alert>}
+                {error && (
+                  <Alert className="mb-4" status="danger">
+                    <Alert.Indicator />
+                    <Alert.Content>
+                      <Alert.Title>Unable to send the message!</Alert.Title>
+                      <Alert.Description>
+                        Please try again later or email us directly at{" "}
+                        <a
+                          href={`mailto:${siteConfig.contactEmail}`}
+                          className="text-primary underline"
+                        >
+                          {siteConfig.contactEmail}
+                        </a>
+                        .
+                      </Alert.Description>
+                    </Alert.Content>
+                  </Alert>
+                )}
 
                 <Form
                   className="space-y-3 sm:space-y-4"

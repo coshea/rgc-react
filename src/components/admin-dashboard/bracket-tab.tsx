@@ -381,7 +381,7 @@ export function BracketTab() {
           ) : (
             <Select
               placeholder="Select a tournament"
-              value={selectedId || undefined}
+              value={selectedId || null}
               onChange={(key) => {
                 setSelectedId(typeof key === "string" ? key : "");
               }}
