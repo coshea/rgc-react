@@ -511,7 +511,7 @@ export default function LoginPage() {
           className="flex w-full max-w-sm flex-col gap-4 rounded-lg 
         bg-surface px-8 pb-10 pt-6 shadow-sm"
         >
-          <RGCLogo size={240} />
+          <RGCLogo className="w-40 self-center" />
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-medium">Sign in to your account</h1>
             <p className="text-sm text-muted">

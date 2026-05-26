@@ -345,12 +345,10 @@ export default function SignUpPage() {
     <>
       <div className="flex h-full w-full items-center justify-center">
         <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-surface px-8 pb-10 pt-6 shadow-sm">
-          <div className="flex flex-col items-center pb-6">
-            <RGCLogo size={240} />
-            <p className="text-xl font-medium">Welcome</p>
-            <p className="text-sm text-muted">
-              Create an account to get started
-            </p>
+          <RGCLogo className="w-40 self-center" />
+          <div className="flex flex-col gap-1">
+            <h1 className="text-lg font-medium">Create an account</h1>
+            <p className="text-sm text-muted">to join Ridgefield Golf Club</p>
           </div>
           {inlineError && (
             <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -529,7 +527,11 @@ export default function SignUpPage() {
                 </Label>
               </Checkbox.Content>
             </Checkbox>
-            <Button type="submit" isDisabled={authLoading || isSubmitting}>
+            <Button
+              className="w-full"
+              type="submit"
+              isDisabled={authLoading || isSubmitting}
+            >
               {authLoading || isSubmitting
                 ? "Processing..."
                 : signupMode === "magic-link"
@@ -556,7 +558,7 @@ export default function SignUpPage() {
           </div>
           <p className="text-center text-sm">
             Already have an account?&nbsp;
-            <Link href={siteConfig.pages.login.link} size="sm">
+            <Link href={siteConfig.pages.login.link} size="sm" color="primary">
               {siteConfig.pages.login.title}
             </Link>
           </p>
