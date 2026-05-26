@@ -20,6 +20,14 @@ body {
   If we ever want to remove these styles, we need to add an explicit border
   color utility to any element that depends on these defaults.
 */
+/* Prevent iOS Safari from auto-zooming when tapping inputs (triggered when font-size < 16px).
+   Must be outside @layer so it is "unlayered" and wins over @layer components styles from HeroUI. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 @layer base {
   *,
   ::after,
@@ -27,13 +35,6 @@ body {
   ::backdrop,
   ::file-selector-button {
     border-color: var(--border, currentColor);
-  }
-
-  /* Prevent iOS Safari from auto-zooming when tapping inputs (triggered when font-size < 16px) */
-  input,
-  textarea,
-  select {
-    font-size: 16px;
   }
 
   /* Basic prose styles for markdown rendering */
