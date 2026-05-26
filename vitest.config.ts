@@ -13,6 +13,17 @@ export default defineConfig({
           "node_modules/@heroui/react/node_modules/tailwind-variants/dist/index.js",
         ),
       },
+      // Bypass package.json exports field resolution for @heroui-pro subpaths,
+      // which fails on Linux CI (vite:import-analysis can't resolve them) even
+      // though vi.mock() would intercept the load. Aliasing directly to the
+      // compiled file lets static analysis succeed in all environments.
+      {
+        find: "@heroui-pro/react/stepper",
+        replacement: resolve(
+          __dirname,
+          "node_modules/@heroui-pro/react/dist/components/stepper/index.js",
+        ),
+      },
     ],
   },
   test: {
