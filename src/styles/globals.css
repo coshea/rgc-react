@@ -115,7 +115,8 @@ body {
     --default: oklch(94% 0.0015 253.83);
     --default-foreground: oklch(21.03% 0.0059 253.83);
     --field-background: oklch(100% 0.0008 253.83);
-    --field-border: oklch(87% 0.0015 253.83);
+    --field-border: oklch(90% 0.0015 253.83);
+    --field-border-width: 1px;
     --field-foreground: oklch(21.03% 0.0015 253.83);
     --field-placeholder: oklch(55.17% 0.003 253.83);
     --focus: oklch(62.04% 0.195 253.83);

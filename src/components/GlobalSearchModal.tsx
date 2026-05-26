@@ -147,13 +147,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               <Input
                 ref={inputRef}
                 autoFocus
-                variant="tertiary"
-                classNames={{
-                  base: "flex-1",
-                  inputWrapper:
-                    "bg-transparent shadow-none border-none px-0 hover:bg-transparent data-[hover=true]:bg-transparent group-data-[focus=true]:bg-transparent",
-                  input: "text-base placeholder:text-muted",
-                }}
+                className="flex-1 min-w-0 bg-transparent border-none shadow-none outline-none ring-0 px-0 text-base placeholder:text-muted focus:bg-transparent focus:border-none focus:shadow-none"
                 placeholder="Search pages and tournaments…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
