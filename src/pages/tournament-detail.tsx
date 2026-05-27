@@ -39,9 +39,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeeBadge } from "@/components/tee-badge";
 import { TeamRegistrationCard } from "@/components/team-registration-card";
-const TournamentEditor = React.lazy(() =>
-  import("@/components/tournament-editor").then((m) => ({
-    default: m.TournamentEditor,
+const TournamentEditorModal = React.lazy(() =>
+  import("@/components/tournament-editor/TournamentEditorModal").then((m) => ({
+    default: m.TournamentEditorModal,
   })),
 );
 import GroupedWinners from "@/components/grouped-winners";
@@ -1853,43 +1853,14 @@ img { display: block; max-width: 100%; }
           </div>
         )}
 
-        {isAdmin && editOpen && (
-          <div
-            className="fixed inset-0 z-50"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Edit tournament"
-          >
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setEditOpen(false)}
-            />
-            {/* Wrapper: mobile fullscreen; desktop centered with max height */}
-            <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
-              <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-                <div className="flex-1 flex flex-col min-h-0 md:rounded-b-xl overflow-hidden">
-                  <React.Suspense
-                    fallback={
-                      <div className="p-8 flex flex-col items-center gap-3">
-                        <Icon
-                          icon="lucide:loader"
-                          className="animate-spin text-2xl text-accent"
-                        />
-                        <p className="text-sm text-muted">Loading editor...</p>
-                      </div>
-                    }
-                  >
-                    <TournamentEditor
-                      tournament={tournament}
-                      onSave={handleEditSave}
-                      onCancel={() => setEditOpen(false)}
-                    />
-                  </React.Suspense>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <React.Suspense fallback={null}>
+          <TournamentEditorModal
+            isOpen={!!(isAdmin && editOpen)}
+            onClose={() => setEditOpen(false)}
+            tournament={tournament}
+            onSave={handleEditSave}
+          />
+        </React.Suspense>
         {isAdmin && deleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div

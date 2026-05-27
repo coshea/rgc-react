@@ -199,9 +199,9 @@ export function EditMemberModal({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10">
+      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10 my-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium">
@@ -225,11 +225,11 @@ export function EditMemberModal({
           </Button>
         </div>
         <div className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="First Name"
               value={form.firstName || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, firstName: e.target.value })
               }
@@ -237,7 +237,7 @@ export function EditMemberModal({
             <Input
               placeholder="Last Name"
               value={form.lastName || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, lastName: e.target.value })
               }
@@ -246,24 +246,31 @@ export function EditMemberModal({
           <Input
             placeholder="Email"
             value={form.email || ""}
-            isDisabled={saving}
+            fullWidth
+            disabled={saving}
             onChange={(e: any) => onChange({ ...form, email: e.target.value })}
           />
-          <Input
-            placeholder="Phone"
-            value={form.phone || ""}
-            isDisabled={saving}
-            onChange={(e: any) => onChange({ ...form, phone: e.target.value })}
-            onBlur={() => onChange({ ...form, phone: formatPhone(form.phone) })}
-          />
-          <Input
-            placeholder="GHIN Number"
-            value={form.ghinNumber || ""}
-            isDisabled={saving}
-            onChange={(e: any) =>
-              onChange({ ...form, ghinNumber: e.target.value })
-            }
-          />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              placeholder="Phone"
+              value={form.phone || ""}
+              disabled={saving}
+              onChange={(e: any) =>
+                onChange({ ...form, phone: e.target.value })
+              }
+              onBlur={() =>
+                onChange({ ...form, phone: formatPhone(form.phone) })
+              }
+            />
+            <Input
+              placeholder="GHIN Number"
+              value={form.ghinNumber || ""}
+              disabled={saving}
+              onChange={(e: any) =>
+                onChange({ ...form, ghinNumber: e.target.value })
+              }
+            />
+          </div>
           <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -408,7 +415,7 @@ export function EditMemberModal({
                     placeholder="Amount"
                     value={payment.amount || ""}
                     className="max-w-[100px]"
-                    isDisabled={saving}
+                    disabled={saving}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));
                       setPaymentDirty(true);
