@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - env:
+          HEROUI_AUTH_TOKEN: ${{ secrets.HEROUI_AUTH_TOKEN }}
           VITE_PAYPAL_CLIENT_ID: ${{ secrets.VITE_PAYPAL_CLIENT_ID }}
           VITE_PAYPAL_ENVIRONMENT: ${{ secrets.VITE_PAYPAL_ENVIRONMENT }}
           VITE_FIREBASE_FUNCTIONS_BASE_URL: ${{ secrets.VITE_FIREBASE_FUNCTIONS_BASE_URL }}
