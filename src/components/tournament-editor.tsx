@@ -609,7 +609,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
   return (
     <Card className="w-full h-full flex flex-col">
-      <Card.Content className="p-6 overflow-y-auto flex-1">
+      <Card.Content className="p-6 overflow-y-auto flex-1 min-h-0">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-medium">
             {isEditing ? "Edit Tournament" : "Create New Tournament"}
@@ -1362,6 +1362,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                     tournamentId={tournament.firestoreId}
                     registrations={registrations}
                     allUsers={allUsers}
+                    bracketPublished={tournament.bracketPublished}
                   />
                 </div>
               )}

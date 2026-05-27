@@ -73,6 +73,12 @@ interface BracketEditorProps {
     photoURL?: string | null;
     profileURL?: string | null;
   }>;
+  /**
+   * When true, the bracket is published/live. Structural changes (edit seeds,
+   * edit matchups, regenerate, delete, resync) are locked to prevent accidental
+   * modifications. Match result entry remains available.
+   */
+  bracketPublished?: boolean;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -285,6 +291,7 @@ export function BracketEditor({
   tournamentId,
   registrations,
   allUsers,
+  bracketPublished = false,
 }: BracketEditorProps) {
   const [bracket, setBracket] = useState<TournamentBracket | null>(null);
   const [bracketLoading, setBracketLoading] = useState(true);
@@ -750,8 +757,19 @@ export function BracketEditor({
 
   return (
     <div className="space-y-4">
-      {/* Regenerate / Delete controls (only when bracket exists) */}
-      {bracket && (
+      {/* Published lock banner */}
+      {bracket && bracketPublished && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-success-200 bg-success/10 text-sm text-success-700 dark:text-success-400">
+          <Icon icon="lucide:lock" className="w-4 h-4 shrink-0" />
+          <span>
+            Bracket is published. Structural edits are locked — only match
+            results can be updated.
+          </span>
+        </div>
+      )}
+
+      {/* Regenerate / Delete controls (only when bracket exists and not published) */}
+      {bracket && !bracketPublished && (
         <div className="flex gap-2 justify-end flex-wrap">
           <Button
             size="sm"
@@ -814,7 +832,7 @@ export function BracketEditor({
       )}
 
       {/* Seed-edit panel (shown when a bracket exists and admin toggled Edit Seeds) */}
-      {bracket && showSeedEdit && (
+      {bracket && !bracketPublished && showSeedEdit && (
         <Card>
           <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold text-sm">Edit Seedings</p>
@@ -893,7 +911,7 @@ export function BracketEditor({
       )}
 
       {/* Edit Matchups panel — directly swap round-1 pairings without regenerating */}
-      {bracket && showMatchupEdit && (
+      {bracket && !bracketPublished && showMatchupEdit && (
         <Card>
           <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold text-sm">Edit First Round Matchups</p>
@@ -1306,8 +1324,13 @@ export function BracketEditor({
             </Card.Content>
           </Card>
         </div>
+      ) : /* ── No bracket yet: show generator ── */
+      bracketPublished ? (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted text-sm">
+          <Icon icon="lucide:lock" className="w-4 h-4 shrink-0" />
+          <span>Bracket is published but no bracket data was found.</span>
+        </div>
       ) : (
-        /* ── No bracket yet: show generator ── */
         <Card>
           <Card.Header className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-semibold">Generate Bracket</p>

@@ -13,16 +13,14 @@ export default defineConfig({
           "node_modules/@heroui/react/node_modules/tailwind-variants/dist/index.js",
         ),
       },
-      // Bypass package.json exports field resolution for @heroui-pro subpaths,
-      // which fails on Linux CI (vite:import-analysis can't resolve them) even
-      // though vi.mock() would intercept the load. Aliasing directly to the
-      // compiled file lets static analysis succeed in all environments.
+      // HeroUI Pro requires a license token to download dist files during
+      // `npm install`. In CI without HEROUI_AUTH_TOKEN the real dist is never
+      // written, so vite:import-analysis can't resolve the subpath and the
+      // test suite fails. Alias to a local stub so the file always exists.
+      // Tests that need specific behavior use vi.mock() with an explicit factory.
       {
         find: "@heroui-pro/react/stepper",
-        replacement: resolve(
-          __dirname,
-          "node_modules/@heroui-pro/react/dist/components/stepper/index.js",
-        ),
+        replacement: resolve(__dirname, "src/__mocks__/heroui-pro-stepper.tsx"),
       },
     ],
   },
