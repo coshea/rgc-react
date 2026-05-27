@@ -247,14 +247,14 @@ export function EditMemberModal({
             placeholder="Email"
             value={form.email || ""}
             fullWidth
-            disabled={saving}
+            isDisabled={saving}
             onChange={(e: any) => onChange({ ...form, email: e.target.value })}
           />
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="Phone"
               value={form.phone || ""}
-              disabled={saving}
+              isDisabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, phone: e.target.value })
               }
@@ -265,7 +265,7 @@ export function EditMemberModal({
             <Input
               placeholder="GHIN Number"
               value={form.ghinNumber || ""}
-              disabled={saving}
+              isDisabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, ghinNumber: e.target.value })
               }

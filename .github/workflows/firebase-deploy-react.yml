@@ -20,6 +20,8 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
+        env:
+          HEROUI_AUTH_TOKEN: ${{ secrets.HEROUI_AUTH_TOKEN }}
         run: npm ci
 
       - name: Run tests
