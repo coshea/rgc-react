@@ -1853,42 +1853,46 @@ img { display: block; max-width: 100%; }
           </div>
         )}
 
-        {isAdmin && editOpen && (
-          <div
-            className="fixed inset-0 z-50"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Edit tournament"
-          >
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setEditOpen(false)}
-            />
-            {/* Wrapper: mobile fullscreen; desktop centered with max height */}
-            <div className="relative z-10 flex h-full w-full md:items-center md:justify-center">
-              <div className="flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-xl md:shadow-lg md:border md:bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-                <div className="flex-1 flex flex-col min-h-0 md:rounded-b-xl overflow-hidden">
-                  <React.Suspense
-                    fallback={
-                      <div className="p-8 flex flex-col items-center gap-3">
-                        <Icon
-                          icon="lucide:loader"
-                          className="animate-spin text-2xl text-accent"
-                        />
-                        <p className="text-sm text-muted">Loading editor...</p>
-                      </div>
-                    }
-                  >
-                    <TournamentEditor
-                      tournament={tournament}
-                      onSave={handleEditSave}
-                      onCancel={() => setEditOpen(false)}
-                    />
-                  </React.Suspense>
-                </div>
-              </div>
-            </div>
-          </div>
+        {isAdmin && (
+          <Modal>
+            <Modal.Backdrop
+              isOpen={editOpen}
+              onOpenChange={(open) => {
+                if (!open) setEditOpen(false);
+              }}
+              isDismissable={false}
+            >
+              <Modal.Container
+                scroll="inside"
+                size="full"
+                className="md:max-w-5xl md:max-h-[90vh] md:rounded-xl"
+              >
+                <Modal.Dialog aria-label="Edit tournament">
+                  <Modal.Body className="p-0">
+                    <React.Suspense
+                      fallback={
+                        <div className="p-8 flex flex-col items-center gap-3">
+                          <Icon
+                            icon="lucide:loader"
+                            className="animate-spin text-2xl text-accent"
+                          />
+                          <p className="text-sm text-muted">
+                            Loading editor...
+                          </p>
+                        </div>
+                      }
+                    >
+                      <TournamentEditor
+                        tournament={tournament}
+                        onSave={handleEditSave}
+                        onCancel={() => setEditOpen(false)}
+                      />
+                    </React.Suspense>
+                  </Modal.Body>
+                </Modal.Dialog>
+              </Modal.Container>
+            </Modal.Backdrop>
+          </Modal>
         )}
         {isAdmin && deleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">

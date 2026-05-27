@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
 
-type Registration = {
+export type Registration = {
   id: string;
   ownerId?: string;
   team?: Array<{ id: string; displayName?: string; goldTee?: boolean }>;

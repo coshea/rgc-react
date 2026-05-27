@@ -156,8 +156,6 @@ declare module "@heroui/react" {
 
   // ── Checkbox ──────────────────────────────────────────────────────────────
   interface CheckboxRootProps {
-    /** @deprecated v3 – use isSelected from react-aria (should already work) */
-    isSelected?: boolean;
     /** @deprecated v3 – use onChange */
     onValueChange?: (value: boolean) => void;
     classNames?: Record<string, string>;
