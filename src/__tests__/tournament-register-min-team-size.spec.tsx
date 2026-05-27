@@ -30,11 +30,11 @@ vi.mock("@/hooks/useUsers", () => ({
 const {
   fetchTournamentMock,
   upsertRegistrationMock,
-  fetchUserRegistrationMock,
+  fetchAllRegistrationsMock,
 } = vi.hoisted(() => ({
   upsertRegistrationMock: vi.fn(async () => "reg1"),
-  fetchUserRegistrationMock: vi.fn(
-    async (): Promise<FetchUserRegistrationReturn> => null,
+  fetchAllRegistrationsMock: vi.fn(
+    async () => [] as FetchUserRegistrationReturn[],
   ),
   fetchTournamentMock: vi.fn(async (_id: string) => ({
     ...openRegistrationWindow(),
@@ -53,8 +53,8 @@ const {
 // Mock tournaments API
 vi.mock("@/api/tournaments", () => ({
   fetchTournament: fetchTournamentMock,
-  fetchUserRegistration: fetchUserRegistrationMock,
-  fetchAllRegistrations: vi.fn(async () => []),
+  fetchUserRegistration: vi.fn(async () => null),
+  fetchAllRegistrations: fetchAllRegistrationsMock,
   upsertRegistration: upsertRegistrationMock,
   deleteRegistration: vi.fn(async () => {}),
 }));
@@ -185,14 +185,16 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
       tee: "Mixed",
     });
     // Pre-fill with 2 players so min is met and 2 slots remain open
-    fetchUserRegistrationMock.mockResolvedValueOnce({
-      id: "reg1",
-      team: [
-        { id: "u1", displayName: "Alpha" },
-        { id: "u2", displayName: "Beta" },
-      ],
-      ownerId: "u1",
-    });
+    fetchAllRegistrationsMock.mockResolvedValueOnce([
+      {
+        id: "reg1",
+        team: [
+          { id: "u1", displayName: "Alpha" },
+          { id: "u2", displayName: "Beta" },
+        ],
+        ownerId: "u1",
+      },
+    ]);
 
     renderPage();
     await screen.findByText(/Register for\s+Four Player Tourney/i);
@@ -241,15 +243,17 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
       tee: "Mixed",
     });
     // Pre-fill both slots so the team is full and partner-team card should show
-    fetchUserRegistrationMock.mockResolvedValueOnce({
-      id: "reg2",
-      team: [
-        { id: "u1", displayName: "Alpha" },
-        { id: "u2", displayName: "Beta" },
-      ],
-      ownerId: "u1",
-      openSpotsOptIn: false,
-    });
+    fetchAllRegistrationsMock.mockResolvedValueOnce([
+      {
+        id: "reg2",
+        team: [
+          { id: "u1", displayName: "Alpha" },
+          { id: "u2", displayName: "Beta" },
+        ],
+        ownerId: "u1",
+        openSpotsOptIn: false,
+      },
+    ]);
 
     renderPage();
     await screen.findByText(/Register for\s+Two Player Tourney/i);

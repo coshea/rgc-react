@@ -6,6 +6,7 @@ import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
 import { executeRecaptcha } from "@/utils/recaptcha";
 import { isRegistrationOpen } from "@/utils/tournamentStatus";
+import type { User } from "@/api/users";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
@@ -21,16 +22,15 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const { users } = useUsers();
-  // Tournament registration is open to all authenticated users.
-  // We still use the known users list to populate teammate selection.
-  const selectableUsers = users;
+  const { users, isLoading: usersLoading } = useUsers();
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
   const [submitting, setSubmitting] = React.useState(false);
   const [goldTees, setGoldTees] = React.useState<string[]>([]);
   const { user } = useAuth();
+  const [hasEditedExistingTeam, setHasEditedExistingTeam] =
+    React.useState(false);
   const [registrationId, setRegistrationId] = React.useState<string | null>(
     null,
   );
@@ -116,18 +116,94 @@ const TournamentRegister: React.FC = () => {
     });
   }, [registrations, user?.uid]);
 
+  const ownerRegistration = React.useMemo(() => {
+    if (!user?.uid) return null;
+    return registrations.find((reg) => reg?.ownerId === user.uid) ?? null;
+  }, [registrations, user?.uid]);
+
+  const currentUserRegistration = ownerRegistration ?? memberRegistration;
+
   const isTeamMemberNonLeader = Boolean(
-    memberRegistration?.ownerId && memberRegistration.ownerId !== user?.uid,
+    !ownerRegistration &&
+    memberRegistration?.ownerId &&
+    memberRegistration.ownerId !== user?.uid,
   );
 
-  const memberTeam = Array.isArray(memberRegistration?.team)
-    ? memberRegistration.team
+  const memberTeam = Array.isArray(currentUserRegistration?.team)
+    ? currentUserRegistration.team
     : [];
 
-  const leaderName = memberRegistration?.ownerId
+  const ownerTeam = Array.isArray(ownerRegistration?.team)
+    ? ownerRegistration.team
+    : [];
+
+  const savedOwnerTeamIds = React.useMemo<string[]>(() => {
+    const maybeMemberIds = (ownerRegistration as Record<string, unknown> | null)
+      ?.memberIds;
+    if (Array.isArray(maybeMemberIds)) {
+      const memberIds = maybeMemberIds
+        .map((id) => (typeof id === "string" ? id : ""))
+        .filter(Boolean);
+      if (memberIds.length > 0) {
+        return memberIds;
+      }
+    }
+
+    return ownerTeam
+      .map((member: unknown) => {
+        if (typeof member !== "object" || member === null) return "";
+        const record = member as Record<string, unknown>;
+        return typeof record.id === "string" ? record.id : "";
+      })
+      .filter(Boolean);
+  }, [ownerRegistration, ownerTeam]);
+
+  const restoredTeamUsers = React.useMemo<User[]>(() => {
+    const byId = new Map<string, User>();
+
+    ownerTeam.forEach((member: unknown) => {
+      if (typeof member !== "object" || member === null) return;
+      const record = member as Record<string, unknown>;
+      const id = typeof record.id === "string" ? record.id : "";
+      if (!id) return;
+      const displayName =
+        typeof record.displayName === "string" ? record.displayName : undefined;
+      byId.set(id, { id, displayName });
+    });
+
+    savedOwnerTeamIds.forEach((id: string) => {
+      if (byId.has(id)) return;
+      const existingUser = users.find((userEntry) => userEntry.id === id);
+      byId.set(id, existingUser ?? { id });
+    });
+
+    return Array.from(byId.values());
+  }, [ownerTeam, savedOwnerTeamIds, users]);
+
+  const editorTeammates: string[] =
+    registrationId && !hasEditedExistingTeam && savedOwnerTeamIds.length > 0
+      ? savedOwnerTeamIds
+      : teammates;
+
+  // Tournament registration is open to all authenticated users.
+  // Seed the options list with the saved team so restored members can render
+  // even when the users directory arrives later or is temporarily incomplete.
+  const selectableUsers = React.useMemo(() => {
+    if (restoredTeamUsers.length === 0) return users;
+    const byId = new Map<string, User>();
+    users.forEach((existing) => byId.set(existing.id, existing));
+    restoredTeamUsers.forEach((existing) => {
+      if (!byId.has(existing.id)) {
+        byId.set(existing.id, existing);
+      }
+    });
+    return Array.from(byId.values());
+  }, [restoredTeamUsers, users]);
+
+  const leaderName = currentUserRegistration?.ownerId
     ? memberTeam.find(
         (m: { id?: string; displayName?: string }) =>
-          m?.id === memberRegistration.ownerId,
+          m?.id === currentUserRegistration.ownerId,
       )?.displayName || "team leader"
     : "team leader";
 
@@ -208,49 +284,40 @@ const TournamentRegister: React.FC = () => {
     }
   }, [loading, user, navigate, firestoreId]);
 
-  // load existing registration for current user
+  // Restore existing registration state from the already-loaded registrations list.
+  // memberRegistration is derived from fetchAllRegistrations (loaded for conflict detection),
+  // so no separate Firestore query is needed. This also eliminates the race condition between
+  // the two independent queries that caused teammates to not be pre-populated.
   React.useEffect(() => {
-    const fetchExistingRegistration = async () => {
-      if (!firestoreId || !user || !user.uid) return;
-      try {
-        const api = await import("@/api/tournaments");
-        const existing = await api.fetchUserRegistration(firestoreId, user.uid);
-        if (existing) {
-          setRegistrationId(existing.id);
-          const maybeTeam = (existing as Record<string, unknown>).team;
-          const maybeOptIn = (existing as Record<string, unknown>)
-            .openSpotsOptIn;
-          setOpenSpotsOptIn(maybeOptIn === true);
-          if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
-            const ids = maybeTeam.map((m) =>
-              typeof m === "object" && m !== null
-                ? (m as Record<string, unknown>).id
-                : "",
-            );
-            const cleaned = ids
-              .map((id) => (typeof id === "string" ? id : ""))
-              .filter(Boolean);
-            setTeammates(cleaned.length ? cleaned : [""]);
-            // Restore gold tee selections
-            const goldTeeIds = maybeTeam
-              .filter(
-                (m) =>
-                  typeof m === "object" &&
-                  m !== null &&
-                  (m as Record<string, unknown>).goldTee === true,
-              )
-              .map((m) => (m as Record<string, unknown>).id as string)
-              .filter(Boolean);
-            setGoldTees(goldTeeIds);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load existing registration", err);
-      }
-    };
+    // Only pre-populate for the current user as team leader; non-leaders are handled separately
+    if (!ownerRegistration || ownerRegistration.ownerId !== user?.uid) return;
+    // Only initialize once — don't overwrite the user's edits after initial load
+    if (registrationId) return;
 
-    fetchExistingRegistration();
-  }, [firestoreId, user]);
+    setRegistrationId(ownerRegistration.id as string);
+    setHasEditedExistingTeam(false);
+
+    const maybeOptIn = (ownerRegistration as Record<string, unknown>)
+      .openSpotsOptIn;
+    setOpenSpotsOptIn(maybeOptIn === true);
+
+    if (savedOwnerTeamIds.length > 0) {
+      setTeammates(savedOwnerTeamIds);
+      // Restore gold tee selections
+      const maybeTeam = (ownerRegistration as Record<string, unknown>).team;
+      const teamMembers = Array.isArray(maybeTeam) ? maybeTeam : [];
+      const goldTeeIds = teamMembers
+        .filter(
+          (m: unknown) =>
+            typeof m === "object" &&
+            m !== null &&
+            (m as Record<string, unknown>).goldTee === true,
+        )
+        .map((m: unknown) => (m as Record<string, unknown>).id as string)
+        .filter(Boolean);
+      setGoldTees(goldTeeIds);
+    }
+  }, [ownerRegistration, registrationId, savedOwnerTeamIds, user?.uid]);
 
   const maxTeamSize = tournament?.players ?? 1;
   const minTeamSize = maxTeamSize <= 1 ? 1 : 2;
@@ -268,8 +335,8 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament?.firestoreId, minTeamSize]);
 
-  const selectedCount = teammates.filter(
-    (t) => t && t.trim().length > 0,
+  const selectedCount = editorTeammates.filter(
+    (t: string) => t && t.trim().length > 0,
   ).length;
   const effectiveSelectedCount =
     selectedCount > 0
@@ -281,9 +348,11 @@ const TournamentRegister: React.FC = () => {
 
   const openSlotsCount = Math.max(maxTeamSize - effectiveSelectedCount, 0);
 
-  // Sanitize teammate IDs if users list changes (remove ids not present anymore)
+  // Sanitize teammate IDs if users list changes (remove ids not present anymore).
+  // Do not clear restored registration ids while the users list is still empty or still loading.
   React.useEffect(() => {
-    if (!users || users.length === 0) return;
+    if (registrationId) return;
+    if (!users || users.length === 0 || usersLoading) return;
     const valid = new Set(selectableUsers.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
@@ -295,7 +364,7 @@ const TournamentRegister: React.FC = () => {
     if (cleaned.length === 0) cleaned.push("");
     if (changed) setTeammates(cleaned);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users]);
+  }, [registrationId, users, usersLoading]);
 
   if (loading) return <div>Loading...</div>;
 
@@ -346,7 +415,9 @@ const TournamentRegister: React.FC = () => {
     }
 
     // validate teammates - ensure no empty selections
-    let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    let selectedIds = editorTeammates.filter(
+      (t: string) => t && t.trim().length > 0,
+    );
     // Fallback: if nothing selected yet but the current user is in our users list,
     // auto-include them as team leader to avoid a race with the auto-select effect.
     if (
@@ -378,7 +449,7 @@ const TournamentRegister: React.FC = () => {
     }
 
     // map ids to display names (never surface raw id in UI; raw id only persisted behind the scenes)
-    const members = selectedIds.map((id) => {
+    const members = selectedIds.map((id: string) => {
       const u = selectableUsers.find((x) => x.id === id);
       return {
         id,
@@ -388,7 +459,7 @@ const TournamentRegister: React.FC = () => {
     });
 
     // avoid duplicates
-    const idsSet = new Set(members.map((m) => m.id));
+    const idsSet = new Set(members.map((m: { id: string }) => m.id));
     if (idsSet.size !== members.length) {
       addToast({
         title: "Error",
@@ -462,6 +533,7 @@ const TournamentRegister: React.FC = () => {
         color: "danger",
       });
       setRegistrationId(null);
+      setHasEditedExistingTeam(false);
       setTeammates([""]);
       setOpenSpotsOptIn(false);
       setGoldTees([]);
@@ -548,13 +620,17 @@ const TournamentRegister: React.FC = () => {
                 )}
 
                 <RegistrationEditor
-                  value={teammates}
+                  value={editorTeammates}
                   onChange={(next) => {
+                    if (registrationId) {
+                      setHasEditedExistingTeam(true);
+                    }
                     setTeammates(next);
                     pendingMembersRef.current = null;
                     setConflictsAcknowledged(false);
                   }}
                   users={selectableUsers}
+                  selectedUsers={restoredTeamUsers}
                   maxSize={maxTeamSize}
                   labels={{ leader: "Team Leader / You" }}
                   disabled={!user?.uid}
@@ -562,6 +638,7 @@ const TournamentRegister: React.FC = () => {
                   onGoldTeesChange={
                     tournament.goldTeesEnabled ? setGoldTees : undefined
                   }
+                  preserveUnknownIds={Boolean(registrationId)}
                 />
 
                 {maxTeamSize > 1 && openSlotsCount > 0 && hasMinTeamSize ? (
@@ -657,7 +734,7 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full sm:w-auto"
-                      variant="tertiary"
+                      variant="danger"
                       onPress={() => setConfirmOpen(true)}
                       isDisabled={deleting}
                     >
@@ -710,7 +787,7 @@ const TournamentRegister: React.FC = () => {
               onOpenChange={(open) => setConfirmOpen(open)}
             >
               <Modal.Container size="md">
-                <Modal.Dialog>
+                <Modal.Dialog aria-label="Cancel registration confirmation">
                   <>
                     <Modal.Header>Cancel registration</Modal.Header>
                     <Modal.Body>
@@ -748,7 +825,10 @@ const TournamentRegister: React.FC = () => {
             }}
           >
             <Modal.Container size="lg">
-              <Modal.Dialog data-testid="conflict-modal">
+              <Modal.Dialog
+                aria-label="Player already registered"
+                data-testid="conflict-modal"
+              >
                 <>
                   <Modal.Header>Player Already Registered</Modal.Header>
                   <Modal.Body>
@@ -756,7 +836,7 @@ const TournamentRegister: React.FC = () => {
                       One or more selected teammates already appear on another
                       registered team.
                     </p>
-                    <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                    <div className="space-y-4 max-h-72 overflow-auto px-3">
                       {conflicts.map((c, idx) => {
                         const resolveName = (id: string) => {
                           const u = selectableUsers.find((fm) => fm.id === id);
@@ -773,59 +853,56 @@ const TournamentRegister: React.FC = () => {
                         );
                         const conflictPlayerResolved = resolveName(c.playerId);
                         return (
-                          <Card
+                          <Alert
                             key={c.playerId + idx}
-                            className="p-3 border border-warning-300/50 bg-warning dark:bg-warning/10"
+                            className="my-3"
+                            status="warning"
                             data-testid="conflict-team-card"
                           >
-                            <Card.Content className="p-0">
-                              <div className="flex items-start gap-4">
-                                <div className="flex -space-x-2">
-                                  {teamMemberIds.map((mid) => {
-                                    const memberUser = selectableUsers.find(
-                                      (u) => u.id === mid,
-                                    );
-                                    const label = resolveName(mid);
-                                    return (
-                                      <div
-                                        key={mid}
-                                        className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
-                                        aria-label={label}
-                                      >
-                                        {memberUser?.displayName
-                                          ? memberUser.displayName
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)
-                                          : label
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <p className="text-sm">
-                                    <span className="font-medium">
-                                      {conflictPlayerResolved}
-                                    </span>{" "}
-                                    is already on this team:
-                                  </p>
-                                  <div
-                                    className="text-xs text-muted space-y-0.5"
-                                    data-testid="conflict-team-names"
-                                  >
-                                    {teamMemberIds.map((id) => (
-                                      <div key={id}>{resolveName(id)}</div>
-                                    ))}
-                                  </div>
-                                </div>
+                            <Alert.Indicator>
+                              <div className="flex -space-x-2">
+                                {teamMemberIds.map((mid) => {
+                                  const memberUser = selectableUsers.find(
+                                    (u) => u.id === mid,
+                                  );
+                                  const label = resolveName(mid);
+                                  return (
+                                    <div
+                                      key={mid}
+                                      className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
+                                      aria-label={label}
+                                    >
+                                      {memberUser?.displayName
+                                        ? memberUser.displayName
+                                            .split(/\s+/)
+                                            .map((p) => p[0])
+                                            .join("")
+                                            .slice(0, 2)
+                                        : label
+                                            .split(/\s+/)
+                                            .map((p) => p[0])
+                                            .join("")
+                                            .slice(0, 2)}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            </Card.Content>
-                          </Card>
+                            </Alert.Indicator>
+                            <Alert.Content>
+                              <Alert.Title>
+                                {conflictPlayerResolved} is already on this
+                                team:
+                              </Alert.Title>
+                              <Alert.Description
+                                className="space-y-0.5 mt-0.5"
+                                data-testid="conflict-team-names"
+                              >
+                                {teamMemberIds.map((id) => (
+                                  <div key={id}>{resolveName(id)}</div>
+                                ))}
+                              </Alert.Description>
+                            </Alert.Content>
+                          </Alert>
                         );
                       })}
                     </div>

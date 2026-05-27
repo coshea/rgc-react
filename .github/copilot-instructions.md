@@ -5,7 +5,7 @@ Concise, project-specific guidance for AI coding agents. Focus on these conventi
 ## 1. Tech & Build Essentials
 
 - Stack: React 18 + TypeScript, Vite, HeroUI, Tailwind v4, React Router v6, TanStack Query, Firebase (Auth/Firestore/Storage), Vitest + RTL.
-- Key scripts: `npm run dev` (serve), `npm run build` (type-check + Vite), `npm test` (unit tests), `npm run firebase` (build + deploy). Always run `npm run build` after edits that modify TypeScript types, component interfaces, Firebase interactions, routing, or provider configuration. Simple text or style-only edits do not require a build check.
+- Key scripts: `npm run dev` (serve), `npm run build` (type-check + Vite), `npm test` (unit tests), `npm run firebase` (build + deploy). Always run `npm run build-full` after edits that modify TypeScript types, component interfaces, Firebase interactions, routing, or provider configuration. Edits that only change string literals in JSX, with no prop changes, logic changes, or type-annotated variable changes, or that only add or remove Tailwind utility classes inside existing `className` strings do not require a build check.
 - Path alias: `@` -> `src`. Vite + vitest configs mirror this.
 
 ## 2. App Composition & Data Flow
@@ -45,16 +45,21 @@ Concise, project-specific guidance for AI coding agents. Focus on these conventi
 - In new code, prefer HeroUI primitives and composition. Use `onPress` on HeroUI components, prefer HeroUI-specific props or compound APIs over direct React Aria primitives, and compose patterns such as `Dropdown` + `DropdownTrigger` + `Button` instead of ad-hoc `div` wrappers.
 - If you need a pressable around a non-HeroUI element, or a clickable `UserAvatar`, wrap it in a HeroUI `Button` or `Link`. `UserAvatar` intentionally does NOT forward `onPress` to the DOM.
 - Toasts: call `addToast({ title, description, color })` (provided globally) for user feedback; prefer success/error semantics already used in editors.
-- Modals: use the existing lightweight fixed overlay div pattern (see membership directory & tournament editor). Only extract a reusable modal component when the same structure is needed in 3 or more places. Never use `window.confirm`.
+- Modals: use the existing lightweight fixed overlay div pattern (see membership directory & tournament editor). This modal-shell rule overrides the general subcomponent extraction rule in Section 8. Keep the modal shell in the feature file until the same shell structure is needed in 3 or more places; then extract the shared modal shell into `src/components/`. Small modal-specific child pieces are still fine when they keep a feature component readable. Never use `window.confirm`.
 - Form validation: local state `errors` object + HeroUI `isInvalid`/`errorMessage` props (see `tournament-editor.tsx`). Extend this pattern if adding fields.
 - Phone numbers: normalize to digits, format `(xxx) xxx-xxxx` when length 10 (helpers in directory page & CSV service). Reuse instead of re-implementing.
-- Prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML interactive elements unless no equivalent exists or the control is a specialized performance-critical primitive. If raw HTML is necessary, keep it accessible and document why. For legacy code in files you touch, preserve the local pattern unless the requested change already requires replacing that control.
+- Prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML interactive elements in net-new code and on the specific lines changed to implement a request, unless no equivalent exists or the control is a specialized performance-critical primitive. Legacy preservation takes priority over this preference elsewhere in a touched file: preserve the local pattern unless the specific line being modified uses a raw HTML interactive element that must be changed to implement the requested feature. Do not proactively upgrade surrounding legacy controls. If raw HTML is necessary on a changed line, keep it accessible and document why.
 
 - Keep icon-only controls labeled, keep focus visible, and prefer component props (variant/size/radius/isIconOnly) plus Tailwind utilities over bespoke inline styles.
 
 ### Avatar (UserAvatar) Fallback Contract
 
-Use `UserAvatar` with: explicit `src` > `user.profileURL` > `user.photoURL` > initials (derived from name/displayName/email). Pass the full `user` object when available; do NOT manually repeat `(profileURL || photoURL)` chains in components. Only provide `name` if no `user` is passed or you need to override display text. Alt text auto-derives from resolved name unless overridden.
+Use `UserAvatar` with: explicit `src` > `user.profileURL` > `user.photoURL` > initials (derived from name/displayName/email). Apply this decision order:
+
+- If a full `User` object is available, pass it as `user` and do not manually repeat `(profileURL || photoURL)` chains.
+- If only partial data is available, such as a CSV row, pass `name` with an explicit fallback string and optionally `src` if you have a standalone image URL.
+- Never pass both `user` and `name` unless you are intentionally overriding the display text.
+- Alt text auto-derives from the resolved name unless overridden.
 
 ## 7. React Query Patterns
 
@@ -63,12 +68,12 @@ Use `UserAvatar` with: explicit `src` > `user.profileURL` > `user.photoURL` > in
 
 ## 8. Performance & Code Organization
 
-- Prefer dynamic Firestore imports (`import('firebase/firestore')`) inside event handlers/effects for large, conditional code paths (see `tournament-editor.tsx`). Follow this for new admin-only heavy interactions.
-- Keep components focused: large feature editors group concerns (validation, conditional sections, live lists) but still compartmentalize sub-features (e.g. `WinnerForm`, `RegistrationsList`). Add new subcomponents in `src/components/` not inline blobs.
+- Prefer dynamic imports of Firestore SDK helpers from `firebase/firestore` inside event handlers or effects for large, conditional code paths (see `tournament-editor.tsx`). Keep importing initialized app services from `src/config/firebase.ts`; do not dynamically import or recreate Firebase config.
+- Keep components focused: large feature editors group concerns (validation, conditional sections, live lists) but still compartmentalize sub-features (e.g. `WinnerForm`, `RegistrationsList`). For non-modal UI, extract new subcomponents to `src/components/` instead of growing inline render blobs. For modal shells, follow the Section 6 modal rule.
 
 ## 9. Testing Practices
 
-- Tests live in `src/__tests__/` and target role logic, profile hook, storage & tournament detail behaviors. When adding features, colocate new tests there; use Vitest + RTL with `jsdom` env (already configured). Reuse existing query patterns instead of mocking Firestore ad hoc where possible.
+- Tests live in `src/__tests__/` and target role logic, profile hook, storage & tournament detail behaviors. When adding features, colocate new tests there; use Vitest + RTL with `jsdom` env (already configured). Mock Firestore only when no existing test helper or query pattern in `src/__tests__/` covers the collection being tested; otherwise import and reuse the existing setup.
 
 ## 10. Safe Change Checklist (apply before large PRs)
 
