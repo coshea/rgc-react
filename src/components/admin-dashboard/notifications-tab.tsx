@@ -391,7 +391,7 @@ export function NotificationsTab() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       {/* ── Compose form ──────────────────────────────────────────────── */}
       <section className="bg-surface rounded-xl p-6 mb-8 border">
         <h2 className="text-base font-semibold text-foreground mb-4">
@@ -487,8 +487,10 @@ export function NotificationsTab() {
                       id={t.value}
                       textValue={t.label}
                     >
-                      <Icon icon={t.icon} className="text-base" />
-                      {t.label}
+                      <span className="flex items-center gap-1.5">
+                        <Icon icon={t.icon} className="text-base shrink-0" />
+                        {t.label}
+                      </span>
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
                   ))}

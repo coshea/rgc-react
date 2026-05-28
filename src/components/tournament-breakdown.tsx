@@ -611,7 +611,7 @@ export function TournamentBreakdown({ year }: Props) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      radius="sm"
+                      className="rounded-sm"
                       onPress={() => toggle(id)}
                       aria-expanded={isOpen}
                       aria-controls={`results-${id}`}

@@ -25,10 +25,9 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
       isIconOnly
       variant="ghost"
       size="sm"
-      radius="full"
       aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
       onPress={() => setTheme(isLight ? "dark" : "light")}
-      className={clsx("text-muted", className)}
+      className={clsx("text-muted rounded-full", className)}
     >
       {isLight ? <MoonFilledIcon size={18} /> : <SunFilledIcon size={18} />}
     </Button>

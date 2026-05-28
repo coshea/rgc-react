@@ -163,10 +163,9 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               <Button
                 isIconOnly
                 variant="ghost"
-                radius="full"
                 size="sm"
                 aria-label="Close search"
-                className="sm:hidden text-muted shrink-0"
+                className="sm:hidden text-muted shrink-0 rounded-full"
                 onPress={onClose}
               >
                 <Icon icon="lucide:x" className="text-lg" />

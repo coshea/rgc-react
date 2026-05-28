@@ -80,13 +80,13 @@ vi.mock("@heroui/react", async (importOriginal) => {
             {children}
           </li>
         ),
-        Section: ({ children, title }: any) => (
-          <li role="group" aria-label={title}>
-            {children}
-          </li>
+        Section: ({ children }: any) => (
+          <li role="group">{children}</li>
         ),
       },
     ),
+    Header: ({ children }: any) => <span data-testid="dropdown-header">{children}</span>,
+    Separator: () => <hr />,
     Link: ({ children, href }: any) => <a href={href}>{children}</a>,
     // Keep Avatar behavior close enough for click handling
     Avatar: ({
@@ -148,10 +148,8 @@ describe("ProfileDropdown accessibility", () => {
   it("opens menu when avatar (button) is clicked and is keyboard focusable", () => {
     render(<ProfileDropdown />);
 
-    // Locate the avatar button (UserAvatar renders initials or name) - our stub uses name prop
-    const avatarBtn = screen.getByRole("button", {
-      name: /test user|auth user/i,
-    });
+    // Target the outer profile menu trigger button
+    const avatarBtn = screen.getByRole("button", { name: /profile menu/i });
     expect(avatarBtn).toBeInTheDocument();
     expect(avatarBtn).toHaveAttribute("aria-label");
 
@@ -210,5 +208,16 @@ describe("ProfileDropdown admin section visibility", () => {
     });
     render(<ProfileDropdown />);
     expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
+  });
+
+  it("renders Admin section header label for admin user", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: true, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: false,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    const header = screen.getByTestId("dropdown-header");
+    expect(header).toHaveTextContent(/admin/i);
   });
 });

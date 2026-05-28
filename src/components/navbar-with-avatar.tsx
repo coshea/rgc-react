@@ -154,10 +154,9 @@ export const MainNavbar = () => {
             <Button
               isIconOnly
               variant="ghost"
-              radius="full"
               size="sm"
               aria-label="Search"
-              className="text-muted"
+              className="text-muted rounded-full"
               onPress={() => setIsSearchOpen(true)}
             >
               <Icon icon="lucide:search" className="text-lg" />
@@ -170,16 +169,14 @@ export const MainNavbar = () => {
             ) : (
               <div className="ml-2 flex gap-2">
                 <Button
-                  className="text-muted"
-                  radius="full"
+                  className="text-muted rounded-full"
                   variant="ghost"
                   onPress={() => navigate(siteConfig.pages.login.link)}
                 >
                   {siteConfig.pages.login.title}
                 </Button>
                 <Button
-                  className="bg-foreground font-medium text-background"
-                  radius="full"
+                  className="bg-foreground font-medium text-background rounded-full"
                   variant="tertiary"
                   onPress={() => navigate(siteConfig.pages.signup.link)}
                 >

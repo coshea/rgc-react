@@ -92,8 +92,7 @@ export default function NavDropdown({
   return (
     <div className="relative" ref={containerRef}>
       <Button
-        className="p-0 bg-transparent text-muted inline-flex items-center gap-1"
-        radius="sm"
+        className="p-0 bg-transparent text-muted inline-flex items-center gap-1 rounded-sm"
         variant="ghost"
         aria-haspopup="true"
         aria-expanded={open}

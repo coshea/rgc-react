@@ -1,4 +1,4 @@
-import { Button, Dropdown } from "@heroui/react";
+import { Button, Dropdown, Header, Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
@@ -58,19 +58,44 @@ export const ProfileDropdown = () => {
           <Dropdown.Menu aria-label="Profile Actions">
             <Dropdown.Item
               id="profile-info"
-              className="h-14 gap-2"
+              className="gap-3 py-3"
               isReadOnly
               textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
             >
-              <span className="block text-xs text-muted">Signed in as</span>
-              <span className="block truncate max-w-[200px] text-sm">
-                {user?.email ?? "user@example.com"}
-              </span>
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  size="sm"
+                  user={
+                    userProfile ??
+                    (user
+                      ? {
+                          id: user.uid,
+                          displayName: user.displayName ?? undefined,
+                          email: user.email ?? undefined,
+                          photoURL: user.photoURL ?? undefined,
+                        }
+                      : undefined)
+                  }
+                />
+                <div className="flex flex-col min-w-0">
+                  {(userProfile?.displayName || user?.displayName) && (
+                    <span className="block text-sm font-medium truncate max-w-[180px]">
+                      {userProfile?.displayName ?? user?.displayName}
+                    </span>
+                  )}
+                  <span className="block truncate max-w-[180px] text-xs text-muted">
+                    {user?.email ?? "user@example.com"}
+                  </span>
+                </div>
+              </div>
             </Dropdown.Item>
 
             <Dropdown.Item
               id="settings"
               textValue="My Profile"
+              startContent={
+                <Icon icon="lucide:user" className="text-base text-muted" />
+              }
               onPress={() => {
                 const href = user
                   ? `/profile/${user.uid}`
@@ -86,6 +111,9 @@ export const ProfileDropdown = () => {
               closeOnSelect={false}
               className="cursor-default"
               textValue="Theme"
+              startContent={
+                <Icon icon="lucide:sun-moon" className="text-base text-muted" />
+              }
             >
               <div className="flex items-center justify-between w-full">
                 <span className="text-sm text-foreground">Theme</span>
@@ -94,26 +122,43 @@ export const ProfileDropdown = () => {
             </Dropdown.Item>
 
             {(isAdmin || isBoardMember) && (
-              <Dropdown.Section title="Admin">
-                <Dropdown.Item
-                  id="admin-dashboard"
-                  textValue="Admin Dashboard"
-                  onPress={() => {
-                    window.location.href = siteConfig.pages.adminDashboard.link;
-                  }}
-                >
-                  <Icon
-                    icon="lucide:layout-dashboard"
-                    className="inline-block text-base text-muted mr-1.5 align-middle"
-                  />
-                  Admin Dashboard
-                </Dropdown.Item>
-              </Dropdown.Section>
+              <>
+                <Separator />
+                <Dropdown.Section>
+                  <Header>Admin</Header>
+                  <Dropdown.Item
+                    id="admin-dashboard"
+                    textValue="Admin Dashboard"
+                    startContent={
+                      <Icon
+                        icon="lucide:layout-dashboard"
+                        className="text-base text-muted"
+                      />
+                    }
+                    onPress={() => {
+                      window.location.href =
+                        siteConfig.pages.adminDashboard.link;
+                    }}
+                  >
+                    Admin Dashboard
+                  </Dropdown.Item>
+                </Dropdown.Section>
+              </>
             )}
 
-            <Dropdown.Item id="logout" onPress={logout}>
-              Log Out
-            </Dropdown.Item>
+            <Separator />
+            <Dropdown.Section>
+              <Dropdown.Item
+                id="logout"
+                color="danger"
+                startContent={
+                  <Icon icon="lucide:log-out" className="text-base" />
+                }
+                onPress={logout}
+              >
+                Log Out
+              </Dropdown.Item>
+            </Dropdown.Section>
           </Dropdown.Menu>
         </Dropdown.Popover>
       </Dropdown>

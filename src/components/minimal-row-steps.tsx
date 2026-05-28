@@ -35,7 +35,6 @@ export default function MinimalRowSteps({
             <div key={index} className="flex flex-1 items-center gap-2">
               <Button
                 isIconOnly
-                radius="full"
                 size="sm"
                 variant={isCurrent ? "primary" : "tertiary"}
                 aria-label={`Go to step ${index + 1}`}
