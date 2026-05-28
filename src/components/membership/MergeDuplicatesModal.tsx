@@ -292,7 +292,7 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
       isDismissable={!merging}
     >
       <Modal.Container size="lg" scroll="inside">
-        <Modal.Dialog>
+        <Modal.Dialog className="max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-5rem)]">
           <>
             <Modal.Header className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
