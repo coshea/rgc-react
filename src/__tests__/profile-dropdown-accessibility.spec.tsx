@@ -80,12 +80,12 @@ vi.mock("@heroui/react", async (importOriginal) => {
             {children}
           </li>
         ),
-        Section: ({ children }: any) => (
-          <li role="group">{children}</li>
-        ),
+        Section: ({ children }: any) => <li role="group">{children}</li>,
       },
     ),
-    Header: ({ children }: any) => <span data-testid="dropdown-header">{children}</span>,
+    Header: ({ children }: any) => (
+      <span data-testid="dropdown-header">{children}</span>
+    ),
     Separator: () => <hr />,
     Link: ({ children, href }: any) => <a href={href}>{children}</a>,
     // Keep Avatar behavior close enough for click handling
