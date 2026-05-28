@@ -228,11 +228,7 @@ export const BlogListPage: React.FC = () => {
         {filteredPosts.map((post) => (
           <Card
             key={post.id}
-            onPress={
-              !isAdmin
-                ? () => navigate(`/announcements/${post.slug}`)
-                : undefined
-            }
+            onClick={() => navigate(`/announcements/${post.slug}`)}
           >
             <Card.Content className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -280,23 +276,9 @@ export const BlogListPage: React.FC = () => {
                           </Chip>
                         )}
                       </div>
-                      {isAdmin ? (
-                        <Button
-                          variant="ghost"
-                          className="w-full h-auto p-0 data-[hover=true]:bg-transparent"
-                          onPress={() =>
-                            navigate(`/announcements/${post.slug}`)
-                          }
-                        >
-                          <h2 className="w-full text-lg md:text-2xl font-bold mb-2 line-clamp-2 text-left break-words">
-                            {post.title}
-                          </h2>
-                        </Button>
-                      ) : (
-                        <h2 className="text-lg md:text-2xl font-bold mb-2 line-clamp-2 break-words">
-                          {post.title}
-                        </h2>
-                      )}
+                      <h2 className="text-lg md:text-2xl font-bold mb-2 line-clamp-2 break-words">
+                        {post.title}
+                      </h2>
                       {post.excerpt && (
                         <p className="text-muted mb-3 line-clamp-2">
                           {post.excerpt}

@@ -143,9 +143,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           placeholder={placeholder}
           rows={minRows}
           fullWidth
-          classNames={{
-            input: "font-mono text-sm",
-          }}
+          className="font-mono text-sm"
         />
       )}
 
