@@ -738,6 +738,10 @@ const TournamentRegister: React.FC = () => {
                       onPress={() => setConfirmOpen(true)}
                       isDisabled={deleting}
                     >
+                      <Icon
+                        icon={deleting ? "lucide:loader" : "lucide:x-circle"}
+                        className={deleting ? "animate-spin" : ""}
+                      />
                       {deleting ? "Cancelling..." : "Cancel registration"}
                     </Button>
                   </div>
