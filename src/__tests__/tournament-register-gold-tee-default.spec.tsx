@@ -5,7 +5,9 @@ import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
 import { openRegistrationWindow } from "./tournament-utils";
 
-const upsertRegistrationMock = vi.fn(async () => {});
+const upsertRegistrationMock = vi.fn(
+  async (_tournamentId: string, _regId: string | null, _payload: unknown) => {},
+);
 
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ user: { uid: "u1", displayName: "Alpha" } }),
@@ -104,7 +106,10 @@ describe("TournamentRegister gold tee defaults", () => {
       expect(upsertRegistrationMock).toHaveBeenCalled();
     });
 
-    const payload = upsertRegistrationMock.mock.calls[0]?.[2] as {
+    const firstCall = upsertRegistrationMock.mock.calls[0];
+    expect(firstCall).toBeTruthy();
+
+    const payload = firstCall?.[2] as unknown as {
       team?: Array<{ id: string; displayName?: string; goldTee?: boolean }>;
     };
 
