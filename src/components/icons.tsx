@@ -1,5 +1,6 @@
 import { IconSvgProps } from "@/types";
 import rgcLogoPng from "@/assets/rgc_logo.png";
+import rgcLogoDarkPng from "@/assets/rgc_logo_dark.png";
 import rgcFavPng from "@/assets/rgc_icon.png";
 
 // export const RGCLogo = ({ className }: IconSvgProps) => {
@@ -8,7 +9,18 @@ import rgcFavPng from "@/assets/rgc_icon.png";
 
 export const RGCLogo = ({ className }: IconSvgProps) => {
   return (
-    <img className={className} src={rgcLogoPng} alt="Ridgefield Golf Club" />
+    <>
+      <img
+        className={`dark:hidden ${className ?? ""}`}
+        src={rgcLogoPng}
+        alt="Ridgefield Golf Club"
+      />
+      <img
+        className={`hidden dark:block ${className ?? ""}`}
+        src={rgcLogoDarkPng}
+        alt="Ridgefield Golf Club"
+      />
+    </>
   );
 };
 

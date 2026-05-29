@@ -2,12 +2,21 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   optimizeDeps: {},
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      // @heroui-pro/react requires tailwind-variants v3+ (exports cx); alias to
+      // the version already bundled alongside @heroui/react.
+      "tailwind-variants": path.resolve(
+        __dirname,
+        "node_modules/@heroui/react/node_modules/tailwind-variants",
+      ),
+    },
   },
   plugins: [
     react(),

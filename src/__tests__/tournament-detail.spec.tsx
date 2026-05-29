@@ -105,9 +105,7 @@ vi.mock("@/api/brackets", () => ({
     apiListeners[key] = apiListeners[key] || [];
     apiListeners[key].push(next);
     return () => {
-      apiListeners[key] = (apiListeners[key] || []).filter(
-        (fn) => fn !== next,
-      );
+      apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
     };
   },
 }));
@@ -127,6 +125,72 @@ vi.mock("remark-gfm", () => ({}));
 vi.mock("@/components/tournament-editor", () => ({
   TournamentEditor: () => <div data-testid="editor">Editor</div>,
 }));
+
+// Shim HeroUI v3 Input so fireEvent.change triggers onValueChange
+// Shim HeroUI v3 Card so onPress works as a native onClick in tests
+vi.mock("@heroui/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@heroui/react")>();
+
+  const CardMock = ({
+    children,
+    onPress,
+    "aria-label": ariaLabel,
+    className,
+    role,
+    tabIndex,
+    ...rest
+  }: any) => (
+    <div
+      role={onPress ? "button" : role}
+      tabIndex={onPress ? 0 : tabIndex}
+      aria-label={ariaLabel}
+      className={className}
+      onClick={onPress}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+  (CardMock as any).Content = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+  (CardMock as any).Header = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+  (CardMock as any).Footer = ({ children, className }: any) => (
+    <div className={className}>{children}</div>
+  );
+
+  return {
+    ...actual,
+    Card: CardMock,
+    Input: ({
+      label,
+      "aria-label": ariaLabel,
+      value,
+      onChange,
+      onValueChange,
+      isClearable: _isClearable,
+      onClear: _onClear,
+      startContent: _startContent,
+      ...rest
+    }: any) => (
+      <div>
+        {label && <label htmlFor={`input-${label}`}>{label}</label>}
+        <input
+          id={label ? `input-${label}` : undefined}
+          aria-label={ariaLabel ?? label}
+          value={value ?? ""}
+          onChange={(e) => {
+            if (onChange) onChange(e);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+      </div>
+    ),
+  };
+});
 
 function renderWithRoute(
   id: string,
@@ -655,21 +719,24 @@ describe("TournamentDetailPage", () => {
 
     vi.unstubAllGlobals();
 
-    // Header row should contain goldTee columns
-    expect(capturedCsv).toContain("member1_goldTee");
-    expect(capturedCsv).toContain("member2_goldTee");
-    // Header row should contain ghin columns
-    expect(capturedCsv).toContain("member1_ghin");
-    expect(capturedCsv).toContain("member2_ghin");
-    // Bob's goldTee cell should be "Gold"
-    expect(capturedCsv).toContain('"Gold"');
-    // Parse to verify column positions
+    // Header row should contain new column names
     const lines = capturedCsv.split("\n");
-    const dataLine = lines[1];
-    // Format: date,member1,member1_ghin,member1_goldTee,member2,member2_ghin,member2_goldTee
-    const cells = dataLine.split(",").map((c) => c.replace(/"/g, ""));
-    expect(cells[3]).toBe(""); // Alice goldTee empty
-    expect(cells[6]).toBe("Gold"); // Bob goldTee is Gold
+    expect(lines[0]).toContain("Team ID");
+    expect(lines[0]).toContain("Handle");
+    expect(lines[0]).toContain("GHIN");
+    expect(lines[0]).toContain("Tee");
+    // Bob's Tee cell should be "Gold"
+    expect(capturedCsv).toContain('"Gold"');
+    // One row per player: Alice (row 1) then Bob (row 2), both on team r1
+    // Format per row: Team ID,Handle,First Name,Last Name,Email,HCP Index,GHIN,Tee
+    const aliceCells = lines[1].split(",").map((c) => c.replace(/"/g, ""));
+    expect(aliceCells[0]).toBe("r1"); // Team ID
+    expect(aliceCells[1]).toBe("Alice"); // Handle
+    expect(aliceCells[7]).toBe(""); // Tee empty for Alice
+    const bobCells = lines[2].split(",").map((c) => c.replace(/"/g, ""));
+    expect(bobCells[0]).toBe("r1"); // Team ID
+    expect(bobCells[1]).toBe("Bob"); // Handle
+    expect(bobCells[7]).toBe("Gold"); // Tee is Gold for Bob
   });
 
   describe("Bracket visibility", () => {
@@ -684,7 +751,10 @@ describe("TournamentDetailPage", () => {
     it("non-admin does not see bracket section when bracketPublished is false", async () => {
       isAdminMock = false;
       renderWithRoute("bv1");
-      emitDoc("tournaments/bv1", { ...baseTournament, bracketPublished: false });
+      emitDoc("tournaments/bv1", {
+        ...baseTournament,
+        bracketPublished: false,
+      });
       emitBracket("bv1", minimalBracket);
       await screen.findByText("Club Championship");
       expect(screen.queryByText("Tournament Bracket")).toBeNull();

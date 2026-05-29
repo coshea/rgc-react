@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalBody,
-  Input,
-  Button,
-  Chip,
-  Divider,
-  Spinner,
-} from "@heroui/react";
+import { Modal, Input, Button, Chip, Separator, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -140,70 +131,48 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
     trimmedQuery.length > 0 && !showPages && !showTournaments && !loading;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onOpenChange={(open) => !open && onClose()}
-      size={isMobile ? "full" : "xl"}
-      placement={isMobile ? "top" : "auto"}
-      hideCloseButton
-      classNames={{
-        base: isMobile
-          ? "m-0 rounded-none rounded-b-xl max-h-[85dvh]"
-          : "mt-[10vh]",
-        body: "p-0",
-      }}
-      motionProps={{
-        variants: {
-          enter: { y: 0, opacity: 1, transition: { duration: 0.15 } },
-          exit: { y: -8, opacity: 0, transition: { duration: 0.1 } },
-        },
-      }}
-    >
-      <ModalContent>
-        {() => (
-          <ModalBody className="flex flex-col">
+    <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Container
+        size={isMobile ? "full" : "lg"}
+        placement={isMobile ? "top" : "center"}
+      >
+        <Modal.Dialog>
+          <Modal.Body className="flex flex-col">
             {/* Search input */}
             <div className="flex items-center px-4 py-3 gap-3">
               <Icon
                 icon="lucide:search"
-                className="text-default-400 shrink-0 text-xl"
+                className="text-muted shrink-0 text-xl"
               />
               <Input
                 ref={inputRef}
                 autoFocus
-                variant="flat"
-                classNames={{
-                  base: "flex-1",
-                  inputWrapper:
-                    "bg-transparent shadow-none border-none px-0 hover:bg-transparent data-[hover=true]:bg-transparent group-data-[focus=true]:bg-transparent",
-                  input: "text-base placeholder:text-default-400",
-                }}
+                className="flex-1 min-w-0 bg-transparent border-none shadow-none outline-none ring-0 px-0 text-base placeholder:text-muted focus:bg-transparent focus:border-none focus:shadow-none"
                 placeholder="Search pages and tournaments…"
                 value={searchQuery}
-                onValueChange={setSearchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") {
                     onClose();
                   }
                 }}
               />
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-default-200 bg-default-100 px-1.5 py-0.5 text-[11px] text-default-500 font-mono shrink-0">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border bg-default/60 px-1.5 py-0.5 text-[11px] text-muted font-mono shrink-0">
                 <span className="text-sm">⌘</span>K
               </kbd>
               <Button
                 isIconOnly
-                variant="light"
-                radius="full"
+                variant="ghost"
                 size="sm"
                 aria-label="Close search"
-                className="sm:hidden text-default-400 shrink-0"
+                className="sm:hidden text-muted shrink-0 rounded-full"
                 onPress={onClose}
               >
                 <Icon icon="lucide:x" className="text-lg" />
               </Button>
             </div>
 
-            <Divider />
+            <Separator />
 
             {/* Results */}
             <div className="overflow-y-auto pb-2 max-h-[60dvh] sm:max-h-[60vh]">
@@ -214,7 +183,7 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               )}
 
               {!loading && noResults && (
-                <p className="py-8 text-center text-sm text-default-400">
+                <p className="py-8 text-center text-sm text-muted">
                   No results for &ldquo;{searchQuery}&rdquo;
                 </p>
               )}
@@ -222,26 +191,26 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
               {/* Pages section */}
               {!loading && showPages && (
                 <section>
-                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                     Pages
                   </p>
                   {filteredPages.map((page) => (
                     <button
                       key={page.link}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default/60 transition-colors cursor-pointer"
                       onClick={() => handleSelect(page.link)}
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default/60">
                         <Icon
                           icon={page.icon ?? "lucide:file"}
-                          className="text-default-500 text-base"
+                          className="text-muted text-base"
                         />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-foreground">
                           {page.title}
                         </span>
-                        <span className="block truncate text-xs text-default-400">
+                        <span className="block truncate text-xs text-muted">
                           {page.description}
                         </span>
                       </span>
@@ -252,40 +221,40 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
 
               {/* Divider between sections */}
               {!loading && showPages && showTournaments && (
-                <Divider className="my-1" />
+                <Separator className="my-1" />
               )}
 
               {/* Tournaments section */}
               {!loading && showTournaments && (
                 <section>
-                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-default-400">
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
                     Tournaments
                   </p>
                   {filteredTournaments.map((t) => (
                     <button
                       key={t.firestoreId}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default-100 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-default/60 transition-colors cursor-pointer"
                       onClick={() =>
                         handleSelect(`/tournaments/${t.firestoreId}`)
                       }
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default-100">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-default/60">
                         <Icon
                           icon="lucide:calendar"
-                          className="text-default-500 text-base"
+                          className="text-muted text-base"
                         />
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium text-foreground">
                           {t.title}
                         </span>
-                        <span className="block text-xs text-default-400">
+                        <span className="block text-xs text-muted">
                           {formatDate(t.date)}
                         </span>
                       </span>
                       <Chip
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color={STATUS_COLOR[t.status]}
                         className="shrink-0"
                       >
@@ -298,14 +267,14 @@ export function GlobalSearchModal({ isOpen, onClose }: Props) {
 
               {/* Default state: hint when no query entered */}
               {!loading && !trimmedQuery && !noResults && (
-                <p className="py-5 text-center text-xs text-default-400">
+                <p className="py-5 text-center text-xs text-muted">
                   Type to search pages and tournaments
                 </p>
               )}
             </div>
-          </ModalBody>
-        )}
-      </ModalContent>
-    </Modal>
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

@@ -1,5 +1,14 @@
 import React from "react";
-import { Autocomplete, AutocompleteItem, Button } from "@heroui/react";
+import {
+  Autocomplete,
+  Button,
+  EmptyState,
+  Label,
+  ListBox,
+  SearchField,
+  useFilter,
+} from "@heroui/react";
+import type { Key } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
 
@@ -15,7 +24,7 @@ export interface UserSelectProps {
   required?: boolean;
   invalid?: boolean;
   errorMessage?: string;
-  allowCustomValue?: boolean; // default false
+  allowCustomValue?: boolean; // default false (unused with Autocomplete, kept for API compat)
   className?: string;
   /** When true and the current value references a missing user id, render a small hint below. */
   showRemovedHint?: boolean;
@@ -37,12 +46,10 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   required,
   invalid,
   errorMessage,
-  allowCustomValue = false,
   className,
   showRemovedHint,
 }) => {
-  // Hook must be unconditional (even though it's only used in multiple mode)
-  const [inputValue, setInputValue] = React.useState("");
+  const { contains } = useFilter({ sensitivity: "base" });
 
   // Alphabetical sort by displayName/email (case-insensitive)
   const sortedUsers = React.useMemo(() => {
@@ -59,7 +66,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
 
   const idSet = React.useMemo(
     () => new Set(sortedUsers.map((u) => u.id)),
-    [sortedUsers]
+    [sortedUsers],
   );
 
   const renderRemovedHint = () => {
@@ -79,29 +86,21 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   };
 
   if (multiple) {
-    // Multiple selection mode with autocomplete + selected list
+    // Multiple selection mode: single-add autocomplete + external chip list
     const selected = Array.isArray(value) ? (value as string[]) : [];
     const selectedSet = new Set(selected);
-    const remainingUsers = sortedUsers.filter((u) => !selectedSet.has(u.id));
+    const availableUsers = sortedUsers.filter((u) => !selectedSet.has(u.id));
     const canAddMore = !(
       typeof maxSelected === "number" &&
       maxSelected > 0 &&
       selected.length >= maxSelected
     );
-    const lowered = inputValue.trim().toLowerCase();
-    const filteredRemaining = lowered
-      ? remainingUsers.filter((u) => {
-          const text = (u.displayName || u.email || u.id || "").toLowerCase();
-          return text.includes(lowered);
-        })
-      : remainingUsers;
 
-    const addUser = (id: string | null) => {
-      if (!id) return;
-      if (selectedSet.has(id)) return;
-      if (!canAddMore) return;
+    const addUser = (key: Key | null) => {
+      if (!key) return;
+      const id = key as string;
+      if (selectedSet.has(id) || !canAddMore) return;
       onChange([...selected, id]);
-      setInputValue("");
     };
 
     const removeUser = (id: string) => {
@@ -111,30 +110,46 @@ export const UserSelect: React.FC<UserSelectProps> = ({
     return (
       <div className={className}>
         <Autocomplete
-          label={label}
+          selectionMode="single"
           placeholder={placeholder}
-          inputProps={{
-            classNames: {
-              input: "text-base",
-            },
-          }}
           isDisabled={disabled || !canAddMore}
           isRequired={required}
           isInvalid={invalid}
-          errorMessage={errorMessage}
-          menuTrigger="input"
-          allowsCustomValue={false}
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          items={filteredRemaining}
-          onSelectionChange={(key) => addUser(key as string)}
+          // Keep value null so the trigger always resets to placeholder after each pick
+          value={null}
+          onChange={addUser}
+          fullWidth
         >
-          {(u: User) => (
-            <AutocompleteItem key={u.id} textValue={displayFor(u)}>
-              {displayFor(u)}
-            </AutocompleteItem>
-          )}
+          {label && <Label>{label}</Label>}
+          <Autocomplete.Trigger>
+            <Autocomplete.Value />
+            <Autocomplete.Indicator />
+          </Autocomplete.Trigger>
+          <Autocomplete.Popover>
+            <Autocomplete.Filter filter={contains}>
+              <SearchField autoFocus name="user-search" variant="secondary">
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="Search..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+              <ListBox
+                renderEmptyState={() => <EmptyState>No users found</EmptyState>}
+              >
+                {availableUsers.map((u) => (
+                  <ListBox.Item key={u.id} id={u.id} textValue={displayFor(u)}>
+                    {displayFor(u)}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Autocomplete.Filter>
+          </Autocomplete.Popover>
         </Autocomplete>
+        {errorMessage && (
+          <div className="mt-1 text-danger text-sm">{errorMessage}</div>
+        )}
         {/* Selected list */}
         {selected.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -144,13 +159,13 @@ export const UserSelect: React.FC<UserSelectProps> = ({
               return (
                 <div
                   key={id}
-                  className="inline-flex items-center gap-1 bg-content2 rounded-full px-2 py-1 text-sm"
+                  className="inline-flex items-center gap-1 bg-surface-secondary rounded-full px-2 py-1 text-sm"
                 >
                   <span className="truncate max-w-[200px]">{labelText}</span>
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     aria-label={`Remove ${labelText}`}
                     onPress={() => removeUser(id)}
                   >
@@ -175,29 +190,44 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   return (
     <div className={className}>
       <Autocomplete
-        label={label}
+        selectionMode="single"
         placeholder={placeholder}
-        inputProps={{
-          classNames: {
-            input: "text-base",
-          },
-        }}
-        selectedKey={selectedKey}
-        onSelectionChange={(key) => {
-          onChange(((key as string) || "") as string);
-        }}
         isDisabled={disabled}
         isRequired={required}
         isInvalid={invalid}
-        errorMessage={errorMessage}
-        menuTrigger="input"
-        allowsCustomValue={allowCustomValue}
-        defaultItems={sortedUsers}
+        value={selectedKey}
+        onChange={(key) => onChange(((key as string) ?? "") as string)}
+        fullWidth
       >
-        {(u: User) => (
-          <AutocompleteItem key={u.id} textValue={displayFor(u)}>
-            {displayFor(u)}
-          </AutocompleteItem>
+        {label && <Label>{label}</Label>}
+        <Autocomplete.Trigger>
+          <Autocomplete.Value />
+          <Autocomplete.ClearButton />
+          <Autocomplete.Indicator />
+        </Autocomplete.Trigger>
+        <Autocomplete.Popover>
+          <Autocomplete.Filter filter={contains}>
+            <SearchField autoFocus name="user-search" variant="secondary">
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="Search..." />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+            <ListBox
+              renderEmptyState={() => <EmptyState>No users found</EmptyState>}
+            >
+              {sortedUsers.map((u) => (
+                <ListBox.Item key={u.id} id={u.id} textValue={displayFor(u)}>
+                  {displayFor(u)}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Autocomplete.Filter>
+        </Autocomplete.Popover>
+        {errorMessage && (
+          <div className="mt-1 text-danger text-sm">{errorMessage}</div>
         )}
       </Autocomplete>
       {renderRemovedHint()}

@@ -63,7 +63,7 @@ function TeamSlot({
   if (isBye) {
     return (
       <div className={`${base} opacity-40`} style={{ height: slotHeight }}>
-        <span className="text-xs italic text-default-400">BYE</span>
+        <span className="text-xs italic text-muted">BYE</span>
       </div>
     );
   }
@@ -72,8 +72,8 @@ function TeamSlot({
     return (
       <div className={`${base} opacity-40`} style={{ height: slotHeight }}>
         <div className="flex items-center gap-1.5">
-          <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-default-400" />
-          <span className="text-xs text-default-400 italic">TBD</span>
+          <Icon icon="lucide:clock" className="w-3.5 h-3.5 text-muted" />
+          <span className="text-xs text-muted italic">TBD</span>
         </div>
       </div>
     );
@@ -99,7 +99,7 @@ function TeamSlot({
         >
           {i === 0 && seed !== undefined ? (
             <span
-              className="shrink-0 text-[10px] font-bold w-2 text-center text-default-400"
+              className="shrink-0 text-[10px] font-bold w-2 text-center text-muted"
               aria-label={`Seed ${seed}`}
             >
               {seed}
@@ -131,13 +131,13 @@ function TeamSlot({
           {i === 0 && isChampion && (
             <Icon
               icon="lucide:trophy"
-              className="w-3.5 h-3.5 text-warning-500 shrink-0 ml-auto"
+              className="w-3.5 h-3.5 text-warning shrink-0 ml-auto"
             />
           )}
           {i === 0 && isRunnerUp && (
             <Icon
               icon="lucide:medal"
-              className="w-3.5 h-3.5 text-default-400 shrink-0 ml-auto"
+              className="w-3.5 h-3.5 text-muted shrink-0 ml-auto"
             />
           )}
           {i === 0 && !isChampion && !isRunnerUp && isWinner && (
@@ -151,7 +151,7 @@ function TeamSlot({
       {onPress && (
         <Icon
           icon="lucide:info"
-          className="absolute top-2 right-2 w-3 h-3 text-default-300 group-hover:text-default-500 transition-colors"
+          className="absolute top-2 right-2 w-3 h-3 text-muted group-hover:text-muted transition-colors"
           aria-hidden="true"
         />
       )}
@@ -164,11 +164,11 @@ function TeamSlot({
         type="button"
         className={[
           base,
-          "group gap-1 w-full text-left cursor-pointer hover:bg-default-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
+          "group gap-1 w-full text-left cursor-pointer hover:bg-default/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary",
           isChampion
-            ? "bg-warning-50 dark:bg-warning-900/20 hover:bg-warning-100 dark:hover:bg-warning-900/30"
+            ? "bg-warning dark:bg-warning/20 hover:bg-warning dark:hover:bg-warning/30"
             : isWinner
-              ? "bg-success-50 dark:bg-success-900/20 hover:bg-success-100 dark:hover:bg-success-900/30"
+              ? "bg-success dark:bg-success/20 hover:bg-success dark:hover:bg-success/30"
               : "",
           isLoser && !isRunnerUp ? "opacity-40" : "",
         ]
@@ -189,9 +189,9 @@ function TeamSlot({
         base,
         "gap-1",
         isChampion
-          ? "bg-warning-50 dark:bg-warning-900/20"
+          ? "bg-warning dark:bg-warning/20"
           : isWinner
-            ? "bg-success-50 dark:bg-success-900/20"
+            ? "bg-success dark:bg-success/20"
             : "",
         isLoser && !isRunnerUp ? "opacity-40" : "",
       ]
@@ -245,7 +245,7 @@ export function BracketMatchCard({
   return (
     <div
       style={{ width }}
-      className="border border-default-200 rounded-xl bg-content1 overflow-hidden shadow-sm"
+      className="border rounded-xl bg-surface overflow-hidden shadow-sm"
     >
       <TeamSlot
         team={team1}
@@ -259,7 +259,7 @@ export function BracketMatchCard({
         seed={team1?.seed}
         userPhotoMap={userPhotoMap}
       />
-      <div className="border-t border-default-200" />
+      <div className="border-t" />
       <TeamSlot
         team={team2}
         isBye={isBye2}

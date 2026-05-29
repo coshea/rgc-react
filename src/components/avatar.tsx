@@ -29,6 +29,17 @@ export interface UserAvatarProps {
   tabIndex?: number;
 }
 
+/** Generate up to 2 initials from a display name or email. */
+function getInitials(name?: string): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 /**
  * Central user avatar component ensuring consistent fallback behavior.
  * If no `src` provided, we seed a generic generated avatar using userId or name.
@@ -78,46 +89,30 @@ export const UserAvatar = React.forwardRef<any, UserAvatarProps>(
     const finalTabIndex =
       typeof tabIndex === "number" ? tabIndex : onPress ? 0 : undefined;
 
-    // Derive initials: first letter of first and last tokens; if only one token, use first two letters.
-    const computeInitials = (full?: string) => {
-      if (!full) return "?";
-      const cleaned = full.trim().replace(/\s+/g, " ");
-      if (!cleaned) return "?";
-      const parts = cleaned.split(" ");
-      if (parts.length === 1) {
-        const solo = parts[0].replace(/[^A-Za-z]/g, "");
-        if (solo.length >= 2) return (solo[0] + solo[1]).toUpperCase();
-        if (solo.length === 1) return solo[0].toUpperCase();
-        return "?";
-      }
-      const first = parts[0].replace(/[^A-Za-z]/g, "");
-      const last = parts[parts.length - 1].replace(/[^A-Za-z]/g, "");
-      const fi = first ? first[0].toUpperCase() : "";
-      const li = last ? last[0].toUpperCase() : "";
-      const combo = (fi + li).trim();
-      return combo || "?";
-    };
     return (
       <Avatar
         ref={ref}
-        showFallback
-        radius={squared ? "sm" : "full"}
-        name={resolvedName}
-        getInitials={computeInitials}
         size={size}
-        className={clsx(className)}
-        src={resolvedSrc}
-        alt={alt || resolvedName}
-        isBordered={isBordered}
+        className={clsx(
+          className,
+          isBordered && "ring-2 ring-background",
+          squared && "rounded-sm",
+        )}
         color={color}
         as={as}
         role={finalRole}
         tabIndex={finalTabIndex}
         onClick={handleClick}
+        name={resolvedName}
         {...rest}
-      />
+      >
+        {resolvedSrc && (
+          <Avatar.Image src={resolvedSrc} alt={alt || resolvedName} />
+        )}
+        <Avatar.Fallback>{getInitials(resolvedName)}</Avatar.Fallback>
+      </Avatar>
     );
-  }
+  },
 );
 UserAvatar.displayName = "UserAvatar";
 

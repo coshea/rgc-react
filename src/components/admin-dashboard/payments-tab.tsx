@@ -5,13 +5,12 @@ import {
   Button,
   ButtonGroup,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Input,
+  ListBox,
   Select,
-  SelectItem,
   Spinner,
+  SearchField,
   cn,
 } from "@heroui/react";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
@@ -67,12 +66,12 @@ function methodLabel(method?: string | null) {
 
 function typeColor(
   type?: MembershipType | string | null,
-): "success" | "primary" | "default" {
+): "success" | "accent" | "default" {
   switch (type) {
     case MEMBERSHIP_TYPES.FULL:
       return "success";
     case MEMBERSHIP_TYPES.HANDICAP:
-      return "primary";
+      return "accent";
     default:
       return "default";
   }
@@ -118,7 +117,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const [confirmingGroupId, setConfirmingGroupId] = useState<string | null>(
     null,
   );
-  const [reconciling, setReconciling] = useState(false);
+  const [_reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] =
     useState<ReconcilePayPalOrdersResponse | null>(null);
 
@@ -680,7 +679,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <BackButton />
             </div>
             <h1 className="text-3xl font-bold">Membership Dashboard</h1>
-            <p className="mt-2 text-default-500">
+            <p className="mt-2 text-muted">
               Payments recorded for {year}. Donations are tracked as separate
               transactions.
             </p>
@@ -744,8 +743,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             ) => (
               <Card
                 key={index}
-                className="dark:border-default-100 relative border border-transparent"
-                shadow="sm"
+                className="dark:relative border border-transparent"
               >
                 <section className="flex flex-col flex-nowrap">
                   <div className="flex flex-col justify-between gap-y-2 px-4 pt-4">
@@ -754,7 +752,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <Icon
                           icon={icon}
                           className={cn({
-                            "text-primary": color === "primary",
+                            "text-accent": color === "primary",
                             "text-success": color === "success",
                             "text-warning": color === "warning",
                             "text-secondary": color === "secondary",
@@ -763,21 +761,19 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                           height={18}
                         />
                         <div className="flex flex-col gap-y-0">
-                          <dt className="text-default-600 text-sm font-medium">
+                          <dt className="text-foreground text-sm font-medium">
                             {title}
                           </dt>
-                          <dd className="text-tiny text-default-400 font-normal">
+                          <dd className="text-xs text-muted font-normal">
                             {subtitle}
                           </dd>
                         </div>
                       </div>
                       <div className="flex items-baseline gap-x-2">
-                        <dd className="text-default-700 text-xl font-semibold">
+                        <dd className="text-foreground text-xl font-semibold">
                           {value}
                         </dd>
-                        <span className="text-sm text-default-500">
-                          {amount}
-                        </span>
+                        <span className="text-sm text-muted">{amount}</span>
                       </div>
                     </div>
                   </div>
@@ -860,113 +856,118 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              variant="flat"
-              size="sm"
-              startContent={<Icon icon="lucide:download" className="w-4 h-4" />}
-              onPress={exportPaymentsCsv}
-            >
+            <Button variant="tertiary" size="sm" onPress={exportPaymentsCsv}>
+              <Icon icon="lucide:download" className="w-4 h-4" />
               Export CSV
             </Button>
+            <SearchField name="search">
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  className="sm:max-w-xs"
+                  placeholder="Search by name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Search by name or email"
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+
             <Input
-              placeholder="Search by name or email"
-              value={search}
-              onValueChange={setSearch}
-              className="sm:max-w-xs"
-              startContent={<Icon icon="lucide:search" className="w-4 h-4" />}
-            />
-            <Input
-              label="Year"
               type="number"
               value={String(year)}
-              onValueChange={(v) => {
-                const next = Number(v);
+              onChange={(e) => {
+                const next = Number(e.target.value);
                 if (!Number.isFinite(next)) return;
                 setYear(next);
               }}
               className="w-32"
-              min={2000}
-              max={2100}
             />
           </div>
 
-          <ButtonGroup variant="bordered">
+          <ButtonGroup variant="outline">
             <Button
               onPress={() => setFilter("all")}
-              color={filter === "all" ? "primary" : "default"}
+              variant={filter === "all" ? "primary" : "outline"}
             >
               All
             </Button>
             <Button
               onPress={() => setFilter("yearly")}
-              color={filter === "yearly" ? "primary" : "default"}
+              variant={filter === "yearly" ? "primary" : "outline"}
             >
               Full
             </Button>
             <Button
               onPress={() => setFilter("handicap")}
-              color={filter === "handicap" ? "primary" : "default"}
+              variant={filter === "handicap" ? "primary" : "outline"}
             >
               Handicap
             </Button>
             <Button
               onPress={() => setFilter("donation")}
-              color={filter === "donation" ? "primary" : "default"}
+              variant={filter === "donation" ? "primary" : "outline"}
             >
               Donation
             </Button>
           </ButtonGroup>
         </div>
 
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
+        <Card className="mt-8 overflow-hidden">
+          <Card.Header className="flex items-center justify-between">
             <div className="font-semibold">Paid Members</div>
             {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
+          </Card.Header>
+          <Card.Content className="p-0">
             {isMobileView ? (
               <div className="px-2 py-2">
                 {!isLoading && filteredRows.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-default-500">
+                  <div className="px-4 py-10 text-center text-muted">
                     No payments found.
                   </div>
                 ) : (
-                  <Accordion selectionMode="multiple" variant="splitted">
+                  <Accordion allowsMultipleExpanded variant="surface">
                     {paginatedRows.map((row) => (
                       <AccordionItem
                         key={row.id}
                         aria-label={`Paid member ${row.name}`}
-                        title={
-                          <div className="min-w-0">
-                            <div className="font-medium break-words">
-                              {row.name}
-                            </div>
-                            <div className="text-xs text-default-500 break-all">
-                              {row.email || "—"}
-                            </div>
-                          </div>
-                        }
                       >
-                        <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
-                          <div className="text-default-500">Membership</div>
-                          <div>
-                            <Chip
-                              size="sm"
-                              variant="flat"
-                              color={typeColor(row.membershipType)}
-                            >
-                              {typeLabel(row.membershipType)}
-                            </Chip>
+                        <Accordion.Heading>
+                          <Accordion.Trigger>
+                            <div className="min-w-0">
+                              <div className="font-medium break-words">
+                                {row.name}
+                              </div>
+                              <div className="text-xs text-muted break-all">
+                                {row.email || "—"}
+                              </div>
+                            </div>
+                            <Accordion.Indicator />
+                          </Accordion.Trigger>
+                        </Accordion.Heading>
+                        <Accordion.Panel>
+                          <div className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
+                            <div className="text-muted">Membership</div>
+                            <div>
+                              <Chip
+                                size="sm"
+                                variant="tertiary"
+                                color={typeColor(row.membershipType)}
+                              >
+                                {typeLabel(row.membershipType)}
+                              </Chip>
+                            </div>
+                            <div className="text-muted">Method</div>
+                            <div>{methodLabel(row.method)}</div>
+                            <div className="text-muted">Payment</div>
+                            <div>{currency(row.paymentAmount)}</div>
+                            <div className="text-muted">Donation</div>
+                            <div>{currency(row.donationAmount)}</div>
+                            <div className="text-muted">Paid</div>
+                            <div>{formatDate(row.paidAt)}</div>
                           </div>
-                          <div className="text-default-500">Method</div>
-                          <div>{methodLabel(row.method)}</div>
-                          <div className="text-default-500">Payment</div>
-                          <div>{currency(row.paymentAmount)}</div>
-                          <div className="text-default-500">Donation</div>
-                          <div>{currency(row.donationAmount)}</div>
-                          <div className="text-default-500">Paid</div>
-                          <div>{formatDate(row.paidAt)}</div>
-                        </div>
+                        </Accordion.Panel>
                       </AccordionItem>
                     ))}
                   </Accordion>
@@ -975,7 +976,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
             ) : (
               <div className="overflow-x-hidden">
                 <table className="w-full table-fixed text-left text-sm">
-                  <thead className="bg-default-100">
+                  <thead className="bg-default/60">
                     <tr>
                       <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                         Name
@@ -1002,7 +1003,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   </thead>
                   <tbody>
                     {paginatedRows.map((row) => (
-                      <tr key={row.id} className="border-t border-default-200">
+                      <tr key={row.id} className="border-t">
                         <td className="px-3 py-3 break-words sm:px-4">
                           {row.name}
                         </td>
@@ -1012,7 +1013,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="hidden px-4 py-3 sm:table-cell">
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="tertiary"
                             color={typeColor(row.membershipType)}
                           >
                             {typeLabel(row.membershipType)}
@@ -1037,7 +1038,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       <tr>
                         <td
                           colSpan={7}
-                          className="px-4 py-10 text-center text-default-500"
+                          className="px-4 py-10 text-center text-muted"
                         >
                           No payments found.
                         </td>
@@ -1047,10 +1048,10 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </table>
               </div>
             )}
-          </CardBody>
+          </Card.Content>
           {filteredRows.length > PAGE_SIZE ? (
-            <div className="flex items-center justify-between border-t border-default-200 px-4 py-3">
-              <span className="text-sm text-default-500">
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <span className="text-sm text-muted">
                 {(page - 1) * PAGE_SIZE + 1}–
                 {Math.min(page * PAGE_SIZE, filteredRows.length)} of{" "}
                 {filteredRows.length}
@@ -1058,7 +1059,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   isDisabled={page === 1}
                   onPress={() => setPage((p) => p - 1)}
                 >
@@ -1069,7 +1070,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </span>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   isDisabled={page === totalPages}
                   onPress={() => setPage((p) => p + 1)}
                 >
@@ -1080,15 +1081,15 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
           ) : null}
         </Card>
 
-        <Card className="mt-8 overflow-hidden" shadow="sm">
-          <CardHeader className="flex items-center justify-between">
+        <Card className="mt-8 overflow-hidden">
+          <Card.Header className="flex items-center justify-between">
             <div className="font-semibold">Pending Check Payments</div>
             {isLoading ? <Spinner size="sm" /> : null}
-          </CardHeader>
-          <CardBody className="p-0">
+          </Card.Header>
+          <Card.Content className="p-0">
             <div className="overflow-x-hidden">
               <table className="w-full table-fixed text-left text-sm">
-                <thead className="bg-default-100">
+                <thead className="bg-default/60">
                   <tr>
                     <th className="w-2/5 px-3 py-3 font-medium sm:w-auto sm:px-4">
                       Name
@@ -1123,7 +1124,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                       r.userId;
 
                     return (
-                      <tr key={r.id} className="border-t border-default-200">
+                      <tr key={r.id} className="border-t">
                         <td className="px-3 py-3 break-words sm:px-4">
                           {name}
                         </td>
@@ -1133,7 +1134,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="hidden px-4 py-3 sm:table-cell">
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="tertiary"
                             color={typeColor(r.membershipType)}
                           >
                             {typeLabel(r.membershipType)}
@@ -1151,9 +1152,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                         <td className="px-3 py-3 sm:px-4">
                           <Button
                             size="sm"
-                            color="primary"
                             className="w-full sm:w-auto"
-                            isLoading={
+                            isDisabled={
                               confirmingGroupId === (r.groupId ?? r.id)
                             }
                             onPress={() =>
@@ -1171,7 +1171,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-4 py-6 text-center text-default-500"
+                        className="px-4 py-6 text-center text-muted"
                       >
                         No pending check payments.
                       </td>
@@ -1180,19 +1180,19 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 </tbody>
               </table>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {isAdmin ? (
-          <Card className="mt-8" shadow="sm">
-            <CardHeader className="flex flex-col items-start gap-2">
+          <Card className="mt-8">
+            <Card.Header className="flex flex-col items-start gap-2">
               <div className="font-semibold">Bulk Record Check Payments</div>
-              <div className="text-sm text-default-500">
+              <div className="text-sm text-muted">
                 Search for members and add them to the queue, then submit all at
                 once. Members already paid this year are excluded.
               </div>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
               {/* Add member row */}
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1 min-w-0">
@@ -1217,29 +1217,36 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   aria-label="Membership type"
                   placeholder="Type"
                   className="sm:w-44"
-                  selectedKeys={new Set([bulkMembershipType])}
-                  onSelectionChange={(keys) => {
-                    const val = Array.from(
-                      keys as Set<string>,
-                    )[0] as MembershipType;
+                  value={bulkMembershipType}
+                  onChange={(key) => {
+                    const val = key as MembershipType;
                     if (val) setBulkMembershipType(val);
                   }}
                 >
-                  <SelectItem
-                    key={MEMBERSHIP_TYPES.FULL}
-                    textValue="Full Membership"
-                  >
-                    Full Membership
-                  </SelectItem>
-                  <SelectItem
-                    key={MEMBERSHIP_TYPES.HANDICAP}
-                    textValue="Handicap Only"
-                  >
-                    Handicap Only
-                  </SelectItem>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item
+                        id={MEMBERSHIP_TYPES.FULL}
+                        textValue="Full Membership"
+                      >
+                        Full Membership
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item
+                        id={MEMBERSHIP_TYPES.HANDICAP}
+                        textValue="Handicap Only"
+                      >
+                        Handicap Only
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <Button
-                  color="primary"
                   isDisabled={!bulkSelectedUserId}
                   onPress={() => {
                     if (!bulkSelectedUserId) return;
@@ -1259,9 +1266,9 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
               {/* Queue table */}
               {bulkQueue.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg border border-default-200">
+                <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-default-100">
+                    <thead className="bg-default/60">
                       <tr>
                         <th className="px-4 py-2 font-medium">Name</th>
                         <th className="px-4 py-2 font-medium">Email</th>
@@ -1285,18 +1292,15 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             ? handicapFee
                             : fullFee;
                         return (
-                          <tr
-                            key={item.userId}
-                            className="border-t border-default-200"
-                          >
+                          <tr key={item.userId} className="border-t">
                             <td className="px-4 py-2">{name}</td>
-                            <td className="px-4 py-2 text-default-500">
+                            <td className="px-4 py-2 text-muted">
                               {member?.email || "—"}
                             </td>
                             <td className="px-4 py-2">
                               <Chip
                                 size="sm"
-                                variant="flat"
+                                variant="tertiary"
                                 color={typeColor(item.membershipType)}
                               >
                                 {typeLabel(item.membershipType)}
@@ -1306,8 +1310,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                             <td className="px-2 py-2">
                               <Button
                                 size="sm"
-                                variant="light"
-                                color="danger"
+                                variant="ghost"
                                 isIconOnly
                                 aria-label={`Remove ${name}`}
                                 onPress={() =>
@@ -1328,7 +1331,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   </table>
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-default-300 py-8 text-center text-sm text-default-500">
+                <div className="rounded-lg border border-dashed py-8 text-center text-sm text-muted">
                   No members queued. Use the search above to add members.
                 </div>
               )}
@@ -1338,8 +1341,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                 {bulkQueue.length > 0 ? (
                   <Button
                     size="sm"
-                    variant="light"
-                    color="danger"
+                    variant="ghost"
                     onPress={() => setBulkQueue([])}
                     isDisabled={submittingBulk}
                   >
@@ -1349,39 +1351,32 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   <span />
                 )}
                 <Button
-                  color="success"
                   isDisabled={bulkQueue.length === 0}
-                  isLoading={submittingBulk}
                   onPress={handleBulkSubmit}
                 >
                   Submit {bulkQueue.length > 0 ? bulkQueue.length : ""}{" "}
                   {bulkQueue.length === 1 ? "payment" : "payments"} by check
                 </Button>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ) : null}
 
         {isAdmin ? (
-          <Card className="mt-8" shadow="sm">
-            <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="mt-8">
+            <Card.Header className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="font-semibold">PayPal Reconciliation</div>
-                <div className="text-sm text-default-500">
+                <div className="text-sm text-muted">
                   Checks for missed PayPal membership orders from the last 14
                   days.
                 </div>
               </div>
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleReconcilePayPal}
-                isLoading={reconciling}
-              >
+              <Button variant="tertiary" onPress={handleReconcilePayPal}>
                 Check PayPal orders
               </Button>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               {reconcileResult ? (
                 <div className="space-y-3 text-sm">
                   <div>
@@ -1403,10 +1398,8 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   ) : null}
                   {reconcileResult.skippedItems.length > 0 ? (
                     <div>
-                      <div className="font-medium text-default-600">
-                        Skipped
-                      </div>
-                      <ul className="mt-2 list-disc pl-5 text-default-500">
+                      <div className="font-medium text-foreground">Skipped</div>
+                      <ul className="mt-2 list-disc pl-5 text-muted">
                         {reconcileResult.skippedItems.map((item, index) => (
                           <li
                             key={`skip-${item.orderId ?? "unknown"}-${index}`}
@@ -1419,11 +1412,11 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
                   ) : null}
                 </div>
               ) : (
-                <div className="text-sm text-default-500">
+                <div className="text-sm text-muted">
                   No reconciliation run yet.
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
         ) : null}
       </div>

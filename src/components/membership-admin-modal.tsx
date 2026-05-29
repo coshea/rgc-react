@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import {
   Button,
   Input,
+  InputGroup,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Switch,
-  Textarea,
+  TextArea,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
@@ -217,23 +220,23 @@ export default function MembershipAdminModal({
       onClick={handleCancel}
     >
       <div
-        className="bg-content1 rounded-large shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4"
+        className="bg-surface rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto m-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-divider sticky top-0 bg-content1 z-10">
+        <div className="flex items-center justify-between p-6 border-b border-divider sticky top-0 bg-surface z-10">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Icon
               icon="lucide:settings"
               width={24}
               height={24}
-              className="text-primary"
+              className="text-accent"
             />
             Membership Registration Settings
           </h2>
           <Button
             isIconOnly
-            variant="flat"
+            variant="tertiary"
             onPress={handleCancel}
             aria-label="Close modal"
           >
@@ -244,7 +247,7 @@ export default function MembershipAdminModal({
         {/* Body */}
         <div className="p-6 space-y-6">
           {loading ? (
-            <div className="flex items-center gap-2 text-foreground-500 justify-center py-8">
+            <div className="flex items-center gap-2 text-muted justify-center py-8">
               <Icon
                 icon="lucide:loader-2"
                 className="animate-spin"
@@ -256,10 +259,10 @@ export default function MembershipAdminModal({
           ) : (
             <>
               {/* Registration Toggle */}
-              <div className="flex items-center justify-between p-4 bg-default-100 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-default/60 rounded-lg">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">Registration Status</h3>
-                  <p className="text-sm text-foreground-500 mt-1">
+                  <p className="text-sm text-muted mt-1">
                     {registrationOpen
                       ? "Members can register or renew their membership"
                       : "Registration is closed - members will see a message"}
@@ -267,31 +270,36 @@ export default function MembershipAdminModal({
                 </div>
                 <Switch
                   isSelected={registrationOpen}
-                  onValueChange={setRegistrationOpen}
+                  onChange={setRegistrationOpen}
                   size="lg"
                   aria-label="Toggle registration status"
                 >
-                  {registrationOpen ? (
-                    <span className="flex items-center gap-2">
-                      <Icon
-                        icon="lucide:check-circle"
-                        width={20}
-                        height={20}
-                        className="text-success"
-                      />
-                      <span className="font-semibold">Open</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Icon
-                        icon="lucide:alert-circle"
-                        width={20}
-                        height={20}
-                        className="text-warning"
-                      />
-                      <span className="font-semibold">Closed</span>
-                    </span>
-                  )}
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                  <Switch.Content>
+                    {registrationOpen ? (
+                      <span className="flex items-center gap-2">
+                        <Icon
+                          icon="lucide:check-circle"
+                          width={20}
+                          height={20}
+                          className="text-success"
+                        />
+                        <span className="font-semibold">Open</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Icon
+                          icon="lucide:alert-circle"
+                          width={20}
+                          height={20}
+                          className="text-warning"
+                        />
+                        <span className="font-semibold">Closed</span>
+                      </span>
+                    )}
+                  </Switch.Content>
                 </Switch>
               </div>
 
@@ -299,62 +307,73 @@ export default function MembershipAdminModal({
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Membership Pricing</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Full Membership Price"
-                    placeholder="100"
-                    value={fullPrice}
-                    onChange={(e) => {
-                      setFullPrice(e.target.value);
-                      if (errors.fullPrice) {
-                        setErrors((prev) => ({ ...prev, fullPrice: "" }));
-                      }
-                    }}
-                    startContent={
-                      <span className="text-foreground-500">$</span>
-                    }
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    isInvalid={!!errors.fullPrice}
-                    errorMessage={errors.fullPrice}
-                  />
-                  <Input
-                    label="Handicap Index Price"
-                    placeholder="50"
-                    value={socialPrice}
-                    onChange={(e) => {
-                      setSocialPrice(e.target.value);
-                      if (errors.socialPrice) {
-                        setErrors((prev) => ({ ...prev, socialPrice: "" }));
-                      }
-                    }}
-                    startContent={
-                      <span className="text-foreground-500">$</span>
-                    }
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    isInvalid={!!errors.socialPrice}
-                    errorMessage={errors.socialPrice}
-                  />
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm">Full Membership Price</Label>
+                    <InputGroup>
+                      <InputGroup.Prefix>
+                        <span className="text-muted text-sm px-1">$</span>
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder="100"
+                        value={fullPrice}
+                        onChange={(e) => {
+                          setFullPrice(e.target.value);
+                          if (errors.fullPrice) {
+                            setErrors((prev) => ({ ...prev, fullPrice: "" }));
+                          }
+                        }}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        aria-invalid={!!errors.fullPrice}
+                      />
+                    </InputGroup>
+                    {errors.fullPrice && (
+                      <p className="text-xs text-danger">{errors.fullPrice}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-sm">Handicap Index Price</Label>
+                    <InputGroup>
+                      <InputGroup.Prefix>
+                        <span className="text-muted text-sm px-1">$</span>
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder="50"
+                        value={socialPrice}
+                        onChange={(e) => {
+                          setSocialPrice(e.target.value);
+                          if (errors.socialPrice) {
+                            setErrors((prev) => ({ ...prev, socialPrice: "" }));
+                          }
+                        }}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        aria-invalid={!!errors.socialPrice}
+                      />
+                    </InputGroup>
+                    {errors.socialPrice && (
+                      <p className="text-xs text-danger">
+                        {errors.socialPrice}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Membership Letter</h3>
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   Choose the PDF shown to members. Documents are loaded from the
                   storage folder{" "}
                   <span className="font-medium">public-docs</span>.
                 </p>
                 <Select
-                  label="Membership letter document"
-                  selectedKeys={
-                    membershipLetterUrl ? [membershipLetterUrl] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string | undefined;
-                    setMembershipLetterUrl(value || "");
+                  value={membershipLetterUrl || undefined}
+                  onChange={(key) => {
+                    const value = key ? String(key) : "";
+                    setMembershipLetterUrl(value);
                     if (errors.membershipLetterUrl) {
                       setErrors((prev) => ({
                         ...prev,
@@ -371,36 +390,46 @@ export default function MembershipAdminModal({
                       : "Select a membership letter"
                   }
                 >
-                  {membershipLetterOptions.map((doc) => (
-                    <SelectItem key={doc.url} textValue={doc.name}>
-                      {doc.name}
-                    </SelectItem>
-                  ))}
+                  <Label>Membership letter document</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {membershipLetterOptions.map((doc) => (
+                        <ListBox.Item
+                          key={doc.url}
+                          id={doc.url}
+                          textValue={doc.name}
+                        >
+                          {doc.name}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
-                <Input
-                  label="Selected URL"
-                  value={membershipLetterUrl}
-                  isReadOnly
-                />
+                <TextField value={membershipLetterUrl}>
+                  <Label>Selected URL</Label>
+                  <Input isReadOnly />
+                </TextField>
               </div>
 
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">
                   New Member Application PDF
                 </h3>
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   Choose the PDF new applicants must download and mail in.
                   Documents are loaded from the storage folder{" "}
                   <span className="font-medium">public-docs</span>.
                 </p>
                 <Select
-                  label="Application document"
-                  selectedKeys={
-                    membershipApplicationUrl ? [membershipApplicationUrl] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string | undefined;
-                    setMembershipApplicationUrl(value || "");
+                  value={membershipApplicationUrl || undefined}
+                  onChange={(key) => {
+                    const value = key ? String(key) : "";
+                    setMembershipApplicationUrl(value);
                     if (errors.membershipApplicationUrl) {
                       setErrors((prev) => ({
                         ...prev,
@@ -417,17 +446,30 @@ export default function MembershipAdminModal({
                       : "Select an application PDF"
                   }
                 >
-                  {membershipApplicationOptions.map((doc) => (
-                    <SelectItem key={doc.url} textValue={doc.name}>
-                      {doc.name}
-                    </SelectItem>
-                  ))}
+                  <Label>Application document</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {membershipApplicationOptions.map((doc) => (
+                        <ListBox.Item
+                          key={doc.url}
+                          id={doc.url}
+                          textValue={doc.name}
+                        >
+                          {doc.name}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
-                <Input
-                  label="Selected URL"
-                  value={membershipApplicationUrl}
-                  isReadOnly
-                />
+                <TextField value={membershipApplicationUrl}>
+                  <Label>Selected URL</Label>
+                  <Input isReadOnly />
+                </TextField>
               </div>
 
               {/* Closed Message */}
@@ -436,11 +478,11 @@ export default function MembershipAdminModal({
                   <h3 className="font-semibold text-lg">
                     Closed Registration Message
                   </h3>
-                  <p className="text-sm text-foreground-500">
+                  <p className="text-sm text-muted">
                     This message will be displayed to members when registration
                     is closed
                   </p>
-                  <Textarea
+                  <TextArea
                     placeholder="Registration for the current year is closed. Please check back next year."
                     value={closedMessage}
                     onChange={(e) => {
@@ -449,7 +491,7 @@ export default function MembershipAdminModal({
                         setErrors((prev) => ({ ...prev, closedMessage: "" }));
                       }
                     }}
-                    minRows={3}
+                    rows={3}
                     isInvalid={!!errors.closedMessage}
                     errorMessage={errors.closedMessage}
                   />
@@ -459,11 +501,11 @@ export default function MembershipAdminModal({
               {/* Last Updated Info */}
               {settings?.updatedAt && (
                 <div className="pt-4 border-t border-divider">
-                  <p className="text-sm text-foreground-500">
+                  <p className="text-sm text-muted">
                     Last updated:{" "}
                     {new Date(
                       typeof settings.updatedAt === "object" &&
-                      "toDate" in settings.updatedAt
+                        "toDate" in settings.updatedAt
                         ? settings.updatedAt.toDate()
                         : settings.updatedAt,
                     ).toLocaleString()}
@@ -476,19 +518,16 @@ export default function MembershipAdminModal({
 
         {/* Footer */}
         {!loading && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-divider sticky bottom-0 bg-content1">
-            <Button variant="flat" onPress={handleCancel} isDisabled={saving}>
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-divider sticky bottom-0 bg-surface">
+            <Button
+              variant="tertiary"
+              onPress={handleCancel}
+              isDisabled={saving}
+            >
               Cancel
             </Button>
-            <Button
-              color="primary"
-              onPress={handleSave}
-              isDisabled={!hasChanges || saving}
-              isLoading={saving}
-              startContent={
-                !saving && <Icon icon="lucide:save" width={18} height={18} />
-              }
-            >
+            <Button onPress={handleSave} isDisabled={!hasChanges || saving}>
+              {!saving && <Icon icon="lucide:save" width={18} height={18} />}
               Save Changes
             </Button>
           </div>

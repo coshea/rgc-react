@@ -3,11 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   Button,
   Input,
+  Label,
+  TextField,
+  ListBox,
   Select,
-  SelectItem,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Switch,
 } from "@heroui/react";
@@ -345,7 +345,7 @@ export const BlogEditorPage: React.FC = () => {
         <div className="flex justify-center items-center py-24">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
+            className="animate-spin text-4xl text-accent"
           />
         </div>
       </div>
@@ -359,110 +359,140 @@ export const BlogEditorPage: React.FC = () => {
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => handleSave(false)}
-            isLoading={saving}
-            startContent={!saving && <Icon icon="lucide:save" />}
           >
+            {!saving && <Icon icon="lucide:save" />}
             Save Draft
           </Button>
-          <Button
-            size="sm"
-            color="primary"
-            onPress={() => handleSave(true)}
-            isLoading={saving}
-            startContent={!saving && <Icon icon="lucide:send" />}
-          >
+          <Button size="sm" onPress={() => handleSave(true)}>
+            {!saving && <Icon icon="lucide:send" />}
             Publish
           </Button>
         </div>
       </div>
 
       <Card>
-        <CardHeader>
+        <Card.Header>
           <h1 className="text-2xl font-bold">
             {isEditing ? "Edit Blog Post" : "Create New Blog Post"}
           </h1>
-        </CardHeader>
-        <CardBody className="space-y-6">
+        </Card.Header>
+        <Card.Content className="space-y-6">
           {/* Template Selection */}
           {!isEditing && (
             <div className="space-y-3">
               <Select
-                label="Template Type"
-                selectedKeys={
-                  formData.templateType ? [formData.templateType] : []
-                }
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as BlogTemplateType;
-                  setFormData({ ...formData, templateType: value });
+                value={formData.templateType}
+                onChange={(key) => {
+                  if (key)
+                    setFormData({
+                      ...formData,
+                      templateType: key as BlogTemplateType,
+                    });
                 }}
               >
-                <SelectItem key={BlogTemplateType.Custom}>
-                  Custom Post
-                </SelectItem>
-                <SelectItem key={BlogTemplateType.TournamentResults}>
-                  Tournament Results
-                </SelectItem>
-                <SelectItem key={BlogTemplateType.TeeTimes}>
-                  Tee Times Announcement
-                </SelectItem>
-                <SelectItem key={BlogTemplateType.GeneralAnnouncement}>
-                  General Announcement
-                </SelectItem>
+                <Label>Template Type</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item
+                      id={BlogTemplateType.Custom}
+                      textValue="Custom Post"
+                    >
+                      Custom Post
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      id={BlogTemplateType.TournamentResults}
+                      textValue="Tournament Results"
+                    >
+                      Tournament Results
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      id={BlogTemplateType.TeeTimes}
+                      textValue="Tee Times Announcement"
+                    >
+                      Tee Times Announcement
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      id={BlogTemplateType.GeneralAnnouncement}
+                      textValue="General Announcement"
+                    >
+                      General Announcement
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               {(formData.templateType === BlogTemplateType.TournamentResults ||
                 formData.templateType === BlogTemplateType.TeeTimes) && (
                 <>
                   <Select
-                    label="Select Tournament"
-                    selectedKeys={
-                      selectedTournamentId ? [selectedTournamentId] : []
-                    }
-                    onSelectionChange={(keys) => {
-                      const value = Array.from(keys)[0] as string;
-                      setSelectedTournamentId(value);
+                    value={selectedTournamentId || undefined}
+                    onChange={(key) => {
+                      if (key) setSelectedTournamentId(String(key));
                     }}
                   >
-                    {tournaments.map((t) => (
-                      <SelectItem key={t.firestoreId!}>
-                        {t.date instanceof Date
-                          ? `${t.date.getFullYear()} – ${t.title}`
-                          : t.title}
-                      </SelectItem>
-                    ))}
+                    <Label>Select Tournament</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {tournaments.map((t) => (
+                          <ListBox.Item
+                            key={t.firestoreId!}
+                            id={t.firestoreId!}
+                            textValue={
+                              t.date instanceof Date
+                                ? `${t.date.getFullYear()} – ${t.title}`
+                                : t.title
+                            }
+                          >
+                            {t.date instanceof Date
+                              ? `${t.date.getFullYear()} – ${t.title}`
+                              : t.title}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="flat"
+                      variant="secondary"
                       onPress={applyTemplate}
                       isDisabled={!selectedTournamentId}
-                      startContent={<Icon icon="lucide:wand-2" />}
                     >
+                      <Icon icon="lucide:wand-2" />
                       Apply Template
                     </Button>
                     {formData.templateType ===
                       BlogTemplateType.TournamentResults && (
                       <Button
                         size="sm"
-                        color="secondary"
-                        variant="flat"
+                        variant="primary"
                         onPress={handleAiWriteup}
-                        isLoading={generatingAi}
                         isDisabled={
+                          generatingAi ||
                           !selectedTournamentId ||
                           !tournaments.find(
                             (t) => t.firestoreId === selectedTournamentId,
                           )?.winnerGroups?.length
                         }
-                        startContent={
-                          !generatingAi && (
-                            <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                          )
-                        }
                       >
+                        {!generatingAi && (
+                          <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                        )}
                         AI Write-Up
                       </Button>
                     )}
@@ -472,12 +502,8 @@ export const BlogEditorPage: React.FC = () => {
 
               {formData.templateType ===
                 BlogTemplateType.GeneralAnnouncement && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={applyTemplate}
-                  startContent={<Icon icon="lucide:wand-2" />}
-                >
+                <Button size="sm" variant="tertiary" onPress={applyTemplate}>
+                  <Icon icon="lucide:wand-2" />
                   Apply Template
                 </Button>
               )}
@@ -489,79 +515,103 @@ export const BlogEditorPage: React.FC = () => {
             formData.templateType === BlogTemplateType.TournamentResults && (
               <div className="space-y-3">
                 <Select
-                  label="Tournament"
-                  selectedKeys={
-                    selectedTournamentId ? [selectedTournamentId] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string;
-                    setSelectedTournamentId(value);
+                  value={selectedTournamentId || undefined}
+                  onChange={(key) => {
+                    if (key) setSelectedTournamentId(String(key));
                   }}
                 >
-                  {tournaments.map((t) => (
-                    <SelectItem key={t.firestoreId!}>
-                      {t.date instanceof Date
-                        ? `${t.date.getFullYear()} – ${t.title}`
-                        : t.title}
-                    </SelectItem>
-                  ))}
+                  <Label>Tournament</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {tournaments.map((t) => (
+                        <ListBox.Item
+                          key={t.firestoreId!}
+                          id={t.firestoreId!}
+                          textValue={
+                            t.date instanceof Date
+                              ? `${t.date.getFullYear()} – ${t.title}`
+                              : t.title
+                          }
+                        >
+                          {t.date instanceof Date
+                            ? `${t.date.getFullYear()} – ${t.title}`
+                            : t.title}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
                 </Select>
                 <Button
                   size="sm"
-                  color="secondary"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={handleAiWriteup}
-                  isLoading={generatingAi}
                   isDisabled={
+                    generatingAi ||
                     !selectedTournamentId ||
                     !tournaments.find(
                       (t) => t.firestoreId === selectedTournamentId,
                     )?.winnerGroups?.length
                   }
-                  startContent={
-                    !generatingAi && (
-                      <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                    )
-                  }
                 >
+                  {!generatingAi && (
+                    <Icon icon="lucide:sparkles" className="w-4 h-4" />
+                  )}
                   AI Write-Up
                 </Button>
               </div>
             )}
 
           {/* Title */}
-          <Input
-            label="Title"
-            placeholder="Enter post title"
-            value={formData.title || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, title: value })
-            }
+          <TextField
             isRequired
-          />
+            value={formData.title || ""}
+            onChange={(v) => setFormData({ ...formData, title: v })}
+          >
+            <Label>Title</Label>
+            <Input placeholder="Enter post title" />
+          </TextField>
 
           {/* Slug */}
-          <Input
-            label="URL Slug"
-            placeholder="auto-generated-from-title"
+          <TextField
             value={formData.slug || ""}
-            onValueChange={(value) => setFormData({ ...formData, slug: value })}
-            description="Leave empty to auto-generate from title"
-          />
+            onChange={(v) => setFormData({ ...formData, slug: v })}
+          >
+            <Label>URL Slug</Label>
+            <Input placeholder="auto-generated-from-title" />
+            <p className="text-xs text-muted mt-1">
+              Leave empty to auto-generate from title
+            </p>
+          </TextField>
 
           {/* Category */}
           <Select
-            label="Category"
-            selectedKeys={formData.category ? [formData.category] : []}
-            onSelectionChange={(keys) => {
-              const value = Array.from(keys)[0] as BlogCategory;
-              setFormData({ ...formData, category: value });
+            value={formData.category}
+            onChange={(key) => {
+              if (key)
+                setFormData({ ...formData, category: key as BlogCategory });
             }}
             isRequired
           >
-            {Object.values(BlogCategory).map((cat) => (
-              <SelectItem key={cat}>{cat}</SelectItem>
-            ))}
+            <Label>Category</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {Object.values(BlogCategory).map((cat) => (
+                  <ListBox.Item key={cat} id={cat} textValue={cat}>
+                    {cat}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
 
           {/* Content */}
@@ -571,15 +621,16 @@ export const BlogEditorPage: React.FC = () => {
           />
 
           {/* Excerpt */}
-          <Input
-            label="Excerpt (Optional)"
-            placeholder="Short summary (auto-generated if empty)"
+          <TextField
             value={formData.excerpt || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, excerpt: value })
-            }
-            description="Short summary shown in lists and previews"
-          />
+            onChange={(v) => setFormData({ ...formData, excerpt: v })}
+          >
+            <Label>Excerpt (Optional)</Label>
+            <Input placeholder="Short summary (auto-generated if empty)" />
+            <p className="text-xs text-muted mt-1">
+              Short summary shown in lists and previews
+            </p>
+          </TextField>
 
           {/* Featured Image */}
           <div>
@@ -597,16 +648,19 @@ export const BlogEditorPage: React.FC = () => {
           {/* Pin Post */}
           <Switch
             isSelected={formData.isPinned || false}
-            onValueChange={(value) =>
-              setFormData({ ...formData, isPinned: value })
-            }
+            onChange={(value) => setFormData({ ...formData, isPinned: value })}
           >
-            Pin to top of blog list
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <Switch.Content>
+              <Label>Pin to top of blog list</Label>
+            </Switch.Content>
           </Switch>
 
           {/* Status Badge */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground-500">Status:</span>
+            <span className="text-sm text-muted">Status:</span>
             <Chip
               color={
                 formData.status === BlogPostStatus.Published
@@ -618,23 +672,23 @@ export const BlogEditorPage: React.FC = () => {
               {formData.status}
             </Chip>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Tournament winners — separate section shown below content in the published post */}
       {selectedTournamentId &&
         formData.templateType === BlogTemplateType.TournamentResults && (
           <Card className="mt-6">
-            <CardHeader>
+            <Card.Header>
               <div className="flex flex-col gap-0.5">
                 <h2 className="text-xl font-semibold">Tournament Results</h2>
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   This section is automatically displayed below the post
                   content. It does not need to be added to the text above.
                 </p>
               </div>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               {(() => {
                 const selectedTournament = tournaments.find(
                   (t) => t.firestoreId === selectedTournamentId,
@@ -645,12 +699,12 @@ export const BlogEditorPage: React.FC = () => {
                   );
                 }
                 return (
-                  <p className="text-foreground-500">
+                  <p className="text-muted">
                     No winners data available for this tournament.
                   </p>
                 );
               })()}
-            </CardBody>
+            </Card.Content>
           </Card>
         )}
     </div>

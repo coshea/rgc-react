@@ -1,11 +1,4 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 
 export function AnnualStartStep(props: {
@@ -30,33 +23,33 @@ export function AnnualStartStep(props: {
   } = props;
 
   const renewingCardClass = hasPriorMembership
-    ? "rounded-2xl border-2 border-primary shadow-md"
-    : "rounded-2xl border border-default-200";
+    ? "rounded-2xl border-2 border-accent shadow-md"
+    : "rounded-2xl border";
 
   const newMemberCardClass = hasPriorMembership
-    ? "rounded-2xl border border-default-200"
-    : "rounded-2xl border-2 border-primary shadow-md";
+    ? "rounded-2xl border"
+    : "rounded-2xl border-2 border-accent shadow-md";
 
   return (
-    <Card className="w-full max-w-4xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
-        <div className="space-y-1">
+    <Card className="w-full max-w-4xl">
+      <Card.Header className="space-y-1">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
-          <p className="text-sm text-default-600">
-            New members should choose the application option.
-          </p>
+          <BackButton onPress={onBack} />
         </div>
-        <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card className={renewingCardClass} shadow="none">
-          <CardHeader className="pb-0">
+        <p className="text-sm text-foreground">
+          New members should choose the application option.
+        </p>
+      </Card.Header>
+      <Separator />
+      <Card.Content className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card className={renewingCardClass}>
+          <Card.Header className="pb-0">
             <h3 className="text-base font-semibold">
               I’m renewing (existing member)
             </h3>
-          </CardHeader>
-          <CardBody className="pt-2 text-sm text-default-600 space-y-3">
+          </Card.Header>
+          <Card.Content className="pt-2 text-sm text-foreground space-y-3">
             <p>
               Renewals require signing in so we can automatically record your
               payment to your account.
@@ -64,25 +57,21 @@ export function AnnualStartStep(props: {
             <div>
               Annual Dues: <strong>{currency(membershipAmountDue)}</strong>
             </div>
-          </CardBody>
-          <CardFooter className="justify-end">
+          </Card.Content>
+          <Card.Footer className="justify-end">
             {isLoggedIn ? (
-              <Button color="primary" onPress={onContinueRenew}>
-                Continue
-              </Button>
+              <Button onPress={onContinueRenew}>Continue</Button>
             ) : (
-              <Button color="primary" onPress={onLoginToRenew}>
-                Log in to renew
-              </Button>
+              <Button onPress={onLoginToRenew}>Log in to renew</Button>
             )}
-          </CardFooter>
+          </Card.Footer>
         </Card>
 
-        <Card className={newMemberCardClass} shadow="none">
-          <CardHeader className="pb-0">
+        <Card className={newMemberCardClass}>
+          <Card.Header className="pb-0">
             <h3 className="text-base font-semibold">I’m new (apply to join)</h3>
-          </CardHeader>
-          <CardBody className="pt-2 text-sm text-default-600 space-y-3">
+          </Card.Header>
+          <Card.Content className="pt-2 text-sm text-foreground space-y-3">
             <p>
               First time joining? Choose this option. You’ll fill out a short
               application and then pay your dues.
@@ -96,18 +85,14 @@ export function AnnualStartStep(props: {
             <div>
               Annual Dues: <strong>{currency(membershipAmountDue)}</strong>
             </div>
-          </CardBody>
-          <CardFooter className="justify-end">
-            <Button
-              color="primary"
-              onPress={onApplyNewMember}
-              isDisabled={hasPriorMembership}
-            >
+          </Card.Content>
+          <Card.Footer className="justify-end">
+            <Button onPress={onApplyNewMember} isDisabled={hasPriorMembership}>
               Apply &amp; Pay Dues
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

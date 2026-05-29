@@ -39,11 +39,58 @@ vi.mock("@/api/membership", () => ({
   },
 }));
 
+vi.mock("@/providers/toast", () => ({
+  addToast: (args: any) => addToastMock(args),
+}));
+
+vi.mock("@heroui-pro/react/stepper", () => {
+  const MockStepper = Object.assign(
+    ({ children }: any) => <div data-testid="stepper">{children}</div>,
+    {
+      Step: ({ children }: any) => <div>{children}</div>,
+      Indicator: () => null,
+      Content: ({ children }: any) => <div>{children}</div>,
+      Title: ({ children }: any) => <span>{children}</span>,
+      Separator: () => null,
+    },
+  );
+  return { Stepper: MockStepper };
+});
+
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
+  const MockCheckbox = Object.assign(
+    ({
+      children,
+      isSelected,
+      onValueChange,
+      onChange,
+      className,
+      id,
+      classNames: _classNames,
+    }: any) => (
+      <label className={className}>
+        <input
+          id={id}
+          type="checkbox"
+          checked={isSelected ?? false}
+          onChange={(e) => {
+            onValueChange?.(e.target.checked);
+            onChange?.(e.target.checked);
+          }}
+        />
+        {children}
+      </label>
+    ),
+    {
+      Control: ({ children }: any) => <>{children}</>,
+      Indicator: () => null,
+      Content: ({ children }: any) => <span>{children}</span>,
+    },
+  );
   return {
     ...mod,
-    addToast: (args: any) => addToastMock(args),
+    Checkbox: MockCheckbox,
   };
 });
 
@@ -134,9 +181,11 @@ describe("MembershipPage - new member flow", () => {
       await screen.findByRole("button", { name: /Apply & Pay Dues/i }),
     );
 
-    fireEvent.click(
-      screen.getByText(/I understand I must mail the completed application/i),
+    const applicationAcknowledgement = screen.getByLabelText(
+      /I understand I must mail the completed application/i,
     );
+    fireEvent.click(applicationAcknowledgement);
+    expect(applicationAcknowledgement).toBeChecked();
 
     fireEvent.click(
       screen.getByRole("button", { name: /Continue to Payment/i }),

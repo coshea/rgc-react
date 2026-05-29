@@ -7,6 +7,22 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#0a4d1a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Inline theme bootstrap: apply dark class before first paint to prevent FOUC -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("heroui-theme");
+          var resolved =
+            t === "dark" || t === "light"
+              ? t
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.classList.add(resolved);
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Primary Meta Tags -->
     <title>Ridgefield Golf Club</title>

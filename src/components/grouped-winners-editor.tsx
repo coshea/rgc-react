@@ -1,13 +1,15 @@
 import React from "react";
+import type { Key } from "react-aria-components";
 import {
   Button,
   Card,
-  CardBody,
   Chip,
   Input,
-  NumberInput,
+  InputGroup,
   Select,
-  SelectItem,
+  Label,
+  ListBox,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useUsers } from "@/hooks/useUsers";
@@ -291,10 +293,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
 
   if (!isCompleted) {
     return (
-      <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+      <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
         <Icon
           icon="lucide:trophy"
-          className="mx-auto text-2xl mb-2 text-default-400"
+          className="mx-auto text-2xl mb-2 text-muted"
         />
         <p>Winners can be added once the tournament is marked as completed</p>
       </div>
@@ -313,25 +315,33 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
         <div className="flex flex-wrap items-center gap-2 justify-end">
           <Chip
             color={remaining < 0 ? "danger" : "success"}
-            variant="flat"
+            variant="tertiary"
             className="min-w-[100px] justify-center"
           >
             ${remaining.toLocaleString()}
           </Chip>
-          <Button size="sm" variant="flat" onPress={() => addGroup("overall")}>
+          <Button
+            size="sm"
+            variant="tertiary"
+            onPress={() => addGroup("overall")}
+          >
             Add Overall
           </Button>
-          <Button size="sm" variant="flat" onPress={() => addGroup("day")}>
+          <Button size="sm" variant="tertiary" onPress={() => addGroup("day")}>
             Add Day
           </Button>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => addGroup("closestToPin")}
           >
             Add Closest to Pin
           </Button>
-          <Button size="sm" variant="flat" onPress={() => addGroup("custom")}>
+          <Button
+            size="sm"
+            variant="tertiary"
+            onPress={() => addGroup("custom")}
+          >
             Add Custom
           </Button>
         </div>
@@ -340,109 +350,124 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
       {/* Source mode selector */}
       <div className="flex items-start gap-3">
         <Select
-          size="sm"
-          label="Winner selection source"
-          selectedKeys={new Set([sourceMode])}
-          onSelectionChange={(keys: any) => {
-            const v = Array.from(keys as Set<string>)[0] as SourceMode;
+          value={sourceMode}
+          onChange={(val) => {
+            const v = val as SourceMode;
             userChoseModeRef.current = true;
             setSourceMode(v || (registrations.length > 0 ? "teams" : "users"));
           }}
           className="w-[260px]"
         >
-          <SelectItem
-            key="teams"
-            isDisabled={registrations.length === 0}
-            textValue="Registered Teams"
-          >
-            Registered Teams {registrations.length === 0 ? "(none)" : ""}
-          </SelectItem>
-          <SelectItem key="users" textValue="All Users">
-            All Users
-          </SelectItem>
+          <Label>Winner selection source</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item
+                id="teams"
+                textValue="Registered Teams"
+                isDisabled={registrations.length === 0}
+              >
+                Registered Teams {registrations.length === 0 ? "(none)" : ""}
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="users" textValue="All Users">
+                All Users
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            </ListBox>
+          </Select.Popover>
         </Select>
-        <NumberInput
-          size="sm"
-          label="Winners per place"
-          min={1}
-          max={20}
-          value={effectiveTeamSize}
-          onValueChange={(v) => setEffectiveTeamSize(Math.max(1, v || 1))}
-          description={
-            teamSize !== effectiveTeamSize
-              ? `Tournament default: ${teamSize}`
-              : undefined
+        <TextField
+          value={String(effectiveTeamSize)}
+          onChange={(v) =>
+            setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))
           }
           className="w-[160px]"
-        />
+        >
+          <Label>Winners per place</Label>
+          <Input type="number" min={1} max={20} />
+          {teamSize !== effectiveTeamSize && (
+            <p className="text-xs text-muted mt-1">
+              Tournament default: {teamSize}
+            </p>
+          )}
+        </TextField>
       </div>
 
       {sorted.length === 0 ? (
-        <div className="bg-content2 p-4 rounded-md text-center text-foreground-500">
+        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
           <p>No winner groups yet. Add one to get started.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {sorted.map((g) => (
             <Card key={g.id} className="w-full">
-              <CardBody className="p-4">
+              <Card.Content className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3 flex-wrap md:flex-nowrap w-full">
-                    <Input
-                      size="sm"
-                      label="Group Label"
+                    <TextField
                       value={g.label}
-                      onChange={(e: any) =>
-                        updateGroup(g.id, { label: e.target.value })
-                      }
+                      onChange={(v) => updateGroup(g.id, { label: v })}
                       className="w-full md:max-w-[240px] md:flex-[2] min-w-0"
-                    />
+                    >
+                      <Label>Group Label</Label>
+                      <Input />
+                    </TextField>
                     <Select
-                      size="sm"
-                      label="Type"
-                      selectedKeys={new Set([g.type])}
-                      onSelectionChange={(keys: any) => {
-                        const v = Array.from(
-                          keys as Set<string>,
-                        )[0] as WinnerGroupType;
-                        updateGroup(g.id, { type: v });
+                      value={g.type}
+                      onChange={(val) => {
+                        updateGroup(g.id, { type: val as WinnerGroupType });
                       }}
                       className="w-[160px] md:w-[180px]"
                     >
-                      {GROUP_TYPE_OPTIONS.map((t) => (
-                        <SelectItem key={t} textValue={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
+                      <Label>Type</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {GROUP_TYPE_OPTIONS.map((t) => (
+                            <ListBox.Item key={t} id={t} textValue={t}>
+                              {t}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
                     </Select>
                     {g.type === "day" && (
-                      <NumberInput
-                        size="sm"
-                        label="Day #"
-                        min={1}
-                        value={g.dayIndex || 1}
-                        onValueChange={(v) =>
-                          updateGroup(g.id, { dayIndex: v || 1 })
+                      <TextField
+                        value={String(g.dayIndex || 1)}
+                        onChange={(v) =>
+                          updateGroup(g.id, { dayIndex: parseInt(v, 10) || 1 })
                         }
                         className="w-[120px]"
-                      />
+                      >
+                        <Label>Day #</Label>
+                        <Input type="number" min={1} />
+                      </TextField>
                     )}
-                    <NumberInput
-                      size="sm"
-                      label="Order"
-                      min={0}
-                      value={g.order}
-                      onValueChange={(v) =>
-                        updateGroup(g.id, { order: Math.max(0, v || 0) })
+                    <TextField
+                      value={String(g.order)}
+                      onChange={(v) =>
+                        updateGroup(g.id, {
+                          order: Math.max(0, parseInt(v, 10) || 0),
+                        })
                       }
                       className="w-[120px]"
-                    />
+                    >
+                      <Label>Order</Label>
+                      <Input type="number" min={0} />
+                    </TextField>
                   </div>
                   <Button
                     size="sm"
                     isIconOnly
-                    color="danger"
-                    variant="light"
+                    variant="ghost"
                     onPress={() => removeGroup(g.id)}
                   >
                     <Icon icon="lucide:trash-2" />
@@ -456,8 +481,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                   {g.type !== "closestToPin" && (
                     <Button
                       size="sm"
-                      color="primary"
-                      variant="flat"
+                      variant="tertiary"
                       onPress={() => addPlace(g.id)}
                     >
                       Add Place
@@ -466,7 +490,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                 </div>
 
                 {g.winners.length === 0 ? (
-                  <div className="bg-content2 p-3 rounded text-sm text-foreground-500">
+                  <div className="bg-surface-secondary p-3 rounded text-sm text-muted">
                     No places yet.
                   </div>
                 ) : (
@@ -480,7 +504,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       return sortedPlaces.map((w, index) => (
                         <div
                           key={w.id || `${w.place}-${index}`}
-                          className="rounded-md bg-content2 p-3"
+                          className="rounded-md bg-surface-secondary p-3"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
@@ -494,10 +518,10 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                 }
                                 className={`text-xl ${
                                   g.type === "closestToPin"
-                                    ? "text-primary"
+                                    ? "text-accent"
                                     : w.place === 1
                                       ? "text-warning"
-                                      : "text-default-400"
+                                      : "text-muted"
                                 }`}
                               />
                               <span className="font-medium">
@@ -510,7 +534,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                               {g.type !== "closestToPin" && (
                                 <Button
                                   size="sm"
-                                  variant="flat"
+                                  variant="tertiary"
                                   onPress={() =>
                                     tiePlace(g.id, w.id || w.place)
                                   }
@@ -521,8 +545,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                               <Button
                                 size="sm"
                                 isIconOnly
-                                color="danger"
-                                variant="light"
+                                variant="ghost"
                                 aria-label="Delete place"
                                 onPress={() =>
                                   removePlace(g.id, w.id || w.place)
@@ -536,48 +559,33 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {sourceMode === "teams" ? (
                               <Select
-                                label={
-                                  effectiveTeamSize > 1
-                                    ? "Registered Teams"
-                                    : "Registered Player"
-                                }
-                                placeholder={
-                                  registrations.length > 0
-                                    ? "Choose registration(s)"
-                                    : "No registrations"
-                                }
-                                selectionMode="multiple"
-                                selectedKeys={
-                                  new Set(
-                                    registrations
-                                      .filter((r) => {
-                                        const competitorIds = new Set(
-                                          (w.competitors || []).map(
-                                            (c) => c.userId,
-                                          ),
-                                        );
-                                        return (
-                                          r.team.length > 0 &&
-                                          r.team.every((m) =>
-                                            competitorIds.has(m.id),
-                                          )
-                                        );
-                                      })
-                                      .map((r) => r.id),
-                                  )
-                                }
-                                onSelectionChange={(keys: any) => {
-                                  const selectedIds = Array.from(
-                                    keys as Set<string>,
-                                  );
+                                value={registrations
+                                  .filter((r) => {
+                                    const competitorIds = new Set(
+                                      (w.competitors || []).map(
+                                        (c) => c.userId,
+                                      ),
+                                    );
+                                    return (
+                                      r.team.length > 0 &&
+                                      r.team.every((m) =>
+                                        competitorIds.has(m.id),
+                                      )
+                                    );
+                                  })
+                                  .map((r) => r.id as Key)}
+                                onChange={(val) => {
+                                  const selectedIds = Array.isArray(val)
+                                    ? (val as string[])
+                                    : val
+                                      ? [val as string]
+                                      : [];
                                   const competitors: Competitor[] =
                                     selectedIds.flatMap((key) => {
                                       const reg = registrations.find(
                                         (r) => r.id === key,
                                       );
                                       if (!reg) return [];
-                                      // Cap each individual team to effectiveTeamSize — ties
-                                      // across registrations are allowed (multiple teams per place).
                                       const members = reg.team.map((m) => ({
                                         userId: m.id,
                                         displayName: m.displayName || m.id,
@@ -590,22 +598,45 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                                     competitors,
                                   });
                                 }}
+                                selectionMode="multiple"
+                                placeholder={
+                                  registrations.length > 0
+                                    ? "Choose registration(s)"
+                                    : "No registrations"
+                                }
                                 className="w-full"
                                 isDisabled={registrations.length === 0}
                                 aria-label="Registered Team Selector"
                               >
-                                {[...registrations]
-                                  .sort((a, b) =>
-                                    teamLabel(a).localeCompare(teamLabel(b)),
-                                  )
-                                  .map((r) => (
-                                    <SelectItem
-                                      key={r.id}
-                                      textValue={teamLabel(r)}
-                                    >
-                                      {teamLabel(r)}
-                                    </SelectItem>
-                                  ))}
+                                <Label>
+                                  {effectiveTeamSize > 1
+                                    ? "Registered Teams"
+                                    : "Registered Player"}
+                                </Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    {[...registrations]
+                                      .sort((a, b) =>
+                                        teamLabel(a).localeCompare(
+                                          teamLabel(b),
+                                        ),
+                                      )
+                                      .map((r) => (
+                                        <ListBox.Item
+                                          key={r.id}
+                                          id={r.id}
+                                          textValue={teamLabel(r)}
+                                        >
+                                          {teamLabel(r)}
+                                          <ListBox.ItemIndicator />
+                                        </ListBox.Item>
+                                      ))}
+                                  </ListBox>
+                                </Select.Popover>
                               </Select>
                             ) : (
                               <UserSelect
@@ -655,47 +686,57 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                               />
                             )}
 
-                            <NumberInput
-                              label="Prize Amount (per person)"
-                              min={0}
-                              value={w.prizeAmount}
-                              onValueChange={(v) =>
-                                updatePlace(g.id, w.id || w.place, {
-                                  prizeAmount: v,
-                                })
-                              }
-                              onFocus={(e) => {
-                                if (e.target instanceof HTMLInputElement) {
-                                  e.target.select();
-                                }
-                              }}
-                              startContent={
-                                <div className="pointer-events-none flex items-center">
-                                  <span className="text-default-400 text-small">
-                                    $
-                                  </span>
-                                </div>
-                              }
-                            />
+                            <div className="flex flex-col gap-1">
+                              <Label className="text-sm">
+                                Prize Amount (per person)
+                              </Label>
+                              <InputGroup>
+                                <InputGroup.Prefix>
+                                  <div className="pointer-events-none flex items-center">
+                                    <span className="text-muted text-sm">
+                                      $
+                                    </span>
+                                  </div>
+                                </InputGroup.Prefix>
+                                <InputGroup.Input
+                                  type="number"
+                                  min={0}
+                                  value={String(w.prizeAmount ?? "")}
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>,
+                                  ) =>
+                                    updatePlace(g.id, w.id || w.place, {
+                                      prizeAmount:
+                                        parseFloat(e.target.value) || 0,
+                                    })
+                                  }
+                                  onFocus={(e) => {
+                                    if (e.target instanceof HTMLInputElement) {
+                                      e.target.select();
+                                    }
+                                  }}
+                                />
+                              </InputGroup>
+                            </div>
                           </div>
 
                           <div className="mt-2">
-                            <Input
-                              label="Score"
+                            <TextField
                               value={w.score || ""}
-                              onChange={(e: any) =>
-                                updatePlace(g.id, w.id || w.place, {
-                                  score: e.target.value,
-                                })
+                              onChange={(v) =>
+                                updatePlace(g.id, w.id || w.place, { score: v })
                               }
-                            />
+                            >
+                              <Label>Score</Label>
+                              <Input />
+                            </TextField>
                           </div>
                         </div>
                       ));
                     })()}
                   </div>
                 )}
-              </CardBody>
+              </Card.Content>
             </Card>
           ))}
         </div>

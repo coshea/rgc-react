@@ -21,21 +21,252 @@ const addToastMock = vi.fn();
 vi.mock("@/providers/toast", () => ({
   addToast: (args: any) => addToastMock(args),
 }));
+// Shared mutable ref so the @heroui/react MockTextField can pass a field id to
+// the react-aria-components Label (which is imported separately in tournament-editor.tsx).
+const fieldCtxRef = vi.hoisted(() => ({ current: "" }));
+
+vi.mock("react-aria-components", async (orig) => {
+  const mod: any = await orig();
+  // Replace Label with a plain <label> that uses the shared field id for `htmlFor`.
+  const MockRALabel = ({ children, ...rest }: any) => (
+    <label htmlFor={fieldCtxRef.current || undefined} {...rest}>
+      {children}
+    </label>
+  );
+  return { ...mod, Label: MockRALabel };
+});
+
 vi.mock("@heroui/react", async (orig) => {
   const mod: any = await orig();
-  return {
-    ...mod,
-    DatePicker: ({ label, value, onChange, granularity }: any) => (
+  const { useId, createContext, useContext } = await import("react");
+
+  type FieldCtx = { id: string; value: string; onChange: (v: string) => void };
+  const TextFieldCtx = createContext<FieldCtx | null>(null);
+
+  function MockTextField({
+    children,
+    value,
+    onChange,
+    isInvalid,
+    errorMessage,
+    ...rest
+  }: any) {
+    const id = useId();
+    fieldCtxRef.current = id;
+    return (
+      <TextFieldCtx.Provider
+        value={{ id, value: value ?? "", onChange: onChange ?? (() => {}) }}
+      >
+        <div {...rest}>{children}</div>
+        {isInvalid && errorMessage && <span role="alert">{errorMessage}</span>}
+      </TextFieldCtx.Provider>
+    );
+  }
+
+  function MockInput({
+    label,
+    value: valueProp,
+    onChange: onChangeProp,
+    onValueChange,
+    type,
+    min,
+    max,
+    isInvalid,
+    errorMessage,
+    ...rest
+  }: any) {
+    const ctx = useContext(TextFieldCtx);
+    const id = ctx ? ctx.id : label ? `input-${label}` : undefined;
+    const value = valueProp ?? ctx?.value ?? "";
+    return (
       <div>
-        <label>{label}</label>
+        {label && !ctx && <label htmlFor={id}>{label}</label>}
         <input
-          aria-label={label}
+          id={id}
+          type={type || "text"}
+          value={value}
+          min={min}
+          max={max}
+          aria-invalid={isInvalid || undefined}
+          onChange={(e) => {
+            if (ctx) ctx.onChange(e.target.value);
+            if (onChangeProp) onChangeProp(e);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+        {isInvalid && errorMessage && <span role="alert">{errorMessage}</span>}
+      </div>
+    );
+  }
+
+  function MockTextArea({
+    label,
+    value: valueProp,
+    onValueChange,
+    isInvalid,
+    errorMessage,
+    ...rest
+  }: any) {
+    const ctx = useContext(TextFieldCtx);
+    const id = ctx ? ctx.id : label ? `textarea-${label}` : undefined;
+    const value = valueProp ?? ctx?.value ?? "";
+    return (
+      <div>
+        {label && !ctx && <label htmlFor={id}>{label}</label>}
+        <textarea
+          id={id}
+          value={value}
+          aria-invalid={isInvalid || undefined}
+          onChange={(e) => {
+            if (ctx) ctx.onChange(e.target.value);
+            if (onValueChange) onValueChange(e.target.value);
+          }}
+          {...rest}
+        />
+        {isInvalid && errorMessage && <span role="alert">{errorMessage}</span>}
+      </div>
+    );
+  }
+
+  function MockDatePicker({
+    label,
+    value,
+    onChange,
+    granularity,
+    children,
+  }: any) {
+    // In the compound pattern, label comes as a <Label> child rather than a prop.
+    let labelText: string | undefined = label;
+    if (!labelText && children) {
+      const childArray = Array.isArray(children) ? children : [children];
+      for (const child of childArray) {
+        if (
+          child &&
+          typeof child === "object" &&
+          typeof child.props?.children === "string"
+        ) {
+          labelText = child.props.children;
+          break;
+        }
+      }
+    }
+    return (
+      <div>
+        {labelText && <label>{labelText}</label>}
+        <input
+          aria-label={labelText}
           type={granularity ? "datetime-local" : "date"}
           value={value?.toString?.() ?? value ?? ""}
           onChange={(e) => onChange?.(e.target.value || null)}
         />
       </div>
-    ),
+    );
+  }
+
+  const {
+    useState: useStateMock,
+    createContext: createContextMock,
+    useContext: useContextMock,
+  } = await import("react");
+  type SelectCtx = {
+    label?: string;
+    onChange: (v: string) => void;
+    isOpen: boolean;
+    setOpen: (v: boolean) => void;
+  };
+  const SelectContext = createContextMock<SelectCtx | null>(null);
+
+  function MockSelect({ children, onChange, value: _value, ...rest }: any) {
+    const [isOpen, setOpen] = useStateMock(false);
+    // Extract label text from children (e.g. <Label>Status</Label>)
+    let labelText: string | undefined;
+    const childArray = Array.isArray(children) ? children : [children];
+    for (const child of childArray) {
+      if (
+        child &&
+        typeof child === "object" &&
+        typeof child.props?.children === "string"
+      ) {
+        labelText = child.props.children;
+        break;
+      }
+    }
+    return (
+      <SelectContext.Provider
+        value={{
+          label: labelText,
+          onChange: onChange ?? (() => {}),
+          isOpen,
+          setOpen,
+        }}
+      >
+        <div {...rest}>{children}</div>
+      </SelectContext.Provider>
+    );
+  }
+
+  function MockSelectTrigger({ children }: any) {
+    const ctx = useContextMock(SelectContext);
+    return (
+      <button
+        type="button"
+        aria-label={ctx?.label}
+        onClick={() => ctx?.setOpen(!ctx.isOpen)}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  function MockSelectValue() {
+    return null;
+  }
+  function MockSelectIndicator() {
+    return <span aria-hidden>▼</span>;
+  }
+  function MockSelectPopover({ children }: any) {
+    const ctx = useContextMock(SelectContext);
+    if (!ctx?.isOpen) return null;
+    return <div role="listbox">{children}</div>;
+  }
+
+  MockSelect.Trigger = MockSelectTrigger;
+  MockSelect.Value = MockSelectValue;
+  MockSelect.Indicator = MockSelectIndicator;
+  MockSelect.Popover = MockSelectPopover;
+
+  function MockListBox({ children }: any) {
+    return <>{children}</>;
+  }
+  function MockListBoxItem({ children, id, textValue }: any) {
+    const ctx = useContextMock(SelectContext);
+    return (
+      <div
+        role="option"
+        onClick={() => {
+          ctx?.onChange(id ?? textValue);
+          ctx?.setOpen(false);
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+  function MockListBoxItemIndicator() {
+    return null;
+  }
+  MockListBox.Item = MockListBoxItem;
+  MockListBox.ItemIndicator = MockListBoxItemIndicator;
+
+  return {
+    ...mod,
+    TextField: MockTextField,
+    Input: MockInput,
+    TextArea: MockTextArea,
+    DatePicker: MockDatePicker,
+    Select: MockSelect,
+    ListBox: MockListBox,
   };
 });
 
@@ -293,7 +524,6 @@ describe("TournamentEditor - edge cases", () => {
   });
 
   it("allows submission when canceled and completed toggled (no winners)", async () => {
-
     const onSave = vi.fn();
     const qc = new QueryClient();
     render(

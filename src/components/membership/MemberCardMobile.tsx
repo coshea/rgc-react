@@ -32,18 +32,18 @@ export function MemberCardMobile({
             src={(user.photoURL as string) || undefined}
             alt={user.displayName || user.email}
           />
-          <div className="text-sm text-default-500 font-medium truncate hover:text-primary">
+          <div className="text-sm text-muted font-medium truncate hover:text-accent">
             {user.displayName || "(no name)"}
           </div>
         </Link>
       </div>
-      <div className="text-sm text-default-500 mb-1 flex items-center gap-2 whitespace-normal break-words">
+      <div className="text-sm text-muted mb-1 flex items-center gap-2 whitespace-normal break-words">
         <span className="font-medium">Email:</span>
         <span className="block break-words whitespace-normal">
           {user.email}
         </span>
       </div>
-      <div className="text-sm text-default-500">
+      <div className="text-sm text-muted">
         <span className="font-medium">Phone: </span>
         <span>{user.phone ? formatPhone(user.phone) : "—"}</span>
       </div>
@@ -52,23 +52,23 @@ export function MemberCardMobile({
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium capitalize ${
               user.membershipType === "full"
-                ? "bg-success-100 text-success-600"
-                : "bg-primary-100 text-primary-600"
+                ? "bg-success text-success-600"
+                : "bg-accent-soft text-accent"
             }`}
           >
             {user.membershipType}
           </span>
         ) : (
-          <span className="text-default-400">No membership type</span>
+          <span className="text-muted">No membership type</span>
         )}
       </div>
       {isAdmin && (
         <div className="mt-3 flex gap-3 flex-row flex-wrap">
-          <Tooltip content="Edit member">
+          <Tooltip>
             <Button
               isIconOnly
               size="sm"
-              variant="light"
+              variant="ghost"
               onPress={() => onEdit(user)}
               aria-label="Edit member"
             >
@@ -80,19 +80,19 @@ export function MemberCardMobile({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-4 h-4 text-default-600"
+                className="w-4 h-4 text-foreground"
               >
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.375-9.375Z" />
               </svg>
             </Button>
+            <Tooltip.Content>Edit member</Tooltip.Content>
           </Tooltip>
-          <Tooltip content="Delete member" color="danger">
+          <Tooltip>
             <Button
               isIconOnly
               size="sm"
-              variant="light"
-              color="danger"
+              variant="ghost"
               onPress={() => onDelete(user)}
               aria-label="Delete member"
             >
@@ -113,6 +113,7 @@ export function MemberCardMobile({
                 <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
               </svg>
             </Button>
+            <Tooltip.Content>Delete member</Tooltip.Content>
           </Tooltip>
         </div>
       )}

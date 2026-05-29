@@ -123,6 +123,7 @@ export default function MembershipDirectoryPage() {
       lastName: "",
       email: "",
       phone: "",
+      ghinNumber: "",
       boardMember: false,
       role: "",
     });
@@ -136,6 +137,7 @@ export default function MembershipDirectoryPage() {
       lastName: u.lastName || "",
       email: u.email || "",
       phone: u.phone || "",
+      ghinNumber: u.ghinNumber || "",
       boardMember: !!u.boardMember,
       role: u.boardMember ? u.role || "" : "",
     });
@@ -174,6 +176,7 @@ export default function MembershipDirectoryPage() {
           lastName: (form.lastName || "").trim(),
           email: form.email || "",
           phone: phoneToSave || "",
+          ghinNumber: (form.ghinNumber || "").trim(),
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
         });
@@ -187,6 +190,7 @@ export default function MembershipDirectoryPage() {
           lastName: (form.lastName || "").trim() || undefined,
           email: form.email || "",
           phone: phoneToSave || "",
+          ghinNumber: (form.ghinNumber || "").trim() || undefined,
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
           migrationEligible: true,

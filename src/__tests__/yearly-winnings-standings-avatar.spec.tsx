@@ -35,13 +35,45 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
+// Mock Avatar.Image to render as a real <img> in jsdom.
+// HeroUI v3 Avatar.Image (Radix) only shows when the image loads;
+// jsdom never loads images so Avatar.Image renders nothing without this mock.
+vi.mock("@heroui/react", async (orig) => {
+  const mod = await orig();
+  const MockAvatar = Object.assign(
+    (props: any) => {
+      const { children, name, className, ...rest } = props;
+      return (
+        <span
+          className={`avatar ${className ?? ""}`.trim()}
+          name={name}
+          {...rest}
+        >
+          {children}
+        </span>
+      );
+    },
+    {
+      Image: ({ src, alt }: { src?: string; alt?: string }) => (
+        <img src={src} alt={alt} />
+      ),
+      Fallback: ({ children }: { children?: any }) => (
+        <span className="avatar__fallback">{children}</span>
+      ),
+    },
+  );
+  return { ...(mod as any), Avatar: MockAvatar };
+});
+
 describe("YearlyWinningsStandings avatar rendering", () => {
   it("renders img avatar when profileURL available via usersMap", () => {
-    render(<YearlyWinningsStandings year={2025} />);
-    const img = document.querySelector("img");
-    expect(img).toBeTruthy();
+    const { container } = render(<YearlyWinningsStandings year={2025} />);
+    // HeroUI v3 Avatar renders src on the <img> child (Avatar.Image), not on outer span
+    const avatar = container.querySelector(".avatar");
+    expect(avatar).toBeTruthy();
+    const img = container.querySelector("img");
     expect(img?.getAttribute("src")).toBe(
-      "https://example.com/avatar-alpha.png"
+      "https://example.com/avatar-alpha.png",
     );
     // Ensure at least one textual occurrence of the player name (can appear multiple times: podium + table)
     const nameEls = screen.getAllByText("Alpha Player");

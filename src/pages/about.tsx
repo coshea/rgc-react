@@ -1,16 +1,18 @@
 import { title } from "@/components/primitives";
 import { siteConfig } from "@/config/site";
-import { Button, Link, Card, CardBody } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { useNavigate } from "react-router-dom";
 
 export default function AboutPage() {
   usePageTracking("About");
+  const navigate = useNavigate();
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-8 md:py-12">
       <div className="inline-block max-w-3xl text-center justify-center">
         <h1 className={title()}>About Ridgefield Golf Club</h1>
-        <p className="mt-3 text-default-600">
+        <p className="mt-3 text-foreground">
           Founded in 1974, the Ridgefield Golf Club is a lively community of
           roughly 300 golfers—residents and non-residents alike—ranging from
           weekend hackers to serious competitors. We exist to create great golf,
@@ -20,51 +22,47 @@ export default function AboutPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
         <Card>
-          <CardBody className="space-y-2">
+          <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Tournaments & Events</h2>
-            <p className="text-default-600">
+            <p className="text-foreground">
               Each season we run about 15 member tournaments—from quick fun
               formats to full competitive events. Winners earn Pro‑Shop credit
               to redeem on gear and merchandise.
             </p>
             <div className="pt-2">
               <Button
-                as={Link}
-                href={siteConfig.pages.tournaments.link}
-                color="primary"
-                variant="flat"
-                endContent={<Icon icon="lucide:chevron-right" />}
+                onPress={() => navigate(siteConfig.pages.tournaments.link)}
+                variant="tertiary"
               >
                 View Tournaments
+                <Icon icon="lucide:chevron-right" />
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card>
-          <CardBody className="space-y-2">
+          <Card.Content className="space-y-2">
             <h2 className="text-xl font-semibold">Membership</h2>
-            <p className="text-default-600">
+            <p className="text-foreground">
               Whether you’re new in town or a long-time local, our club offers
               organized play, social events, and opportunities to improve your
               game in an inclusive atmosphere.
             </p>
             <div className="pt-2">
               <Button
-                as={Link}
-                href={siteConfig.pages.membership.link}
-                color="secondary"
-                variant="flat"
-                endContent={<Icon icon="lucide:user-plus" />}
+                onPress={() => navigate(siteConfig.pages.membership.link)}
+                variant="tertiary"
               >
                 Become a Member
+                <Icon icon="lucide:user-plus" />
               </Button>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 
-      <div className="max-w-3xl text-center text-default-500 text-sm">
+      <div className="max-w-3xl text-center text-muted text-sm">
         <p>
           Have questions? You can reach us any time via the contact section on
           the home page.
@@ -72,7 +70,7 @@ export default function AboutPage() {
         <p>
           <a
             href={siteConfig.pages.contact.link}
-            className="text-primary hover:underline"
+            className="text-accent hover:underline"
           >
             Contact us
           </a>

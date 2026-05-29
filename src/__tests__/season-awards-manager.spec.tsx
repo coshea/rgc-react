@@ -30,6 +30,62 @@ vi.mock("@/hooks/useUsers", () => ({
   }),
 }));
 
+// HeroUI v3 Input renders <input label="..."> without aria-label.
+// Provide accessible shims so getByLabelText works in tests.
+vi.mock("@heroui/react", async (importOriginal) => {
+  const mod: any = await importOriginal();
+  const React = await import("react");
+  const TFCtx = React.createContext<{
+    value?: string;
+    onChange?: (v: string) => void;
+  } | null>(null);
+  return {
+    ...mod,
+    TextField: ({ children, value, onChange }: any) =>
+      React.createElement(
+        TFCtx.Provider,
+        { value: { value, onChange } },
+        children,
+      ),
+    FieldError: ({ children }: any) => <span>{children}</span>,
+    Input: ({
+      label,
+      value: valueProp,
+      onChange: onChangeProp,
+      onValueChange,
+      type,
+      min,
+      max,
+      isInvalid,
+      errorMessage,
+      ...rest
+    }: any) => {
+      const ctx = React.useContext(TFCtx);
+      const value = ctx?.value ?? valueProp ?? "";
+      const handleChange = (e: any) => {
+        if (ctx?.onChange) ctx.onChange(e.target.value);
+        if (onChangeProp) onChangeProp(e);
+        if (onValueChange) onValueChange(e.target.value);
+      };
+      return (
+        <div>
+          {label && <label htmlFor={`input-${label}`}>{label}</label>}
+          <input
+            id={`input-${label}`}
+            aria-label={label}
+            type={type || "text"}
+            value={value}
+            min={min}
+            max={max}
+            onChange={handleChange}
+            {...rest}
+          />
+        </div>
+      );
+    },
+  };
+});
+
 // provide a lightweight typed mock for UserSelect used by tests
 interface UserSelectMockProps {
   value: string;
@@ -74,7 +130,7 @@ describe("SeasonAwardsManager", () => {
       target: { value: "u1" },
     });
 
-    fireEvent.change(screen.getByLabelText("Amount override (optional)"), {
+    fireEvent.change(screen.getByPlaceholderText(/Default: \$50/i), {
       target: { value: "75" },
     });
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Textarea, Button, Tooltip } from "@heroui/react";
+import { TextArea, Button, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,7 +26,7 @@ const BUTTONS: Array<{
   insert: (
     current: string,
     selection: string,
-    pos: number
+    pos: number,
   ) => { text: string; cursorOffset?: number };
 }> = [
   {
@@ -116,7 +116,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     });
   }
 
-  const wrapperClass = fillHeight ? "flex flex-col h-full" : "space-y-2";
+  const wrapperClass = fillHeight
+    ? "flex flex-col h-full min-w-0"
+    : "space-y-2 min-w-0";
 
   return (
     <div className={wrapperClass}>
@@ -124,22 +126,23 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         <label className="text-sm font-medium">{label}</label>
         <div className="flex items-center gap-1 flex-wrap">
           {BUTTONS.map((b) => (
-            <Tooltip key={b.label} content={b.label}>
+            <Tooltip key={b.label}>
               <Button
                 isIconOnly
                 size="sm"
-                variant="light"
+                variant="ghost"
                 onPress={() => applyInsertion(b.insert)}
                 aria-label={b.label}
               >
                 <Icon icon={b.icon} className="w-4 h-4" />
               </Button>
+              <Tooltip.Content>{b.label}</Tooltip.Content>
             </Tooltip>
           ))}
           {!hidePreviewToggle && (
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={() => setPreview((p) => !p)}
               aria-label="Toggle preview"
             >
@@ -147,21 +150,22 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             </Button>
           )}
           {onPopout && (
-            <Tooltip content="Popout">
+            <Tooltip>
               <Button
                 isIconOnly
                 size="sm"
-                variant="light"
+                variant="ghost"
                 onPress={onPopout}
                 aria-label="Open popout editor"
               >
                 <Icon icon="lucide:expand" className="w-4 h-4" />
               </Button>
+              <Tooltip.Content>Popout</Tooltip.Content>
             </Tooltip>
           )}
         </div>
       </div>
-      <div className={fillHeight ? "flex-1 min-h-0" : ""}>
+      <div className={fillHeight ? "flex-1 min-h-0 min-w-0" : "min-w-0"}>
         {forceEdit ? (
           fillHeight ? (
             <textarea
@@ -172,13 +176,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
             />
           ) : (
-            <Textarea
+            <TextArea
               ref={textareaRef}
               placeholder={placeholder}
-              minRows={minRows}
+              rows={minRows}
               value={value}
-              onValueChange={onChange}
-              classNames={{ input: `font-mono text-sm` }}
+              onChange={(e) => onChange(e.target.value)}
+              fullWidth
+              className="font-mono text-sm"
             />
           )
         ) : !preview ? (
@@ -191,28 +196,29 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               className="w-full h-full font-mono text-sm p-2 border rounded-md resize-none"
             />
           ) : (
-            <Textarea
+            <TextArea
               ref={textareaRef}
               placeholder={placeholder}
-              minRows={minRows}
+              rows={minRows}
               value={value}
-              onValueChange={onChange}
-              classNames={{ input: `font-mono text-sm` }}
+              onChange={(e) => onChange(e.target.value)}
+              fullWidth
+              className="font-mono text-sm"
             />
           )
         ) : (
           <div
-            className={`border rounded-md p-3 bg-content2 overflow-auto prose dark:prose-invert text-sm ${fillHeight ? "h-full" : "max-h-80"}`}
+            className={`border rounded-md p-3 bg-surface-secondary overflow-auto prose dark:prose-invert text-sm ${fillHeight ? "h-full" : "max-h-80"}`}
           >
             {value.trim() ? (
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
             ) : (
-              <div className="text-foreground-500 italic">No content</div>
+              <div className="text-muted italic">No content</div>
             )}
           </div>
         )}
       </div>
-      <p className="text-[11px] text-foreground-500">
+      <p className="text-[11px] text-muted">
         Supports Markdown & GFM (tables, strikethrough, task lists).
       </p>
     </div>

@@ -12,7 +12,7 @@ export default function SiteFooter() {
     }
   };
   return (
-    <footer className="mt-12 border-t border-default-200/60 dark:border-default-100/10 bg-linear-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
+    <footer className="mt-12 border-t/60 dark:/10 bg-linear-to-b from-background to-default-100/20 dark:from-black/40 dark:to-black/70">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
           {/* Brand centered */}
@@ -28,52 +28,52 @@ export default function SiteFooter() {
           </div>
 
           {/* Nav links row */}
-          <nav className="flex flex-wrap justify-center gap-3 sm:gap-6 text-foreground-500 text-sm sm:text-base">
+          <nav className="flex flex-wrap justify-center gap-3 sm:gap-6 text-muted text-sm sm:text-base">
             <Link
               href={siteConfig.pages.home.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Home
             </Link>
             <Link
               href={siteConfig.pages.about.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               About
             </Link>
             <Link
               href={siteConfig.pages.tournaments.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Tournaments
             </Link>
             <Link
               href={siteConfig.pages.moneyList.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Money List
             </Link>
             <Link
               href={siteConfig.pages.membership.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Membership
             </Link>
             <Link
               href={siteConfig.pages.contact.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Contact
             </Link>
             <Link
               href={siteConfig.pages.cookies.link}
-              color="foreground"
+              
               className="hover:text-foreground"
             >
               Cookies
@@ -83,14 +83,15 @@ export default function SiteFooter() {
           {/* Social links removed per request */}
 
           {/* Bottom row: copyright + back to top */}
-          <div className="mt-2 sm:mt-4 w-full flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-foreground-500">
+          <div className="mt-2 sm:mt-4 w-full flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-between gap-3 text-[11px] sm:text-xs text-muted">
             <div className="flex flex-col gap-1 items-center text-center sm:items-start sm:text-left">
               <p>© {year} Ridgefield Golf Club. All rights reserved.</p>
               <p>
                 This site is protected by reCAPTCHA and the Google{" "}
                 <Link
                   href="https://policies.google.com/privacy"
-                  isExternal
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[11px] sm:text-xs font-normal text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Privacy Policy
@@ -98,7 +99,8 @@ export default function SiteFooter() {
                 and{" "}
                 <Link
                   href="https://policies.google.com/terms"
-                  isExternal
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[11px] sm:text-xs font-normal text-inherit underline underline-offset-2 hover:opacity-80"
                 >
                   Terms of Service
@@ -110,7 +112,7 @@ export default function SiteFooter() {
               <Button
                 size="sm"
                 isIconOnly
-                variant="flat"
+                variant="tertiary"
                 aria-label="Back to top"
                 onPress={scrollTop}
                 className="rounded-full"

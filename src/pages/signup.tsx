@@ -2,14 +2,14 @@ import React from "react";
 import {
   Button,
   Input,
+  InputGroup,
   Checkbox,
   Link,
-  Divider,
+  Separator,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  TextField,
+  Label,
+  FieldError,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getAdditionalUserInfo } from "firebase/auth";
@@ -301,49 +301,40 @@ export default function SignUpPage() {
     onOpenChange: (open: boolean) => void;
     viewLink: string;
   }) => (
-    <Modal
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      size="lg"
-      scrollBehavior="inside"
-    >
-      <ModalContent>
-        {(close) => (
+    <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal.Container size="lg" scroll="inside">
+        <Modal.Dialog>
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <Modal.Header className="flex flex-col gap-1">
               <h2 className="text-xl font-semibold">{title}</h2>
-              <p className="text-small text-default-500">
-                Last updated: January 2026
-              </p>
-            </ModalHeader>
-            <ModalBody className="space-y-4">
+              <p className="text-sm text-muted">Last updated: January 2026</p>
+            </Modal.Header>
+            <Modal.Body className="space-y-4">
               {sections.map((section) => (
                 <div key={section.title}>
                   <p className="font-semibold">{section.title}</p>
-                  <p className="text-sm text-default-600">{section.body}</p>
+                  <p className="text-sm text-foreground">{section.body}</p>
                 </div>
               ))}
-            </ModalBody>
-            <ModalFooter>
-              <Button variant="light" onPress={() => close()}>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="ghost" onPress={() => onOpenChange(false)}>
                 Close
               </Button>
               <Button
-                as="a"
-                href={viewLink}
-                target="_blank"
-                rel="noreferrer"
-                variant="flat"
-                color="primary"
-                onPress={() => close()}
+                variant="tertiary"
+                onPress={() => {
+                  window.open(viewLink, "_blank", "noopener,noreferrer");
+                  onOpenChange(false);
+                }}
               >
                 View Full Page
               </Button>
-            </ModalFooter>
+            </Modal.Footer>
           </>
-        )}
-      </ModalContent>
-    </Modal>
+        </Modal.Dialog>
+      </Modal.Container>{" "}
+    </Modal.Backdrop>
   );
 
   if (userLoggedIn && !authLoading) {
@@ -353,13 +344,11 @@ export default function SignUpPage() {
   return (
     <>
       <div className="flex h-full w-full items-center justify-center">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-large bg-content1 px-8 pb-10 pt-6 shadow-small">
-          <div className="flex flex-col items-center pb-6">
-            <RGCLogo size={240} />
-            <p className="text-xl font-medium">Welcome</p>
-            <p className="text-small text-default-500">
-              Create an account to get started
-            </p>
+        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-surface px-8 pb-10 pt-6 shadow-sm">
+          <RGCLogo className="w-40 self-center" />
+          <div className="flex flex-col gap-1">
+            <h1 className="text-lg font-medium">Create an account</h1>
+            <p className="text-sm text-muted">to join Ridgefield Golf Club</p>
           </div>
           {inlineError && (
             <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -368,16 +357,14 @@ export default function SignUpPage() {
           )}
           <div className="flex flex-col gap-2">
             <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
-              variant="bordered"
+              variant="outline"
+              className="w-full"
               onPress={handleGoogleSignUp}
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
             >
+              {!isSubmitting && (
+                <Icon icon="flat-color-icons:google" width={24} />
+              )}
               {authLoading || isSubmitting
                 ? "Processing..."
                 : "Sign Up with Google"}
@@ -385,156 +372,165 @@ export default function SignUpPage() {
           </div>
 
           <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
+            <p className="shrink-0 text-xs text-muted">OR</p>
+            <Separator className="flex-1" />
           </div>
 
           <form className="flex flex-col gap-3" onSubmit={handleSignUp}>
             <div className="flex flex-col">
-              <Input
+              <TextField isRequired name="firstName">
+                <Label>First Name</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your first name"
+                  type="text"
+                  variant="outline"
+                />
+              </TextField>
+              <TextField isRequired name="lastName">
+                <Label>Last Name</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your last name"
+                  type="text"
+                  variant="outline"
+                />
+              </TextField>
+              <TextField
                 isRequired
-                classNames={stackedInputClassNames}
-                label="First Name"
-                name="firstName"
-                placeholder="Enter your first name"
-                type="text"
-                variant="bordered"
-              />
-              <Input
-                isRequired
-                classNames={stackedInputClassNames}
-                label="Last Name"
-                name="lastName"
-                placeholder="Enter your last name"
-                type="text"
-                variant="bordered"
-              />
-              <Input
-                isRequired
-                classNames={stackedInputClassNames}
-                label="Email Address"
                 name="email"
-                placeholder="Enter your email"
-                type="email"
-                variant="bordered"
                 value={signupEmail}
-                onValueChange={setSignupEmail}
-              />
+                onChange={(v) => setSignupEmail(v)}
+              >
+                <Label>Email Address</Label>
+                <Input
+                  classNames={stackedInputClassNames}
+                  placeholder="Enter your email"
+                  type="email"
+                  variant="outline"
+                />
+              </TextField>
               {signupMode === "password" && (
                 <>
-                  <Input
-                    isRequired
-                    classNames={{
-                      base: "-mb-[2px]",
-                      inputWrapper:
-                        "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-                    }}
-                    endContent={
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        onPress={toggleVisibility}
-                        aria-label={
-                          isVisible ? "Hide password" : "Show password"
-                        }
-                        className="min-w-0 h-auto"
-                      >
-                        {isVisible ? (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-closed-linear"
-                          />
-                        ) : (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-bold"
-                          />
-                        )}
-                      </Button>
-                    }
-                    label="Password"
-                    name="password"
-                    placeholder="Enter your password"
-                    type={isVisible ? "text" : "password"}
-                    variant="bordered"
-                  />
-                  <Input
-                    isRequired
-                    classNames={{
-                      inputWrapper: "rounded-t-none",
-                    }}
-                    endContent={
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        size="sm"
-                        onPress={toggleConfirmVisibility}
-                        aria-label={
-                          isConfirmVisible
-                            ? "Hide confirm password"
-                            : "Show confirm password"
-                        }
-                        className="min-w-0 h-auto"
-                      >
-                        {isConfirmVisible ? (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-closed-linear"
-                          />
-                        ) : (
-                          <Icon
-                            className="text-2xl text-default-400"
-                            icon="solar:eye-bold"
-                          />
-                        )}
-                      </Button>
-                    }
-                    label="Confirm Password"
+                  <TextField name="password" isRequired className="w-full">
+                    <Label>Password</Label>
+                    <InputGroup>
+                      <InputGroup.Input
+                        placeholder="Enter your password"
+                        type={isVisible ? "text" : "password"}
+                      />
+                      <InputGroup.Suffix>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          onPress={toggleVisibility}
+                          aria-label={
+                            isVisible ? "Hide password" : "Show password"
+                          }
+                          className="min-w-0 h-auto"
+                        >
+                          {isVisible ? (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-closed-linear"
+                            />
+                          ) : (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-bold"
+                            />
+                          )}
+                        </Button>
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
+                  <TextField
                     name="confirmPassword"
-                    placeholder="Confirm your password"
-                    type={isConfirmVisible ? "text" : "password"}
-                    variant="bordered"
-                  />
+                    isRequired
+                    className="w-full"
+                  >
+                    <Label>Confirm Password</Label>
+                    <InputGroup>
+                      <InputGroup.Input
+                        placeholder="Confirm your password"
+                        type={isConfirmVisible ? "text" : "password"}
+                      />
+                      <InputGroup.Suffix>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          onPress={toggleConfirmVisibility}
+                          aria-label={
+                            isConfirmVisible
+                              ? "Hide confirm password"
+                              : "Show confirm password"
+                          }
+                          className="min-w-0 h-auto"
+                        >
+                          {isConfirmVisible ? (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-closed-linear"
+                            />
+                          ) : (
+                            <Icon
+                              className="text-2xl text-muted"
+                              icon="solar:eye-bold"
+                            />
+                          )}
+                        </Button>
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                    <FieldError />
+                  </TextField>
                 </>
               )}
             </div>
             <Checkbox
               isRequired
               className="py-4"
-              size="sm"
+              id="terms-agree"
               aria-describedby="terms-privacy-modal-hint"
             >
-              <span id="terms-privacy-modal-hint" className="sr-only">
-                Terms and Privacy Policy open in-page dialogs.
-              </span>
-              I agree with the&nbsp;
-              <Link
-                className="relative z-1"
-                size="sm"
-                onPress={() => setIsTermsOpen(true)}
-                aria-label="View Terms of Use (opens dialog)"
-                aria-haspopup="dialog"
-              >
-                Terms
-              </Link>
-              &nbsp; and&nbsp;
-              <Link
-                className="relative z-1"
-                size="sm"
-                onPress={() => setIsPrivacyOpen(true)}
-                aria-label="View Privacy Policy (opens dialog)"
-                aria-haspopup="dialog"
-              >
-                Privacy Policy
-              </Link>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Checkbox.Content>
+                <Label htmlFor="terms-agree">
+                  <span id="terms-privacy-modal-hint" className="sr-only">
+                    Terms and Privacy Policy open in-page dialogs.
+                  </span>
+                  I agree with the&nbsp;
+                  <Link
+                    className="relative z-1"
+                    size="sm"
+                    onPress={() => setIsTermsOpen(true)}
+                    aria-label="View Terms of Use (opens dialog)"
+                    aria-haspopup="dialog"
+                  >
+                    Terms
+                  </Link>
+                  &nbsp; and&nbsp;
+                  <Link
+                    className="relative z-1"
+                    size="sm"
+                    onPress={() => setIsPrivacyOpen(true)}
+                    aria-label="View Privacy Policy (opens dialog)"
+                    aria-haspopup="dialog"
+                  >
+                    Privacy Policy
+                  </Link>
+                </Label>
+              </Checkbox.Content>
             </Checkbox>
             <Button
-              color="primary"
+              className="w-full"
               type="submit"
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -546,9 +542,9 @@ export default function SignUpPage() {
 
           <div className="flex flex-col items-center gap-2">
             <Button
-              variant="light"
+              variant="ghost"
               size="sm"
-              className="text-default-500"
+              className="text-muted"
               onPress={() =>
                 setSignupMode(
                   signupMode === "magic-link" ? "password" : "magic-link",
@@ -560,28 +556,28 @@ export default function SignUpPage() {
                 : "Sign up with email link instead"}
             </Button>
           </div>
-          <p className="text-center text-small">
+          <p className="text-center text-sm">
             Already have an account?&nbsp;
-            <Link href={siteConfig.pages.login.link} size="sm">
+            <Link href={siteConfig.pages.login.link} size="sm" color="primary">
               {siteConfig.pages.login.title}
             </Link>
           </p>
         </div>
       </div>
-      <Modal isOpen={linkSent} isDismissable={false}>
-        <ModalContent>
-          {() => (
+      <Modal.Backdrop isOpen={linkSent} isDismissable={false}>
+        <Modal.Container>
+          <Modal.Dialog>
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 Check your email
-              </ModalHeader>
-              <ModalBody className="space-y-3">
-                <p className="text-small text-default-600">
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <p className="text-sm text-foreground">
                   We sent a sign-up link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click it to
                   finish creating your account.
                 </p>
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">
@@ -589,10 +585,10 @@ export default function SignUpPage() {
                   </span>
                   .
                 </p>
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
-                  variant="light"
+                  variant="ghost"
                   onPress={() => {
                     setLinkSent(false);
                     setLinkSentEmail("");
@@ -604,11 +600,11 @@ export default function SignUpPage() {
                 >
                   Close
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
-      </Modal>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
       <PolicyModal
         title="Terms of Use"
         sections={termsSections}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Textarea, Button, Card } from "@heroui/react";
+import { TextArea, Button, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -46,14 +46,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <label className="text-sm font-medium">{label}</label>
 
       {/* Markdown Toolbar */}
-      <div className="flex flex-wrap gap-1 p-2 border border-divider rounded-lg bg-default-50">
+      <div className="flex flex-wrap gap-1 p-2 border border-divider rounded-lg bg-default/60">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("**", "**")}
           aria-label="Bold"
@@ -62,7 +62,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("*", "*")}
           aria-label="Italic"
@@ -71,7 +71,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("# ")}
           aria-label="Heading"
@@ -80,7 +80,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("\n- ")}
           aria-label="List"
@@ -89,7 +89,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("[", "](url)")}
           aria-label="Link"
@@ -98,7 +98,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("`", "`")}
           aria-label="Code"
@@ -107,7 +107,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </Button>
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           isIconOnly
           onPress={() => insertMarkdown("> ")}
           aria-label="Quote"
@@ -118,12 +118,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <div className="ml-auto flex gap-1">
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => setShowPreview(!showPreview)}
-            startContent={
-              <Icon icon={showPreview ? "lucide:edit" : "lucide:eye"} />
-            }
           >
+            <Icon icon={showPreview ? "lucide:edit" : "lucide:eye"} />
             {showPreview ? "Edit" : "Preview"}
           </Button>
         </div>
@@ -139,18 +137,17 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </div>
         </Card>
       ) : (
-        <Textarea
+        <TextArea
           value={value}
-          onValueChange={onChange}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          minRows={minRows}
-          classNames={{
-            input: "font-mono text-sm",
-          }}
+          rows={minRows}
+          fullWidth
+          className="font-mono text-sm"
         />
       )}
 
-      <p className="text-xs text-foreground-500">
+      <p className="text-xs text-muted">
         Supports Markdown formatting. Use the toolbar buttons or type markdown
         directly.
       </p>

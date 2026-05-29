@@ -1,12 +1,5 @@
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-  addToast,
-} from "@heroui/react";
+import { Alert, Button, Card, Separator } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { useState } from "react";
 import BackButton from "@/components/back-button";
 import { siteConfig } from "@/config/site";
@@ -50,30 +43,30 @@ export function PayPalStep(props: {
   const [showCheckConfirm, setShowCheckConfirm] = useState(false);
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 4: Submit payment</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4 overflow-visible">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4 overflow-visible">
         {paypalEnabled && showPayPalSandboxNotice && (
-          <Alert color="warning">
+          <Alert>
             PayPal is running in SANDBOX mode. Payments are not live.
           </Alert>
         )}
 
         <div>
-          <div className="text-sm text-default-600">{title}</div>
+          <div className="text-sm text-foreground">{title}</div>
           <div className="text-base font-semibold">{description}</div>
         </div>
 
         <div>
-          <div className="text-sm text-default-600">Amount</div>
+          <div className="text-sm text-foreground">Amount</div>
           <div className="text-base font-semibold">{currency(amount)}</div>
         </div>
 
-        <Alert color="primary">
+        <Alert>
           <strong>Referral Discount:</strong> If you are using a referral,
           please use the "Pay by check (mail)" option below to receive your
           discount.
@@ -81,7 +74,7 @@ export function PayPalStep(props: {
 
         {paypalEnabled ? (
           <div className="w-full">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Pay online (PayPal or card)
             </div>
             <PayPalScriptProvider
@@ -104,26 +97,26 @@ export function PayPalStep(props: {
             </PayPalScriptProvider>
           </div>
         ) : (
-          <div className="text-sm text-default-600">
+          <div className="text-sm text-foreground">
             PayPal is not configured (missing `VITE_PAYPAL_CLIENT_ID`).
           </div>
         )}
 
         {/* Pay by check option */}
-        <div className="mt-6 rounded-md border border-default-200 bg-content1/50 p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+        <div className="mt-6 rounded-md border bg-surface/50 p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
             Pay by check (mail)
           </div>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <div>
               <div className="font-semibold">Pay by check</div>
-              <p className="mt-2 text-sm text-default-600 whitespace-pre-line">
+              <p className="mt-2 text-sm text-foreground whitespace-pre-line">
                 {`Please make your check payable to "${siteConfig.contactAddress.name}" and mail to:\n${siteConfig.contactAddress.name}\n${siteConfig.contactAddress.street}\n${siteConfig.contactAddress.cityStateZip}\n\nPlease include your full name and the membership year in the memo so we can match it to your account.`}
               </p>
             </div>
             <div className="shrink-0 sm:self-start">
               <Button
-                variant="bordered"
+                variant="outline"
                 onPress={() => {
                   setShowCheckConfirm(true);
                 }}
@@ -133,7 +126,7 @@ export function PayPalStep(props: {
             </div>
           </div>
         </div>
-      </CardBody>
+      </Card.Content>
 
       {showCheckConfirm ? (
         <div
@@ -144,19 +137,21 @@ export function PayPalStep(props: {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowCheckConfirm(false)}
           />
-          <div className="relative z-10 w-full max-w-md rounded-lg bg-background p-6 shadow-large">
+          <div className="relative z-10 w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
             <h3 className="text-lg font-semibold">Confirm check payment</h3>
-            <p className="mt-2 text-sm text-default-600">
+            <p className="mt-2 text-sm text-foreground">
               Please confirm you’ve mailed your check to{" "}
               {siteConfig.contactAddress.name}. We’ll mark your membership as
               pending until it’s received.
             </p>
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="flat" onPress={() => setShowCheckConfirm(false)}>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowCheckConfirm(false)}
+              >
                 Cancel
               </Button>
               <Button
-                color="primary"
                 onPress={() => {
                   setShowCheckConfirm(false);
                   if (typeof onCheckSelected === "function") {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 
@@ -93,14 +93,14 @@ export function MemberOverviewTab() {
     <div className="space-y-6">
       {/* Year selector */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-default-500">
+        <p className="text-sm text-muted">
           Showing data for{" "}
           <span className="font-semibold text-foreground">{year}</span>.
         </p>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             isIconOnly
             onPress={() => setYear((y) => Math.max(y - 1, 2024))}
             isDisabled={year <= 2024}
@@ -111,7 +111,7 @@ export function MemberOverviewTab() {
           <span className="text-sm font-medium w-12 text-center">{year}</span>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             isIconOnly
             onPress={() => setYear((y) => Math.min(y + 1, currentYear))}
             isDisabled={year >= currentYear}
@@ -130,31 +130,28 @@ export function MemberOverviewTab() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-default-500">Total Members</p>
+                    <p className="text-sm text-muted">Total Members</p>
                     <p className="mt-1 text-2xl font-bold">{stats.total}</p>
                   </div>
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <Icon
-                      icon="lucide:users"
-                      className="w-5 h-5 text-primary"
-                    />
+                  <div className="rounded-lg bg-accent/10 p-2">
+                    <Icon icon="lucide:users" className="w-5 h-5 text-accent" />
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-default-400">
+                <p className="mt-2 text-xs text-muted">
                   {stats.activeCount} active (paid last 2 yrs)
                 </p>
-              </CardBody>
+              </Card.Content>
             </Card>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-default-500">Memberships</p>
+                    <p className="text-sm text-muted">Memberships</p>
                     <p className="mt-1 text-2xl font-bold">
                       {stats.fullMembers + stats.handicapOnly}
                     </p>
@@ -167,28 +164,28 @@ export function MemberOverviewTab() {
                   </div>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
-                  <span className="text-xs text-default-500">
+                  <span className="text-xs text-muted">
                     Full:{" "}
                     <span className="font-medium text-foreground">
                       {stats.fullMembers}
                     </span>
                   </span>
-                  <span className="text-default-300">·</span>
-                  <span className="text-xs text-default-500">
+                  <span className="text-muted">·</span>
+                  <span className="text-xs text-muted">
                     Handicap:{" "}
                     <span className="font-medium text-foreground">
                       {stats.handicapOnly}
                     </span>
                   </span>
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-default-500">New This Year</p>
+                    <p className="text-sm text-muted">New This Year</p>
                     <p className="mt-1 text-2xl font-bold">
                       {stats.newThisYear}
                     </p>
@@ -200,24 +197,21 @@ export function MemberOverviewTab() {
                     />
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-default-400">
-                  Joined in {year}
-                </p>
-              </CardBody>
+                <p className="mt-2 text-xs text-muted">Joined in {year}</p>
+              </Card.Content>
             </Card>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Button
               className="h-auto p-0 block w-full rounded-xl bg-transparent data-[hover=true]:bg-transparent data-[focus-visible=true]:ring-2"
-              disableRipple
               onPress={() => setShowNotPaid(true)}
             >
-              <Card shadow="sm" className="w-full text-left">
-                <CardBody className="p-5">
+              <Card className="w-full text-left">
+                <Card.Content className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-default-500">Not Paid Yet</p>
+                      <p className="text-sm text-muted">Not Paid Yet</p>
                       <p className="mt-1 text-2xl font-bold">
                         {stats.notPaidThisYear}
                       </p>
@@ -229,39 +223,39 @@ export function MemberOverviewTab() {
                       />
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-default-400">
+                  <p className="mt-2 text-xs text-muted">
                     No payment in {year} · click to view
                   </p>
-                </CardBody>
+                </Card.Content>
               </Card>
             </Button>
 
-            <Card shadow="sm">
-              <CardBody className="p-5">
+            <Card>
+              <Card.Content className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-default-500">Payments</p>
+                    <p className="text-sm text-muted">Payments</p>
                     <p className="mt-1 text-2xl font-bold">
                       {stats.paidByMail + stats.paidByPayPal}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-primary/10 p-2">
+                  <div className="rounded-lg bg-accent/10 p-2">
                     <Icon
                       icon="lucide:credit-card"
-                      className="w-5 h-5 text-primary"
+                      className="w-5 h-5 text-accent"
                     />
                   </div>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
-                  <span className="flex items-center gap-1 text-xs text-default-500">
+                  <span className="flex items-center gap-1 text-xs text-muted">
                     <Icon icon="lucide:mail" className="w-3 h-3" />
                     Check:{" "}
                     <span className="font-medium text-foreground">
                       {stats.paidByMail}
                     </span>
                   </span>
-                  <span className="text-default-300">·</span>
-                  <span className="flex items-center gap-1 text-xs text-default-500">
+                  <span className="text-muted">·</span>
+                  <span className="flex items-center gap-1 text-xs text-muted">
                     <Icon icon="lucide:laptop-minimal" className="w-3 h-3" />
                     PayPal:{" "}
                     <span className="font-medium text-foreground">
@@ -269,7 +263,7 @@ export function MemberOverviewTab() {
                     </span>
                   </span>
                 </div>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
 
@@ -280,14 +274,14 @@ export function MemberOverviewTab() {
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setShowNotPaid(false)}
               />
-              <div className="relative bg-background dark:bg-default-100 rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col z-10">
+              <div className="relative bg-background dark:bg-default/60 rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col z-10">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-default-200">
+                <div className="flex items-center justify-between px-5 py-4 border-b">
                   <div>
                     <h3 className="font-semibold text-base">
                       Not Paid Yet — {year}
                     </h3>
-                    <p className="text-xs text-default-500 mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       {stats.notPaidThisYear} member
                       {stats.notPaidThisYear !== 1 ? "s" : ""} with no confirmed
                       payment
@@ -296,7 +290,7 @@ export function MemberOverviewTab() {
                   <Button
                     isIconOnly
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     aria-label="Close"
                     onPress={() => setShowNotPaid(false)}
                   >
@@ -305,14 +299,10 @@ export function MemberOverviewTab() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 px-5 py-3 border-b border-default-200">
+                <div className="flex items-center gap-2 px-5 py-3 border-b">
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={
-                      <Icon icon="lucide:mail" className="w-4 h-4" />
-                    }
+                    variant="tertiary"
                     onPress={() => {
                       const emails = stats.notPaidThisYearList.map(
                         (m) => m.email ?? "",
@@ -320,14 +310,12 @@ export function MemberOverviewTab() {
                       void copyOrMailtoEmails(emails);
                     }}
                   >
+                    <Icon icon="lucide:mail" className="w-4 h-4" />
                     Email all
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
-                    startContent={
-                      <Icon icon="lucide:check-square" className="w-4 h-4" />
-                    }
+                    variant="tertiary"
                     onPress={() => {
                       setShowNotPaid(false);
                       navigate(
@@ -335,6 +323,7 @@ export function MemberOverviewTab() {
                       );
                     }}
                   >
+                    <Icon icon="lucide:check-square" className="w-4 h-4" />
                     Go to bulk check payments
                   </Button>
                 </div>
@@ -342,7 +331,7 @@ export function MemberOverviewTab() {
                 {/* List */}
                 <div className="overflow-y-auto flex-1">
                   {stats.notPaidThisYearList.length === 0 ? (
-                    <p className="px-5 py-8 text-center text-default-500 text-sm">
+                    <p className="px-5 py-8 text-center text-muted text-sm">
                       Everyone has paid — great!
                     </p>
                   ) : (
@@ -362,7 +351,7 @@ export function MemberOverviewTab() {
                               <p className="text-sm font-medium truncate">
                                 {name}
                               </p>
-                              <p className="text-xs text-default-500 truncate">
+                              <p className="text-xs text-muted truncate">
                                 {m.email || "—"}
                               </p>
                             </div>
@@ -370,13 +359,13 @@ export function MemberOverviewTab() {
                               {m.membershipType && (
                                 <Chip
                                   size="sm"
-                                  variant="flat"
+                                  variant="tertiary"
                                   color={
                                     m.membershipType === MEMBERSHIP_TYPES.FULL
                                       ? "success"
                                       : m.membershipType ===
                                           MEMBERSHIP_TYPES.HANDICAP
-                                        ? "primary"
+                                        ? "accent"
                                         : "default"
                                   }
                                 >
@@ -386,19 +375,16 @@ export function MemberOverviewTab() {
                                 </Chip>
                               )}
                               {m.email && (
-                                <Button
-                                  as="a"
+                                <a
                                   href={`mailto:${m.email}`}
-                                  size="sm"
-                                  isIconOnly
-                                  variant="light"
+                                  className="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-default/60 transition-colors"
                                   aria-label={`Email ${name}`}
                                 >
                                   <Icon
                                     icon="lucide:mail"
                                     className="w-4 h-4"
                                   />
-                                </Button>
+                                </a>
                               )}
                             </div>
                           </li>

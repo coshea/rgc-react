@@ -167,7 +167,7 @@ export default function PastChampions({
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
         <div className="text-center mb-4">
           <h1 className="text-2xl font-bold mb-2">Past Champions</h1>
-          <p className="text-sm text-default-600 max-w-2xl mx-auto">
+          <p className="text-sm text-foreground max-w-2xl mx-auto">
             Loading championship records...
           </p>
         </div>
@@ -184,7 +184,7 @@ export default function PastChampions({
           <p className="text-danger">
             Error loading championships: {error?.message || "Unknown error"}
           </p>
-          <Button color="primary" onPress={() => refetch()} className="mt-4">
+          <Button onPress={() => refetch()} className="mt-4">
             Try Again
           </Button>
         </div>
@@ -199,32 +199,23 @@ export default function PastChampions({
           <h1 className="text-2xl font-bold">Past Champions</h1>
           <div className="flex flex-wrap items-center gap-2">
             {!showAllYears && (
-              <Button
-                as={Link}
-                href="/past-champions"
-                size="sm"
-                variant="flat"
-                endContent={
-                  <Icon icon="lucide:arrow-right" className="w-3 h-3" />
-                }
-                className="self-start sm:self-auto"
-              >
+              <Link href="/past-champions" className="self-start sm:self-auto">
                 View All
-              </Button>
+                <Icon icon="lucide:arrow-right" className="w-3 h-3" />
+              </Link>
             )}
             {isAdmin && showAllYears && (
               <Button
-                color="primary"
                 onPress={handleAddNew}
-                startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
                 className="self-start sm:self-auto"
               >
+                <Icon icon="lucide:plus" className="w-4 h-4" />
                 Add Championship
               </Button>
             )}
           </div>
         </div>
-        <p className="text-sm text-default-600 mb-3">
+        <p className="text-sm text-foreground mb-3">
           Celebrating our distinguished champions and runners-up across all
           major tournaments.
         </p>
@@ -253,24 +244,20 @@ export default function PastChampions({
       {/* Load More button for pagination */}
       {shouldShowLoadMore && (
         <div className="flex flex-col items-center gap-3 py-8">
-          <p className="text-sm text-default-500">
+          <p className="text-sm text-muted">
             Showing {completeYears.size}{" "}
             {completeYears.size === 1 ? "year" : "years"} of championship
             history
           </p>
           <Button
-            color="primary"
-            variant="bordered"
+            variant="outline"
             size="lg"
             onPress={handleLoadMore}
-            isLoading={isFetchingNextPage}
-            startContent={
-              !isFetchingNextPage && (
-                <Icon icon="lucide:chevron-down" className="w-5 h-5" />
-              )
-            }
             className="min-w-[200px]"
           >
+            {!isFetchingNextPage && (
+              <Icon icon="lucide:chevron-down" className="w-5 h-5" />
+            )}
             {isFetchingNextPage ? "Loading..." : "Load More Years"}
           </Button>
         </div>

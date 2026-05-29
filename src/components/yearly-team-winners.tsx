@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardBody, Skeleton, Chip, Tooltip } from "@heroui/react";
+import { Card, Skeleton, Chip, Tooltip } from "@heroui/react";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
@@ -44,7 +44,7 @@ export function YearlyTeamWinners({ year }: Props) {
             const competitors = w.competitors || [];
             if (competitors.length <= 1) return;
             const sorted = [...competitors].sort((a, b) =>
-              a.userId.localeCompare(b.userId)
+              a.userId.localeCompare(b.userId),
             );
             const userIds = sorted.map((c) => c.userId);
             const key = userIds.join("|");
@@ -108,7 +108,7 @@ export function YearlyTeamWinners({ year }: Props) {
     if (!filter.trim()) return teams;
     const q = filter.toLowerCase();
     return teams.filter((t) =>
-      t.displayNames.join(" ").toLowerCase().includes(q)
+      t.displayNames.join(" ").toLowerCase().includes(q),
     );
   }, [filter, teams]);
 
@@ -126,7 +126,7 @@ export function YearlyTeamWinners({ year }: Props) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Icon icon="lucide:users" className="text-primary" />
+          <Icon icon="lucide:users" className="text-accent" />
           <h2 className="text-lg font-semibold tracking-tight">
             {year} Team Performance
           </h2>
@@ -140,7 +140,7 @@ export function YearlyTeamWinners({ year }: Props) {
             onClear={() => setFilter("")}
           />
         </div>
-        <p className="text-xs text-default-500">
+        <p className="text-xs text-muted">
           {filter ? "No teams match filter." : `No team results for ${year}.`}
         </p>
       </div>
@@ -150,11 +150,11 @@ export function YearlyTeamWinners({ year }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Icon icon="lucide:users" className="text-primary" />
+        <Icon icon="lucide:users" className="text-accent" />
         <h2 className="text-lg font-semibold tracking-tight">
           {year} Team Performance
         </h2>
-        <span className="text-xs text-default-500">
+        <span className="text-xs text-muted">
           {filtered.length} team{filtered.length === 1 ? "" : "s"}
         </span>
       </div>
@@ -169,24 +169,21 @@ export function YearlyTeamWinners({ year }: Props) {
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((team) => (
-          <Card
-            key={team.key}
-            className="border border-default-200/60 dark:border-default-100/10"
-          >
-            <CardBody className="space-y-3">
+          <Card key={team.key} className="border/60 dark:/10">
+            <Card.Content className="space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium leading-snug">
                     {team.displayNames.join(" • ")}
                   </p>
-                  <p className="text-[11px] text-default-400 mt-1">
+                  <p className="text-[11px] text-muted mt-1">
                     {team.wins} win
                     {team.wins !== 1 ? "s" : ""} • {team.podiums} podium
                     {team.podiums !== 1 ? "s" : ""}
                   </p>
                 </div>
-                <div className="text-right text-xs text-default-500">
-                  <span className="font-semibold text-default-700 dark:text-default-200">
+                <div className="text-right text-xs text-muted">
+                  <span className="font-semibold text-foreground">
                     ${team.totalPerPlayer.toLocaleString()}{" "}
                     <span className="text-[10px] font-normal">pp</span>
                   </span>
@@ -203,24 +200,24 @@ export function YearlyTeamWinners({ year }: Props) {
                           ? "danger"
                           : "default";
                   return (
-                    <Tooltip
-                      key={t.entryKey}
-                      content={`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
-                    >
+                    <Tooltip key={t.entryKey}>
                       <Chip
                         size="sm"
-                        variant="flat"
+                        variant="tertiary"
                         color={color}
                         className="text-[10px] font-medium"
                       >
                         {t.title}: {t.place === 1 ? "🏆" : `P${t.place}`} $
                         {t.prizePerPlayer}
                       </Chip>
+                      <Tooltip.Content>
+                        {`${t.title} • Place ${t.place} • $${t.prizePerPlayer} pp`}
+                      </Tooltip.Content>
                     </Tooltip>
                   );
                 })}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>

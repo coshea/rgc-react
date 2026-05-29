@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { Card, CardBody, Button, Chip } from "@heroui/react";
+import { Card, Button, Chip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import {
   useYearlyWinnings,
@@ -109,7 +109,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                       {(() => {
                         const meta = getPlaceMeta(2);
                         return (
-                          <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-muted">
                             <Icon
                               icon={meta.icon}
                               className={["w-3 h-3", meta.colorClass].join(" ")}
@@ -191,7 +191,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                       {(() => {
                         const meta = getPlaceMeta(3);
                         return (
-                          <div className="flex items-center gap-1 text-[11px] font-medium text-default-500">
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-muted">
                             <Icon
                               icon={meta.icon}
                               className={["w-3 h-3", meta.colorClass].join(" ")}
@@ -230,62 +230,55 @@ export function YearlyWinningsStandings({ year }: Props) {
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {!isLoading && rows.length > 0 && (
             <>
-              <Chip
-                size="sm"
-                variant="flat"
-                color="primary"
-                startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
-              >
+              <Chip size="sm" variant="tertiary" color="accent">
+                <Icon
+                  icon="lucide:trophy"
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {stats.withResults} events
               </Chip>
-              <Chip
-                size="sm"
-                variant="flat"
-                color="success"
-                startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
-              >
+              <Chip size="sm" variant="tertiary" color="success">
+                <Icon
+                  icon="lucide:users"
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {stats.unique} unique winners
               </Chip>
-              <Chip
-                size="sm"
-                variant="flat"
-                color="warning"
-                startContent={
-                  <Icon icon="lucide:banknote" className="w-3 h-3" />
-                }
-              >
+              <Chip size="sm" variant="tertiary" color="warning">
+                <Icon
+                  icon="lucide:banknote"
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {`$${stats.totalPrize.toLocaleString("en-US")}`}
               </Chip>
-              <Chip
-                size="sm"
-                variant="flat"
-                color="secondary"
-                startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
-              >
+              <Chip size="sm" variant="tertiary" color="default">
+                <Icon
+                  icon="lucide:award"
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {stats.avgWinners.toFixed(1)} winners / event
               </Chip>
-              <Chip
-                size="sm"
-                variant="flat"
-                color="warning"
-                startContent={<Icon icon="lucide:target" className="w-3 h-3" />}
-              >
+              <Chip size="sm" variant="tertiary" color="danger">
+                <Icon
+                  icon="lucide:target"
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {`Awards $${stats.seasonAwardTotal.toLocaleString("en-US")}`}
               </Chip>
             </>
           )}
-          <div className="text-[11px] text-default-500 ml-1">
+          <div className="text-[11px] text-muted ml-1">
             {filtered.length} player{filtered.length === 1 ? "" : "s"}
           </div>
         </div>
       </div>
 
       <Card>
-        <CardBody className="p-0">
+        <Card.Content className="p-0">
           <div className="px-1 sm:px-0 overflow-x-hidden">
             {/* Fixed table layout on mobile to guarantee all columns fit */}
             <table className="min-w-full w-full text-sm">
-              <thead className="bg-default-100 text-default-600 text-[10px] sm:text-xs uppercase">
+              <thead className="bg-default/60 text-foreground text-[10px] sm:text-xs uppercase">
                 <tr>
                   <th className="text-left px-2 sm:px-4 py-2 w-10 sm:w-16 whitespace-nowrap">
                     Rank
@@ -312,7 +305,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-6 text-center text-default-400"
+                      className="px-4 py-6 text-center text-muted"
                     >
                       Loading standings...
                     </td>
@@ -322,7 +315,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-6 text-center text-default-400"
+                      className="px-4 py-6 text-center text-muted"
                     >
                       {filter
                         ? "No players match filter."
@@ -356,12 +349,10 @@ export function YearlyWinningsStandings({ year }: Props) {
                         <tr
                           className={[
                             striped
-                              ? "bg-default-50/50 dark:bg-default-50/10"
+                              ? "bg-default/60/50 dark:bg-default/60/10"
                               : "bg-background",
-                            "transition-colors group cursor-pointer hover:bg-primary-50/50 dark:hover:bg-primary-50/10",
-                            isExpanded
-                              ? "border-b border-default-200 dark:border-default-100"
-                              : "",
+                            "transition-colors group cursor-pointer hover:bg-accent-soft/50 dark:hover:bg-accent-soft/10",
+                            isExpanded ? "border-b dark:" : "",
                           ]
                             .filter(Boolean)
                             .join(" ")}
@@ -381,7 +372,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                               <Button
                                 isIconOnly
                                 size="sm"
-                                variant="light"
+                                variant="ghost"
                                 onPress={() => toggle(row.userId)}
                                 data-expander
                                 aria-expanded={isExpanded}
@@ -390,7 +381,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                     ? `Collapse winnings for ${row.displayName}`
                                     : `Expand winnings for ${row.displayName}`
                                 }
-                                className="min-w-0 h-auto p-0 text-default-400 hover:text-default-600"
+                                className="min-w-0 h-auto p-0 text-muted hover:text-foreground"
                               >
                                 <Icon
                                   icon={
@@ -423,13 +414,13 @@ export function YearlyWinningsStandings({ year }: Props) {
                               </div>
                             </div>
                           </td>
-                          <td className="hidden sm:table-cell px-4 py-2 text-xs font-medium text-default-600 tabular-nums">
+                          <td className="hidden sm:table-cell px-4 py-2 text-xs font-medium text-foreground tabular-nums">
                             {tournamentPlacements.length}
                           </td>
-                          <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-default-600">
+                          <td className="hidden sm:table-cell px-4 py-2 font-medium tabular-nums text-foreground">
                             {wins}
                           </td>
-                          <td className="hidden sm:table-cell px-4 py-2 text-right text-xs font-medium tabular-nums text-default-700">
+                          <td className="hidden sm:table-cell px-4 py-2 text-right text-xs font-medium tabular-nums text-foreground">
                             ${awardsAmount.toLocaleString("en-US")}
                           </td>
                           <td className="px-2 sm:px-4 py-2 text-right font-semibold tabular-nums align-middle">
@@ -447,37 +438,25 @@ export function YearlyWinningsStandings({ year }: Props) {
                               ].join(" ")}
                             >
                               {isExpanded && (
-                                <div className="bg-default-50/70 dark:bg-default-50/5 px-6 pt-2 pb-4 border-t border-default-200/60 dark:border-default-100/10">
+                                <div className="bg-default/60/70 dark:bg-default/60/5 px-6 pt-2 pb-4 border-t/60 dark:/10">
                                   {row.breakdown && row.breakdown.length > 0 ? (
                                     <div className="space-y-2">
-                                      <div className="text-[11px] uppercase tracking-wide text-default-500 font-medium">
+                                      <div className="text-[11px] uppercase tracking-wide text-muted font-medium">
                                         Earnings Breakdown
                                       </div>
                                       {/* Mobile-focused summary chips for counts */}
                                       <div className="flex flex-wrap gap-2">
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="primary"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {tournamentPlacements.length}{" "}
                                           placement
                                           {tournamentPlacements.length === 1
                                             ? ""
                                             : "s"}
                                         </Chip>
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="success"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {wins} win{wins === 1 ? "" : "s"}
                                         </Chip>
-                                        <Chip
-                                          size="sm"
-                                          variant="flat"
-                                          color="warning"
-                                        >
+                                        <Chip size="sm" variant="tertiary">
                                           {seasonAwards.length} award
                                           {seasonAwards.length === 1 ? "" : "s"}
                                         </Chip>
@@ -494,7 +473,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                           return (
                                             <li
                                               key={`${b.tournamentId}-${b.place}-${b.amount}-${i}`}
-                                              className="group relative overflow-hidden rounded-md border border-default-200/60 dark:border-default-100/10 bg-content2/70 dark:bg-content2/20 hover:bg-content2/90 dark:hover:bg-content2/30 transition-colors"
+                                              className="group relative overflow-hidden rounded-md border/60 dark:/10 bg-surface-secondary/70 dark:bg-surface-secondary/20 hover:bg-surface-secondary/90 dark:hover:bg-surface-secondary/30 transition-colors"
                                             >
                                               <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary/60 via-primary/40 to-primary/10 group-hover:from-primary group-hover:via-primary/70 group-hover:to-primary/30 transition-colors" />
                                               <div className="pl-3 pr-2 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
@@ -505,7 +484,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                   >
                                                     {b.title}
                                                   </span>
-                                                  <span className="hidden sm:inline text-default-300 dark:text-default-600">
+                                                  <span className="hidden sm:inline text-muted dark:text-foreground">
                                                     •
                                                   </span>
                                                   {(() => {
@@ -514,7 +493,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                       "season-award"
                                                     ) {
                                                       return (
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 tabular-nums ring-1 ring-black/5 dark:ring-white/5 bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300">
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 tabular-nums ring-1 ring-black/5 dark:ring-white/5 bg-warning text-warning-700 dark:bg-warning/30 dark:text-warning-300">
                                                           <Icon
                                                             icon="lucide:target"
                                                             className="w-3 h-3"
@@ -556,7 +535,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                   })()}
                                                 </div>
                                                 <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] sm:justify-end">
-                                                  <span className="font-semibold tabular-nums text-default-800 dark:text-default-200">
+                                                  <span className="font-semibold tabular-nums text-foreground">
                                                     $
                                                     {b.amount.toLocaleString(
                                                       "en-US",
@@ -565,10 +544,10 @@ export function YearlyWinningsStandings({ year }: Props) {
                                                       },
                                                     )}
                                                   </span>
-                                                  <span className="text-default-400 hidden sm:inline">
+                                                  <span className="text-muted hidden sm:inline">
                                                     •
                                                   </span>
-                                                  <span className="text-default-500 tabular-nums">
+                                                  <span className="text-muted tabular-nums">
                                                     {dateLabel}
                                                   </span>
                                                 </div>
@@ -579,7 +558,7 @@ export function YearlyWinningsStandings({ year }: Props) {
                                       </ul>
                                     </div>
                                   ) : (
-                                    <p className="text-xs text-default-400 py-3">
+                                    <p className="text-xs text-muted py-3">
                                       No per-tournament breakdown available.
                                     </p>
                                   )}
@@ -594,7 +573,7 @@ export function YearlyWinningsStandings({ year }: Props) {
               </tbody>
             </table>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

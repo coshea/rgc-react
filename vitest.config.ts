@@ -6,6 +6,22 @@ export default defineConfig({
     alias: [
       { find: "@", replacement: resolve(__dirname, "src") },
       { find: "@@", replacement: resolve(__dirname, "functions/src") },
+      {
+        find: "tailwind-variants",
+        replacement: resolve(
+          __dirname,
+          "node_modules/@heroui/react/node_modules/tailwind-variants/dist/index.js",
+        ),
+      },
+      // HeroUI Pro requires a license token to download dist files during
+      // `npm install`. In CI without HEROUI_AUTH_TOKEN the real dist is never
+      // written, so vite:import-analysis can't resolve the subpath and the
+      // test suite fails. Alias to a local stub so the file always exists.
+      // Tests that need specific behavior use vi.mock() with an explicit factory.
+      {
+        find: "@heroui-pro/react/stepper",
+        replacement: resolve(__dirname, "src/__mocks__/heroui-pro-stepper.tsx"),
+      },
     ],
   },
   test: {
@@ -21,7 +37,7 @@ export default defineConfig({
       // internally, and if @heroui loads as native ESM those sub-imports
       // bypass the mock registry, causing LazyMotion async work to fire
       // after jsdom teardown ("window is not defined").
-      inline: ["framer-motion", /@heroui/],
+      inline: [/framer-motion/, /@heroui/, /tailwind-variants/],
     },
     // Explicitly exclude compiled output and node_modules so Vitest doesn't pick
     // up tests from dependencies or built artifacts (these were running in

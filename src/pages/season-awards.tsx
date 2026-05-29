@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { SeasonAwardsManager } from "@/components/season-awards-manager";
 import BackButton from "@/components/back-button";
@@ -13,15 +13,15 @@ export default function SeasonAwardsPage() {
         <div className="w-10" />
       </div>
       <Card>
-        <CardHeader className="flex flex-col items-start gap-1">
+        <Card.Header className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-medium">Season Awards</h1>
-          <p className="text-sm text-foreground-500">
+          <p className="text-sm text-muted">
             Manage season awards by award year.
           </p>
-        </CardHeader>
-        <CardBody>
+        </Card.Header>
+        <Card.Content>
           <SeasonAwardsManager />
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

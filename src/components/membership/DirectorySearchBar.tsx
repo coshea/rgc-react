@@ -25,7 +25,7 @@ export function DirectorySearchBar({
         className="sm:max-w-sm"
         onClear={() => onFilterChange("")}
       />
-      <div className="text-xs text-default-400">
+      <div className="text-xs text-muted">
         Showing {count} member{count === 1 ? "" : "s"}
       </div>
     </div>

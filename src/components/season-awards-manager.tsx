@@ -1,5 +1,14 @@
 import React from "react";
-import { Button, Divider, Input, Select, SelectItem } from "@heroui/react";
+import {
+  Button,
+  Separator,
+  Input,
+  Label,
+  TextField,
+  FieldError,
+  ListBox,
+  Select,
+} from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import UserSelect from "@/components/UserSelect";
@@ -35,8 +44,8 @@ export function SeasonAwardsManager() {
   const [selectedYear, setSelectedYear] = React.useState<number>(currentYear);
   const [seasonAwards, setSeasonAwards] = React.useState<SeasonAward[]>([]);
   const [awardsLoading, setAwardsLoading] = React.useState(false);
-  const [awardSaving, setAwardSaving] = React.useState(false);
-  const [awardDeletingId, setAwardDeletingId] = React.useState<string | null>(
+  const [_awardSaving, setAwardSaving] = React.useState(false);
+  const [_awardDeletingId, setAwardDeletingId] = React.useState<string | null>(
     null,
   );
   const [editingAwardId, setEditingAwardId] = React.useState<string | null>(
@@ -219,14 +228,10 @@ export function SeasonAwardsManager() {
 
   return (
     <div className="space-y-4">
-      <Input
-        type="number"
-        min={MIN_AWARD_YEAR}
-        max={MAX_AWARD_YEAR}
-        label="Season year"
+      <TextField
         value={String(selectedYear)}
-        onValueChange={(value) => {
-          const next = Number(value);
+        onChange={(v) => {
+          const next = Number(v);
           if (!Number.isFinite(next)) {
             return;
           }
@@ -234,25 +239,41 @@ export function SeasonAwardsManager() {
           setAwardError(null);
           resetAwardForm(undefined, next);
         }}
-      />
+      >
+        <Label>Season year</Label>
+        <Input type="number" min={MIN_AWARD_YEAR} max={MAX_AWARD_YEAR} />
+      </TextField>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Select
-          label="Award type"
-          selectedKeys={[awardType]}
-          onSelectionChange={(keys) => {
-            const next = Array.from(keys)[0] as SeasonAwardType | undefined;
+          value={awardType}
+          onChange={(key) => {
+            const next = key as SeasonAwardType | undefined;
             if (!next) return;
             setAwardError(null);
             setAwardType(next);
             setAwardAmountOverride("");
           }}
         >
-          {awardTypes.map((type) => (
-            <SelectItem key={type} textValue={SEASON_AWARD_LABELS[type]}>
-              {SEASON_AWARD_LABELS[type]}
-            </SelectItem>
-          ))}
+          <Label>Award type</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {awardTypes.map((type) => (
+                <ListBox.Item
+                  key={type}
+                  id={type}
+                  textValue={SEASON_AWARD_LABELS[type]}
+                >
+                  {SEASON_AWARD_LABELS[type]}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
         <UserSelect
           users={users}
@@ -267,43 +288,49 @@ export function SeasonAwardsManager() {
           invalid={Boolean(awardError && !awardUserId)}
           errorMessage={awardError && !awardUserId ? awardError : undefined}
         />
-        <Input
-          type="number"
-          min={0}
-          step="0.01"
-          label="Amount override (optional)"
-          placeholder={`Default: $${SEASON_AWARD_DEFAULT_AMOUNTS[awardType]}`}
-          value={awardAmountOverride}
-          onValueChange={(value) => {
-            setAwardError(null);
-            setAwardAmountOverride(value);
-          }}
+        <TextField
           isInvalid={
             Boolean(awardError) &&
             awardAmountOverride.trim().length > 0 &&
             (!Number.isFinite(Number(awardAmountOverride)) ||
               Number(awardAmountOverride) <= 0)
           }
-          errorMessage={
-            awardError &&
+          value={awardAmountOverride}
+          onChange={(v) => {
+            setAwardError(null);
+            setAwardAmountOverride(v);
+          }}
+        >
+          <Label>Amount override (optional)</Label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder={`Default: $${SEASON_AWARD_DEFAULT_AMOUNTS[awardType]}`}
+          />
+          <FieldError>
+            {awardError &&
             awardAmountOverride.trim().length > 0 &&
             (!Number.isFinite(Number(awardAmountOverride)) ||
               Number(awardAmountOverride) <= 0)
               ? awardError
-              : undefined
-          }
-        />
-        <Input
-          type="date"
-          label="Award date"
-          value={awardDate}
-          onValueChange={(value) => {
-            setAwardError(null);
-            setAwardDate(value);
-          }}
+              : undefined}
+          </FieldError>
+        </TextField>
+        <TextField
           isInvalid={Boolean(awardError && !awardDate)}
-          errorMessage={awardError && !awardDate ? awardError : undefined}
-        />
+          value={awardDate}
+          onChange={(v) => {
+            setAwardError(null);
+            setAwardDate(v);
+          }}
+        >
+          <Label>Award date</Label>
+          <Input type="date" />
+          <FieldError>
+            {awardError && !awardDate ? awardError : undefined}
+          </FieldError>
+        </TextField>
       </div>
 
       {awardError && awardUserId && awardDate ? (
@@ -311,12 +338,12 @@ export function SeasonAwardsManager() {
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button color="primary" onPress={saveAward} isLoading={awardSaving}>
+        <Button onPress={saveAward}>
           {editingAwardId ? "Update award" : "Add award"}
         </Button>
         {editingAwardId && (
           <Button
-            variant="flat"
+            variant="tertiary"
             onPress={() => resetAwardForm(undefined, selectedYear)}
           >
             Cancel edit
@@ -324,28 +351,26 @@ export function SeasonAwardsManager() {
         )}
       </div>
 
-      <Divider />
+      <Separator />
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Awards for {selectedYear}</h3>
         {awardsLoading ? (
-          <p className="text-sm text-foreground-500">Loading awards...</p>
+          <p className="text-sm text-muted">Loading awards...</p>
         ) : seasonAwards.length === 0 ? (
-          <p className="text-sm text-foreground-500">
-            No season awards recorded yet.
-          </p>
+          <p className="text-sm text-muted">No season awards recorded yet.</p>
         ) : (
           <div className="space-y-2">
             {seasonAwards.map((award) => (
               <div
                 key={award.id}
-                className="rounded-md border border-default-200 p-3 flex items-center justify-between gap-3"
+                className="rounded-md border p-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {award.userDisplayName}
                   </p>
-                  <p className="text-xs text-foreground-500">
+                  <p className="text-xs text-muted">
                     {SEASON_AWARD_LABELS[award.awardType]} • ${award.amount} •{" "}
                     {award.date.toLocaleDateString("en-US")}
                   </p>
@@ -353,16 +378,14 @@ export function SeasonAwardsManager() {
                 <div className="flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => beginEditAward(award)}
                   >
                     Edit
                   </Button>
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="danger"
-                    isLoading={awardDeletingId === award.id}
+                    variant="tertiary"
                     onPress={() => removeAward(award.id)}
                   >
                     Delete
@@ -374,7 +397,7 @@ export function SeasonAwardsManager() {
         )}
       </div>
 
-      <div className="flex items-center text-xs text-foreground-500 gap-2">
+      <div className="flex items-center text-xs text-muted gap-2">
         <Icon icon="lucide:info" className="w-4 h-4" />
         Awards are standalone season entries and are not tied to a tournament.
       </div>

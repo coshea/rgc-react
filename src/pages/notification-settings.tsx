@@ -1,13 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { isSupported as messagingIsSupported } from "firebase/messaging";
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Button,
-  Divider,
-  Switch,
-} from "@heroui/react";
+import { Card, Button, Separator, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -58,7 +51,7 @@ export default function NotificationSettingsPage() {
   const [prefs, setPrefs] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES,
   );
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
 
   // Keep local state in sync when the profile finishes loading
   // (only on first successful load, not on every render)
@@ -105,16 +98,16 @@ export default function NotificationSettingsPage() {
         <BackButton />
       </div>
       <Card className="w-full max-w-lg p-2">
-        <CardHeader className="flex flex-col items-start px-4 pt-4 pb-0 gap-1">
+        <Card.Header className="flex flex-col items-start px-4 pt-4 pb-0 gap-1">
           <div className="flex items-center gap-2">
-            <Icon icon="lucide:bell" className="text-xl text-primary" />
-            <p className="text-large font-semibold">Notification Settings</p>
+            <Icon icon="lucide:bell" className="text-xl text-accent" />
+            <p className="text-lg font-semibold">Notification Settings</p>
           </div>
-          <p className="text-small text-default-500">
+          <p className="text-sm text-muted">
             Manage your notification preferences
           </p>
-        </CardHeader>
-        <CardBody className="overflow-visible">
+        </Card.Header>
+        <Card.Content className="overflow-visible">
           {/* Push permission status */}
           {pushPermission !== null && (
             <>
@@ -126,7 +119,7 @@ export default function NotificationSettingsPage() {
                         ? "bg-success/10"
                         : pushPermission === "denied"
                           ? "bg-danger/10"
-                          : "bg-default-100"
+                          : "bg-default/60"
                     }`}
                   >
                     <Icon
@@ -142,7 +135,7 @@ export default function NotificationSettingsPage() {
                           ? "text-success"
                           : pushPermission === "denied"
                             ? "text-danger"
-                            : "text-default-400"
+                            : "text-muted"
                       }`}
                     />
                   </div>
@@ -154,7 +147,7 @@ export default function NotificationSettingsPage() {
                           ? "Push notifications blocked"
                           : "Push notifications off"}
                     </p>
-                    <p className="text-xs text-default-400">
+                    <p className="text-xs text-muted">
                       {pushPermission === "granted"
                         ? "You'll receive alerts even when the app is in the background."
                         : pushPermission === "denied"
@@ -166,15 +159,9 @@ export default function NotificationSettingsPage() {
                 {pushPermission === "default" && (
                   <Button
                     size="sm"
-                    color="primary"
-                    variant="flat"
+                    variant="tertiary"
                     className="shrink-0"
-                    isLoading={requestingPush}
-                    startContent={
-                      !requestingPush && (
-                        <Icon icon="lucide:bell" className="text-sm" />
-                      )
-                    }
+                    isDisabled={requestingPush}
                     onPress={async () => {
                       setRequestingPush(true);
                       await requestPermission();
@@ -188,152 +175,155 @@ export default function NotificationSettingsPage() {
                   </Button>
                 )}
               </div>
-              <Divider className="my-3" />
+              <Separator className="my-3" />
             </>
           )}
           <form className="flex flex-col gap-2" onSubmit={handleSave}>
             {/* Column headers */}
             <div className="flex items-center gap-2 px-4 pb-0.5">
               <div className="flex-1" />
-              <div className="flex items-center gap-1 w-16 justify-center text-xs text-default-400 font-medium">
+              <div className="flex items-center gap-1 w-16 justify-center text-xs text-muted font-medium">
                 <Icon icon="lucide:bell" className="text-sm" />
                 Push
               </div>
-              <div className="flex items-center gap-1 w-16 justify-center text-xs text-default-400 font-medium">
+              <div className="flex items-center gap-1 w-16 justify-center text-xs text-muted font-medium">
                 <Icon icon="lucide:mail" className="text-sm" />
                 Email
               </div>
             </div>
 
             {/* Tournament Registration */}
-            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+            <div className="flex items-center bg-surface-secondary rounded-lg px-4 py-3 gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-medium">Tournament Registration</p>
-                <p className="text-small text-default-500">
+                <p className="text-base">Tournament Registration</p>
+                <p className="text-sm text-muted">
                   When you are added to a tournament team
                 </p>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.tournamentRegistration}
-                  onValueChange={() => toggle("tournamentRegistration")}
+                  onChange={() => toggle("tournamentRegistration")}
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Registration"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailTournamentRegistration}
-                  onValueChange={() => toggle("emailTournamentRegistration")}
+                  onChange={() => toggle("emailTournamentRegistration")}
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Registration"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
             {/* Tournament Updates */}
-            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+            <div className="flex items-center bg-surface-secondary rounded-lg px-4 py-3 gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-medium">
+                <p className="text-base">
                   Tournament Updates & Cancellations
                 </p>
-                <p className="text-small text-default-500">
+                <p className="text-sm text-muted">
                   When a tournament is canceled or has important updates
                 </p>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.tournamentUpdates}
-                  onValueChange={() => toggle("tournamentUpdates")}
+                  onChange={() => toggle("tournamentUpdates")}
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Updates"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailTournamentUpdates}
-                  onValueChange={() => toggle("emailTournamentUpdates")}
+                  onChange={() => toggle("emailTournamentUpdates")}
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Updates"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
             {/* Announcements */}
-            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+            <div className="flex items-center bg-surface-secondary rounded-lg px-4 py-3 gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-medium">Announcements</p>
-                <p className="text-small text-default-500">
+                <p className="text-base">Announcements</p>
+                <p className="text-sm text-muted">
                   Club news and general announcements
                 </p>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.generalAnnouncements}
-                  onValueChange={() => toggle("generalAnnouncements")}
+                  onChange={() => toggle("generalAnnouncements")}
                   isDisabled={isLoading}
                   aria-label="Push: Announcements"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailGeneralAnnouncements}
-                  onValueChange={() => toggle("emailGeneralAnnouncements")}
+                  onChange={() => toggle("emailGeneralAnnouncements")}
                   isDisabled={isLoading}
                   aria-label="Email: Announcements"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
             {/* New Features */}
-            <div className="flex items-center bg-content2 rounded-large px-4 py-3 gap-4">
+            <div className="flex items-center bg-surface-secondary rounded-lg px-4 py-3 gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-medium">New Features</p>
-                <p className="text-small text-default-500">
+                <p className="text-base">New Features</p>
+                <p className="text-sm text-muted">
                   New app features and improvements
                 </p>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.newFeatures}
-                  onValueChange={() => toggle("newFeatures")}
+                  onChange={() => toggle("newFeatures")}
                   isDisabled={isLoading}
                   aria-label="Push: New Features"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
               <div className="w-16 flex justify-center">
                 <Switch
                   isSelected={prefs.emailNewFeatures}
-                  onValueChange={() => toggle("emailNewFeatures")}
+                  onChange={() => toggle("emailNewFeatures")}
                   isDisabled={isLoading}
                   aria-label="Email: New Features"
-                  classNames={{ wrapper: "shrink-0" }}
-                />
+                >
+                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                </Switch>
               </div>
             </div>
 
             <div className="flex w-full justify-end gap-2 pt-4">
-              <Button variant="bordered" onPress={handleReset}>
+              <Button variant="outline" onPress={handleReset}>
                 Reset to Default
               </Button>
-              <Button
-                color="primary"
-                type="submit"
-                isLoading={saving}
-                isDisabled={isLoading}
-              >
+              <Button type="submit" isDisabled={isLoading}>
                 Save Changes
               </Button>
             </div>
           </form>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

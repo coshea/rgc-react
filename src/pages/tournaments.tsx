@@ -12,13 +12,10 @@ import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import {
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   RadioGroup,
   Radio,
 } from "@heroui/react";
@@ -165,59 +162,90 @@ const Tournaments: React.FC<TournamentsProps> = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-24 space-y-6">
-      <Modal isOpen={createModeOpen} onClose={() => setCreateModeOpen(false)}>
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            New Tournament
-          </ModalHeader>
-          <ModalBody>
-            <RadioGroup
-              label="How would you like to start?"
-              value={createMethod}
-              onValueChange={(v) => setCreateMethod(v as "scratch" | "copy")}
-            >
-              <Radio value="scratch">Create from scratch</Radio>
-              <Radio value="copy">Copy from previous</Radio>
-            </RadioGroup>
-            {createMethod === "copy" && (
-              <Select
-                label="Choose a previous tournament"
-                selectedKeys={templateId ? [templateId] : []}
-                onSelectionChange={(keys) => {
-                  const id = Array.from(keys)[0] as string | undefined;
-                  setTemplateId(id || null);
-                }}
+      <Modal.Backdrop
+        isOpen={createModeOpen}
+        onOpenChange={(open) => {
+          if (!open) setCreateModeOpen(false);
+        }}
+      >
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header className="flex flex-col gap-1">
+              New Tournament
+            </Modal.Header>
+            <Modal.Body>
+              <RadioGroup
+                label="How would you like to start?"
+                value={createMethod}
+                onChange={(v) => setCreateMethod(v as "scratch" | "copy")}
               >
-                {tournaments
-                  .filter((t) => !!t.firestoreId)
-                  .map((t) => {
-                    const year = t.date
-                      ? new Date(t.date).getFullYear()
-                      : undefined;
-                    const label = year ? `${t.title} (${year})` : t.title;
-                    return (
-                      <SelectItem key={t.firestoreId!} textValue={label}>
-                        {label}
-                      </SelectItem>
-                    );
-                  })}
-              </Select>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setCreateModeOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              isDisabled={createMethod === "copy" && !templateId}
-              onPress={onContinueCreate}
-            >
-              Continue
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+                <Radio value="scratch">
+                  <Radio.Control>
+                    <Radio.Indicator />
+                  </Radio.Control>
+                  <Radio.Content>Create from scratch</Radio.Content>
+                </Radio>
+                <Radio value="copy">
+                  <Radio.Control>
+                    <Radio.Indicator />
+                  </Radio.Control>
+                  <Radio.Content>Copy from previous</Radio.Content>
+                </Radio>
+              </RadioGroup>
+              {createMethod === "copy" && (
+                <Select
+                  value={templateId ?? null}
+                  onChange={(key) => {
+                    setTemplateId(key ? String(key) : null);
+                  }}
+                >
+                  <Label>Choose a previous tournament</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {tournaments
+                        .filter((t) => !!t.firestoreId)
+                        .map((t) => {
+                          const year = t.date
+                            ? new Date(t.date).getFullYear()
+                            : undefined;
+                          const label = year ? `${t.title} (${year})` : t.title;
+                          return (
+                            <ListBox.Item
+                              key={t.firestoreId!}
+                              id={t.firestoreId!}
+                              textValue={label}
+                            >
+                              {label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          );
+                        })}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setCreateModeOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                isDisabled={createMethod === "copy" && !templateId}
+                onPress={onContinueCreate}
+              >
+                Continue
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {isCreating || editingTournament ? (
         isAdmin ? (
@@ -226,9 +254,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               <div className="p-8 flex flex-col items-center gap-3">
                 <Icon
                   icon="lucide:loader"
-                  className="animate-spin text-2xl text-primary"
+                  className="animate-spin text-2xl text-accent"
                 />
-                <p className="text-sm text-foreground-500">Loading editor...</p>
+                <p className="text-sm text-muted">Loading editor...</p>
               </div>
             }
           >
@@ -240,8 +268,8 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             />
           </React.Suspense>
         ) : (
-          <div className="p-6 bg-content1 rounded-lg border border-default-200">
-            <p className="text-foreground-500">
+          <div className="p-6 bg-surface rounded-lg border">
+            <p className="text-muted">
               You do not have permission to create or edit tournaments.
             </p>
           </div>
@@ -254,47 +282,43 @@ const Tournaments: React.FC<TournamentsProps> = () => {
             </h2>
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button
-                as="a"
-                href={googleCalendarSubscribeUrl}
-                target="_blank"
-                rel="noreferrer"
                 size="sm"
-                variant="flat"
-                startContent={
-                  <Icon icon="lucide:calendar" className="w-4 h-4" />
-                }
+                variant="tertiary"
                 aria-label="Subscribe to Google Calendar"
                 title="Subscribe to the club Google Calendar"
+                onPress={() =>
+                  window.open(
+                    googleCalendarSubscribeUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
               >
+                <Icon icon="lucide:calendar" className="w-4 h-4" />
                 Subscribe
               </Button>
               {isAdmin && (
                 <>
                   <Button
-                    variant="flat"
+                    variant="tertiary"
                     size="sm"
                     onPress={() => navigate("/season-awards")}
-                    startContent={
-                      <Icon icon="lucide:medal" className="w-4 h-4" />
-                    }
                     aria-label="Go to season awards"
                   >
+                    <Icon icon="lucide:medal" className="w-4 h-4" />
                     Awards
                   </Button>
                   <Button
-                    color="primary"
                     size="sm"
-                    startContent={
-                      <Icon
-                        icon="lucide:plus"
-                        className="w-4 h-4 sm:w-5 sm:h-5"
-                      />
-                    }
                     className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
                     onPress={handleCreateTournament}
                     isDisabled={isLoading}
                     aria-label="Create new tournament"
                   >
+                    <Icon
+                      icon="lucide:plus"
+                      className="w-4 h-4 sm:w-5 sm:h-5"
+                    />
                     <span className="hidden xs:inline sm:inline">
                       New Tournament
                     </span>
@@ -310,9 +334,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               <div className="flex flex-col items-center gap-2">
                 <Icon
                   icon="lucide:loader"
-                  className="text-3xl text-primary animate-spin"
+                  className="text-3xl text-accent animate-spin"
                 />
-                <p className="text-foreground-500">Loading tournaments...</p>
+                <p className="text-muted">Loading tournaments...</p>
               </div>
             </div>
           ) : (

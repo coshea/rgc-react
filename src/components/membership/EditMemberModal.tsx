@@ -1,5 +1,5 @@
-import { Button, Input, Select, SelectItem, Spinner } from "@heroui/react";
-import { useEffect, useState } from "react";
+import { Button, Input, ListBox, Select, Spinner } from "@heroui/react";
+import React, { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import {
   getMembershipPayment,
@@ -199,16 +199,16 @@ export function EditMemberModal({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10 my-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium">
               {editing ? "Edit Member" : "Add Member"}
             </h3>
             {editing && (
-              <p className="text-xs text-default-400 mt-0.5 font-mono select-all">
+              <p className="text-xs text-muted mt-0.5 font-mono select-all">
                 {editing.id}
               </p>
             )}
@@ -216,16 +216,16 @@ export function EditMemberModal({
           <Button
             isIconOnly
             size="sm"
-            variant="light"
+            variant="ghost"
             aria-label="Close"
             onPress={onClose}
-            className="text-default-500"
+            className="text-muted"
           >
             ×
           </Button>
         </div>
         <div className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="First Name"
               value={form.firstName || ""}
@@ -246,17 +246,32 @@ export function EditMemberModal({
           <Input
             placeholder="Email"
             value={form.email || ""}
+            fullWidth
             isDisabled={saving}
             onChange={(e: any) => onChange({ ...form, email: e.target.value })}
           />
-          <Input
-            placeholder="Phone"
-            value={form.phone || ""}
-            isDisabled={saving}
-            onChange={(e: any) => onChange({ ...form, phone: e.target.value })}
-            onBlur={() => onChange({ ...form, phone: formatPhone(form.phone) })}
-          />
-          <div className="pt-2 border-t border-default-200 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              placeholder="Phone"
+              value={form.phone || ""}
+              isDisabled={saving}
+              onChange={(e: any) =>
+                onChange({ ...form, phone: e.target.value })
+              }
+              onBlur={() =>
+                onChange({ ...form, phone: formatPhone(form.phone) })
+              }
+            />
+            <Input
+              placeholder="GHIN Number"
+              value={form.ghinNumber || ""}
+              isDisabled={saving}
+              onChange={(e: any) =>
+                onChange({ ...form, ghinNumber: e.target.value })
+              }
+            />
+          </div>
+          <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -285,28 +300,33 @@ export function EditMemberModal({
                     : ROLE_OPTIONS;
                   return (
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-default-600">
+                      <label className="text-xs font-medium text-foreground">
                         Role <span className="text-danger">*</span>
                       </label>
                       <Select
-                        size="sm"
                         aria-label="Board Role"
                         placeholder="Select a role"
-                        selectedKeys={
-                          form.role ? new Set([form.role]) : new Set()
-                        }
+                        value={form.role || undefined}
                         isDisabled={saving}
-                        onSelectionChange={(keys) => {
-                          const v = Array.from(keys as Set<string>)[0];
-                          onChange({ ...form, role: v });
+                        onChange={(key) => {
+                          if (key) onChange({ ...form, role: String(key) });
                         }}
                         className="max-w-full"
                       >
-                        {options.map((r) => (
-                          <SelectItem key={r} textValue={r}>
-                            {r}
-                          </SelectItem>
-                        ))}
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {options.map((r) => (
+                              <ListBox.Item key={r} id={r} textValue={r}>
+                                {r}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
                       </Select>
                       {!form.role?.trim() && (
                         <p className="text-[11px] text-danger mt-1">
@@ -325,7 +345,7 @@ export function EditMemberModal({
                 })()}
               </div>
             ) : (
-              <p className="text-[11px] text-default-500">
+              <p className="text-[11px] text-muted">
                 Check "Board Member" to assign a role (e.g. President,
                 Treasurer).
               </p>
@@ -333,12 +353,12 @@ export function EditMemberModal({
           </div>
         </div>
         {isAdmin && (
-          <div className="mt-6 pt-4 border-t border-default-200 space-y-3 text-sm">
+          <div className="mt-6 pt-4 border-t space-y-3 text-sm">
             <h4 className="text-sm font-medium">
               Membership Payment ({currentYear})
             </h4>
             {loadingPayment ? (
-              <p className="text-xs text-default-500">Loading payment…</p>
+              <p className="text-xs text-muted">Loading payment…</p>
             ) : (
               <div className="space-y-3">
                 <div className="flex gap-3">
@@ -359,36 +379,44 @@ export function EditMemberModal({
                     <span>Paid / Confirmed</span>
                   </label>
                   <Select
-                    size="sm"
                     aria-label="Membership Type"
                     placeholder="Type"
-                    selectedKeys={
-                      payment.membershipType
-                        ? new Set([payment.membershipType])
-                        : new Set()
-                    }
+                    value={payment.membershipType || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(keys) => {
-                      const v = Array.from(keys as Set<string>)[0];
-                      setPayment((p) => ({ ...p, membershipType: v }));
-                      setPaymentDirty(true);
+                    onChange={(key) => {
+                      if (key) {
+                        setPayment((p) => ({
+                          ...p,
+                          membershipType: String(key),
+                        }));
+                        setPaymentDirty(true);
+                      }
                     }}
                     className="min-w-[130px]"
                   >
-                    <SelectItem key="full" textValue="Full">
-                      Full
-                    </SelectItem>
-                    <SelectItem key="handicap" textValue="Handicap">
-                      Handicap
-                    </SelectItem>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="full" textValue="Full">
+                          Full
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="handicap" textValue="Handicap">
+                          Handicap
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                   <Input
-                    size="sm"
                     placeholder="Amount"
                     value={payment.amount || ""}
                     className="max-w-[100px]"
                     isDisabled={saving}
-                    onChange={(e: any) => {
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));
                       setPaymentDirty(true);
                     }}
@@ -396,33 +424,40 @@ export function EditMemberModal({
                 </div>
                 <div className="flex flex-col gap-2">
                   <Select
-                    size="sm"
                     aria-label="Payment Method"
                     placeholder="Method"
-                    selectedKeys={
-                      payment.method ? new Set([payment.method]) : new Set()
-                    }
+                    value={payment.method || undefined}
                     isDisabled={saving}
-                    onSelectionChange={(keys) => {
-                      const v = Array.from(keys as Set<string>)[0] ?? "";
+                    onChange={(key) => {
+                      const v = key ? String(key) : "";
                       setPayment((p) => ({ ...p, method: v }));
                       setPaymentDirty(true);
                     }}
                   >
-                    <SelectItem key="paypal" textValue="PayPal">
-                      PayPal
-                    </SelectItem>
-                    <SelectItem key="check" textValue="Check">
-                      Check
-                    </SelectItem>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="paypal" textValue="PayPal">
+                          PayPal
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="check" textValue="Check">
+                          Check
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
                   </Select>
                 </div>
-                <p className="text-[11px] text-default-500 leading-snug">
+                <p className="text-[11px] text-muted leading-snug">
                   Marking Paid will create/update a membership payment record
                   for {currentYear}. Leaving it unchecked keeps status pending.
                 </p>
                 {editing && payment.status && (
-                  <div className="pt-2 border-t border-default-200">
+                  <div className="pt-2 border-t">
                     {confirmingDelete ? (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-danger">
@@ -430,16 +465,14 @@ export function EditMemberModal({
                         </span>
                         <Button
                           size="sm"
-                          color="danger"
-                          variant="flat"
-                          isLoading={deletingPayment}
+                          variant="tertiary"
                           onPress={handleDeletePayment}
                         >
                           Confirm
                         </Button>
                         <Button
                           size="sm"
-                          variant="light"
+                          variant="ghost"
                           isDisabled={deletingPayment}
                           onPress={() => setConfirmingDelete(false)}
                         >
@@ -449,14 +482,11 @@ export function EditMemberModal({
                     ) : (
                       <Button
                         size="sm"
-                        color="danger"
-                        variant="light"
-                        startContent={
-                          <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
-                        }
+                        variant="ghost"
                         isDisabled={saving}
                         onPress={() => setConfirmingDelete(true)}
                       >
+                        <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
                         Delete Payment
                       </Button>
                     )}
@@ -467,15 +497,10 @@ export function EditMemberModal({
           </div>
         )}
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="flat" onPress={onClose} isDisabled={saving}>
+          <Button variant="tertiary" onPress={onClose} isDisabled={saving}>
             Cancel
           </Button>
-          <Button
-            onPress={handleSave}
-            color="secondary"
-            isDisabled={saving}
-            aria-busy={saving}
-          >
+          <Button onPress={handleSave} isDisabled={saving} aria-busy={saving}>
             {saving ? (
               <span className="flex items-center gap-1">
                 <Spinner size="sm" /> Saving...

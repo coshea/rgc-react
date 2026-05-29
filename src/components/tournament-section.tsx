@@ -1,6 +1,6 @@
 import { TournamentStatusCard } from "./tournament-status-card";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import { Button, Card, CardBody, Skeleton } from "@heroui/react";
+import { Button, Card, Skeleton } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Icon } from "@iconify/react";
@@ -75,32 +75,32 @@ export function TournamentSection() {
   const displayTournaments = getDisplayTournaments();
 
   return (
-    <section className="py-8 bg-background overflow-x-hidden" id="tournaments">
+    <section className="py-8 overflow-x-hidden" id="tournaments">
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h2 className="text-2xl font-bold mb-1">
               {yearToShow} Featured Tournaments
             </h2>
-            <p className="text-sm text-default-600">
+            <p className="text-sm text-foreground">
               Click on a tournament to view details and register
             </p>
           </div>
           <Button
             size="sm"
-            variant="flat"
+            variant="tertiary"
             onPress={() => navigate("/tournaments")}
-            endContent={<Icon icon="lucide:arrow-right" className="w-3 h-3" />}
             className="self-start sm:self-auto"
           >
             View All
+            <Icon icon="lucide:arrow-right" className="w-3 h-3" />
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {latestYearLoading || tournamentsLoading
             ? Array.from({ length: isMobile ? 3 : 3 }).map((_, idx) => (
                 <Card key={idx} className="w-full">
-                  <CardBody className="p-4 space-y-3">
+                  <Card.Content className="p-4 space-y-3">
                     <Skeleton className="h-6 w-3/4 rounded-lg" />
                     <Skeleton className="h-4 w-1/2 rounded-lg" />
                     <Skeleton className="h-4 w-full rounded-lg" />
@@ -109,7 +109,7 @@ export function TournamentSection() {
                       <Skeleton className="h-5 w-20 rounded-full" />
                       <Skeleton className="h-8 w-24 rounded-lg" />
                     </div>
-                  </CardBody>
+                  </Card.Content>
                 </Card>
               ))
             : displayTournaments.map((tournament) => (

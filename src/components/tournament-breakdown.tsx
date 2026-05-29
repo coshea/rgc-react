@@ -1,19 +1,6 @@
 import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Skeleton,
-  Tooltip,
-  Button,
-  Card,
-  CardBody,
-} from "@heroui/react";
+import { Chip, Skeleton, Tooltip, Button, Card } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
 import { Icon } from "@iconify/react";
@@ -254,7 +241,7 @@ export function TournamentBreakdown({ year }: Props) {
   if (!tournamentBundles.length) {
     return (
       <div className="flex flex-col items-start gap-4">
-        <div className="flex items-center gap-2 text-default-500 text-sm">
+        <div className="flex items-center gap-2 text-muted text-sm">
           <Icon icon="lucide:calendar-x" className="w-5 h-5" />
           <span>No tournament results for {year}.</span>
         </div>
@@ -267,40 +254,36 @@ export function TournamentBreakdown({ year }: Props) {
       {/* Stats Bar */}
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-          <Icon icon="lucide:layout-grid" className="text-primary" />
+          <Icon icon="lucide:layout-grid" className="text-accent" />
           {year} Tournament Results
         </h2>
         <div className="flex flex-wrap gap-2">
-          <Chip
-            size="sm"
-            variant="flat"
-            color="primary"
-            startContent={<Icon icon="lucide:trophy" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary" color="accent">
+            <Icon
+              icon="lucide:trophy"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.withResults} events
           </Chip>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="success"
-            startContent={<Icon icon="lucide:users" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary" color="success">
+            <Icon
+              icon="lucide:users"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.unique} unique winners
           </Chip>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="warning"
-            startContent={<Icon icon="lucide:banknote" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary" color="warning">
+            <Icon
+              icon="lucide:banknote"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {formatPrize(globalStats.totalPrize)}
           </Chip>
-          <Chip
-            size="sm"
-            variant="flat"
-            color="secondary"
-            startContent={<Icon icon="lucide:award" className="w-3 h-3" />}
-          >
+          <Chip size="sm" variant="tertiary" color="default">
+            <Icon
+              icon="lucide:award"
+              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+            />
             {globalStats.avgWinners.toFixed(1)} winners / event
           </Chip>
         </div>
@@ -387,12 +370,12 @@ export function TournamentBreakdown({ year }: Props) {
           return (
             <article
               key={id}
-              className="relative overflow-hidden rounded-lg border border-default-200/60 dark:border-default-100/10 bg-content1 shadow-sm hover:shadow-md transition-shadow"
+              className="relative overflow-hidden rounded-lg border/60 dark:/10 bg-surface shadow-sm hover:shadow-md transition-shadow"
               aria-labelledby={`tournament-${id}`}
             >
               <div className="h-1 w-full bg-linear-to-r from-primary/40 via-primary/10 to-transparent" />
-              <Card shadow="none" className="bg-transparent">
-                <CardBody className="space-y-4">
+              <Card className="bg-transparent">
+                <Card.Content className="space-y-4">
                   {/* Header */}
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
@@ -407,7 +390,7 @@ export function TournamentBreakdown({ year }: Props) {
                           />
                           {tournament.title}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-default-500">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:calendar" className="w-3 h-3" />
                             {tournament.date.toLocaleDateString(undefined, {
@@ -415,9 +398,9 @@ export function TournamentBreakdown({ year }: Props) {
                               day: "numeric",
                             })}
                           </span>
-                          <span className="h-1 w-1 rounded-full bg-default-300" />
+                          <span className="h-1 w-1 rounded-full bg-default/60" />
                           <TeeBadge tee={tournament.tee} size="xs" />
-                          <span className="h-1 w-1 rounded-full bg-default-300" />
+                          <span className="h-1 w-1 rounded-full bg-default/60" />
                           <span className="inline-flex items-center gap-1">
                             <Icon icon="lucide:award" className="w-3 h-3" />
                             {winnersCount}{" "}
@@ -428,8 +411,7 @@ export function TournamentBreakdown({ year }: Props) {
                       <div className="flex flex-col items-end text-right gap-1">
                         <Chip
                           size="sm"
-                          variant="flat"
-                          color="success"
+                          variant="tertiary"
                           className="text-[11px]"
                         >
                           {formatPrize(tournament.prizePool)} pool
@@ -443,8 +425,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="danger"
-                                variant="solid"
+                                variant="primary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -455,8 +436,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="default"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -467,8 +447,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="warning"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -479,8 +458,7 @@ export function TournamentBreakdown({ year }: Props) {
                             return (
                               <Chip
                                 size="sm"
-                                color="primary"
-                                variant="flat"
+                                variant="tertiary"
                                 className="text-[10px]"
                               >
                                 {label}
@@ -528,7 +506,7 @@ export function TournamentBreakdown({ year }: Props) {
                             .map((p) => p.userId || p.name)
                             .join("_")}`}
                           className={
-                            "flex items-center gap-3 p-2 rounded-md bg-default-100/50 dark:bg-default-50/5" +
+                            "flex items-center gap-3 p-2 rounded-md bg-default/60/50 dark:bg-default/60/5" +
                             (champion
                               ? " ring-1 ring-amber-400/40 dark:ring-amber-300/30"
                               : "")
@@ -580,7 +558,7 @@ export function TournamentBreakdown({ year }: Props) {
                               {nameContent}
                             </p>
                             <p
-                              className="text-[11px] text-default-500 text-center"
+                              className="text-[11px] text-muted text-center"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
                               {g.players[0].score
@@ -601,7 +579,7 @@ export function TournamentBreakdown({ year }: Props) {
                               {nameContent}
                             </p>
                             <p
-                              className="text-[11px] text-default-500"
+                              className="text-[11px] text-muted"
                               aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
                             >
                               {g.players[0].score
@@ -611,15 +589,16 @@ export function TournamentBreakdown({ year }: Props) {
                             </p>
                           </div>
                           {g.players.length > 4 && (
-                            <Tooltip
-                              content={g.players
-                                .slice(4)
-                                .map((p) => p.name)
-                                .join(", ")}
-                            >
-                              <span className="text-[10px] text-default-400">
+                            <Tooltip>
+                              <span className="text-[10px] text-muted">
                                 +{g.players.length - 4}
                               </span>
+                              <Tooltip.Content>
+                                {g.players
+                                  .slice(4)
+                                  .map((p) => p.name)
+                                  .join(", ")}
+                              </Tooltip.Content>
                             </Tooltip>
                           )}
                         </div>
@@ -631,20 +610,19 @@ export function TournamentBreakdown({ year }: Props) {
                   <div className="pt-1">
                     <Button
                       size="sm"
-                      variant="light"
-                      radius="sm"
+                      variant="ghost"
+                      className="rounded-sm"
                       onPress={() => toggle(id)}
-                      endContent={
-                        <Icon
-                          icon={
-                            isOpen ? "lucide:chevron-up" : "lucide:chevron-down"
-                          }
-                          className="w-4 h-4"
-                        />
-                      }
                       aria-expanded={isOpen}
                       aria-controls={`results-${id}`}
                     >
+                      {isOpen ? "Hide full results" : "Show full results"}
+                      <Icon
+                        icon={
+                          isOpen ? "lucide:chevron-up" : "lucide:chevron-down"
+                        }
+                        className="w-4 h-4"
+                      />
                       {isOpen ? "Hide full results" : "Show full results"}
                     </Button>
                   </div>
@@ -660,111 +638,112 @@ export function TournamentBreakdown({ year }: Props) {
                     ].join(" ")}
                   >
                     {isOpen && (
-                      <Table
+                      <table
                         aria-label={`${tournament.title} full results`}
-                        removeWrapper
-                        isStriped
-                        classNames={{
-                          th: "bg-default-100 text-default-600 font-medium",
-                        }}
+                        className="w-full text-sm"
                       >
-                        <TableHeader>
-                          <TableColumn key="pos" className="w-12">
-                            POS
-                          </TableColumn>
-                          <TableColumn key="player">PLAYER(S)</TableColumn>
-                          <TableColumn
-                            key="score"
-                            className="hidden sm:table-cell"
-                          >
-                            SCORE
-                          </TableColumn>
-                          <TableColumn
-                            key="winnings"
-                            className="hidden sm:table-cell"
-                          >
-                            WINNINGS
-                          </TableColumn>
-                        </TableHeader>
-                        <TableBody
-                          items={bundle.teamRows}
-                          emptyContent="No results"
-                        >
-                          {(team) => {
-                            const row =
-                              team as TournamentBundle["teamRows"][number];
-                            const rank =
-                              bundle.teamRows.findIndex(
-                                (t) => t.teamKey === row.teamKey,
-                              ) + 1;
-                            const names: string[] = row.names;
-                            const userIds: string[] = row.userIds;
-                            const score: string | undefined = row.score;
-                            const totalPrize: number = row.totalPrize;
-                            return (
-                              <TableRow key={row.id}>
-                                <TableCell>
-                                  <PlaceIndicator pos={rank} compact />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
-                                      {userIds.slice(0, 4).map((uid, i) => {
-                                        const user = usersMap.get(uid);
-                                        const fallback = names[i] || uid;
-                                        return (
-                                          <UserAvatar
-                                            key={uid + i}
-                                            size="sm"
-                                            className="ring-1 ring-background"
-                                            user={user}
-                                            name={user ? undefined : fallback}
-                                          />
-                                        );
-                                      })}
-                                      {userIds.length > 4 && (
-                                        <span className="w-7 h-7 rounded-full bg-default-100 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
-                                          +{userIds.length - 4}
-                                        </span>
-                                      )}
+                        <thead>
+                          <tr>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 w-12">
+                              POS
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2">
+                              PLAYER(S)
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
+                              SCORE
+                            </th>
+                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
+                              WINNINGS
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bundle.teamRows.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="px-3 py-4 text-center text-muted"
+                              >
+                                No results
+                              </td>
+                            </tr>
+                          ) : (
+                            bundle.teamRows.map((row, rowIdx) => {
+                              const rank = rowIdx + 1;
+                              const names: string[] = row.names;
+                              const userIds: string[] = row.userIds;
+                              const score: string | undefined = row.score;
+                              const totalPrize: number = row.totalPrize;
+                              return (
+                                <tr
+                                  key={row.id}
+                                  className={
+                                    rowIdx % 2 === 0 ? "bg-default/20" : ""
+                                  }
+                                >
+                                  <td className="px-3 py-2">
+                                    <PlaceIndicator pos={rank} compact />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
+                                        {userIds.slice(0, 4).map((uid, j) => {
+                                          const user = usersMap.get(uid);
+                                          const fallback = names[j] || uid;
+                                          return (
+                                            <UserAvatar
+                                              key={uid + j}
+                                              size="sm"
+                                              className="ring-1 ring-background"
+                                              user={user}
+                                              name={user ? undefined : fallback}
+                                            />
+                                          );
+                                        })}
+                                        {userIds.length > 4 && (
+                                          <span className="w-7 h-7 rounded-full bg-default/60 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
+                                            +{userIds.length - 4}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-sm leading-tight wrap-break-word">
+                                          {names.join(" • ")}
+                                        </p>
+                                        <p className="sm:hidden text-[11px] text-muted">
+                                          {(score || "—") +
+                                            " • " +
+                                            formatPrize(totalPrize)}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-sm leading-tight wrap-break-word">
-                                        {names.join(" • ")}
-                                      </p>
-                                      {/* On small screens, show meta under the name to avoid extra columns */}
-                                      <p className="sm:hidden text-[11px] text-default-500">
-                                        {(score || "—") +
-                                          " • " +
-                                          formatPrize(totalPrize)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                  <span
-                                    className={
-                                      score && score.startsWith("-")
-                                        ? "text-success font-medium"
-                                        : ""
-                                    }
-                                  >
-                                    {score || "—"}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                  <span className="font-semibold text-sm">
-                                    {formatPrize(totalPrize)}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          }}
-                        </TableBody>
-                      </Table>
+                                  </td>
+                                  <td className="px-3 py-2 hidden sm:table-cell">
+                                    <span
+                                      className={
+                                        score && score.startsWith("-")
+                                          ? "text-success font-medium"
+                                          : ""
+                                      }
+                                    >
+                                      {score || "—"}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 hidden sm:table-cell">
+                                    <span className="font-semibold text-sm">
+                                      {formatPrize(totalPrize)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
                     )}
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </article>
           );

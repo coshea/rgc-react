@@ -2,17 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
-  CardBody,
   Button,
-  Input,
   Chip,
+  ListBox,
+  SearchField,
   Select,
-  SelectItem,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -132,10 +127,10 @@ export const BlogListPage: React.FC = () => {
           <h1 className="text-3xl font-bold">Club Announcements</h1>
           {isAdmin && (
             <Button
-              color="primary"
+              variant="primary"
               onPress={() => navigate("/announcements/new")}
-              startContent={<Icon icon="lucide:plus" />}
             >
+              <Icon icon="lucide:plus" />
               New Post
             </Button>
           )}
@@ -143,41 +138,52 @@ export const BlogListPage: React.FC = () => {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Input
+          <SearchField
             className="flex-1"
-            placeholder="Search posts..."
             value={searchTerm}
-            onValueChange={setSearchTerm}
-            startContent={
-              <Icon icon="lucide:search" className="text-foreground-500" />
-            }
-            isClearable
+            onChange={setSearchTerm}
             onClear={() => setSearchTerm("")}
-          />
+            aria-label="Search posts"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Search posts..." />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
           <Select
             className="sm:w-64"
-            label="Category"
-            selectedKeys={filterCategory ? [filterCategory] : []}
-            onSelectionChange={(keys) => {
-              const value = Array.from(keys)[0] as BlogCategory | "all";
-              setFilterCategory(value);
+            aria-label="Category"
+            value={filterCategory}
+            onChange={(key) => {
+              if (key) setFilterCategory(key as BlogCategory | "all");
             }}
           >
-            {[
-              <SelectItem key="all">All Categories</SelectItem>,
-              ...Object.values(BlogCategory).map((cat) => (
-                <SelectItem key={cat}>{cat}</SelectItem>
-              )),
-            ]}
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="all" textValue="All Categories">
+                  All Categories
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                {Object.values(BlogCategory).map((cat) => (
+                  <ListBox.Item key={cat} id={cat} textValue={cat}>
+                    {cat}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
           {isAdmin && (
             <Button
-              variant={showAllPosts ? "solid" : "flat"}
+              variant={showAllPosts ? "primary" : "tertiary"}
               onPress={() => setShowAllPosts(!showAllPosts)}
-              startContent={
-                <Icon icon={showAllPosts ? "lucide:eye" : "lucide:eye-off"} />
-              }
             >
+              <Icon icon={showAllPosts ? "lucide:eye" : "lucide:eye-off"} />
               {showAllPosts ? "All" : "Published"}
             </Button>
           )}
@@ -189,7 +195,7 @@ export const BlogListPage: React.FC = () => {
         <div className="flex justify-center py-24">
           <Icon
             icon="lucide:loader"
-            className="animate-spin text-4xl text-primary"
+            className="animate-spin text-4xl text-accent"
           />
         </div>
       )}
@@ -197,23 +203,23 @@ export const BlogListPage: React.FC = () => {
       {/* Empty State */}
       {!loading && filteredPosts.length === 0 && (
         <Card>
-          <CardBody className="text-center py-12">
+          <Card.Content className="text-center py-12">
             <Icon
               icon="lucide:file-text"
-              className="text-6xl text-foreground-300 mx-auto mb-4"
+              className="text-6xl text-muted mx-auto mb-4"
             />
-            <p className="text-xl text-foreground-500">No blog posts found</p>
+            <p className="text-xl text-muted">No blog posts found</p>
             {isAdmin && (
               <Button
+                variant="primary"
                 className="mt-4"
-                color="primary"
                 onPress={() => navigate("/announcements/new")}
-                startContent={<Icon icon="lucide:plus" />}
               >
+                <Icon icon="lucide:plus" />
                 Create Your First Post
               </Button>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -222,14 +228,9 @@ export const BlogListPage: React.FC = () => {
         {filteredPosts.map((post) => (
           <Card
             key={post.id}
-            isPressable={!isAdmin}
-            onPress={
-              !isAdmin
-                ? () => navigate(`/announcements/${post.slug}`)
-                : undefined
-            }
+            onClick={() => navigate(`/announcements/${post.slug}`)}
           >
-            <CardBody className="p-6">
+            <Card.Content className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Featured Image */}
                 {post.featuredImage && (
@@ -250,16 +251,15 @@ export const BlogListPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {post.isPinned && (
-                          <Chip
-                            size="sm"
-                            color="warning"
-                            variant="flat"
-                            startContent={<Icon icon="lucide:pin" />}
-                          >
+                          <Chip size="sm" variant="tertiary">
+                            <Icon
+                              icon="lucide:pin"
+                              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                            />
                             Pinned
                           </Chip>
                         )}
-                        <Chip size="sm" variant="flat">
+                        <Chip size="sm" variant="tertiary">
                           {post.category}
                         </Chip>
                         {isAdmin && (
@@ -270,35 +270,21 @@ export const BlogListPage: React.FC = () => {
                                 ? "success"
                                 : "default"
                             }
-                            variant="flat"
+                            variant="tertiary"
                           >
                             {post.status}
                           </Chip>
                         )}
                       </div>
-                      {isAdmin ? (
-                        <Button
-                          variant="light"
-                          className="w-full h-auto p-0 data-[hover=true]:bg-transparent"
-                          onPress={() =>
-                            navigate(`/announcements/${post.slug}`)
-                          }
-                        >
-                          <h2 className="w-full text-lg md:text-2xl font-bold mb-2 line-clamp-2 text-left break-words">
-                            {post.title}
-                          </h2>
-                        </Button>
-                      ) : (
-                        <h2 className="text-lg md:text-2xl font-bold mb-2 line-clamp-2 break-words">
-                          {post.title}
-                        </h2>
-                      )}
+                      <h2 className="text-lg md:text-2xl font-bold mb-2 line-clamp-2 break-words">
+                        {post.title}
+                      </h2>
                       {post.excerpt && (
-                        <p className="text-foreground-600 mb-3 line-clamp-2">
+                        <p className="text-muted mb-3 line-clamp-2">
                           {post.excerpt}
                         </p>
                       )}
-                      <div className="flex items-center gap-3 text-sm text-foreground-500">
+                      <div className="flex items-center gap-3 text-sm text-muted">
                         <span className="flex items-center gap-1">
                           <Icon icon="lucide:user" className="w-4 h-4" />
                           {post.authorName}
@@ -315,7 +301,7 @@ export const BlogListPage: React.FC = () => {
                       <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           isIconOnly
                           onPress={() =>
                             navigate(`/announcements/edit/${post.id}`)
@@ -326,8 +312,7 @@ export const BlogListPage: React.FC = () => {
                         </Button>
                         <Button
                           size="sm"
-                          variant="flat"
-                          color="danger"
+                          variant="tertiary"
                           isIconOnly
                           onPress={() =>
                             setDeleteConfirm({
@@ -344,38 +329,42 @@ export const BlogListPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={!!deleteConfirm}
-        onClose={() => !deleting && setDeleteConfirm(null)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteConfirm(null);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Delete Blog Post</ModalHeader>
-          <ModalBody>
-            <p>
-              Are you sure you want to delete "{deleteConfirm?.title}"? This
-              cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => !deleting && setDeleteConfirm(null)}
-              isDisabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button color="danger" onPress={handleDelete} isLoading={deleting}>
-              Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        <Modal.Container>
+          <Modal.Dialog>
+            <Modal.Header>Delete Blog Post</Modal.Header>
+            <Modal.Body>
+              <p>
+                Are you sure you want to delete "{deleteConfirm?.title}"? This
+                cannot be undone.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => !deleting && setDeleteConfirm(null)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onPress={handleDelete}>
+                Delete
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>{" "}
+      </Modal.Backdrop>
     </div>
   );
 };

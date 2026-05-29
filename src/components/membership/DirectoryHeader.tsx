@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Button, Switch, Tooltip } from "@heroui/react";
+import { Button, Switch, Tooltip, Label } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Icon } from "@iconify/react";
 
@@ -58,14 +58,12 @@ export function DirectoryHeader({
               {onExportMembers && (
                 <Button
                   size="sm"
-                  variant="flat"
-                  startContent={
-                    <Icon icon="lucide:download" className="w-4 h-4" />
-                  }
+                  variant="tertiary"
                   onPress={onExportMembers}
                   isDisabled={members.length === 0}
                   className="font-medium"
                 >
+                  <Icon icon="lucide:download" className="w-4 h-4" />
                   Export
                 </Button>
               )}
@@ -77,20 +75,17 @@ export function DirectoryHeader({
             <div className="flex flex-col gap-2">
               <Button
                 size="sm"
-                color="secondary"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
                 className="w-full justify-between font-medium"
-                endContent={
-                  <Icon
-                    icon="lucide:chevron-down"
-                    className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                  />
-                }
               >
                 Admin only
+                <Icon
+                  icon="lucide:chevron-down"
+                  className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                />
               </Button>
               {adminOpen && (
                 <div className="grid grid-cols-2 gap-2">
@@ -99,34 +94,35 @@ export function DirectoryHeader({
                       <Switch
                         size="sm"
                         isSelected={activeOnly}
-                        onValueChange={onActiveOnlyChange}
+                        onChange={onActiveOnlyChange}
                         aria-label="Toggle active members only"
                       >
-                        Active Last 2 Years
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        <Switch.Content>
+                          <Label>Active Last 2 Years</Label>
+                        </Switch.Content>
                       </Switch>
                     </div>
                   )}
                   {onFindDuplicates && (
                     <Button
                       size="sm"
-                      color="warning"
-                      variant="flat"
-                      startContent={
-                        <Icon icon="lucide:users" className="w-4 h-4" />
-                      }
+                      variant="tertiary"
                       onPress={onFindDuplicates}
                       className="font-medium w-full"
                     >
+                      <Icon icon="lucide:users" className="w-4 h-4" />
                       Find Duplicates
                     </Button>
                   )}
                   <Button
                     size="sm"
-                    color="primary"
-                    startContent={<PlusIcon className="w-4 h-4" />}
                     onPress={onAdd}
                     className="font-medium w-full"
                   >
+                    <PlusIcon className="w-4 h-4" />
                     Add Member
                   </Button>
                 </div>
@@ -142,30 +138,25 @@ export function DirectoryHeader({
           {/* Admin or board: email + export */}
           {isAdminOrBoard && (
             <div className="flex gap-2 items-center">
-              <Tooltip content="Email active members">
-                <div>
-                  <EmailMembersButton
-                    members={members}
-                    activeSet={activeSet}
-                    currentYear={currentYear}
-                    size="sm"
-                  />
-                </div>
-              </Tooltip>
+              <EmailMembersButton
+                members={members}
+                activeSet={activeSet}
+                currentYear={currentYear}
+                size="sm"
+              />
               {onExportMembers && (
-                <Tooltip content="Export member list to CSV">
+                <Tooltip>
                   <Button
                     size="sm"
-                    variant="flat"
-                    startContent={
-                      <Icon icon="lucide:download" className="w-4 h-4" />
-                    }
+                    variant="tertiary"
                     onPress={onExportMembers}
                     isDisabled={members.length === 0}
                     className="font-medium"
                   >
+                    <Icon icon="lucide:download" className="w-4 h-4" />
                     Export
                   </Button>
+                  <Tooltip.Content>Export member list to CSV</Tooltip.Content>
                 </Tooltip>
               )}
             </div>
@@ -175,20 +166,17 @@ export function DirectoryHeader({
             <div className="flex items-center gap-2 pl-2 border-l border-divider">
               <Button
                 size="sm"
-                color="secondary"
-                variant="flat"
+                variant="tertiary"
                 onPress={() => setAdminOpen((o) => !o)}
                 aria-expanded={adminOpen}
                 aria-label="Toggle admin actions"
                 className="font-medium"
-                endContent={
-                  <Icon
-                    icon="lucide:chevron-right"
-                    className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                  />
-                }
               >
                 Admin only
+                <Icon
+                  icon="lucide:chevron-right"
+                  className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
+                />
               </Button>
               <div
                 className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
@@ -204,34 +192,35 @@ export function DirectoryHeader({
                     <Switch
                       size="sm"
                       isSelected={activeOnly}
-                      onValueChange={onActiveOnlyChange}
+                      onChange={onActiveOnlyChange}
                       aria-label="Toggle active members only"
                       className="whitespace-nowrap"
                     >
-                      Active Last 2 Years
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                      <Switch.Content>
+                        <Label>Active Last 2 Years</Label>
+                      </Switch.Content>
                     </Switch>
                   )}
                   {onFindDuplicates && (
                     <Button
                       size="sm"
-                      color="warning"
-                      variant="flat"
-                      startContent={
-                        <Icon icon="lucide:users" className="w-4 h-4" />
-                      }
+                      variant="tertiary"
                       onPress={onFindDuplicates}
                       className="font-medium whitespace-nowrap"
                     >
+                      <Icon icon="lucide:users" className="w-4 h-4" />
                       Find Duplicates
                     </Button>
                   )}
                   <Button
                     size="sm"
-                    color="primary"
-                    startContent={<PlusIcon className="w-4 h-4" />}
                     onPress={onAdd}
                     className="font-medium whitespace-nowrap"
                   >
+                    <PlusIcon className="w-4 h-4" />
                     Add Member
                   </Button>
                 </div>

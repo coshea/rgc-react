@@ -1,26 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  NavbarMenu,
-  NavbarMenuItem,
-  NavbarMenuToggle,
-  Link,
-  Button,
-  Divider,
-  NavbarProps,
-} from "@heroui/react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import NavDropdown from "@/components/nav-dropdown";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal";
 
-import { cn } from "@heroui/react";
 import { RGCLogo as RGCLogo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 import { ProfileDropdown } from "./profile-dropdown";
-import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
+import { useAuth } from "@/providers/AuthProvider";
 import { ChevronRightIcon } from "@heroicons/react/24/solid";
 
 const menuItemsMobile = {
@@ -57,11 +45,12 @@ const menuItemsDesktop = {
   "Contact Us": [siteConfig.pages.contact],
 };
 
-export const MainNavbar = (_props: NavbarProps) => {
+export const MainNavbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { userLoggedIn, loading } = useAuth(); // Get auth state
+  const { userLoggedIn, loading } = useAuth();
 
+  const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -104,167 +93,152 @@ export const MainNavbar = (_props: NavbarProps) => {
 
   return (
     <>
-      <Navbar
-        isBordered
-        {..._props}
-        classNames={{
-          base: cn("border-default-100", {
-            "bg-default-200/50 dark:bg-default-100/50": isMenuOpen,
-          }),
-          wrapper: "w-full justify-between",
-          item: "hidden md:flex",
-        }}
-        height="60px"
-        isMenuOpen={isMenuOpen}
-        onMenuOpenChange={setIsMenuOpen}
-      >
-        {/* Left Content */}
-        <NavbarContent className="flex">
-          {/* Mobile Content */}
-          <NavbarMenuToggle className="text-default-400 md:hidden" />
+      <nav className="z-40 w-full border-b bg-background/70 backdrop-blur-lg sticky top-0">
+        <div
+          className={`flex h-[45px] max-w-6xl mx-auto w-full items-center justify-between px-3 sm:px-4 transition-colors ${isMenuOpen ? "bg-default/60/50 dark:bg-default/60/50" : ""}`}
+        >
+          {/* Left: mobile toggle + logo */}
+          <div className="flex items-center gap-2">
+            {/* Mobile hamburger */}
+            <button
+              className="text-muted md:hidden p-1"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((v) => !v)}
+            >
+              <Icon
+                icon={isMenuOpen ? "lucide:x" : "lucide:menu"}
+                className="text-xl"
+              />
+            </button>
 
-          {/* Mobile Dropdown */}
-          <NavbarMenu
-            className="
-          md:hidden
-          top-[calc(var(--navbar-height)-1px)] 
-max-h-fit bg-background pb-6 pt-4 shadow-large border-b border-default-200/60 
-dark:border-default-100/10"
-          >
-            {/* Search row in mobile menu */}
-            <NavbarMenuItem>
+            {/* Logo */}
+            <a
+              href={siteConfig.pages.home.link}
+              aria-label="Home"
+              className="flex items-center gap-2"
+            >
+              <RGCLogo className="h-9 w-auto" />
+            </a>
+          </div>
+
+          {/* Center: desktop nav */}
+          <ul className="hidden md:flex items-center gap-4">
+            {Object.entries(menuItemsDesktop).map(([label, items], idx) => (
+              <li key={`${label}-${idx}`}>
+                {Array.isArray(items) && items.length > 1 ? (
+                  <NavDropdown
+                    label={label}
+                    items={items}
+                    onNavigate={() => setOpenDropdown(null)}
+                  />
+                ) : (
+                  <a
+                    className="text-muted flex items-center gap-1 px-3 py-0.5 text-sm hover:text-foreground transition-colors rounded"
+                    href={
+                      Array.isArray(items) && items[0] ? items[0].link : "#"
+                    }
+                  >
+                    {Array.isArray(items) && items[0] && items[0].icon && (
+                      <Icon icon={items[0].icon} className="text-base" />
+                    )}
+                    {Array.isArray(items) && items[0] ? items[0].title : label}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {/* Right: search + auth */}
+          <div className="flex items-center gap-1 pr-2">
+            <Button
+              isIconOnly
+              variant="ghost"
+              size="sm"
+              aria-label="Search"
+              className="text-muted rounded-full"
+              onPress={() => setIsSearchOpen(true)}
+            >
+              <Icon icon="lucide:search" className="text-lg" />
+            </Button>
+
+            {loading ? (
+              <div className="w-8 h-8" />
+            ) : userLoggedIn ? (
+              <ProfileDropdown />
+            ) : (
+              <div className="ml-2 flex gap-2">
+                <Button
+                  className="text-muted rounded-full"
+                  variant="ghost"
+                  onPress={() => navigate(siteConfig.pages.login.link)}
+                >
+                  {siteConfig.pages.login.title}
+                </Button>
+                <Button
+                  className="bg-foreground font-medium text-background rounded-full"
+                  variant="tertiary"
+                  onPress={() => navigate(siteConfig.pages.signup.link)}
+                >
+                  {siteConfig.pages.signup.title}
+                  <ChevronRightIcon />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-background pb-6 pt-4 shadow-lg border-b/60 dark:/10">
+            {/* Search row */}
+            <div className="px-4 mb-2">
               <button
-                className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default-100 flex items-center gap-2"
+                className="w-full rounded-lg px-2 py-2 text-foreground hover:bg-default/60 flex items-center gap-2"
                 onClick={() => {
                   setIsMenuOpen(false);
                   setIsSearchOpen(true);
                 }}
               >
-                <Icon
-                  icon="lucide:search"
-                  className="text-base text-default-500"
-                />
+                <Icon icon="lucide:search" className="text-base text-muted" />
                 <span>Search</span>
               </button>
-              <Divider className="opacity-50" />
-            </NavbarMenuItem>
+              <hr className="/50 mt-2" />
+            </div>
 
-            {Object.entries(menuItemsMobile).map(([label, items]: any, idx) => (
-              <NavbarMenuItem key={`${label}-${idx}`}>
-                {Array.isArray(items) && items.length > 1 ? (
-                  <NavDropdown
-                    label={label}
-                    items={items}
-                    isMobile
-                    onNavigate={() => setIsMenuOpen(false)}
-                  />
-                ) : (
-                  <Link
-                    className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default-100"
-                    href={
-                      Array.isArray(items) && items[0] ? items[0].link : "#"
-                    }
-                    size="md"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {Array.isArray(items) && items[0] ? items[0].title : label}
-                  </Link>
-                )}
-
-                {idx < Object.keys(menuItemsMobile).length - 1 && (
-                  <Divider className="opacity-50" />
-                )}
-              </NavbarMenuItem>
-            ))}
-          </NavbarMenu>
-
-          <NavbarBrand>
-            <Link
-              href={siteConfig.pages.home.link}
-              aria-label="Home"
-              className="flex items-center gap-2"
-            >
-              <div>
-                <RGCLogo />
-              </div>
-            </Link>
-          </NavbarBrand>
-        </NavbarContent>
-
-        {/* Center Content */}
-        <NavbarContent className="hidden md:flex" justify="center">
-          {Object.entries(menuItemsDesktop).map(([label, items]: any, idx) => (
-            <NavbarMenuItem key={`${label}-${idx}`}>
-              {Array.isArray(items) && items.length > 1 ? (
-                <NavDropdown
-                  label={label}
-                  items={items}
-                  onNavigate={() => setOpenDropdown(null)}
-                />
-              ) : (
-                <Link
-                  className="text-default-500 flex items-center gap-2"
-                  href={Array.isArray(items) && items[0] ? items[0].link : "#"}
-                  size="sm"
-                >
-                  {Array.isArray(items) && items[0] && items[0].icon && (
-                    <Icon icon={items[0].icon} className="text-base" />
+            <ul className="px-4">
+              {Object.entries(menuItemsMobile).map(([label, items], idx) => (
+                <li key={`${label}-${idx}`}>
+                  {Array.isArray(items) && items.length > 1 ? (
+                    <NavDropdown
+                      label={label}
+                      items={items}
+                      isMobile
+                      onNavigate={() => setIsMenuOpen(false)}
+                    />
+                  ) : (
+                    <a
+                      className="mb-2 w-full rounded-lg px-2 py-2 text-foreground hover:bg-default/60 flex"
+                      href={
+                        Array.isArray(items) && items[0] ? items[0].link : "#"
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {Array.isArray(items) && items[0]
+                        ? items[0].title
+                        : label}
+                    </a>
                   )}
-                  {Array.isArray(items) && items[0] ? items[0].title : label}
-                </Link>
-              )}
-            </NavbarMenuItem>
-          ))}
-        </NavbarContent>
 
-        {/* Right Content */}
-
-        {/* Search + Profile Dropdown */}
-        <NavbarContent justify="end" className="gap-1 pr-2 sm:pr-2">
-          <NavbarItem className="flex">
-            <Button
-              isIconOnly
-              variant="light"
-              radius="full"
-              size="sm"
-              aria-label="Search"
-              className="text-default-500"
-              onPress={() => setIsSearchOpen(true)}
-            >
-              <Icon icon="lucide:search" className="text-lg" />
-            </Button>
-          </NavbarItem>
-          {loading ? (
-            // Optional: Show a loading spinner or placeholder
-            <div className="w-8 h-8" /> // Simple placeholder
-          ) : userLoggedIn ? (
-            <ProfileDropdown />
-          ) : (
-            <NavbarItem className="ml-2 flex gap-2">
-              <Button
-                className="text-default-500"
-                radius="full"
-                variant="light"
-                as={Link}
-                href={siteConfig.pages.login.link}
-              >
-                {siteConfig.pages.login.title}
-              </Button>
-              <Button
-                className="bg-foreground font-medium text-background"
-                color="secondary"
-                endContent={<ChevronRightIcon />}
-                radius="full"
-                variant="flat"
-                as={Link}
-                href={siteConfig.pages.signup.link}
-              >
-                {siteConfig.pages.signup.title}
-              </Button>
-            </NavbarItem>
-          )}
-        </NavbarContent>
-      </Navbar>
+                  {idx < Object.keys(menuItemsMobile).length - 1 && (
+                    <hr className="/50 my-1" />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </nav>
 
       <GlobalSearchModal
         isOpen={isSearchOpen}

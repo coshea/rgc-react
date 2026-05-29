@@ -1,16 +1,5 @@
 import React from "react";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Tooltip,
-  Button,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Table, Tooltip, Button, Label, ListBox, Select } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus, isRegistrationOpen } from "@/utils/tournamentStatus";
@@ -178,11 +167,11 @@ export const TournamentList: React.FC<TournamentListProps> = ({
     const meta = metaBits.join(" • ");
 
     return (
-      <div className="mt-2 text-xs text-foreground-500 flex items-start gap-1">
+      <div className="mt-2 text-xs text-muted flex items-start gap-1">
         <Icon icon="lucide:trophy" className="text-warning shrink-0 mt-0.5" />
         <div>
           <div>{names.join(", ")}</div>
-          {meta ? <div className="text-foreground-400">{meta}</div> : null}
+          {meta ? <div className="text-muted">{meta}</div> : null}
         </div>
       </div>
     );
@@ -190,15 +179,15 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   if (tournaments.length === 0) {
     return (
-      <div className="text-center py-12 bg-content1 rounded-lg border border-default-200">
+      <div className="text-center py-12 bg-surface rounded-lg border">
         <Icon
           icon="lucide:calendar-off"
-          className="mx-auto text-4xl text-default-400 mb-3"
+          className="mx-auto text-4xl text-muted mb-3"
         />
         <h3 className="text-lg font-medium text-foreground mb-1">
           No tournaments found
         </h3>
-        <p className="text-foreground-500">
+        <p className="text-muted">
           Create your first tournament to get started
         </p>
       </div>
@@ -212,54 +201,43 @@ export const TournamentList: React.FC<TournamentListProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={filterStatus === "all" ? "solid" : "flat"}
-              color={filterStatus === "all" ? "primary" : "default"}
+              variant={filterStatus === "all" ? "primary" : "tertiary"}
               size="sm"
               onPress={() => setFilterStatus("all")}
             >
               All ({filterCounts.all})
             </Button>
             <Button
-              variant={filterStatus === "registration" ? "solid" : "flat"}
-              color={filterStatus === "registration" ? "warning" : "default"}
+              variant={filterStatus === "registration" ? "primary" : "tertiary"}
               size="sm"
               onPress={() => setFilterStatus("registration")}
-              startContent={
-                <Icon icon="lucide:user-plus" className="w-4 h-4" />
-              }
             >
+              <Icon icon="lucide:user-plus" className="w-4 h-4" />
               Registration Open ({filterCounts.registration})
             </Button>
             <Button
-              variant={filterStatus === "scheduled" ? "solid" : "flat"}
-              color={filterStatus === "scheduled" ? "primary" : "default"}
+              variant={filterStatus === "scheduled" ? "primary" : "tertiary"}
               size="sm"
               onPress={() => setFilterStatus("scheduled")}
-              startContent={<Icon icon="lucide:calendar" className="w-4 h-4" />}
             >
+              <Icon icon="lucide:calendar" className="w-4 h-4" />
               Scheduled ({filterCounts.scheduled})
             </Button>
             <Button
-              variant={filterStatus === "completed" ? "solid" : "flat"}
-              color={filterStatus === "completed" ? "success" : "default"}
+              variant={filterStatus === "completed" ? "primary" : "tertiary"}
               size="sm"
               onPress={() => setFilterStatus("completed")}
-              startContent={
-                <Icon icon="lucide:check-circle" className="w-4 h-4" />
-              }
             >
+              <Icon icon="lucide:check-circle" className="w-4 h-4" />
               Completed ({filterCounts.completed})
             </Button>
             {filterCounts.canceled > 0 && (
               <Button
-                variant={filterStatus === "canceled" ? "solid" : "flat"}
-                color={filterStatus === "canceled" ? "danger" : "default"}
+                variant={filterStatus === "canceled" ? "danger" : "tertiary"}
                 size="sm"
                 onPress={() => setFilterStatus("canceled")}
-                startContent={
-                  <Icon icon="lucide:x-circle" className="w-4 h-4" />
-                }
               >
+                <Icon icon="lucide:x-circle" className="w-4 h-4" />
                 Canceled ({filterCounts.canceled})
               </Button>
             )}
@@ -267,23 +245,37 @@ export const TournamentList: React.FC<TournamentListProps> = ({
           <div className="min-w-32">
             <Select
               aria-label="Filter by year"
-              label="Year"
-              size="sm"
-              selectedKeys={
-                availableYears.includes(yearFilter) ? [String(yearFilter)] : []
+              value={
+                availableYears.includes(yearFilter)
+                  ? String(yearFilter)
+                  : undefined
               }
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0];
-                if (val !== undefined) setYearFilter(Number(val));
+              onChange={(key) => {
+                if (key !== undefined && key !== null)
+                  setYearFilter(Number(key));
               }}
               className="w-36"
               isDisabled={availableYears.length === 0}
             >
-              {availableYears.map((y) => (
-                <SelectItem key={String(y)} textValue={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
+              <Label>Year</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {availableYears.map((y) => (
+                    <ListBox.Item
+                      key={String(y)}
+                      id={String(y)}
+                      textValue={String(y)}
+                    >
+                      {y}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
         </div>
@@ -300,119 +292,116 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
       {/* Desktop view (table layout) */}
       <div className="hidden md:block">
-        <Table
-          aria-label="Tournaments list"
-          removeWrapper
-          className="bg-content1 rounded-lg border border-default-200"
-        >
-          <TableHeader>
-            <TableColumn>TOURNAMENT</TableColumn>
-            <TableColumn>DATE</TableColumn>
-            <TableColumn>
-              <div className="flex items-center gap-1">
-                <Icon icon="lucide:clock" className="text-default-400" />
-                <span className="sr-only">TEE TIMES</span>
-              </div>
-            </TableColumn>
-            <TableColumn>PLAYERS</TableColumn>
-            <TableColumn>TEE</TableColumn>
-            <TableColumn>PRIZE POOL</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {filteredTournaments.map((tournament, idx) => (
-              <TableRow
-                key={tournament.firestoreId}
-                className={
-                  `group transition-colors cursor-pointer ` +
-                  `${idx % 2 === 0 ? "bg-content1/60" : "bg-content2/40"} ` +
-                  `hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ` +
-                  `${(() => {
-                    const s = getStatus(tournament);
-                    if (s === TournamentStatus.Canceled) {
-                      return "border-l-4 border-l-danger";
-                    }
-                    if (s === TournamentStatus.Completed) {
-                      return "border-l-4 border-l-success";
-                    }
-                    if (s === TournamentStatus.InProgress) {
-                      return "border-l-4 border-l-primary";
-                    }
-                    if (isRegistrationOpen(tournament)) {
-                      return "border-l-4 border-l-warning";
-                    }
-                    return "border-l-4 border-l-default-200";
-                  })()}`
-                }
-                role="link"
-                tabIndex={0}
-                onClick={() => {
-                  if (tournament.firestoreId) {
-                    navigate(`/tournaments/${tournament.firestoreId}`);
+        <Table className="bg-surface rounded-lg border">
+          <Table.Content
+            aria-label="Tournaments list"
+            onRowAction={(key) => {
+              navigate(`/tournaments/${String(key)}`);
+            }}
+          >
+            <Table.Header>
+              <Table.Column isRowHeader>TOURNAMENT</Table.Column>
+              <Table.Column>DATE</Table.Column>
+              <Table.Column>
+                <div className="flex items-center gap-1">
+                  <Icon icon="lucide:clock" className="text-muted" />
+                  <span className="sr-only">TEE TIMES</span>
+                </div>
+              </Table.Column>
+              <Table.Column>PLAYERS</Table.Column>
+              <Table.Column>TEE</Table.Column>
+              <Table.Column>PRIZE POOL</Table.Column>
+              <Table.Column>STATUS</Table.Column>
+            </Table.Header>
+            <Table.Body>
+              {filteredTournaments.map((tournament, idx) => (
+                <Table.Row
+                  key={tournament.firestoreId}
+                  id={tournament.firestoreId}
+                  className={
+                    `group transition-colors cursor-pointer ` +
+                    `${idx % 2 === 0 ? "bg-surface/60" : "bg-surface-secondary/40"} ` +
+                    `hover:bg-accent/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ` +
+                    `${(() => {
+                      const s = getStatus(tournament);
+                      if (s === TournamentStatus.Canceled) {
+                        return "border-l-4 border-l-danger";
+                      }
+                      if (s === TournamentStatus.Completed) {
+                        return "border-l-4 border-l-success";
+                      }
+                      if (s === TournamentStatus.InProgress) {
+                        return "border-l-4 border-l-accent";
+                      }
+                      if (isRegistrationOpen(tournament)) {
+                        return "border-l-4 border-l-warning";
+                      }
+                      return "border-l-4 border-l-border";
+                    })()}`
                   }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    if (tournament.firestoreId) {
-                      navigate(`/tournaments/${tournament.firestoreId}`);
-                    }
-                  }
-                }}
-                aria-label={`View details for ${tournament.title}`}
-              >
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-medium text-foreground text-left flex items-center gap-2">
-                        {tournament.title}
-                      </p>
-                      <p className="text-xs text-foreground-500 line-clamp-2 max-w-[200px]">
-                        {tournament.description}
-                      </p>
-                      {renderWinners(tournament)}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Icon icon="lucide:calendar" className="text-default-400" />
-                    <span>{formatDate(tournament.date)}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {tournament.assignedTeeTimes ? (
-                    <Tooltip content="Assigned tee times">
-                      <div className="flex items-center">
-                        <Icon icon="lucide:clock" className="text-primary" />
+                  aria-label={`View details for ${tournament.title}`}
+                >
+                  <Table.Cell>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="font-medium text-foreground text-left flex items-center gap-2">
+                          {tournament.title}
+                        </p>
+                        <p className="text-xs text-muted line-clamp-2 max-w-[200px]">
+                          {tournament.description}
+                        </p>
+                        {renderWinners(tournament)}
                       </div>
-                    </Tooltip>
-                  ) : (
-                    <span className="text-default-300">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Icon icon="lucide:users" className="text-default-400" />
-                    <span>{tournament.players}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <TeeBadge
-                      tee={tournament.tee || "Mixed"}
-                      size="sm"
-                      ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
-                    />
-                  </div>
-                </TableCell>
-                <TableCell>{formatCurrency(tournament.prizePool)}</TableCell>
-                <TableCell>
-                  <TournamentStatusChip tournament={tournament} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Icon icon="lucide:calendar" className="text-muted" />
+                      <span>{formatDate(tournament.date)}</span>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
+                    {tournament.assignedTeeTimes ? (
+                      <Tooltip>
+                        <Button
+                          isIconOnly
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Assigned tee times"
+                        >
+                          <Icon icon="lucide:clock" className="text-accent" />
+                        </Button>
+                        <Tooltip.Content>Assigned tee times</Tooltip.Content>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-muted/60">—</span>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <div className="flex items-center gap-1">
+                      <Icon icon="lucide:users" className="text-muted" />
+                      <span>{tournament.players}</span>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <div className="flex items-center">
+                      <TeeBadge
+                        tee={tournament.tee || "Mixed"}
+                        size="sm"
+                        ariaLabel={`${tournament.tee || "Mixed"} tee designation`}
+                      />
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell>
+                    {formatCurrency(tournament.prizePool)}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <TournamentStatusChip tournament={tournament} />
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Content>
         </Table>
       </div>
     </>

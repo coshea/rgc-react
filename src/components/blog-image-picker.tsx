@@ -2,11 +2,12 @@ import React from "react";
 import {
   Button,
   Card,
-  CardBody,
   Input,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Spinner,
+  TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { uploadBlogImage, listBlogImages } from "@/api/storage";
@@ -146,11 +147,11 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
     <div className="space-y-4">
       {/* Upload Area */}
       <Card>
-        <CardBody>
+        <Card.Content>
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               dragActive
-                ? "border-primary bg-primary/10"
+                ? "border-accent bg-accent/10"
                 : "border-foreground-300"
             }`}
             onDragEnter={handleDrag}
@@ -168,9 +169,7 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Spinner size="lg" />
-                <p className="text-sm text-foreground-500">
-                  Uploading image...
-                </p>
+                <p className="text-sm text-muted">Uploading image...</p>
               </div>
             ) : selectedFile ? (
               <div className="space-y-4">
@@ -181,20 +180,20 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   />
                   <p className="text-sm font-medium">{selectedFile.name}</p>
                 </div>
-                <Input
-                  label="Custom Filename (optional)"
-                  placeholder="e.g., spring-tournament-2024"
+                <TextField
                   value={customFilename}
-                  onValueChange={setCustomFilename}
-                  description="Enter a descriptive name to easily find this image later"
-                  startContent={
-                    <Icon icon="lucide:tag" className="text-foreground-400" />
-                  }
-                />
+                  onChange={(v) => setCustomFilename(v)}
+                >
+                  <Label>Custom Filename (optional)</Label>
+                  <Input placeholder="e.g., spring-tournament-2024" />
+                  <p className="text-xs text-muted mt-1">
+                    Enter a descriptive name to easily find this image later
+                  </p>
+                </TextField>
                 <div className="flex gap-2 justify-center">
                   <Button
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => {
                       setSelectedFile(null);
                       setCustomFilename("");
@@ -202,12 +201,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    onPress={handleConfirmUpload}
-                    startContent={<Icon icon="lucide:upload" />}
-                  >
+                  <Button size="sm" onPress={handleConfirmUpload}>
+                    <Icon icon="lucide:upload" />
                     Upload
                   </Button>
                 </div>
@@ -216,23 +211,23 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
               <>
                 <Icon
                   icon="lucide:upload-cloud"
-                  className="text-4xl text-foreground-400 mx-auto mb-3"
+                  className="text-4xl text-muted mx-auto mb-3"
                 />
-                <p className="text-sm text-foreground-600 mb-2">
+                <p className="text-sm text-muted mb-2">
                   Drag and drop an image here, or click to browse
                 </p>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="tertiary"
                   onPress={() => fileInputRef.current?.click()}
-                  startContent={<Icon icon="lucide:image-plus" />}
                 >
+                  <Icon icon="lucide:image-plus" />
                   Choose Image
                 </Button>
               </>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Select from existing images */}
@@ -242,39 +237,49 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
         </div>
       ) : images.length > 0 ? (
         <Select
-          label="Or select from previously uploaded images"
-          placeholder="Choose an image"
-          selectedKeys={selectedImageName ? [selectedImageName] : []}
-          onSelectionChange={(keys) => {
-            const name = Array.from(keys)[0] as string;
-            const img = images.find((i) => i.name === name);
-            if (img) {
-              onChange(img.url);
+          value={selectedImageName}
+          onChange={(key) => {
+            if (key) {
+              const name = String(key);
+              const img = images.find((i) => i.name === name);
+              if (img) {
+                onChange(img.url);
+              }
             }
           }}
         >
-          {images.map((img) => (
-            <SelectItem key={img.name} textValue={img.name}>
-              <div className="flex items-center gap-2">
-                <img
-                  src={img.url}
-                  alt={img.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-10 h-10 object-cover rounded"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm truncate">{img.name}</div>
-                  <div className="text-xs text-foreground-500">
-                    {new Date(img.uploadedAt).toLocaleDateString()}
+          <Label>Or select from previously uploaded images</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {images.map((img) => (
+                <ListBox.Item key={img.name} id={img.name} textValue={img.name}>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm truncate">{img.name}</div>
+                      <div className="text-xs text-muted">
+                        {new Date(img.uploadedAt).toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </SelectItem>
-          ))}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
       ) : (
-        <p className="text-sm text-foreground-500 text-center">
+        <p className="text-sm text-muted text-center">
           No images uploaded yet. Upload your first image above.
         </p>
       )}
@@ -284,13 +289,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Selected Image:</p>
-            <Button
-              size="sm"
-              variant="flat"
-              color="danger"
-              onPress={() => onChange("")}
-              startContent={<Icon icon="lucide:x" />}
-            >
+            <Button size="sm" variant="tertiary" onPress={() => onChange("")}>
+              <Icon icon="lucide:x" />
               Remove
             </Button>
           </div>

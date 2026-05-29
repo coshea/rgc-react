@@ -3,18 +3,36 @@ import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { genkit } from "genkit";
-import { googleAI } from "@genkit-ai/googleai";
+import { googleAI } from "@genkit-ai/google-genai";
 import { enableFirebaseTelemetry } from "@genkit-ai/firebase";
 import { z } from "zod";
-
-enableFirebaseTelemetry();
+import { logger } from "./logger";
 
 export const GOOGLE_GENAI_API_KEY = defineSecret("GOOGLE_GENAI_API_KEY");
 
 // Lazily initialized so the secret env var is available at first request
 let _ai: ReturnType<typeof genkit> | null = null;
+let telemetryAttempted = false;
+
+function ensureFirebaseTelemetry() {
+  if (telemetryAttempted) {
+    return;
+  }
+
+  telemetryAttempted = true;
+
+  try {
+    enableFirebaseTelemetry();
+  } catch (error) {
+    logger.warn("generate_blog_writeup: firebase telemetry disabled", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 function getAi() {
   if (!_ai) {
+    ensureFirebaseTelemetry();
     _ai = genkit({
       plugins: [googleAI()],
       // __dirname is /workspace/lib at runtime; prompts live at /workspace/prompts
@@ -177,7 +195,11 @@ export const generate_blog_writeup = onCall(
       .doc(`admin/${request.auth.uid}`)
       .get();
     const adminData = adminDoc.data();
-    if (adminData?.isAdmin !== true && adminData?.admin !== true && adminData?.admin !== "true") {
+    if (
+      adminData?.isAdmin !== true &&
+      adminData?.admin !== true &&
+      adminData?.admin !== "true"
+    ) {
       throw new HttpsError("permission-denied", "Admin access required.");
     }
 

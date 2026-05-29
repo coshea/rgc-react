@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type PayPalButtonsComponentProps } from "@paypal/react-paypal-js";
-import { Spacer, addToast } from "@heroui/react";
+import { addToast } from "@/providers/toast";
 import { formatUSD } from "@/config/membership-pricing";
 import { siteConfig } from "@/config/site";
 import * as Sentry from "@sentry/react";
 import { logger } from "@/config/sentry";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/providers/AuthProvider";
-import MinimalRowSteps from "@/components/minimal-row-steps";
+import { Stepper } from "@heroui-pro/react/stepper";
 import {
   verifyAndRecordPayPalDonationPayment,
   verifyAndRecordPayPalMembershipPayment,
@@ -105,7 +105,6 @@ export default function MembershipPaymentsFlow({
 
   // Per-step validation is now handled within individual step components.
 
-  const stepsCount = 5;
   const currentStepIndex = useMemo(() => {
     if (step.kind === "select") return 0;
     if (step.kind === "annual_start") return 1;
@@ -129,10 +128,6 @@ export default function MembershipPaymentsFlow({
     ],
     [],
   );
-
-  const stepLabel = `Step ${currentStepIndex + 1} of ${stepsCount}: ${
-    stepTitles[currentStepIndex]
-  }`;
 
   function onStepperChange(next: number) {
     logger.trace("Membership payment: stepper navigation", {
@@ -715,15 +710,20 @@ export default function MembershipPaymentsFlow({
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-16">
       <div className="w-full max-w-4xl">
-        <MinimalRowSteps
-          currentStep={currentStepIndex}
-          stepsCount={stepsCount}
-          label={stepLabel}
-          onStepChange={onStepperChange}
-        />
+        <Stepper currentStep={currentStepIndex} onStepChange={onStepperChange}>
+          {stepTitles.map((title) => (
+            <Stepper.Step key={title}>
+              <Stepper.Indicator />
+              <Stepper.Content>
+                <Stepper.Title>{title}</Stepper.Title>
+              </Stepper.Content>
+              <Stepper.Separator />
+            </Stepper.Step>
+          ))}
+        </Stepper>
       </div>
 
-      <Spacer y={6} />
+      <div className="h-6" />
 
       {user && isPaidForCurrentYear && step.kind === "select" && (
         <AlreadyPaidNotice
@@ -1037,8 +1037,8 @@ export default function MembershipPaymentsFlow({
         />
       )}
 
-      <Spacer y={8} />
-      <div className="w-full max-w-4xl text-center text-sm text-default-500 space-y-2">
+      <div className="h-8" />
+      <div className="w-full max-w-4xl text-center text-sm text-muted space-y-2">
         <div>For questions, please contact the club directly.</div>
         <div className="italic">
           Thank you for being part of our club community.

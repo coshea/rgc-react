@@ -14,13 +14,16 @@ import {
 import {
   Button,
   Input,
-  Textarea,
+  TextArea,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Chip,
   RadioGroup,
   Radio,
   DatePicker,
+  TextField,
+  FieldError,
 } from "@heroui/react";
 import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
@@ -67,7 +70,7 @@ const NOTIFICATION_TYPES = (
 
 const TYPE_COLORS: Record<
   NotificationType,
-  "default" | "primary" | "success" | "warning" | "danger" | "secondary"
+  "default" | "accent" | "success" | "warning" | "danger"
 > = Object.fromEntries(
   (
     Object.entries(NOTIFICATION_TYPE_META) as [
@@ -77,7 +80,7 @@ const TYPE_COLORS: Record<
   ).map(([k, v]) => [k, v.color]),
 ) as Record<
   NotificationType,
-  "default" | "primary" | "success" | "warning" | "danger" | "secondary"
+  "default" | "accent" | "success" | "warning" | "danger"
 >;
 
 function formatSentAt(ts: Timestamp | undefined): string {
@@ -172,7 +175,7 @@ export function NotificationsTab() {
 
   // ── Tournaments list (current year) for tournament-registrant targeting ──
   const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
-  const [loadingTournaments, setLoadingTournaments] = useState(false);
+  const [_loadingTournaments, setLoadingTournaments] = useState(false);
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
   const [tournamentScope, setTournamentScope] = useState<
     "in-tournament" | "all"
@@ -180,7 +183,7 @@ export function NotificationsTab() {
 
   // ── Members list for recipient select ────────────────────────────────────
   const [members, setMembers] = useState<User[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [_loadingMembers, setLoadingMembers] = useState(true);
 
   useEffect(() => {
     async function fetchMembers() {
@@ -388,39 +391,39 @@ export function NotificationsTab() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       {/* ── Compose form ──────────────────────────────────────────────── */}
-      <section className="bg-content1 rounded-xl p-6 mb-8 border border-default-200">
+      <section className="bg-surface rounded-xl p-6 mb-8 border">
         <h2 className="text-base font-semibold text-foreground mb-4">
           Compose &amp; Send
         </h2>
 
         <div className="flex flex-col gap-4">
-          <Input
-            label="Title"
-            placeholder="Notification title"
-            value={title}
-            onValueChange={setTitle}
-            isInvalid={Boolean(errors.title)}
-            errorMessage={errors.title}
-            isRequired
-          />
+          <TextField isInvalid={Boolean(errors.title)} isRequired>
+            <Label>Title</Label>
+            <Input
+              placeholder="Notification title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <FieldError>{errors.title}</FieldError>
+          </TextField>
 
-          <Textarea
-            label="Body"
-            placeholder="Notification message"
-            value={body}
-            onValueChange={setBody}
-            isInvalid={Boolean(errors.body)}
-            errorMessage={errors.body}
-            minRows={3}
-            isRequired
-          />
+          <TextField isInvalid={Boolean(errors.body)} isRequired>
+            <Label>Body</Label>
+            <TextArea
+              placeholder="Notification message"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={3}
+            />
+            <FieldError>{errors.body}</FieldError>
+          </TextField>
 
           <div className="flex justify-end -mt-2">
             <Button
               size="sm"
-              variant="flat"
+              variant="tertiary"
               onPress={() => {
                 const tournament = tournaments.find(
                   (t) => t.id === selectedTournamentId,
@@ -429,18 +432,17 @@ export function NotificationsTab() {
                 setTitle(defaults.title);
                 setBody(defaults.body);
               }}
-              startContent={<Icon icon="lucide:wand-2" className="text-sm" />}
             >
+              <Icon icon="lucide:wand-2" className="text-sm" />
               Fill defaults
             </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
-              label="Type"
-              selectedKeys={[type]}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0] as NotificationType;
+              value={type}
+              onChange={(key) => {
+                const val = key as NotificationType;
                 if (val) {
                   setType(val);
                   // When switching to a tournament-type, pre-fill link if a
@@ -472,22 +474,34 @@ export function NotificationsTab() {
               isInvalid={Boolean(errors.type)}
               errorMessage={errors.type}
             >
-              {NOTIFICATION_TYPES.map((t) => (
-                <SelectItem
-                  key={t.value}
-                  startContent={<Icon icon={t.icon} className="text-base" />}
-                >
-                  {t.label}
-                </SelectItem>
-              ))}
+              <Label>Type</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {NOTIFICATION_TYPES.map((t) => (
+                    <ListBox.Item
+                      key={t.value}
+                      id={t.value}
+                      textValue={t.label}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Icon icon={t.icon} className="text-base shrink-0" />
+                        {t.label}
+                      </span>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
 
             <Select
-              label="Recipient"
-              isLoading={loadingMembers}
-              selectedKeys={[targetUid]}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0] as string;
+              value={targetUid}
+              onChange={(key) => {
+                const val = key as string;
                 if (val) {
                   setTargetUid(val);
                   const isTournamentTargeting =
@@ -502,30 +516,45 @@ export function NotificationsTab() {
                 }
               }}
             >
-              <>
-                <SelectItem key="__all__">All Members</SelectItem>
-                <SelectItem
-                  key="__tournament_registrants__"
-                  startContent={
+              <Label>Recipient</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="__all__" textValue="All Members">
+                    All Members
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item
+                    id="__tournament_registrants__"
+                    textValue="Tournament Registrants"
+                  >
                     <Icon icon="lucide:users" className="text-base" />
-                  }
-                >
-                  Tournament Registrants
-                </SelectItem>
-                <SelectItem
-                  key="__tournament_non_registrants__"
-                  startContent={
+                    Tournament Registrants
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item
+                    id="__tournament_non_registrants__"
+                    textValue="Non-Registrants"
+                  >
                     <Icon icon="lucide:user-x" className="text-base" />
-                  }
-                >
-                  Non-Registrants
-                </SelectItem>
-                {members.map((m) => (
-                  <SelectItem key={m.id}>
-                    {m.displayName ?? m.email ?? m.id}
-                  </SelectItem>
-                ))}
-              </>
+                    Non-Registrants
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  {members.map((m) => (
+                    <ListBox.Item
+                      key={m.id}
+                      id={m.id}
+                      textValue={m.displayName ?? m.email ?? m.id}
+                    >
+                      {m.displayName ?? m.email ?? m.id}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           </div>
 
@@ -534,14 +563,10 @@ export function NotificationsTab() {
             targetUid === "__tournament_non_registrants__") && (
             <>
               <Select
-                label="Tournament"
                 placeholder="Select a tournament"
-                isLoading={loadingTournaments}
-                selectedKeys={
-                  selectedTournamentId ? [selectedTournamentId] : []
-                }
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
+                value={selectedTournamentId || undefined}
+                onChange={(key) => {
+                  const val = key as string;
                   if (val) {
                     setSelectedTournamentId(val);
                     setLink(`/tournaments/${val}`);
@@ -561,35 +586,61 @@ export function NotificationsTab() {
                 isInvalid={Boolean(errors.tournament)}
                 errorMessage={errors.tournament}
               >
-                {tournaments.map((t) => (
-                  <SelectItem key={t.id}>{t.title}</SelectItem>
-                ))}
+                <Label>Tournament</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {tournaments.map((t) => (
+                      <ListBox.Item key={t.id} id={t.id} textValue={t.title}>
+                        {t.title}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
               {targetUid === "__tournament_registrants__" &&
                 selectedTournamentId && (
                   <RadioGroup
                     label="Who to notify"
                     value={tournamentScope}
-                    onValueChange={(v) =>
+                    onChange={(v) =>
                       setTournamentScope(v as "in-tournament" | "all")
                     }
                     orientation="horizontal"
                     size="sm"
                   >
-                    <Radio value="in-tournament">In tournament</Radio>
-                    <Radio value="all">All (includes waitlist)</Radio>
+                    <Radio value="in-tournament">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>In tournament</Radio.Content>
+                    </Radio>
+                    <Radio value="all">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>All (includes waitlist)</Radio.Content>
+                    </Radio>
                   </RadioGroup>
                 )}
             </>
           )}
 
-          <Input
-            label="Link (optional)"
-            placeholder="/tournaments/..."
-            value={link}
-            onValueChange={setLink}
-            description="Deep-link opened when user taps the notification."
-          />
+          <TextField>
+            <Label>Link (optional)</Label>
+            <Input
+              placeholder="/tournaments/..."
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+            />
+            <p className="text-xs text-muted">
+              Deep-link opened when user taps the notification.
+            </p>
+          </TextField>
 
           <DatePicker
             label="Expiration (optional)"
@@ -600,14 +651,8 @@ export function NotificationsTab() {
           />
 
           <div className="flex justify-end">
-            <Button
-              color="primary"
-              isLoading={sending}
-              onPress={handleSend}
-              startContent={
-                !sending && <Icon icon="lucide:send" className="text-base" />
-              }
-            >
+            <Button onPress={handleSend}>
+              {!sending && <Icon icon="lucide:send" className="text-base" />}
               Send Notification
             </Button>
           </div>
@@ -615,30 +660,23 @@ export function NotificationsTab() {
       </section>
 
       {/* ── Recent sent notifications ──────────────────────────────────── */}
-      <section className="bg-content1 rounded-xl p-6 border border-default-200">
+      <section className="bg-surface rounded-xl p-6 border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-foreground">
             Recent Sent
           </h2>
-          <Button
-            variant="light"
-            size="sm"
-            isLoading={loadingRecent}
-            onPress={refreshRecent}
-            startContent={
-              !loadingRecent && (
-                <Icon icon="lucide:refresh-cw" className="text-sm" />
-              )
-            }
-          >
+          <Button variant="ghost" size="sm" onPress={refreshRecent}>
+            {!loadingRecent && (
+              <Icon icon="lucide:refresh-cw" className="text-sm" />
+            )}
             Refresh
           </Button>
         </div>
 
         {loadingRecent ? (
-          <p className="text-default-400 text-sm text-center py-6">Loading…</p>
+          <p className="text-muted text-sm text-center py-6">Loading…</p>
         ) : recentNotifications.length === 0 ? (
-          <p className="text-default-400 text-sm text-center py-6">
+          <p className="text-muted text-sm text-center py-6">
             No notifications sent yet.
           </p>
         ) : (
@@ -653,31 +691,27 @@ export function NotificationsTab() {
                   <Chip
                     size="sm"
                     color={TYPE_COLORS[n.type as NotificationType] ?? "default"}
-                    variant="flat"
+                    variant="tertiary"
                     className="shrink-0 sm:mt-0.5"
-                    startContent={
-                      <Icon
-                        icon={
-                          NOTIFICATION_TYPES.find((t) => t.value === n.type)
-                            ?.icon ?? "lucide:bell"
-                        }
-                        className="text-xs"
-                      />
-                    }
                   >
+                    <Icon
+                      icon={
+                        NOTIFICATION_TYPES.find((t) => t.value === n.type)
+                          ?.icon ?? "lucide:bell"
+                      }
+                      className="inline-block text-xs mr-0.5"
+                    />
                     {NOTIFICATION_TYPES.find((t) => t.value === n.type)
                       ?.label ?? n.type}
                   </Chip>
                   <div className="flex items-center gap-0.5 sm:hidden">
-                    <span className="text-xs text-default-400 whitespace-nowrap">
+                    <span className="text-xs text-muted whitespace-nowrap">
                       {formatShortDate(n.createdAt)}
                     </span>
                     <Button
                       size="sm"
-                      variant="light"
-                      color="danger"
+                      variant="ghost"
                       isIconOnly
-                      isLoading={deletingId === n.id}
                       aria-label="Delete notification"
                       onPress={() => handleDeleteNotification(n.id)}
                     >
@@ -693,25 +727,23 @@ export function NotificationsTab() {
                   <p className="text-sm font-medium text-foreground">
                     {n.title}
                   </p>
-                  <p className="text-xs text-default-400 line-clamp-2 sm:line-clamp-1">
+                  <p className="text-xs text-muted line-clamp-2 sm:line-clamp-1">
                     {n.body}
                   </p>
                 </div>
 
                 {/* Desktop-only: full date + uid + delete */}
                 <div className="hidden sm:flex text-right shrink-0 flex-col items-end gap-1">
-                  <p className="text-[10px] text-default-300 whitespace-nowrap">
+                  <p className="text-[10px] text-muted whitespace-nowrap">
                     {formatSentAt(n.createdAt)}
                   </p>
-                  <p className="text-[10px] text-default-300 truncate max-w-[120px]">
+                  <p className="text-[10px] text-muted truncate max-w-[120px]">
                     {n.uid}
                   </p>
                   <Button
                     size="sm"
-                    variant="light"
-                    color="danger"
+                    variant="ghost"
                     isIconOnly
-                    isLoading={deletingId === n.id}
                     aria-label="Delete notification"
                     onPress={() => handleDeleteNotification(n.id)}
                   >

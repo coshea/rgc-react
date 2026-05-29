@@ -2,15 +2,15 @@ import React, { useEffect, useRef } from "react";
 import {
   Button,
   Input,
+  InputGroup,
   Checkbox,
   Link,
   Form,
-  Divider,
+  Separator,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  TextField,
+  Label,
+  FieldError,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
@@ -25,6 +25,7 @@ import { executeRecaptcha } from "@/utils/recaptcha";
 import { saveUserProfile } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 import { parseDisplayName } from "@/utils/profileCompletion";
+import { RGCLogo } from "@/components/icons";
 
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
 const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
@@ -507,12 +508,13 @@ export default function LoginPage() {
     <>
       <div className="flex h-full w-full items-center justify-center">
         <div
-          className="flex w-full max-w-sm flex-col gap-4 rounded-large 
-        bg-content1 px-8 pb-10 pt-6 shadow-small"
+          className="flex w-full max-w-sm flex-col gap-4 rounded-lg 
+        bg-surface px-8 pb-10 pt-6 shadow-sm"
         >
+          <RGCLogo className="w-40 self-center" />
           <div className="flex flex-col gap-1">
-            <h1 className="text-large font-medium">Sign in to your account</h1>
-            <p className="text-small text-default-500">
+            <h1 className="text-lg font-medium">Sign in to your account</h1>
+            <p className="text-sm text-muted">
               to continue to Ridgefield Golf Club
             </p>
             {state?.message ? (
@@ -530,16 +532,14 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2">
             {/* Google Sign-In Button */}
             <Button
-              startContent={
-                !isSubmitting && (
-                  <Icon icon="flat-color-icons:google" width={24} />
-                )
-              }
-              variant="bordered"
+              className="w-full"
+              variant="outline"
               onPress={handleGoogleSignIn}
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
             >
+              {!isSubmitting && (
+                <Icon icon="flat-color-icons:google" width={24} />
+              )}
               {authLoading || isSubmitting
                 ? "Signing in..."
                 : "Continue with Google"}
@@ -547,9 +547,9 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center gap-4 py-2">
-            <Divider className="flex-1" />
-            <p className="shrink-0 text-tiny text-default-500">OR</p>
-            <Divider className="flex-1" />
+            <Separator className="flex-1" />
+            <p className="shrink-0 text-xs text-muted">OR</p>
+            <Separator className="flex-1" />
           </div>
 
           <Form
@@ -557,58 +557,66 @@ export default function LoginPage() {
             validationBehavior="native"
             onSubmit={handleSubmit}
           >
-            <Input
+            <TextField
               isRequired
-              label="Email Address"
               name="email"
-              placeholder="Enter your email"
-              type="email"
-              variant="bordered"
               value={email}
-              onValueChange={setEmail}
-            />
+              onChange={(v) => setEmail(v)}
+            >
+              <Label>Email Address</Label>
+              <Input type="email" placeholder="Enter your email" />
+            </TextField>
             {loginMode === "password" && (
-              <Input
-                isRequired
-                endContent={
-                  <Button
-                    isIconOnly
-                    variant="light"
-                    size="sm"
-                    onPress={toggleVisibility}
-                    aria-label={isVisible ? "Hide password" : "Show password"}
-                    className="min-w-0 h-auto"
-                  >
-                    {isVisible ? (
-                      <Icon
-                        className="text-2xl text-default-400"
-                        icon="solar:eye-closed-linear"
-                      />
-                    ) : (
-                      <Icon
-                        className="text-2xl text-default-400"
-                        icon="solar:eye-bold"
-                      />
-                    )}
-                  </Button>
-                }
-                label="Password"
-                name="password"
-                placeholder="Enter your password"
-                type={isVisible ? "text" : "password"}
-                variant="bordered"
-                value={password}
-                onValueChange={setPassword}
-              />
+              <TextField name="password" isRequired className="w-full">
+                <Label>Password</Label>
+                <InputGroup>
+                  <InputGroup.Input
+                    placeholder="Enter your password"
+                    type={isVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(e.target.value)
+                    }
+                  />
+                  <InputGroup.Suffix>
+                    <Button
+                      isIconOnly
+                      variant="ghost"
+                      size="sm"
+                      onPress={toggleVisibility}
+                      aria-label={isVisible ? "Hide password" : "Show password"}
+                      className="min-w-0 h-auto"
+                    >
+                      {isVisible ? (
+                        <Icon
+                          className="text-2xl text-muted"
+                          icon="solar:eye-closed-linear"
+                        />
+                      ) : (
+                        <Icon
+                          className="text-2xl text-muted"
+                          icon="solar:eye-bold"
+                        />
+                      )}
+                    </Button>
+                  </InputGroup.Suffix>
+                </InputGroup>
+                <FieldError />
+              </TextField>
             )}
 
             {loginMode === "password" ? (
               <div className="flex w-full items-center justify-between px-1 py-2">
-                <Checkbox name="remember" size="sm">
-                  Remember me
+                <Checkbox name="remember" id="remember-me">
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Label htmlFor="remember-me">Remember me</Label>
+                  </Checkbox.Content>
                 </Checkbox>
                 <Link
-                  className="text-default-500"
+                  className="text-muted"
                   onPress={handleForgotPassword}
                   size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
@@ -623,7 +631,7 @@ export default function LoginPage() {
             ) : (
               <div className="flex w-full justify-end px-1 py-1">
                 <Link
-                  className="text-default-500"
+                  className="text-muted"
                   onPress={handleForgotPassword}
                   size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
@@ -639,10 +647,8 @@ export default function LoginPage() {
 
             <Button
               className="w-full"
-              color="primary"
               type="submit"
               isDisabled={authLoading || isSubmitting}
-              isLoading={isSubmitting}
             >
               {authLoading || isSubmitting
                 ? "Processing..."
@@ -654,9 +660,9 @@ export default function LoginPage() {
 
           <div className="flex flex-col items-center gap-2">
             <Button
-              variant="light"
+              variant="ghost"
               size="sm"
-              className="text-default-500"
+              className="text-muted"
               onPress={() => {
                 const nextMode =
                   loginMode === "magic-link" ? "password" : "magic-link";
@@ -671,7 +677,7 @@ export default function LoginPage() {
                 : "Sign in with email link instead"}
             </Button>
           </div>
-          <p className="text-center text-small">
+          <p className="text-center text-sm">
             Need to create an account?&nbsp;
             <Link href={siteConfig.pages.signup.link} size="sm">
               Sign Up
@@ -679,20 +685,20 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <Modal isOpen={linkSent} isDismissable={false}>
-        <ModalContent>
-          {() => (
+      <Modal.Backdrop isOpen={linkSent} isDismissable={false}>
+        <Modal.Container>
+          <Modal.Dialog>
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 Check your email
-              </ModalHeader>
-              <ModalBody className="space-y-3">
-                <p className="text-small text-default-600">
+              </Modal.Header>
+              <Modal.Body className="space-y-3">
+                <p className="text-sm text-foreground">
                   We sent a sign-in link
                   {linkSentEmail ? ` to ${linkSentEmail}.` : "."} Click the link
                   to finish signing in.
                 </p>
-                <p className="text-small text-default-600">
+                <p className="text-sm text-foreground">
                   If you don't see it, check your spam folder and look for an
                   email from{" "}
                   <span className="font-mono text-xs">
@@ -700,10 +706,10 @@ export default function LoginPage() {
                   </span>
                   .
                 </p>
-              </ModalBody>
-              <ModalFooter>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
-                  variant="light"
+                  variant="ghost"
                   onPress={() => {
                     setLinkSent(false);
                     setLinkSentEmail("");
@@ -715,66 +721,64 @@ export default function LoginPage() {
                 >
                   Close
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </>
-          )}
-        </ModalContent>
-      </Modal>
-      <Modal
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+      <Modal.Backdrop
         isOpen={isEmailConfirmationModalOpen}
-        isDismissable={!magicLinkSubmitting}
-        hideCloseButton={magicLinkSubmitting}
         onOpenChange={(open) => {
           if (!open) {
             handleEmailPromptClose();
           }
         }}
+        isDismissable={!magicLinkSubmitting}
       >
-        <ModalContent>
-          {() => (
+        <Modal.Container>
+          <Modal.Dialog>
             <form onSubmit={handleEmailConfirmationSubmit}>
-              <ModalHeader className="flex flex-col gap-1">
+              <Modal.Header className="flex flex-col gap-1">
                 {linkNeedsResend
                   ? "Sign-in link no longer valid"
                   : "Confirm your email"}
-              </ModalHeader>
-              <ModalBody className="flex flex-col gap-3">
-                <p className="text-small text-default-500">
+              </Modal.Header>
+              <Modal.Body className="flex flex-col gap-3">
+                <p className="text-sm text-muted">
                   {linkNeedsResend
                     ? "This link has already been used or has expired (email security software sometimes opens links automatically). Enter your email below and we'll send you a fresh one."
                     : "Enter the email address you used to request the sign-in link so we can complete your login."}
                 </p>
-                <Input
+                <TextField
                   autoFocus
                   isRequired
-                  label="Email Address"
-                  type="email"
                   value={emailConfirmationValue}
-                  onValueChange={(value) => {
-                    setEmailConfirmationValue(value);
+                  onChange={(v) => {
+                    setEmailConfirmationValue(v);
                     if (emailConfirmationError) {
                       setEmailConfirmationError(null);
                     }
                   }}
                   isInvalid={Boolean(emailConfirmationError)}
-                  errorMessage={emailConfirmationError || undefined}
                   isDisabled={magicLinkSubmitting}
-                  variant="bordered"
-                />
-              </ModalBody>
-              <ModalFooter>
+                >
+                  <Label>Email Address</Label>
+                  <Input type="email" />
+                  <FieldError>{emailConfirmationError}</FieldError>
+                </TextField>
+              </Modal.Body>
+              <Modal.Footer>
                 <Button
                   type="button"
-                  variant="light"
+                  variant="ghost"
                   onPress={handleEmailPromptClose}
                   isDisabled={magicLinkSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button
-                  color="primary"
                   type="submit"
-                  isLoading={magicLinkSubmitting}
+                  variant="primary"
                   isDisabled={magicLinkSubmitting}
                 >
                   {magicLinkSubmitting
@@ -785,11 +789,11 @@ export default function LoginPage() {
                       ? "Send new link"
                       : "Confirm"}
                 </Button>
-              </ModalFooter>
+              </Modal.Footer>
             </form>
-          )}
-        </ModalContent>
-      </Modal>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </>
   );
 }

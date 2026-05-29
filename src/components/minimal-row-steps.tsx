@@ -23,7 +23,7 @@ export default function MinimalRowSteps({
   return (
     <div className="w-full">
       {label ? (
-        <div className="mb-3 text-center text-sm text-default-500">{label}</div>
+        <div className="mb-3 text-center text-sm text-muted">{label}</div>
       ) : null}
 
       <div className="mx-auto flex max-w-2xl items-center gap-2">
@@ -35,10 +35,8 @@ export default function MinimalRowSteps({
             <div key={index} className="flex flex-1 items-center gap-2">
               <Button
                 isIconOnly
-                radius="full"
                 size="sm"
-                variant={isCurrent ? "solid" : "flat"}
-                color={isCurrent || isComplete ? "primary" : "default"}
+                variant={isCurrent ? "primary" : "tertiary"}
                 aria-label={`Go to step ${index + 1}`}
                 onPress={() => onStepChange?.(index)}
                 className={
@@ -58,10 +56,10 @@ export default function MinimalRowSteps({
                   className={
                     "h-1 w-full rounded-full " +
                     (isComplete
-                      ? "bg-primary"
+                      ? "bg-accent"
                       : isCurrent
-                        ? "bg-primary/40"
-                        : "bg-default-200")
+                        ? "bg-accent/40"
+                        : "bg-default/60")
                   }
                 />
               ) : null}

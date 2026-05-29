@@ -1,23 +1,12 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Card,
-  CardBody,
-  Button,
-  Divider,
-  Checkbox,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
+import { Alert, Card, Button, Separator, Checkbox, Modal } from "@heroui/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
 import { executeRecaptcha } from "@/utils/recaptcha";
 import { isRegistrationOpen } from "@/utils/tournamentStatus";
+import type { User } from "@/api/users";
 // Firestore access now centralized in '@/api/tournaments'. We dynamically import for
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
@@ -33,16 +22,15 @@ const TournamentRegister: React.FC = () => {
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const { users } = useUsers();
-  // Tournament registration is open to all authenticated users.
-  // We still use the known users list to populate teammate selection.
-  const selectableUsers = users;
+  const { users, isLoading: usersLoading } = useUsers();
 
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
   const [submitting, setSubmitting] = React.useState(false);
   const [goldTees, setGoldTees] = React.useState<string[]>([]);
   const { user } = useAuth();
+  const [hasEditedExistingTeam, setHasEditedExistingTeam] =
+    React.useState(false);
   const [registrationId, setRegistrationId] = React.useState<string | null>(
     null,
   );
@@ -128,18 +116,94 @@ const TournamentRegister: React.FC = () => {
     });
   }, [registrations, user?.uid]);
 
+  const ownerRegistration = React.useMemo(() => {
+    if (!user?.uid) return null;
+    return registrations.find((reg) => reg?.ownerId === user.uid) ?? null;
+  }, [registrations, user?.uid]);
+
+  const currentUserRegistration = ownerRegistration ?? memberRegistration;
+
   const isTeamMemberNonLeader = Boolean(
-    memberRegistration?.ownerId && memberRegistration.ownerId !== user?.uid,
+    !ownerRegistration &&
+    memberRegistration?.ownerId &&
+    memberRegistration.ownerId !== user?.uid,
   );
 
-  const memberTeam = Array.isArray(memberRegistration?.team)
-    ? memberRegistration.team
+  const memberTeam = Array.isArray(currentUserRegistration?.team)
+    ? currentUserRegistration.team
     : [];
 
-  const leaderName = memberRegistration?.ownerId
+  const ownerTeam = Array.isArray(ownerRegistration?.team)
+    ? ownerRegistration.team
+    : [];
+
+  const savedOwnerTeamIds = React.useMemo<string[]>(() => {
+    const maybeMemberIds = (ownerRegistration as Record<string, unknown> | null)
+      ?.memberIds;
+    if (Array.isArray(maybeMemberIds)) {
+      const memberIds = maybeMemberIds
+        .map((id) => (typeof id === "string" ? id : ""))
+        .filter(Boolean);
+      if (memberIds.length > 0) {
+        return memberIds;
+      }
+    }
+
+    return ownerTeam
+      .map((member: unknown) => {
+        if (typeof member !== "object" || member === null) return "";
+        const record = member as Record<string, unknown>;
+        return typeof record.id === "string" ? record.id : "";
+      })
+      .filter(Boolean);
+  }, [ownerRegistration, ownerTeam]);
+
+  const restoredTeamUsers = React.useMemo<User[]>(() => {
+    const byId = new Map<string, User>();
+
+    ownerTeam.forEach((member: unknown) => {
+      if (typeof member !== "object" || member === null) return;
+      const record = member as Record<string, unknown>;
+      const id = typeof record.id === "string" ? record.id : "";
+      if (!id) return;
+      const displayName =
+        typeof record.displayName === "string" ? record.displayName : undefined;
+      byId.set(id, { id, displayName });
+    });
+
+    savedOwnerTeamIds.forEach((id: string) => {
+      if (byId.has(id)) return;
+      const existingUser = users.find((userEntry) => userEntry.id === id);
+      byId.set(id, existingUser ?? { id });
+    });
+
+    return Array.from(byId.values());
+  }, [ownerTeam, savedOwnerTeamIds, users]);
+
+  const editorTeammates: string[] =
+    registrationId && !hasEditedExistingTeam && savedOwnerTeamIds.length > 0
+      ? savedOwnerTeamIds
+      : teammates;
+
+  // Tournament registration is open to all authenticated users.
+  // Seed the options list with the saved team so restored members can render
+  // even when the users directory arrives later or is temporarily incomplete.
+  const selectableUsers = React.useMemo(() => {
+    if (restoredTeamUsers.length === 0) return users;
+    const byId = new Map<string, User>();
+    users.forEach((existing) => byId.set(existing.id, existing));
+    restoredTeamUsers.forEach((existing) => {
+      if (!byId.has(existing.id)) {
+        byId.set(existing.id, existing);
+      }
+    });
+    return Array.from(byId.values());
+  }, [restoredTeamUsers, users]);
+
+  const leaderName = currentUserRegistration?.ownerId
     ? memberTeam.find(
         (m: { id?: string; displayName?: string }) =>
-          m?.id === memberRegistration.ownerId,
+          m?.id === currentUserRegistration.ownerId,
       )?.displayName || "team leader"
     : "team leader";
 
@@ -220,49 +284,40 @@ const TournamentRegister: React.FC = () => {
     }
   }, [loading, user, navigate, firestoreId]);
 
-  // load existing registration for current user
+  // Restore existing registration state from the already-loaded registrations list.
+  // memberRegistration is derived from fetchAllRegistrations (loaded for conflict detection),
+  // so no separate Firestore query is needed. This also eliminates the race condition between
+  // the two independent queries that caused teammates to not be pre-populated.
   React.useEffect(() => {
-    const fetchExistingRegistration = async () => {
-      if (!firestoreId || !user || !user.uid) return;
-      try {
-        const api = await import("@/api/tournaments");
-        const existing = await api.fetchUserRegistration(firestoreId, user.uid);
-        if (existing) {
-          setRegistrationId(existing.id);
-          const maybeTeam = (existing as Record<string, unknown>).team;
-          const maybeOptIn = (existing as Record<string, unknown>)
-            .openSpotsOptIn;
-          setOpenSpotsOptIn(maybeOptIn === true);
-          if (Array.isArray(maybeTeam) && maybeTeam.length > 0) {
-            const ids = maybeTeam.map((m) =>
-              typeof m === "object" && m !== null
-                ? (m as Record<string, unknown>).id
-                : "",
-            );
-            const cleaned = ids
-              .map((id) => (typeof id === "string" ? id : ""))
-              .filter(Boolean);
-            setTeammates(cleaned.length ? cleaned : [""]);
-            // Restore gold tee selections
-            const goldTeeIds = maybeTeam
-              .filter(
-                (m) =>
-                  typeof m === "object" &&
-                  m !== null &&
-                  (m as Record<string, unknown>).goldTee === true,
-              )
-              .map((m) => (m as Record<string, unknown>).id as string)
-              .filter(Boolean);
-            setGoldTees(goldTeeIds);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load existing registration", err);
-      }
-    };
+    // Only pre-populate for the current user as team leader; non-leaders are handled separately
+    if (!ownerRegistration || ownerRegistration.ownerId !== user?.uid) return;
+    // Only initialize once — don't overwrite the user's edits after initial load
+    if (registrationId) return;
 
-    fetchExistingRegistration();
-  }, [firestoreId, user]);
+    setRegistrationId(ownerRegistration.id as string);
+    setHasEditedExistingTeam(false);
+
+    const maybeOptIn = (ownerRegistration as Record<string, unknown>)
+      .openSpotsOptIn;
+    setOpenSpotsOptIn(maybeOptIn === true);
+
+    if (savedOwnerTeamIds.length > 0) {
+      setTeammates(savedOwnerTeamIds);
+      // Restore gold tee selections
+      const maybeTeam = (ownerRegistration as Record<string, unknown>).team;
+      const teamMembers = Array.isArray(maybeTeam) ? maybeTeam : [];
+      const goldTeeIds = teamMembers
+        .filter(
+          (m: unknown) =>
+            typeof m === "object" &&
+            m !== null &&
+            (m as Record<string, unknown>).goldTee === true,
+        )
+        .map((m: unknown) => (m as Record<string, unknown>).id as string)
+        .filter(Boolean);
+      setGoldTees(goldTeeIds);
+    }
+  }, [ownerRegistration, registrationId, savedOwnerTeamIds, user?.uid]);
 
   const maxTeamSize = tournament?.players ?? 1;
   const minTeamSize = maxTeamSize <= 1 ? 1 : 2;
@@ -280,8 +335,8 @@ const TournamentRegister: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament?.firestoreId, minTeamSize]);
 
-  const selectedCount = teammates.filter(
-    (t) => t && t.trim().length > 0,
+  const selectedCount = editorTeammates.filter(
+    (t: string) => t && t.trim().length > 0,
   ).length;
   const effectiveSelectedCount =
     selectedCount > 0
@@ -293,9 +348,11 @@ const TournamentRegister: React.FC = () => {
 
   const openSlotsCount = Math.max(maxTeamSize - effectiveSelectedCount, 0);
 
-  // Sanitize teammate IDs if users list changes (remove ids not present anymore)
+  // Sanitize teammate IDs if users list changes (remove ids not present anymore).
+  // Do not clear restored registration ids while the users list is still empty or still loading.
   React.useEffect(() => {
-    if (!users || users.length === 0) return;
+    if (registrationId) return;
+    if (!users || users.length === 0 || usersLoading) return;
     const valid = new Set(selectableUsers.map((u) => u.id));
     let changed = false;
     const cleaned = teammates.map((id) =>
@@ -307,7 +364,7 @@ const TournamentRegister: React.FC = () => {
     if (cleaned.length === 0) cleaned.push("");
     if (changed) setTeammates(cleaned);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users]);
+  }, [registrationId, users, usersLoading]);
 
   if (loading) return <div>Loading...</div>;
 
@@ -358,7 +415,9 @@ const TournamentRegister: React.FC = () => {
     }
 
     // validate teammates - ensure no empty selections
-    let selectedIds = teammates.filter((t) => t && t.trim().length > 0);
+    let selectedIds = editorTeammates.filter(
+      (t: string) => t && t.trim().length > 0,
+    );
     // Fallback: if nothing selected yet but the current user is in our users list,
     // auto-include them as team leader to avoid a race with the auto-select effect.
     if (
@@ -390,7 +449,7 @@ const TournamentRegister: React.FC = () => {
     }
 
     // map ids to display names (never surface raw id in UI; raw id only persisted behind the scenes)
-    const members = selectedIds.map((id) => {
+    const members = selectedIds.map((id: string) => {
       const u = selectableUsers.find((x) => x.id === id);
       return {
         id,
@@ -400,7 +459,7 @@ const TournamentRegister: React.FC = () => {
     });
 
     // avoid duplicates
-    const idsSet = new Set(members.map((m) => m.id));
+    const idsSet = new Set(members.map((m: { id: string }) => m.id));
     if (idsSet.size !== members.length) {
       addToast({
         title: "Error",
@@ -474,6 +533,7 @@ const TournamentRegister: React.FC = () => {
         color: "danger",
       });
       setRegistrationId(null);
+      setHasEditedExistingTeam(false);
       setTeammates([""]);
       setOpenSpotsOptIn(false);
       setGoldTees([]);
@@ -495,40 +555,40 @@ const TournamentRegister: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto">
       <Card>
-        <CardBody className="p-6">
+        <Card.Content className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-medium">
                 Register for {tournament.title}
               </h2>
-              <p className="text-sm text-foreground-500">
+              <p className="text-sm text-muted">
                 Maximum players: {maxTeamSize}
               </p>
               {minTeamSize > 1 ? (
-                <p className="text-sm text-foreground-500">
+                <p className="text-sm text-muted">
                   Minimum players: {minTeamSize}
                 </p>
               ) : null}
               {registrationId ? (
-                <p className="text-sm text-foreground-500 mt-2">
+                <p className="text-sm text-muted mt-2">
                   You're already registered — update your team below.
                 </p>
               ) : null}
             </div>
           </div>
 
-          <Divider className="my-4" />
+          <Separator className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isTeamMemberNonLeader ? (
               <div className="space-y-3">
-                <Alert color="warning">
+                <Alert>
                   You&apos;re already registered with a team led by {leaderName}
                   . You can&apos;t create a new team. Contact your team leader
                   to make changes.
                 </Alert>
-                <div className="rounded-md border border-default-200 bg-content1/50 p-4">
-                  <div className="text-sm text-default-600">Your team</div>
+                <div className="rounded-md border bg-surface/50 p-4">
+                  <div className="text-sm text-foreground">Your team</div>
                   <ul className="mt-2 space-y-1 text-sm">
                     {memberTeam.map(
                       (member: { id?: string; displayName?: string }) => (
@@ -546,7 +606,7 @@ const TournamentRegister: React.FC = () => {
             ) : (
               <>
                 {tournament.goldTeesEnabled && (
-                  <Alert color="default" variant="faded">
+                  <Alert>
                     <span className="text-sm">
                       <strong>Gold tees</strong> are available for senior
                       players. To opt a player in, click the{" "}
@@ -560,13 +620,17 @@ const TournamentRegister: React.FC = () => {
                 )}
 
                 <RegistrationEditor
-                  value={teammates}
+                  value={editorTeammates}
                   onChange={(next) => {
+                    if (registrationId) {
+                      setHasEditedExistingTeam(true);
+                    }
                     setTeammates(next);
                     pendingMembersRef.current = null;
                     setConflictsAcknowledged(false);
                   }}
                   users={selectableUsers}
+                  selectedUsers={restoredTeamUsers}
                   maxSize={maxTeamSize}
                   labels={{ leader: "Team Leader / You" }}
                   disabled={!user?.uid}
@@ -574,6 +638,7 @@ const TournamentRegister: React.FC = () => {
                   onGoldTeesChange={
                     tournament.goldTeesEnabled ? setGoldTees : undefined
                   }
+                  preserveUnknownIds={Boolean(registrationId)}
                 />
 
                 {maxTeamSize > 1 && openSlotsCount > 0 && hasMinTeamSize ? (
@@ -581,14 +646,14 @@ const TournamentRegister: React.FC = () => {
                     className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
-                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                        : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
                     <div
                       className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
                         openSpotsOptIn
                           ? "bg-warning/15 text-warning"
-                          : "bg-default-100 text-foreground-400"
+                          : "bg-default/60 text-muted"
                       }`}
                     >
                       <Icon icon="lucide:user-plus" className="w-4 h-4" />
@@ -597,31 +662,35 @@ const TournamentRegister: React.FC = () => {
                       <div className="text-sm font-medium">
                         Open to new players
                       </div>
-                      <div className="text-xs text-foreground-500 mt-0.5">
+                      <div className="text-xs text-muted mt-0.5">
                         Let others know your team has open spots and contact you
                         to join.
                       </div>
                     </div>
                     <Checkbox
                       isSelected={openSpotsOptIn}
-                      onValueChange={setOpenSpotsOptIn}
+                      onChange={setOpenSpotsOptIn}
                       aria-label="Let others contact me to fill open spots"
                       className="mt-0.5 shrink-0"
-                    />
+                    >
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox>
                   </label>
                 ) : maxTeamSize === 2 && hasMinTeamSize ? (
                   <label
                     className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
-                        : "border-default-200 bg-content2/60 hover:bg-content2"
+                        : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
                     <div
                       className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
                         openSpotsOptIn
                           ? "bg-warning/15 text-warning"
-                          : "bg-default-100 text-foreground-400"
+                          : "bg-default/60 text-muted"
                       }`}
                     >
                       <Icon icon="lucide:users" className="w-4 h-4" />
@@ -630,17 +699,21 @@ const TournamentRegister: React.FC = () => {
                       <div className="text-sm font-medium">
                         Looking for a partner team
                       </div>
-                      <div className="text-xs text-foreground-500 mt-0.5">
+                      <div className="text-xs text-muted mt-0.5">
                         Advertise that your pair is looking for another team to
                         form a foursome.
                       </div>
                     </div>
                     <Checkbox
                       isSelected={openSpotsOptIn}
-                      onValueChange={setOpenSpotsOptIn}
+                      onChange={setOpenSpotsOptIn}
                       aria-label="Looking for a partner team to join our foursome"
                       className="mt-0.5 shrink-0"
-                    />
+                    >
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox>
                   </label>
                 ) : null}
 
@@ -661,11 +734,14 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full sm:w-auto"
-                      color="danger"
-                      variant="flat"
+                      variant="danger"
                       onPress={() => setConfirmOpen(true)}
                       isDisabled={deleting}
                     >
+                      <Icon
+                        icon={deleting ? "lucide:loader" : "lucide:x-circle"}
+                        className={deleting ? "animate-spin" : ""}
+                      />
                       {deleting ? "Cancelling..." : "Cancel registration"}
                     </Button>
                   </div>
@@ -677,8 +753,7 @@ const TournamentRegister: React.FC = () => {
                 <div className="w-full sm:w-auto">
                   <Button
                     className="w-full"
-                    color="default"
-                    variant="flat"
+                    variant="tertiary"
                     onPress={() => navigate(-1)}
                   >
                     Cancel
@@ -689,8 +764,8 @@ const TournamentRegister: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <Button
                       className="w-full"
+                      variant="primary"
                       type="submit"
-                      color="primary"
                       isDisabled={
                         submitting ||
                         !user?.uid ||
@@ -711,57 +786,61 @@ const TournamentRegister: React.FC = () => {
             </div>
 
             {/* Confirmation modal for cancelling registration */}
-            <Modal
+            <Modal.Backdrop
               isOpen={confirmOpen}
               onOpenChange={(open) => setConfirmOpen(open)}
-              size="md"
             >
-              <ModalContent>
-                {(onClose) => (
+              <Modal.Container size="md">
+                <Modal.Dialog aria-label="Cancel registration confirmation">
                   <>
-                    <ModalHeader>Cancel registration</ModalHeader>
-                    <ModalBody>
-                      <p className="text-sm text-foreground-500">
+                    <Modal.Header>Cancel registration</Modal.Header>
+                    <Modal.Body>
+                      <p className="text-sm text-muted">
                         Are you sure you want to cancel your registration? This
                         cannot be undone.
                       </p>
-                    </ModalBody>
-                    <ModalFooter>
-                      <Button variant="light" color="default" onPress={onClose}>
+                    </Modal.Body>
+                    <Modal.Footer>
+                      <Button
+                        variant="ghost"
+                        onPress={() => setConfirmOpen(false)}
+                      >
                         Close
                       </Button>
                       <Button
-                        color="danger"
+                        variant="danger"
                         onPress={handleConfirmCancel}
                         isDisabled={deleting}
                       >
                         {deleting ? "Cancelling..." : "Yes, cancel"}
                       </Button>
-                    </ModalFooter>
+                    </Modal.Footer>
                   </>
-                )}
-              </ModalContent>
-            </Modal>
+                </Modal.Dialog>
+              </Modal.Container>
+            </Modal.Backdrop>
           </form>
           {/* Duplicate conflict confirmation modal */}
-          <Modal
+          <Modal.Backdrop
             isOpen={conflictModalOpen && conflicts.length > 0}
             onOpenChange={(open) => {
               setConflictModalOpen(open);
               if (!open) setConflicts([]);
             }}
-            size="lg"
           >
-            <ModalContent data-testid="conflict-modal">
-              {(onClose) => (
+            <Modal.Container size="lg">
+              <Modal.Dialog
+                aria-label="Player already registered"
+                data-testid="conflict-modal"
+              >
                 <>
-                  <ModalHeader>Player Already Registered</ModalHeader>
-                  <ModalBody>
-                    <p className="text-sm text-foreground-500">
+                  <Modal.Header>Player Already Registered</Modal.Header>
+                  <Modal.Body>
+                    <p className="text-sm text-muted">
                       One or more selected teammates already appear on another
                       registered team.
                     </p>
-                    <div className="space-y-4 max-h-72 overflow-auto pr-1">
+                    <div className="space-y-4 max-h-72 overflow-auto px-3">
                       {conflicts.map((c, idx) => {
                         const resolveName = (id: string) => {
                           const u = selectableUsers.find((fm) => fm.id === id);
@@ -778,82 +857,77 @@ const TournamentRegister: React.FC = () => {
                         );
                         const conflictPlayerResolved = resolveName(c.playerId);
                         return (
-                          <Card
+                          <Alert
                             key={c.playerId + idx}
-                            className="p-3 border border-warning-300/50 bg-warning-50 dark:bg-warning-100/10"
+                            className="my-3"
+                            status="warning"
                             data-testid="conflict-team-card"
                           >
-                            <CardBody className="p-0">
-                              <div className="flex items-start gap-4">
-                                <div className="flex -space-x-2">
-                                  {teamMemberIds.map((mid) => {
-                                    const memberUser = selectableUsers.find(
-                                      (u) => u.id === mid,
-                                    );
-                                    const label = resolveName(mid);
-                                    return (
-                                      <div
-                                        key={mid}
-                                        className="w-8 h-8 rounded-full border border-default-200 flex items-center justify-center bg-default-100 text-[10px] font-medium"
-                                        aria-label={label}
-                                      >
-                                        {memberUser?.displayName
-                                          ? memberUser.displayName
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)
-                                          : label
-                                              .split(/\s+/)
-                                              .map((p) => p[0])
-                                              .join("")
-                                              .slice(0, 2)}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <p className="text-sm">
-                                    <span className="font-medium">
-                                      {conflictPlayerResolved}
-                                    </span>{" "}
-                                    is already on this team:
-                                  </p>
-                                  <div
-                                    className="text-xs text-foreground-600 space-y-0.5"
-                                    data-testid="conflict-team-names"
-                                  >
-                                    {teamMemberIds.map((id) => (
-                                      <div key={id}>{resolveName(id)}</div>
-                                    ))}
-                                  </div>
-                                </div>
+                            <Alert.Indicator>
+                              <div className="flex -space-x-2">
+                                {teamMemberIds.map((mid) => {
+                                  const memberUser = selectableUsers.find(
+                                    (u) => u.id === mid,
+                                  );
+                                  const label = resolveName(mid);
+                                  return (
+                                    <div
+                                      key={mid}
+                                      className="w-8 h-8 rounded-full border flex items-center justify-center bg-default/60 text-[10px] font-medium"
+                                      aria-label={label}
+                                    >
+                                      {memberUser?.displayName
+                                        ? memberUser.displayName
+                                            .split(/\s+/)
+                                            .map((p) => p[0])
+                                            .join("")
+                                            .slice(0, 2)
+                                        : label
+                                            .split(/\s+/)
+                                            .map((p) => p[0])
+                                            .join("")
+                                            .slice(0, 2)}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            </CardBody>
-                          </Card>
+                            </Alert.Indicator>
+                            <Alert.Content>
+                              <Alert.Title>
+                                {conflictPlayerResolved} is already on this
+                                team:
+                              </Alert.Title>
+                              <Alert.Description
+                                className="space-y-0.5 mt-0.5"
+                                data-testid="conflict-team-names"
+                              >
+                                {teamMemberIds.map((id) => (
+                                  <div key={id}>{resolveName(id)}</div>
+                                ))}
+                              </Alert.Description>
+                            </Alert.Content>
+                          </Alert>
                         );
                       })}
                     </div>
-                    <p className="text-sm text-warning-600 dark:text-warning-500">
+                    <p className="text-sm text-warning-600 dark:text-warning">
                       Continuing will register a team containing a player
                       already on another team.
                     </p>
-                  </ModalBody>
-                  <ModalFooter>
+                  </Modal.Body>
+                  <Modal.Footer>
                     <Button
-                      variant="light"
-                      color="default"
+                      variant="ghost"
                       onPress={() => {
-                        onClose();
+                        setConflictModalOpen(false);
                         setConflicts([]);
                       }}
                     >
                       Go Back
                     </Button>
                     <Button
-                      color="primary"
                       onPress={() => {
-                        onClose();
+                        setConflictModalOpen(false);
                         setConflicts([]);
                         setConflictsAcknowledged(true);
                         const pending = pendingMembersRef.current;
@@ -870,12 +944,12 @@ const TournamentRegister: React.FC = () => {
                     >
                       Continue Anyway
                     </Button>
-                  </ModalFooter>
+                  </Modal.Footer>
                 </>
-              )}
-            </ModalContent>
-          </Modal>
-        </CardBody>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+        </Card.Content>
       </Card>
     </div>
   );

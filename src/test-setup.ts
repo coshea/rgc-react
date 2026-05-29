@@ -6,6 +6,18 @@ import { cleanup } from "@testing-library/react";
 // Polyfill CSS.escape used by @react-aria in jsdom
 vi.stubGlobal("CSS", { escape: (s: string) => s });
 
+// Polyfill window.matchMedia (not implemented in jsdom)
+vi.stubGlobal("matchMedia", (query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
 // Polyfill ResizeObserver which jsdom does not implement (used by @heroui/tabs and others)
 vi.stubGlobal(
   "ResizeObserver",
@@ -56,19 +68,7 @@ vi.mock("@iconify/react", () => {
 });
 
 // Force HeroUI components down their non-animated code paths in tests.
-vi.mock("@heroui/system", async () => {
-  const actual =
-    await vi.importActual<typeof import("@heroui/system")>("@heroui/system");
-
-  return {
-    ...actual,
-    useProviderContext: () => ({
-      ...(actual.useProviderContext?.() ?? {}),
-      disableAnimation: true,
-      skipFramerMotionAnimations: true,
-    }),
-  };
-});
+// @heroui/system was removed in v3; mock is no-op to avoid import errors.
 
 // Mock framer-motion so that LazyMotion (used internally by HeroUI) never
 // schedules async feature-loading work that can fire after jsdom teardown.

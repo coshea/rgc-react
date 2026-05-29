@@ -12,16 +12,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
   Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
   Spinner,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -122,11 +117,11 @@ function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-lg px-3 py-2 border border-default-200 bg-content1 select-none"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 border bg-surface select-none"
     >
       {/* Drag handle */}
       <button
-        className="touch-none cursor-grab active:cursor-grabbing text-default-400 hover:text-default-600 shrink-0 p-0.5"
+        className="touch-none cursor-grab active:cursor-grabbing text-muted hover:text-foreground shrink-0 p-0.5"
         aria-label="Drag to reorder"
         {...attributes}
         {...listeners}
@@ -136,7 +131,7 @@ function SortableTeamRow({ id, label, seed }: SortableTeamRowProps) {
 
       <Chip
         size="sm"
-        variant="flat"
+        variant="tertiary"
         color={seed === 1 ? "warning" : "default"}
         className="shrink-0 min-w-10 justify-center"
       >
@@ -190,7 +185,7 @@ export function BracketTab() {
   const [bracketLoading, setBracketLoading] = useState(false);
 
   // Modals
-  const [generating, setGenerating] = useState(false);
+  const [_generating, setGenerating] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -385,24 +380,35 @@ export function BracketTab() {
             <Spinner size="sm" />
           ) : (
             <Select
-              label="Tournament"
               placeholder="Select a tournament"
-              selectedKeys={selectedId ? new Set([selectedId]) : new Set()}
-              onSelectionChange={(keys) => {
-                const val = [...keys][0];
-                setSelectedId(typeof val === "string" ? val : "");
+              value={selectedId || null}
+              onChange={(key) => {
+                setSelectedId(typeof key === "string" ? key : "");
               }}
-              size="sm"
               aria-label="Select tournament"
             >
-              {tournaments.map((t) => (
-                <SelectItem key={t.firestoreId!} textValue={t.title}>
-                  <span className="text-sm">{t.title}</span>
-                  <span className="text-xs text-default-400 ml-2">
-                    {t.date.getFullYear()}
-                  </span>
-                </SelectItem>
-              ))}
+              <Label>Tournament</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {tournaments.map((t) => (
+                    <ListBox.Item
+                      key={t.firestoreId!}
+                      id={t.firestoreId!}
+                      textValue={t.title}
+                    >
+                      <span className="text-sm">{t.title}</span>
+                      <span className="text-xs text-muted ml-2">
+                        {t.date.getFullYear()}
+                      </span>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
             </Select>
           )}
         </div>
@@ -411,22 +417,18 @@ export function BracketTab() {
           <div className="flex gap-2">
             <Button
               size="sm"
-              variant="flat"
-              color="warning"
-              startContent={
-                <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
-              }
+              variant="tertiary"
               onPress={() => setShowRegenConfirm(true)}
             >
+              <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
               Regenerate
             </Button>
             <Button
               size="sm"
-              variant="flat"
-              color="danger"
-              startContent={<Icon icon="lucide:trash-2" className="w-4 h-4" />}
+              variant="tertiary"
               onPress={() => setShowDeleteConfirm(true)}
             >
+              <Icon icon="lucide:trash-2" className="w-4 h-4" />
               Delete
             </Button>
           </div>
@@ -434,7 +436,7 @@ export function BracketTab() {
       </div>
 
       {!selectedId && (
-        <div className="flex flex-col items-center gap-2 py-12 text-default-400">
+        <div className="flex flex-col items-center gap-2 py-12 text-muted">
           <Icon icon="lucide:git-branch" className="w-10 h-10 opacity-40" />
           <p className="text-sm">Select a tournament to manage its bracket.</p>
         </div>
@@ -451,10 +453,10 @@ export function BracketTab() {
             {(champion || runnerUp) && (
               <div className="space-y-2">
                 {champion && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-50 dark:bg-warning-950/20 border border-warning-200">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-warning dark:bg-warning/20 border border-warning-200">
                     <Icon
                       icon="lucide:trophy"
-                      className="w-5 h-5 text-warning-500 mt-0.5 shrink-0"
+                      className="w-5 h-5 text-warning mt-0.5 shrink-0"
                     />
                     <div>
                       <span className="font-semibold text-sm">
@@ -462,7 +464,7 @@ export function BracketTab() {
                       </span>
                       {champion.memberNames &&
                         champion.memberNames.length > 1 && (
-                          <p className="text-xs text-default-500 mt-0.5">
+                          <p className="text-xs text-muted mt-0.5">
                             {champion.memberNames.join(" · ")}
                           </p>
                         )}
@@ -470,10 +472,10 @@ export function BracketTab() {
                   </div>
                 )}
                 {runnerUp && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-default-50 dark:bg-default-900/30 border border-default-200">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-default/60 dark:bg-default/60/30 border">
                     <Icon
                       icon="lucide:medal"
-                      className="w-5 h-5 text-default-500 mt-0.5 shrink-0"
+                      className="w-5 h-5 text-muted mt-0.5 shrink-0"
                     />
                     <div>
                       <span className="font-semibold text-sm">
@@ -481,7 +483,7 @@ export function BracketTab() {
                       </span>
                       {runnerUp.memberNames &&
                         runnerUp.memberNames.length > 1 && (
-                          <p className="text-xs text-default-500 mt-0.5">
+                          <p className="text-xs text-muted mt-0.5">
                             {runnerUp.memberNames.join(" · ")}
                           </p>
                         )}
@@ -491,40 +493,34 @@ export function BracketTab() {
               </div>
             )}
 
-            <Card shadow="sm">
-              <CardHeader>
+            <Card>
+              <Card.Header>
                 <p className="font-semibold">Bracket</p>
-                <p className="text-xs text-default-400 ml-2">
+                <p className="text-xs text-muted ml-2">
                   {bracket.size} slots · {bracket.teams.length} teams ·{" "}
                   {bracket.teams.length < bracket.size &&
                     `${bracket.size - bracket.teams.length} bye${bracket.size - bracket.teams.length !== 1 ? "s" : ""}`}
                 </p>
-              </CardHeader>
-              <CardBody className="overflow-x-auto">
+              </Card.Header>
+              <Card.Content className="overflow-x-auto">
                 <BracketView bracket={bracket} />
-              </CardBody>
+              </Card.Content>
             </Card>
 
             {/* Match results form */}
-            <Card shadow="sm">
-              <CardHeader className="flex items-center justify-between">
+            <Card>
+              <Card.Header className="flex items-center justify-between">
                 <p className="font-semibold text-sm">Match Results</p>
                 <Button
                   size="sm"
-                  color="primary"
                   onPress={handleSaveResults}
-                  isLoading={saving}
                   isDisabled={Object.keys(pendingWinners).length === 0}
-                  startContent={
-                    !saving ? (
-                      <Icon icon="lucide:save" className="w-4 h-4" />
-                    ) : undefined
-                  }
                 >
+                  {!saving && <Icon icon="lucide:save" className="w-4 h-4" />}
                   Save Results
                 </Button>
-              </CardHeader>
-              <CardBody className="space-y-5 pb-4">
+              </Card.Header>
+              <Card.Content className="space-y-5 pb-4">
                 {(() => {
                   const teamMap = new Map(bracket.teams.map((t) => [t.id, t]));
                   const numRounds = Math.log2(bracket.size);
@@ -546,7 +542,7 @@ export function BracketTab() {
 
                     return (
                       <div key={round}>
-                        <p className="text-xs font-semibold text-default-500 uppercase tracking-wide mb-2">
+                        <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
                           {label}
                         </p>
                         <div className="space-y-2">
@@ -576,21 +572,8 @@ export function BracketTab() {
                                     size="sm"
                                     variant={
                                       selectedWinner === byeTeamId
-                                        ? "solid"
-                                        : "flat"
-                                    }
-                                    color={
-                                      selectedWinner === byeTeamId
-                                        ? "success"
-                                        : "default"
-                                    }
-                                    startContent={
-                                      selectedWinner === byeTeamId ? (
-                                        <Icon
-                                          icon="lucide:trophy"
-                                          className="w-3.5 h-3.5"
-                                        />
-                                      ) : undefined
+                                        ? "primary"
+                                        : "tertiary"
                                     }
                                     onPress={() =>
                                       setPendingWinners((prev) => ({
@@ -600,18 +583,23 @@ export function BracketTab() {
                                     }
                                     className="flex-1 min-w-0"
                                   >
+                                    {selectedWinner === byeTeamId && (
+                                      <Icon
+                                        icon="lucide:trophy"
+                                        className="w-3.5 h-3.5"
+                                      />
+                                    )}
                                     <span className="truncate">
                                       {byeTeam?.name ?? "Unknown"}
                                     </span>
                                   </Button>
-                                  <span className="text-xs text-default-400 shrink-0">
+                                  <span className="text-xs text-muted shrink-0">
                                     vs bye
                                   </span>
                                   {selectedWinner && (
                                     <Button
                                       size="sm"
-                                      variant="light"
-                                      color="default"
+                                      variant="ghost"
                                       isIconOnly
                                       aria-label="Clear winner"
                                       onPress={() =>
@@ -636,7 +624,7 @@ export function BracketTab() {
                               return (
                                 <div
                                   key={m.id}
-                                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-default-200 text-default-400"
+                                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed text-muted"
                                 >
                                   <Icon
                                     icon="lucide:clock"
@@ -663,21 +651,8 @@ export function BracketTab() {
                                   size="sm"
                                   variant={
                                     selectedWinner === m.team1Id
-                                      ? "solid"
-                                      : "flat"
-                                  }
-                                  color={
-                                    selectedWinner === m.team1Id
-                                      ? "success"
-                                      : "default"
-                                  }
-                                  startContent={
-                                    selectedWinner === m.team1Id ? (
-                                      <Icon
-                                        icon="lucide:trophy"
-                                        className="w-3.5 h-3.5"
-                                      />
-                                    ) : undefined
+                                      ? "primary"
+                                      : "tertiary"
                                   }
                                   onPress={() =>
                                     setPendingWinners((prev) => ({
@@ -687,10 +662,16 @@ export function BracketTab() {
                                   }
                                   className="flex-1 min-w-0"
                                 >
+                                  {selectedWinner === m.team1Id && (
+                                    <Icon
+                                      icon="lucide:trophy"
+                                      className="w-3.5 h-3.5"
+                                    />
+                                  )}
                                   <span className="truncate">{team1.name}</span>
                                 </Button>
 
-                                <span className="text-xs text-default-400 shrink-0">
+                                <span className="text-xs text-muted shrink-0">
                                   vs
                                 </span>
 
@@ -698,21 +679,8 @@ export function BracketTab() {
                                   size="sm"
                                   variant={
                                     selectedWinner === m.team2Id
-                                      ? "solid"
-                                      : "flat"
-                                  }
-                                  color={
-                                    selectedWinner === m.team2Id
-                                      ? "success"
-                                      : "default"
-                                  }
-                                  startContent={
-                                    selectedWinner === m.team2Id ? (
-                                      <Icon
-                                        icon="lucide:trophy"
-                                        className="w-3.5 h-3.5"
-                                      />
-                                    ) : undefined
+                                      ? "primary"
+                                      : "tertiary"
                                   }
                                   onPress={() =>
                                     setPendingWinners((prev) => ({
@@ -722,14 +690,19 @@ export function BracketTab() {
                                   }
                                   className="flex-1 min-w-0"
                                 >
+                                  {selectedWinner === m.team2Id && (
+                                    <Icon
+                                      icon="lucide:trophy"
+                                      className="w-3.5 h-3.5"
+                                    />
+                                  )}
                                   <span className="truncate">{team2.name}</span>
                                 </Button>
 
                                 {selectedWinner && (
                                   <Button
                                     size="sm"
-                                    variant="light"
-                                    color="default"
+                                    variant="ghost"
                                     isIconOnly
                                     aria-label="Clear winner"
                                     onPress={() =>
@@ -755,45 +728,46 @@ export function BracketTab() {
                     );
                   });
                 })()}
-              </CardBody>
+              </Card.Content>
             </Card>
 
             {/* Summary of teams */}
-            <Card shadow="sm">
-              <CardHeader>
+            <Card>
+              <Card.Header>
                 <p className="font-semibold text-sm">
                   Teams ({bracket.teams.length})
                 </p>
-              </CardHeader>
-              <CardBody className="flex flex-wrap gap-2 pb-4">
+              </Card.Header>
+              <Card.Content className="flex flex-wrap gap-2 pb-4">
                 {bracket.teams.map((t) => (
                   <Chip
                     key={t.id}
                     size="sm"
-                    variant="flat"
+                    variant="tertiary"
                     color={t.seed === 1 ? "warning" : "default"}
-                    startContent={
-                      t.seed === 1 ? (
-                        <Icon icon="lucide:star" className="w-3 h-3 ml-1" />
-                      ) : undefined
-                    }
                   >
+                    {t.seed === 1 && (
+                      <Icon
+                        icon="lucide:star"
+                        className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                      />
+                    )}
                     {t.name}
                   </Chip>
                 ))}
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         ) : (
           /* ── No bracket: show generator ── */
           <div className="space-y-4">
-            <Card shadow="sm">
-              <CardHeader>
+            <Card>
+              <Card.Header>
                 <p className="font-semibold">Generate Bracket</p>
-              </CardHeader>
-              <CardBody className="space-y-4">
+              </Card.Header>
+              <Card.Content className="space-y-4">
                 {registrations.length < 2 ? (
-                  <div className="flex flex-col items-center gap-2 py-8 text-default-400">
+                  <div className="flex flex-col items-center gap-2 py-8 text-muted">
                     <Icon icon="lucide:users" className="w-8 h-8 opacity-40" />
                     <p className="text-sm">
                       {registrations.length === 0
@@ -803,7 +777,7 @@ export function BracketTab() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm text-default-500">
+                    <p className="text-sm text-muted">
                       {registrations.length} team
                       {registrations.length !== 1 ? "s" : ""} registered. Drag
                       to reorder teams — the top position is seed #1 and
@@ -813,10 +787,7 @@ export function BracketTab() {
                     <div className="flex justify-end">
                       <Button
                         size="sm"
-                        variant="flat"
-                        startContent={
-                          <Icon icon="lucide:shuffle" className="w-4 h-4" />
-                        }
+                        variant="tertiary"
                         onPress={() =>
                           setSeedOrder((prev) =>
                             shuffleTeams(
@@ -825,6 +796,7 @@ export function BracketTab() {
                           )
                         }
                       >
+                        <Icon icon="lucide:shuffle" className="w-4 h-4" />
                         Randomize Order
                       </Button>
                     </div>
@@ -852,81 +824,82 @@ export function BracketTab() {
                     </DndContext>
 
                     <Button
-                      color="primary"
-                      startContent={
-                        <Icon icon="lucide:git-branch" className="w-4 h-4" />
-                      }
                       onPress={handleGenerate}
-                      isLoading={generating}
                       isDisabled={registrations.length < 2}
                       className="mt-2"
                     >
+                      <Icon icon="lucide:git-branch" className="w-4 h-4" />
                       Generate Bracket
                     </Button>
                   </>
                 )}
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         ))}
 
       {/* Delete confirmation modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        size="sm"
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteConfirm(false);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Delete Bracket?</ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              This will permanently delete the bracket and all match results.
-              This action cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => setShowDeleteConfirm(false)}
-              isDisabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button color="danger" onPress={handleDelete} isLoading={deleting}>
-              Delete Bracket
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Delete Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-foreground">
+                This will permanently delete the bracket and all match results.
+                This action cannot be undone.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowDeleteConfirm(false)}
+                isDisabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onPress={handleDelete}>
+                Delete Bracket
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       {/* Regenerate confirmation modal */}
-      <Modal
+      <Modal.Backdrop
         isOpen={showRegenConfirm}
-        onClose={() => setShowRegenConfirm(false)}
-        size="sm"
+        onOpenChange={(open) => {
+          if (!open) setShowRegenConfirm(false);
+        }}
       >
-        <ModalContent>
-          <ModalHeader>Regenerate Bracket?</ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              This will replace the existing bracket with a freshly randomised
-              draw. All current match results will be lost.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setShowRegenConfirm(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              onPress={handleDeleteAndRegen}
-              isLoading={generating}
-            >
-              Regenerate
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Regenerate Bracket?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-foreground">
+                This will replace the existing bracket with a freshly randomised
+                draw. All current match results will be lost.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowRegenConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" onPress={handleDeleteAndRegen}>
+                Regenerate
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>{" "}
+      </Modal.Backdrop>
     </div>
   );
 }

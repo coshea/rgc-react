@@ -19,9 +19,9 @@ export function DeleteMemberModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
-      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-sm z-10">
+      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-sm z-10">
         <h3 className="text-lg font-medium mb-2">Delete Member</h3>
-        <p className="text-sm text-default-600 mb-4">
+        <p className="text-sm text-foreground mb-4">
           {selfDelete ? (
             <span>You can't delete your own profile.</span>
           ) : (
@@ -35,11 +35,11 @@ export function DeleteMemberModal({
           )}
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="flat" onPress={onCancel}>
+          <Button variant="tertiary" onPress={onCancel}>
             Cancel
           </Button>
           {!selfDelete && (
-            <Button color="danger" onPress={onConfirm}>
+            <Button  onPress={onConfirm}>
               Delete
             </Button>
           )}

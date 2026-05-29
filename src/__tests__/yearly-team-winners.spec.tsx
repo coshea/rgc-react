@@ -3,6 +3,28 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
+// Shim SearchInput so fireEvent.change triggers the onChange prop
+vi.mock("@/components/search-input", () => ({
+  SearchInput: ({ value, onChange, ariaLabel, placeholder }: any) => (
+    <input
+      type="text"
+      role="textbox"
+      aria-label={ariaLabel ?? placeholder ?? "Search"}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+  default: ({ value, onChange, ariaLabel, placeholder }: any) => (
+    <input
+      type="text"
+      role="textbox"
+      aria-label={ariaLabel ?? placeholder ?? "Search"}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 // Mock hooks used inside component
 vi.mock("@/providers/AuthProvider", () => ({
   useAuth: () => ({ userLoggedIn: true }),

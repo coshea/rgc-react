@@ -2,11 +2,11 @@ import { useState } from "react";
 import {
   Button,
   Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
+  FieldError,
   Input,
+  Label,
+  Separator,
+  TextField,
 } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import type { HandicapState } from "../types";
@@ -48,53 +48,53 @@ export function HandicapStep(props: {
   }
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4">
         <h3 className="text-base font-semibold">Handicap Only</h3>
-        <p className="text-sm text-default-600">
+        <p className="text-sm text-foreground">
           Provide your details below. If you don’t know your GHIN yet, you can
           leave it blank.
         </p>
 
         <div className="space-y-1 text-sm">
           <div>
-            <span className="text-default-600">Name:</span> {profileName}
+            <span className="text-foreground">Name:</span> {profileName}
           </div>
           <div>
-            <span className="text-default-600">Email:</span> {profileEmail}
+            <span className="text-foreground">Email:</span> {profileEmail}
           </div>
         </div>
 
-        <Input
-          label="GHIN (optional)"
+        <TextField
           value={value.ghin}
-          onValueChange={(v) =>
-            setValue((s) => ({ ...s, ghin: v.replace(/\D+/g, "") }))
+          onChange={(v) =>
+            setValue((s) => ({
+              ...s,
+              ghin: v.replace(/\D+/g, ""),
+            }))
           }
           isInvalid={!!localErrors.handicapGhin}
-          errorMessage={localErrors.handicapGhin}
-          variant="bordered"
-          inputMode="numeric"
-          pattern="[0-9]*"
-        />
-        <div className="text-xs text-default-500">
+        >
+          <Label>GHIN (optional)</Label>
+          <Input inputMode="numeric" pattern="[0-9]*" />
+          <FieldError>{localErrors.handicapGhin}</FieldError>
+        </TextField>
+        <div className="text-xs text-muted">
           We’ll save this GHIN to your profile for future renewals.
         </div>
         <div className="text-sm">
           Fee: <strong>{currency(handicapFee)}</strong>
         </div>
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay} isLoading={submitting}>
-          Continue
-        </Button>
-      </CardFooter>
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
+        <Button onPress={handlePay}>Continue</Button>
+      </Card.Footer>
     </Card>
   );
 }

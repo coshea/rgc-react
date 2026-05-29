@@ -77,7 +77,7 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <Button
         isIconOnly
-        variant="light"
+        variant="ghost"
         size="sm"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={open}
@@ -86,7 +86,7 @@ export function NotificationBell() {
           calcDropdownStyle();
           setOpen((s) => !s);
         }}
-        className="text-default-500"
+        className="text-muted"
       >
         <Icon icon="lucide:bell" className="text-xl" />
       </Button>
@@ -101,17 +101,16 @@ export function NotificationBell() {
 
       {open && (
         <div style={dropdownStyle} className="z-[9999] origin-top-right">
-          <div className="w-full bg-background border border-default-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="w-full bg-background border rounded-xl shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-default-100">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
               <span className="font-semibold text-sm text-foreground">
                 Notifications
               </span>
               {unreadCount > 0 && (
                 <Button
-                  variant="light"
+                  variant="ghost"
                   size="sm"
-                  color="primary"
                   className="text-xs h-6 min-w-0 px-2"
                   onPress={() => markAllRead()}
                 >
@@ -127,7 +126,7 @@ export function NotificationBell() {
               aria-live="polite"
             >
               {notifications.length === 0 ? (
-                <p className="text-center text-default-400 text-sm py-10">
+                <p className="text-center text-muted text-sm py-10">
                   No notifications
                 </p>
               ) : (
@@ -154,27 +153,24 @@ export function NotificationBell() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-default-100 px-4 py-2 flex justify-between">
+            <div className="border-t px-4 py-2 flex justify-between">
               <Button
-                variant="light"
+                variant="ghost"
                 size="sm"
                 className="text-xs h-6 min-w-0 px-2"
                 aria-label="Notification settings"
-                startContent={
-                  <Icon icon="lucide:settings-2" className="text-base" />
-                }
                 onPress={() => {
                   setOpen(false);
                   navigate(siteConfig.pages.notificationSettings.link);
                 }}
               >
+                <Icon icon="lucide:settings-2" className="text-base" />
                 Settings
               </Button>
               {notifications.length > 0 && (
                 <Button
-                  variant="light"
+                  variant="ghost"
                   size="sm"
-                  color="danger"
                   className="text-xs h-6 min-w-0 px-2"
                   onPress={() => {
                     clearAll();
@@ -215,8 +211,8 @@ function NotificationItem({
     <div
       role="listitem"
       className={`flex items-start gap-2 px-4 py-3 transition-colors ${
-        !n.read ? "bg-primary-50/40 dark:bg-primary-900/10" : ""
-      } hover:bg-default-50`}
+        !n.read ? "bg-accent-soft/40 dark:bg-accent-soft/10" : ""
+      } hover:bg-default/60`}
     >
       {/* Main content — clicking marks the notification as read */}
       <div
@@ -237,18 +233,18 @@ function NotificationItem({
           className={`text-sm leading-tight flex items-center gap-1.5 ${
             !n.read
               ? "font-semibold text-foreground"
-              : "font-normal text-foreground-600"
+              : "font-normal text-muted"
           }`}
         >
           <Icon
             icon={TYPE_META[n.type as NotificationType]?.icon ?? "lucide:bell"}
-            className="shrink-0 text-[13px] text-default-400"
+            className="shrink-0 text-[13px] text-muted"
             aria-hidden="true"
           />
           {n.title}
         </p>
-        <p className="text-xs text-default-400 mt-0.5 line-clamp-2">{n.body}</p>
-        <p className="text-[10px] text-default-300 mt-1">
+        <p className="text-xs text-muted mt-0.5 line-clamp-2">{n.body}</p>
+        <p className="text-[10px] text-muted mt-1">
           {getRelativeTime(n.createdAt)}
         </p>
       </div>
@@ -256,10 +252,10 @@ function NotificationItem({
       {/* Dismiss button */}
       <Button
         isIconOnly
-        variant="light"
+        variant="ghost"
         size="sm"
         aria-label="Dismiss notification"
-        className="shrink-0 text-default-300 hover:text-danger mt-0.5 min-w-0 w-6 h-6"
+        className="shrink-0 text-muted hover:text-danger mt-0.5 min-w-0 w-6 h-6"
         onClick={(e) => e.stopPropagation()}
         onPress={() => onDismiss()}
       >

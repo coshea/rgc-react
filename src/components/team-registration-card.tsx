@@ -1,4 +1,4 @@
-import { Card, CardBody, Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { TeeBadge } from "@/components/tee-badge";
@@ -48,10 +48,10 @@ export function TeamRegistrationCard({
   onPress,
 }: TeamRegistrationCardProps) {
   const isInteractive = showOpenSpots || lookingForPartnerTeam;
-  const cardClassName = `rounded-md border transition-colors ${
+  const cardClassName = `rounded-md border shadow-sm transition-colors ${
     isInteractive
       ? "border-warning/60 bg-warning/5 hover:bg-warning/10"
-      : "border-default-200 bg-content2/60 hover:bg-content2"
+      : "bg-surface-secondary/60 hover:bg-surface-secondary"
   }${
     isInteractive
       ? " cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-warning/60"
@@ -68,18 +68,29 @@ export function TeamRegistrationCard({
             : `Open spot details for Team ${teamNumber}`
           : undefined
       }
-      isPressable={isInteractive}
-      onPress={isInteractive ? onPress : undefined}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onClick={isInteractive ? onPress : undefined}
+      onKeyDown={
+        isInteractive
+          ? (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onPress?.();
+              }
+            }
+          : undefined
+      }
     >
-      <CardBody className="p-2 sm:p-3 flex flex-col h-full gap-1.5 sm:gap-2 relative group">
+      <Card.Content className="p-1.5 sm:p-2 flex flex-col gap-1 relative group">
         {/* Header: team number + date + waitlist chip */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide text-foreground-400 font-medium shrink-0">
+            <p className="text-[11px] uppercase tracking-wide text-muted font-medium shrink-0">
               Team {teamNumber}
             </p>
             {dateStr && (
-              <span className="text-[11px] text-foreground-400 truncate">
+              <span className="text-[11px] text-muted truncate">
                 · {dateStr}
               </span>
             )}
@@ -87,8 +98,7 @@ export function TeamRegistrationCard({
           {isWaitlisted && (
             <Chip
               size="sm"
-              variant="flat"
-              color="warning"
+              variant="tertiary"
               className="h-5 px-2 text-[10px] shrink-0"
             >
               Waitlist
@@ -110,27 +120,22 @@ export function TeamRegistrationCard({
                   name={memberUser ? undefined : label}
                   className={
                     isLeader
-                      ? "shrink-0 border border-default-200 ring-2 ring-primary ring-offset-1 ring-offset-background"
-                      : "shrink-0 border border-default-200"
+                      ? "shrink-0 border ring-2 ring-primary ring-offset-1 ring-offset-background"
+                      : "shrink-0 border"
                   }
                   alt={label}
                 />
                 <span
                   className={`text-[13px] sm:text-sm font-medium truncate min-w-0 ${
-                    isLeader ? "text-primary" : ""
+                    isLeader ? "text-accent" : ""
                   }`}
                 >
                   {m.displayName || m.id}
                 </span>
                 {isLeader && maxPlayers > 1 && (
-                  <Chip
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    className="h-5 px-2 text-[10px] shrink-0"
-                  >
+                  <span className="text-[10px] text-muted font-medium shrink-0">
                     Leader
-                  </Chip>
+                  </span>
                 )}
                 {m.goldTee && (
                   <TeeBadge
@@ -186,7 +191,7 @@ export function TeamRegistrationCard({
             </li>
           )}
         </ul>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

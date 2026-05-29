@@ -11,12 +11,20 @@ const initialUsers = [
 
 const reducedUsers = [{ id: "user-a", displayName: "Alice" }];
 
-function Wrapper({ users, value, onChange, goldTees, onGoldTeesChange }: any) {
+function Wrapper({
+  users,
+  value,
+  onChange,
+  goldTees,
+  onGoldTeesChange,
+  selectedUsers,
+}: any) {
   return (
     <RegistrationEditor
       value={value}
       onChange={onChange}
       users={users}
+      selectedUsers={selectedUsers}
       maxSize={4}
       goldTees={goldTees}
       onGoldTeesChange={onGoldTeesChange}
@@ -32,7 +40,7 @@ vi.mock("@/providers/AuthProvider", () => ({
 // Lightweight UserSelect mock so we can control rendered value without HeroUI Select overhead
 vi.mock("@/components/UserSelect", () => ({
   __esModule: true,
-  UserSelect: ({ value, onChange, label }: any) => (
+  UserSelect: ({ value, onChange, label, users }: any) => (
     <label>
       {label}
       <select
@@ -41,8 +49,11 @@ vi.mock("@/components/UserSelect", () => ({
         onChange={(e) => onChange(e.target.value)}
       >
         <option value="">Select player</option>
-        <option value="user-a">Alice</option>
-        <option value="user-b">Bob</option>
+        {users.map((user: { id: string; displayName?: string }) => (
+          <option key={user.id} value={user.id}>
+            {user.displayName || user.id}
+          </option>
+        ))}
       </select>
     </label>
   ),
@@ -82,6 +93,22 @@ describe("RegistrationEditor selectedKeys sanitization", () => {
 });
 
 describe("RegistrationEditor gold tee toggle", () => {
+  it("renders a selected user from saved team data even when not in the global user list", () => {
+    render(
+      <Wrapper
+        users={[{ id: "user-a", displayName: "Alice" }]}
+        selectedUsers={[{ id: "user-c", displayName: "Chris" }]}
+        value={["user-c"]}
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: /team leader/i })).toHaveValue(
+      "user-c",
+    );
+    expect(screen.getByRole("option", { name: "Chris" })).toBeInTheDocument();
+  });
+
   it("does not show gold tee buttons when onGoldTeesChange is not provided", () => {
     render(
       <Wrapper users={initialUsers} value={["user-a"]} onChange={() => {}} />,

@@ -23,7 +23,7 @@ export function TournamentStatusChip({
 
   if (s === TournamentStatus.Canceled) {
     return (
-      <Chip color="danger" size={size} variant="flat">
+      <Chip size={size} variant="tertiary">
         Canceled
       </Chip>
     );
@@ -31,7 +31,7 @@ export function TournamentStatusChip({
 
   if (s === TournamentStatus.Completed) {
     return (
-      <Chip color="success" size={size} variant="flat">
+      <Chip size={size} color="success" variant="tertiary">
         Completed
       </Chip>
     );
@@ -40,13 +40,15 @@ export function TournamentStatusChip({
   if (s === TournamentStatus.InProgress) {
     return (
       <Chip
-        color="primary"
         size={size}
-        variant="solid"
-        startContent={
-          <Icon icon="lucide:play-circle" className="w-3.5 h-3.5" />
-        }
+        color="accent"
+        variant="soft"
+        className="whitespace-nowrap"
       >
+        <Icon
+          icon="lucide:play-circle"
+          className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
+        />
         In Progress
       </Chip>
     );
@@ -55,12 +57,15 @@ export function TournamentStatusChip({
   if (windowInfo.state === RegistrationWindowState.Open) {
     return (
       <Chip
-        color="warning"
         size={size}
-        variant="solid"
-        startContent={<Icon icon="lucide:user-plus" className="w-3.5 h-3.5" />}
-        className="animate-pulse"
+        color="warning"
+        variant="primary"
+        className="animate-pulse whitespace-nowrap"
       >
+        <Icon
+          icon="lucide:user-plus"
+          className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
+        />
         Registration Open
       </Chip>
     );
@@ -73,13 +78,15 @@ export function TournamentStatusChip({
   ) {
     return (
       <Chip
-        color="secondary"
         size={size}
-        variant="solid"
-        startContent={
-          <Icon icon="lucide:calendar-clock" className="w-3.5 h-3.5" />
-        }
+        color="accent"
+        variant="primary"
+        className="whitespace-nowrap"
       >
+        <Icon
+          icon="lucide:calendar-clock"
+          className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
+        />
         Opens Soon
       </Chip>
     );
@@ -90,12 +97,11 @@ export function TournamentStatusChip({
     windowInfo.state === RegistrationWindowState.Invalid
   ) {
     return (
-      <Chip
-        color="danger"
-        size={size}
-        variant="bordered"
-        startContent={<Icon icon="lucide:lock" className="w-3.5 h-3.5" />}
-      >
+      <Chip size={size} variant="tertiary" className="whitespace-nowrap">
+        <Icon
+          icon="lucide:lock"
+          className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
+        />
         Reg. Closed
       </Chip>
     );
@@ -103,14 +109,11 @@ export function TournamentStatusChip({
 
   // Default: upcoming tournament, registration not yet configured or far out
   return (
-    <Chip
-      color="default"
-      size={size}
-      variant="flat"
-      startContent={
-        <Icon icon="lucide:calendar-days" className="w-3.5 h-3.5" />
-      }
-    >
+    <Chip size={size} variant="tertiary">
+      <Icon
+        icon="lucide:calendar-days"
+        className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]"
+      />
       Upcoming
     </Chip>
   );

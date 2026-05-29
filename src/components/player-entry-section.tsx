@@ -1,4 +1,4 @@
-import { Button, Input, Switch } from "@heroui/react";
+import { Button, Input, Label, Switch, TextField } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { User } from "@/api/users";
 import { UserSelect } from "@/components/UserSelect";
@@ -60,44 +60,43 @@ export function PlayerEntrySection({
         <h3 className="text-lg font-semibold">
           {title} {!required && "(Optional)"}
         </h3>
-        <Button
-          size="sm"
-          variant="flat"
-          onPress={onAdd}
-          startContent={<Icon icon="lucide:plus" className="w-4 h-4" />}
-        >
+        <Button size="sm" variant="tertiary" onPress={onAdd}>
+          <Icon icon="lucide:plus" className="w-4 h-4" />
           {buttonText}
         </Button>
       </div>
 
       {entries.map((entry, index) => (
-        <div
-          key={index}
-          className="space-y-3 p-4 border border-default-200 rounded-lg"
-        >
+        <div key={index} className="space-y-3 p-4 border rounded-lg">
           <div className="flex items-center justify-between">
-            <h4 className="text-medium font-medium">
+            <h4 className="text-base font-medium">
               {singular} {index + 1}
             </h4>
             <div className="flex items-center gap-2">
-              <span className="text-small text-default-500">Historical</span>
+              <span className="text-sm text-muted">Historical</span>
               <Switch
                 size="sm"
                 isSelected={entry.isHistorical}
-                onValueChange={(value) => onUpdateHistorical(index, value)}
-              />
+                onChange={(value) => onUpdateHistorical(index, value)}
+              >
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch>
             </div>
           </div>
 
           <div className="flex gap-2 items-start">
             {entry.isHistorical && (
-              <Input
-                label="Name"
+              <TextField
                 value={entry.name}
-                onValueChange={(value) => onUpdate(index, "name", value)}
+                onChange={(v) => onUpdate(index, "name", v)}
                 isInvalid={!!errors?.names}
                 className="flex-1"
-              />
+              >
+                <Label>Name</Label>
+                <Input />
+              </TextField>
             )}
 
             {!entry.isHistorical && (
@@ -120,8 +119,7 @@ export function PlayerEntrySection({
             {(entries.length > 1 || !required) && (
               <Button
                 isIconOnly
-                variant="flat"
-                color="danger"
+                variant="tertiary"
                 size="lg"
                 onPress={() => onRemove(index)}
               >

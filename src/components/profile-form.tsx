@@ -1,11 +1,19 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Input, Button, Spinner, Chip } from "@heroui/react";
+import {
+  Card,
+  Input,
+  Button,
+  Spinner,
+  Chip,
+  TextField,
+  Label,
+  FieldError,
+} from "@heroui/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
-import { PiGolf } from "react-icons/pi";
 import { saveUserProfile, type UserProfilePayload } from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -75,7 +83,7 @@ export function ProfileForm({
       : userProfile?.membershipType === "handicap"
         ? {
             label: "Handicap Only",
-            color: "primary" as const,
+            color: "accent" as const,
             icon: "lucide:golf",
           }
         : null;
@@ -111,7 +119,7 @@ export function ProfileForm({
       });
       setImagePreview(user.photoURL || null);
     }
-  }, [user, userProfile, isLoading, isDirty]);
+  }, [user, userProfile, , isDirty]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -281,7 +289,7 @@ export function ProfileForm({
     return (
       <Card className="p-6">
         <div className="flex justify-center items-center min-h-[400px]">
-          <Spinner size="lg" label="Loading profile data..." />
+          <Spinner size="lg" aria-label="Loading profile data..." />
         </div>
       </Card>
     );
@@ -307,7 +315,7 @@ export function ProfileForm({
                 user?.email ||
                 "User"
               }
-              className="w-24 h-24 text-large transition-transform duration-200 group-hover:scale-105 border-2 border-default-200"
+              className="w-24 h-24 text-lg transition-transform duration-200 group-hover:scale-105 border-2"
               size="lg"
               alt={
                 formData.displayName ||
@@ -336,20 +344,19 @@ export function ProfileForm({
             className="hidden"
             onChange={handleFileChange}
           />
-          <p className="text-default-500 text-sm">
-            Click to upload profile picture
-          </p>
+          <p className="text-muted text-sm">Click to upload profile picture</p>
 
           {membershipTypeChip ? (
             <div className="mt-2 flex justify-center">
               <Chip
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 color={membershipTypeChip.color}
-                startContent={
-                  <Icon icon={membershipTypeChip.icon} className="w-3 h-3" />
-                }
               >
+                <Icon
+                  icon={membershipTypeChip.icon}
+                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
+                />
                 {membershipTypeChip.label}
               </Chip>
             </div>
@@ -358,73 +365,59 @@ export function ProfileForm({
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="First Name"
-              placeholder="Enter first name"
-              value={formData.firstName}
-              onValueChange={handleInputChange("firstName")}
+            <TextField
               isRequired
               isInvalid={!!errors.firstName}
-              errorMessage={errors.firstName}
-              startContent={
-                <Icon icon="lucide:user" className="text-default-400 text-lg" />
-              }
-            />
-            <Input
-              label="Last Name"
-              placeholder="Enter last name"
-              value={formData.lastName}
-              onValueChange={handleInputChange("lastName")}
+              value={formData.firstName}
+              onChange={(v) => handleInputChange("firstName")(v)}
+            >
+              <Label>First Name</Label>
+              <Input placeholder="Enter first name" />
+              <FieldError>{errors.firstName}</FieldError>
+            </TextField>
+            <TextField
               isRequired
               isInvalid={!!errors.lastName}
-              errorMessage={errors.lastName}
-              startContent={
-                <Icon icon="lucide:user" className="text-default-400 text-lg" />
-              }
-            />
+              value={formData.lastName}
+              onChange={(v) => handleInputChange("lastName")(v)}
+            >
+              <Label>Last Name</Label>
+              <Input placeholder="Enter last name" />
+              <FieldError>{errors.lastName}</FieldError>
+            </TextField>
           </div>
 
-          <Input
-            label="Email"
-            placeholder="Enter your email address"
-            value={formData.email}
-            onValueChange={handleInputChange("email")}
-            type="email"
+          <TextField
             isRequired
             isInvalid={!!errors.email}
-            errorMessage={errors.email}
-            startContent={
-              <Icon icon="lucide:mail" className="text-default-400 text-lg" />
-            }
-          />
+            value={formData.email}
+            onChange={(v) => handleInputChange("email")(v)}
+          >
+            <Label>Email</Label>
+            <Input placeholder="Enter your email address" type="email" />
+            <FieldError>{errors.email}</FieldError>
+          </TextField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onValueChange={handleInputChange("phone")}
-              type="tel"
+            <TextField
               isInvalid={!!errors.phone}
-              errorMessage={errors.phone}
-              startContent={
-                <Icon
-                  icon="lucide:phone"
-                  className="text-default-400 text-lg"
-                />
-              }
-            />
+              value={formData.phone}
+              onChange={(v) => handleInputChange("phone")(v)}
+            >
+              <Label>Phone Number</Label>
+              <Input placeholder="Enter your phone number" type="tel" />
+              <FieldError>{errors.phone}</FieldError>
+            </TextField>
 
-            <Input
-              label="GHIN Number"
-              placeholder="Enter your GHIN number"
-              value={formData.ghinNumber}
-              onValueChange={handleInputChange("ghinNumber")}
-              type="text"
+            <TextField
               isInvalid={!!errors.ghinNumber}
-              errorMessage={errors.ghinNumber}
-              startContent={<PiGolf className="text-default-400 text-lg" />}
-            />
+              value={formData.ghinNumber}
+              onChange={(v) => handleInputChange("ghinNumber")(v)}
+            >
+              <Label>GHIN Number</Label>
+              <Input placeholder="Enter your GHIN number" type="text" />
+              <FieldError>{errors.ghinNumber}</FieldError>
+            </TextField>
           </div>
         </div>
 
@@ -435,19 +428,14 @@ export function ProfileForm({
                 <Button
                   type="button"
                   className="w-1/3 h-10 text-sm py-1"
-                  onClick={() => navigate(-1)}
-                  disabled={isSubmitting}
+                  onPress={() => navigate(-1)}
+                  isDisabled={isSubmitting}
                 >
                   Cancel
                 </Button>
               )}
 
-              <Button
-                type="submit"
-                color="primary"
-                className="w-1/3 h-10 text-sm py-1"
-                isLoading={isSubmitting}
-              >
+              <Button type="submit" className="w-1/3 h-10 text-sm py-1">
                 {isSubmitting ? "Saving..." : "Save Profile"}
               </Button>
             </div>
@@ -455,13 +443,13 @@ export function ProfileForm({
         )}
 
         {isSuccess && (
-          <div className="mt-4 p-3 bg-success-100 text-success-700 rounded-medium flex items-center gap-2">
+          <div className="mt-4 p-3 bg-success text-success-700 rounded-md flex items-center gap-2">
             <Icon icon="lucide:check-circle" />
             <span>Profile updated successfully!</span>
           </div>
         )}
         {saveError && (
-          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-medium flex items-center gap-2">
+          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-md flex items-center gap-2">
             <Icon icon="lucide:alert-circle" />
             <span>
               There was an error uploading your avatar or saving profile. Please

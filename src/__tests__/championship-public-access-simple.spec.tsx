@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { ReactNode } from "react";
 import {
   render,
   screen,
@@ -9,7 +10,6 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { BrowserRouter } from "react-router-dom";
-import React from "react";
 
 // Mock Firebase Auth first
 vi.mock("firebase/auth", () => ({
@@ -64,8 +64,7 @@ vi.mock("@/hooks/useIntersectionObserver", () => ({
 // Tests will control the global __TEST_AUTH_USER value to simulate auth state.
 vi.mock("@/providers/AuthProvider", () => {
   return {
-    AuthProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(React.Fragment, null, children),
+    AuthProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     useAuth: () => {
       const user = globalThis.__TEST_AUTH_USER ?? null;
       return {
@@ -108,7 +107,7 @@ function createWrapper() {
       queries: { retry: false, gcTime: 0 },
     },
   });
-  const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>{children}</BrowserRouter>
@@ -148,9 +147,8 @@ describe("Championship Public Access Integration", () => {
     // Ensure unauthenticated
     globalThis.__TEST_AUTH_USER = null;
 
-    const { ChampionshipCard } = await import(
-      "@/components/championship-display"
-    );
+    const { ChampionshipCard } =
+      await import("@/components/championship-display");
     const wrapper = createWrapper();
 
     render(<ChampionshipCard championship={mockChampionship} />, { wrapper });
@@ -172,25 +170,16 @@ describe("Championship Public Access Integration", () => {
     };
     globalThis.__TEST_AUTH_USER = mockUser;
 
-    const { ChampionshipCard } = await import(
-      "@/components/championship-display"
-    );
+    const { ChampionshipCard } =
+      await import("@/components/championship-display");
     const wrapper = createWrapper();
 
     render(<ChampionshipCard championship={mockChampionship} />, { wrapper });
 
-    // Await the visible text and then check for profile buttons
+    // Await the visible text and then check for profile links
     await screen.findByText("John Champion", {}, { timeout: 10000 });
-    // Should have profile links for authenticated and verified users
-    // HeroUI links render as buttons, so check for buttons with href attributes
-    const profileButtons = await screen.findAllByRole(
-      "button",
-      {},
-      { timeout: 10000 },
-    );
-    const profileLinks = profileButtons.filter((button) =>
-      button.getAttribute("href")?.includes("/profile/"),
-    );
+    // Profile navigation uses <Link to="..."> which renders as <a href="...">
+    const profileLinks = document.querySelectorAll('a[href*="/profile/"]');
     expect(profileLinks.length).toBeGreaterThan(0);
   }, 15000);
 

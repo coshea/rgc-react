@@ -61,30 +61,32 @@ vi.mock("@heroui/react", async (importOriginal) => {
     NavbarContent: ({ children }: any) => (
       <div data-testid="navbar-content">{children}</div>
     ),
-    Dropdown: ({ children }: any) => (
-      <div data-testid="dropdown">{children}</div>
+    Dropdown: Object.assign(
+      ({ children }: any) => <div data-testid="dropdown">{children}</div>,
+      {
+        Trigger: ({ children }: any) => (
+          <div data-testid="trigger">{children}</div>
+        ),
+        Popover: ({ children }: any) => (
+          <div data-testid="dropdown-popover">{children}</div>
+        ),
+        Menu: ({ children, ...rest }: any) => (
+          <ul role="menu" {...rest}>
+            {children}
+          </ul>
+        ),
+        Item: ({ children, onPress: _op, id, ...rest }: any) => (
+          <li role="menuitem" tabIndex={-1} data-key={id} {...rest}>
+            {children}
+          </li>
+        ),
+        Section: ({ children }: any) => <li role="group">{children}</li>,
+      },
     ),
-    DropdownTrigger: ({ children }: any) => (
-      <div data-testid="trigger">{children}</div>
+    Header: ({ children }: any) => (
+      <span data-testid="dropdown-header">{children}</span>
     ),
-    DropdownMenu: ({ children, ...rest }: any) => (
-      <ul role="menu" {...rest}>
-        {children}
-      </ul>
-    ),
-    DropdownItem: ({ children, onPress: _op, as: _as, ...rest }: any) => {
-      // Drop unsupported DOM props (onPress, as)
-      return (
-        <li role="menuitem" tabIndex={-1} {...rest}>
-          {children}
-        </li>
-      );
-    },
-    DropdownSection: ({ children, title }: any) => (
-      <li role="group" aria-label={title}>
-        {children}
-      </li>
-    ),
+    Separator: () => <hr />,
     Link: ({ children, href }: any) => <a href={href}>{children}</a>,
     // Keep Avatar behavior close enough for click handling
     Avatar: ({
@@ -146,10 +148,8 @@ describe("ProfileDropdown accessibility", () => {
   it("opens menu when avatar (button) is clicked and is keyboard focusable", () => {
     render(<ProfileDropdown />);
 
-    // Locate the avatar button (UserAvatar renders initials or name) - our stub uses name prop
-    const avatarBtn = screen.getByRole("button", {
-      name: /test user|auth user/i,
-    });
+    // Target the outer profile menu trigger button
+    const avatarBtn = screen.getByRole("button", { name: /profile menu/i });
     expect(avatarBtn).toBeInTheDocument();
     expect(avatarBtn).toHaveAttribute("aria-label");
 
@@ -208,5 +208,16 @@ describe("ProfileDropdown admin section visibility", () => {
     });
     render(<ProfileDropdown />);
     expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
+  });
+
+  it("renders Admin section header label for admin user", () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: true, loadingAdmin: false });
+    useBoardMemberFlagMock.mockReturnValue({
+      isBoardMember: false,
+      loadingBoard: false,
+    });
+    render(<ProfileDropdown />);
+    const header = screen.getByTestId("dropdown-header");
+    expect(header).toHaveTextContent(/admin/i);
   });
 });

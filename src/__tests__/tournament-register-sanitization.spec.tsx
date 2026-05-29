@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import {
+  findAutocompleteButton,
+  pickOptionForCombobox,
+} from "./helpers/autocomplete";
 
 // --- Mocks (must be declared before importing component) ---
 vi.mock("@/hooks/useUsers", () => {
@@ -104,11 +108,8 @@ describe("TournamentRegister teammate selection sanitization", () => {
     expect(heading).toBeTruthy();
 
     // Interact with Autocomplete (Team Leader / You)
-    const combo = screen.getByRole("combobox", { name: /team leader/i });
-    fireEvent.change(combo, { target: { value: "Bravo" } });
-    fireEvent.keyDown(combo, { key: "ArrowDown" });
-    const bravo = await screen.findByRole("option", { name: "Bravo" });
-    fireEvent.click(bravo);
+    const trigger = findAutocompleteButton(/team leader/i);
+    await pickOptionForCombobox(trigger, "Bravo");
 
     // Remove Bravo from users list, leaving only Alpha
     await act(async () => {

@@ -22,7 +22,7 @@ const ProfilePage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spinner size="lg" label="Loading profile..." />
+        <Spinner size="lg" aria-label="Loading profile..." />
       </div>
     );
   }
@@ -30,7 +30,7 @@ const ProfilePage = () => {
   return (
     <div className="p-6 max-w-3xl mx-auto text-center">
       {state.message && (
-        <div className="mb-4 rounded-md border border-warning-300 bg-warning-50 px-3 py-2 text-sm text-warning-900">
+        <div className="mb-4 rounded-md border border-warning-300 bg-warning px-3 py-2 text-sm text-warning-900">
           {state.message}
         </div>
       )}

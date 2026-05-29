@@ -9,6 +9,8 @@ interface RegistrationEditorProps {
   value: string[]; // array of user ids
   onChange: (ids: string[]) => void;
   users: User[];
+  /** Users that should be renderable for the current selected slots even if they are not in `users`. */
+  selectedUsers?: User[];
   maxSize: number;
   labels?: { leader?: string; teammate?: (index: number) => string };
   /** When true, do not auto-select the current authenticated user into the first slot. Useful for admin flows. */
@@ -19,18 +21,22 @@ interface RegistrationEditorProps {
   goldTees?: string[];
   /** Called when the gold tee selection changes. When omitted, the gold tee toggle is hidden. */
   onGoldTeesChange?: (ids: string[]) => void;
+  /** When true, keep unknown ids instead of clearing them when the users list is temporarily incomplete. */
+  preserveUnknownIds?: boolean;
 }
 
 export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   value,
   onChange,
   users,
+  selectedUsers = [],
   maxSize,
   labels,
   disableAutoSelect,
   disabled = false,
   goldTees,
   onGoldTeesChange,
+  preserveUnknownIds = false,
 }) => {
   const ids = value || [];
 
@@ -45,8 +51,17 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
     [users],
   );
 
+  const selectedUsersById = React.useMemo(() => {
+    const byId = new Map<string, User>();
+    selectedUsers.forEach((user) => {
+      byId.set(user.id, user);
+    });
+    return byId;
+  }, [selectedUsers]);
+
   // Effect: whenever the users list changes, drop any stale ids that no longer exist
   React.useEffect(() => {
+    if (preserveUnknownIds) return;
     if (!ids.length) return;
     // Preserve empty placeholder slots (""), but clear any non-empty ids that are no longer valid.
     const cleaned = ids.map((id) => (id && validUserIds.has(id) ? id : ""));
@@ -54,7 +69,7 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
       onChange(cleaned);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users]);
+  }, [preserveUnknownIds, users]);
 
   // Auto-select the current authenticated user as the first player when registering
   // This can be disabled by passing disableAutoSelect=true (useful for admin-only flows).
@@ -100,37 +115,37 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
   return (
     <div className="space-y-2">
       {ids.map((uid, idx) => (
-        <div key={idx} className="flex items-center gap-2">
-          <div className="flex-1">
-            <UserSelect
-              users={users}
-              label={
-                idx === 0
-                  ? labels?.leader || "Team Leader"
-                  : labels?.teammate?.(idx) || `Teammate ${idx + 1}`
-              }
-              value={uid || ""}
-              onChange={(v) => updateIdx(idx, (v as string) || undefined)}
-              multiple={false}
-              showRemovedHint
-              className="w-full"
-              disabled={disabled}
-            />
-          </div>
+        <div key={idx} className="flex items-end gap-2">
+          {(() => {
+            const slotUsers =
+              uid && !validUserIds.has(uid) && selectedUsersById.has(uid)
+                ? [selectedUsersById.get(uid) as User, ...users]
+                : users;
+
+            return (
+              <div className="flex-1">
+                <UserSelect
+                  users={slotUsers}
+                  label={
+                    idx === 0
+                      ? labels?.leader || "Team Leader"
+                      : labels?.teammate?.(idx) || `Teammate ${idx + 1}`
+                  }
+                  value={uid || ""}
+                  onChange={(v) => updateIdx(idx, (v as string) || undefined)}
+                  multiple={false}
+                  showRemovedHint
+                  className="w-full"
+                  disabled={disabled}
+                />
+              </div>
+            );
+          })()}
           {onGoldTeesChange && (
-            <Tooltip
-              content={
-                uid
-                  ? "Playing from the gold (senior) tees"
-                  : "Select a player to set gold tees"
-              }
-              placement="top"
-              closeDelay={0}
-            >
+            <Tooltip closeDelay={0}>
               <Button
                 size="sm"
-                variant={uid && goldTees?.includes(uid) ? "flat" : "light"}
-                color={uid && goldTees?.includes(uid) ? "warning" : "default"}
+                variant="ghost"
                 onPress={() => {
                   if (!uid) return;
                   const isGold = goldTees?.includes(uid) ?? false;
@@ -145,18 +160,26 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
                 } gold tees: ${
                   idx === 0 ? "team leader" : `teammate ${idx + 1}`
                 }`}
-                className="shrink-0 px-2 min-w-0"
-                startContent={<Icon icon="lucide:flag" className="text-sm" />}
+                className={`shrink-0 px-2 min-w-0 ${
+                  uid && goldTees?.includes(uid)
+                    ? "border border-warning/60 bg-warning/10 text-warning"
+                    : ""
+                }`}
               >
-                Gold
+                <Icon icon="lucide:flag" className="text-sm" />
+                {uid && goldTees?.includes(uid) ? "Gold Tees" : "Gold Tees?"}
               </Button>
+              <Tooltip.Content placement="top">
+                {uid
+                  ? "Playing from the gold (senior) tees"
+                  : "Select a player to set gold tees"}
+              </Tooltip.Content>
             </Tooltip>
           )}
           {ids.length > 1 && (
             <Button
               size="sm"
-              variant="light"
-              color="danger"
+              variant="ghost"
               isIconOnly
               onPress={() => removeSlot(idx)}
               aria-label={
@@ -172,13 +195,13 @@ export const RegistrationEditor: React.FC<RegistrationEditorProps> = ({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          variant="flat"
+          variant="tertiary"
           onPress={addSlot}
           isDisabled={disabled || ids.length >= maxSize}
         >
           Add Teammate
         </Button>
-        <div className="text-sm text-foreground-500">
+        <div className="text-sm text-muted">
           {ids.length}/{maxSize}
         </div>
       </div>

@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
+import { Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { DonationAmountInput } from "../DonationAmountInput";
 import type { DonationState } from "../types";
@@ -36,15 +29,15 @@ export function DonationStep(props: {
   }
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 2: Confirm details</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-4">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-4">
         <h3 className="text-base font-semibold">Support the Club</h3>
-        <p className="text-sm text-default-600">
+        <p className="text-sm text-foreground">
           Your contribution helps support club events, improvements, and
           operations.
         </p>
@@ -59,13 +52,11 @@ export function DonationStep(props: {
           errorMessage={localErrors.donationAmount}
           required
         />
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
-        <Button color="primary" onPress={handlePay}>
-          Make Donation
-        </Button>
-      </CardFooter>
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
+        <Button onPress={handlePay}>Make Donation</Button>
+      </Card.Footer>
     </Card>
   );
 }

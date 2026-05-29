@@ -32,19 +32,19 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
   const sorted = sortGroups(groups);
   if (!sorted.length)
     return (
-      <p className="text-sm text-foreground-500">No winner data available.</p>
+      <p className="text-sm text-muted">No winner data available.</p>
     );
 
   const getGroupIcon = (group: WinnerGroup) => {
     switch (group.type) {
       case "closestToPin":
-        return { icon: "lucide:target", colorClass: "text-primary" };
+        return { icon: "lucide:target", colorClass: "text-accent" };
       case "day":
         return { icon: "lucide:calendar", colorClass: "text-warning" };
       case "overall":
         return { icon: "lucide:trophy", colorClass: "text-amber-500" };
       default:
-        return { icon: "lucide:award", colorClass: "text-default-400" };
+        return { icon: "lucide:award", colorClass: "text-muted" };
     }
   };
 
@@ -76,7 +76,7 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
                 })()}
               </div>
             ) : (
-              <div className="text-sm text-foreground-500">No places yet.</div>
+              <div className="text-sm text-muted">No places yet.</div>
             )}
           </div>
         );

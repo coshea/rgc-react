@@ -51,14 +51,14 @@ export default function NavDropdown({
     document.addEventListener("keydown", onKey);
     document.addEventListener(
       "nav-dropdown-open",
-      onOtherOpen as EventListener
+      onOtherOpen as EventListener,
     );
     return () => {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
       document.removeEventListener(
         "nav-dropdown-open",
-        onOtherOpen as EventListener
+        onOtherOpen as EventListener,
       );
     };
   }, [open]);
@@ -66,22 +66,19 @@ export default function NavDropdown({
   if (isMobile) {
     return (
       <div ref={containerRef}>
-        <div className="mb-1 w-full px-2 text-xs font-semibold tracking-wide text-foreground-500">
+        <div className="mb-1 w-full px-2 text-xs font-semibold tracking-wide text-muted">
           {label}
         </div>
         <div className="mt-1">
           {items.map((child) => (
             <Link
               key={child.link}
-              className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-default-100"
+              className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-foreground hover:bg-default/60 no-underline"
               href={child.link}
               onClick={() => onNavigate?.()}
             >
               {child.icon ? (
-                <Icon
-                  icon={child.icon}
-                  className="text-lg text-foreground-500"
-                />
+                <Icon icon={child.icon} className="text-lg text-muted" />
               ) : null}
               <span className="flex-1">{child.title}</span>
             </Link>
@@ -95,16 +92,8 @@ export default function NavDropdown({
   return (
     <div className="relative" ref={containerRef}>
       <Button
-        disableRipple
-        className="p-0 bg-transparent text-default-500 inline-flex items-center gap-1"
-        endContent={
-          <Icon
-            icon="lucide:chevron-down"
-            className={`transform transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          />
-        }
-        radius="sm"
-        variant="light"
+        className="p-0 bg-transparent text-muted inline-flex items-center gap-1 rounded-sm"
+        variant="ghost"
         aria-haspopup="true"
         aria-expanded={open}
         onPress={() => {
@@ -113,7 +102,7 @@ export default function NavDropdown({
             if (next) {
               // notify other dropdowns that this one opened
               document.dispatchEvent(
-                new CustomEvent("nav-dropdown-open", { detail: { label } })
+                new CustomEvent("nav-dropdown-open", { detail: { label } }),
               );
             }
             return next;
@@ -121,6 +110,10 @@ export default function NavDropdown({
         }}
       >
         {label}
+        <Icon
+          icon="lucide:chevron-down"
+          className={`transform transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </Button>
 
       {open && (
@@ -130,13 +123,13 @@ export default function NavDropdown({
               <Link
                 key={child.link}
                 href={child.link}
-                className="flex items-start gap-3 p-3 rounded hover:bg-default-100"
+                className="flex items-start gap-3 p-3 rounded hover:bg-default/60 no-underline"
                 onClick={() => {
                   setOpen(false);
                   onNavigate?.();
                 }}
               >
-                <div className="w-8 h-8 rounded-md bg-default-50 flex items-center justify-center text-primary">
+                <div className="w-8 h-8 rounded-md bg-default/60 flex items-center justify-center text-accent">
                   {child.icon ? (
                     <Icon icon={child.icon} className="text-lg" />
                   ) : (
@@ -148,7 +141,7 @@ export default function NavDropdown({
                     {child.title}
                   </div>
                   {child.description && (
-                    <div className="text-xs text-foreground-500">
+                    <div className="text-xs text-muted">
                       {child.description}
                     </div>
                   )}

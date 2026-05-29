@@ -1,18 +1,11 @@
 import React from "react";
-import {
-  Card,
-  CardBody,
-  AvatarGroup,
-  Button,
-  Checkbox,
-  Tooltip,
-} from "@heroui/react";
+import { Card, Button, Checkbox, Label, Tooltip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
 
-type Registration = {
+export type Registration = {
   id: string;
   ownerId?: string;
   team?: Array<{ id: string; displayName?: string; goldTee?: boolean }>;
@@ -112,10 +105,10 @@ export const RegistrationsList: React.FC<Props> = ({
 
         return (
           <Card key={reg.id} className="p-3">
-            <CardBody>
+            <Card.Content>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <AvatarGroup isBordered>
+                  <div className="flex -space-x-2">
                     {team.map((m, i) => {
                       const memberUser = users.find((u) => u.id === m.id);
                       // Pass full user when available for centralized fallback (profileURL > photoURL > initials)
@@ -127,11 +120,11 @@ export const RegistrationsList: React.FC<Props> = ({
                           user={memberUser}
                           name={memberUser ? undefined : label}
                           alt={label}
-                          className="border border-default-200"
+                          className="border"
                         />
                       );
                     })}
-                  </AvatarGroup>
+                  </div>
 
                   <div>
                     <div className="text-sm font-medium">
@@ -149,16 +142,16 @@ export const RegistrationsList: React.FC<Props> = ({
                           setDeletingId(null);
                         }}
                       />
-                      <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-md z-10">
+                      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10">
                         <h3 className="text-lg font-medium mb-2">
                           Remove registration
                         </h3>
-                        <p className="text-sm text-foreground-500 mb-4">
+                        <p className="text-sm text-muted mb-4">
                           Are you sure you want to remove this registration?
                           This cannot be undone.
                         </p>
                         {selectedRegistration && (
-                          <div className="text-sm text-foreground-500 mb-4">
+                          <div className="text-sm text-muted mb-4">
                             <p className="font-medium">Owner:</p>
                             <p>
                               {ownerUser
@@ -171,7 +164,7 @@ export const RegistrationsList: React.FC<Props> = ({
                         )}
                         <div className="flex justify-end gap-2">
                           <Button
-                            variant="flat"
+                            variant="tertiary"
                             onPress={() => {
                               setConfirmOpen(false);
                               setDeletingId(null);
@@ -180,7 +173,6 @@ export const RegistrationsList: React.FC<Props> = ({
                             Cancel
                           </Button>
                           <Button
-                            color="danger"
                             onPress={() => {
                               if (deletingId) onDelete(deletingId);
                               setConfirmOpen(false);
@@ -198,16 +190,10 @@ export const RegistrationsList: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   {isEditing ? (
                     <>
-                      <Tooltip
-                        content="Save"
-                        placement="top"
-                        closeDelay={0}
-                        offset={6}
-                      >
+                      <Tooltip closeDelay={0}>
                         <Button
                           size="sm"
-                          color="primary"
-                          variant="flat"
+                          variant="tertiary"
                           onPress={() =>
                             onSave(
                               reg.id,
@@ -216,75 +202,62 @@ export const RegistrationsList: React.FC<Props> = ({
                               localGoldTees[reg.id] ?? [],
                             )
                           }
-                          startContent={
-                            <Icon icon="lucide:save" className="w-4 h-4" />
-                          }
                           aria-label="Save registration"
                         >
+                          <Icon icon="lucide:save" className="w-4 h-4" />
                           <span className="hidden sm:inline">Save</span>
                         </Button>
+                        <Tooltip.Content placement="top" offset={6}>
+                          Save
+                        </Tooltip.Content>
                       </Tooltip>
-                      <Tooltip
-                        content="Cancel"
-                        placement="top"
-                        closeDelay={0}
-                        offset={6}
-                      >
+                      <Tooltip closeDelay={0}>
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           onPress={() => onCancelEdit()}
-                          startContent={
-                            <Icon icon="lucide:x" className="w-4 h-4" />
-                          }
                           aria-label="Cancel editing"
                         >
+                          <Icon icon="lucide:x" className="w-4 h-4" />
                           <span className="hidden sm:inline">Cancel</span>
                         </Button>
+                        <Tooltip.Content placement="top" offset={6}>
+                          Cancel
+                        </Tooltip.Content>
                       </Tooltip>
                     </>
                   ) : (
                     <>
-                      <Tooltip
-                        content="Edit"
-                        placement="top"
-                        closeDelay={0}
-                        offset={6}
-                      >
+                      <Tooltip closeDelay={0}>
                         <Button
                           size="sm"
-                          variant="flat"
+                          variant="tertiary"
                           onPress={() => startEditing(reg)}
-                          startContent={
-                            <Icon icon="lucide:edit" className="w-4 h-4" />
-                          }
                           aria-label="Edit registration"
                         >
+                          <Icon icon="lucide:edit" className="w-4 h-4" />
                           <span className="hidden sm:inline">Edit</span>
                         </Button>
+                        <Tooltip.Content placement="top" offset={6}>
+                          Edit
+                        </Tooltip.Content>
                       </Tooltip>
-                      <Tooltip
-                        content="Delete"
-                        placement="top"
-                        color="danger"
-                        closeDelay={0}
-                        offset={6}
-                      >
+                      <Tooltip closeDelay={0}>
                         <Button
                           size="sm"
-                          variant="flat"
-                          color="danger"
+                          variant="tertiary"
                           onPress={() => {
                             setDeletingId(reg.id);
                             setConfirmOpen(true);
                           }}
-                          startContent={
-                            <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                          }
                           aria-label="Delete registration"
                         >
+                          <Icon icon="lucide:trash-2" className="w-4 h-4" />
                           <span className="hidden sm:inline">Delete</span>
                         </Button>
+                        <Tooltip.Content placement="top" offset={6}>
+                          Delete
+                        </Tooltip.Content>
                       </Tooltip>
                     </>
                   )}
@@ -307,17 +280,25 @@ export const RegistrationsList: React.FC<Props> = ({
                     <div className="mt-3">
                       <Checkbox
                         isSelected={openSpotsValue}
-                        onValueChange={(v) => updateOpenSpots(reg.id, v)}
+                        onChange={(v) => updateOpenSpots(reg.id, v)}
+                        id={`open-spots-${reg.id}`}
                       >
-                        {players === 2
-                          ? "Looking for a partner team / open to new players"
-                          : "Let others contact this team to fill open spots"}
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Label htmlFor={`open-spots-${reg.id}`}>
+                            {players === 2
+                              ? "Looking for a partner team / open to new players"
+                              : "Let others contact this team to fill open spots"}
+                          </Label>
+                        </Checkbox.Content>
                       </Checkbox>
                     </div>
                   ) : null}
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
         );
       })}

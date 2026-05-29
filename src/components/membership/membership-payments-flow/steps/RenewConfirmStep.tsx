@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Divider,
-} from "@heroui/react";
+import { Alert, Button, Card, Separator } from "@heroui/react";
 import BackButton from "@/components/back-button";
 import { parseCurrencyInput } from "@/utils/currency";
 import { DonationAmountInput } from "../DonationAmountInput";
@@ -49,44 +41,44 @@ export function RenewConfirmStep(props: {
   const hasApplicationUrl = Boolean(membershipApplicationUrl);
 
   return (
-    <Card className="w-full max-w-3xl" shadow="sm">
-      <CardHeader className="flex items-center justify-between">
+    <Card className="w-full max-w-3xl">
+      <Card.Header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Step 3: Review &amp; confirm</h2>
         <BackButton onPress={onBack} />
-      </CardHeader>
-      <Divider />
-      <CardBody className="space-y-3">
-        <div className="text-sm text-default-600">
+      </Card.Header>
+      <Separator />
+      <Card.Content className="space-y-3">
+        <div className="text-sm text-foreground">
           Signed in as {email}
           {loadingUserProfile ? " (loading profile…)" : ""}
         </div>
 
         {isPaidForCurrentYear ? (
-          <Alert color="success">
+          <Alert>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 Your annual dues are already recorded for {currentYear}. You
                 don&apos;t need to pay again.
               </div>
-              <Button size="sm" color="primary" onPress={onDonation}>
+              <Button size="sm" onPress={onDonation}>
                 Make a donation
               </Button>
             </div>
           </Alert>
         ) : null}
 
-        <div className="text-sm text-default-600">Name</div>
+        <div className="text-sm text-foreground">Name</div>
         <div className="text-base font-semibold">{membershipFoundName}</div>
 
-        <Divider />
+        <Separator />
 
-        <div className="text-sm text-default-600">Membership</div>
+        <div className="text-sm text-foreground">Membership</div>
         <div className="text-base">Annual Club Membership</div>
 
-        <Alert color="primary">
+        <Alert>
           <div className="space-y-2">
             <div className="font-semibold">Referral program</div>
-            <p className="text-sm text-foreground-600">
+            <p className="text-sm text-muted">
               If you are doing the referral for a new member, they will need to
               complete the application before we can apply the referral. To
               receive the discount, choose the "Pay by check (mail)" option on
@@ -95,13 +87,17 @@ export function RenewConfirmStep(props: {
             </p>
             <div>
               <Button
-                as={hasApplicationUrl ? "a" : "button"}
-                href={hasApplicationUrl ? membershipApplicationUrl : undefined}
-                target={hasApplicationUrl ? "_blank" : undefined}
-                rel={hasApplicationUrl ? "noreferrer" : undefined}
                 size="sm"
-                variant="flat"
+                variant="tertiary"
                 isDisabled={!hasApplicationUrl}
+                onPress={() => {
+                  if (membershipApplicationUrl)
+                    window.open(
+                      membershipApplicationUrl,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                }}
               >
                 {hasApplicationUrl
                   ? "Download Application PDF"
@@ -119,7 +115,7 @@ export function RenewConfirmStep(props: {
 
         <div className="space-y-4">
           <div>
-            <div className="text-sm text-default-600">Annual dues</div>
+            <div className="text-sm text-foreground">Annual dues</div>
             <div className="text-base font-semibold">
               {currency(membershipAmountDue)}
             </div>
@@ -141,17 +137,16 @@ export function RenewConfirmStep(props: {
           <span>Amount due</span>
           <span>{currency(total)}</span>
         </div>
-      </CardBody>
-      <Divider />
-      <CardFooter className="flex justify-end">
+      </Card.Content>
+      <Separator />
+      <Card.Footer className="flex justify-end">
         <Button
-          color="primary"
           onPress={() => onContinueToPay(donationValue)}
           isDisabled={isPaidForCurrentYear}
         >
           {paypalEnabled ? "Continue to Payment" : "Pay Annual Dues"}
         </Button>
-      </CardFooter>
+      </Card.Footer>
     </Card>
   );
 }

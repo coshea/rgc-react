@@ -106,13 +106,9 @@ vi.mock("@/components/membership/hooks", () => ({
   useBoardMemberFlag: () => ({ isBoardMember: false, loadingBoard: false }),
 }));
 
-vi.mock("@heroui/react", async (orig) => {
-  const mod: any = await orig();
-  return {
-    ...mod,
-    addToast: (args: any) => addToastMock(args),
-  };
-});
+vi.mock("@/providers/toast", () => ({
+  addToast: (args: any) => addToastMock(args),
+}));
 
 function renderDashboard() {
   const qc = new QueryClient({

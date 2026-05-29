@@ -1,40 +1,41 @@
 import React from "react";
-import {
-  Card,
-  CardBody,
-  CardFooter,
-  Input,
-  Textarea,
-  Button,
-  DatePicker,
-  NumberInput,
-  Divider,
-  Select,
-  SelectItem,
-  Checkbox,
-} from "@heroui/react";
-import { addToast } from "@/providers/toast";
+import { Card, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { Tournament, TournamentStatus } from "@/types/tournament";
+import { addToast } from "@/providers/toast";
+import {
+  Tournament,
+  TournamentStatus,
+  TournamentWeather,
+} from "@/types/tournament";
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/components/membership/hooks";
-import RegistrationEditor from "@/components/registration-editor";
 import { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
-import { parseDate, parseDateTime, DateValue } from "@internationalized/date";
-import GroupedWinnersEditor from "@/components/grouped-winners-editor";
-import RegistrationsList from "@/components/registrations-list";
-import { MarkdownEditor } from "@/components/markdown-editor";
-import { BracketEditor } from "@/components/bracket/BracketEditor";
-import { setBracketPublished } from "@/api/tournaments";
-import { PlusIcon } from "@heroicons/react/24/solid";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import type { Registration } from "@/components/registrations-list";
+import {
+  parseDate,
+  parseDateTime,
+  DateValue,
+  CalendarDateTime,
+} from "@internationalized/date";
 import { computeTotalPayout } from "@/utils/winners";
 import type { DocumentData } from "firebase/firestore";
+import * as Sentry from "@sentry/react";
+
+import { BasicInfoSection } from "@/components/tournament-editor/BasicInfoSection";
+import { RegistrationWindowSection } from "@/components/tournament-editor/RegistrationWindowSection";
+import {
+  SettingsSection,
+  TeeColor,
+  isTeeColor,
+} from "@/components/tournament-editor/SettingsSection";
+import { WinnersSection } from "@/components/tournament-editor/WinnersSection";
+import { RegistrationsSection } from "@/components/tournament-editor/RegistrationsSection";
+import { BracketSection } from "@/components/tournament-editor/BracketSection";
+import { DetailsPopoutModal } from "@/components/tournament-editor/DetailsPopoutModal";
 
 interface TournamentEditorProps {
   tournament?: Tournament | null;
@@ -55,13 +56,6 @@ const formatForDateTimeInput = (value: unknown) => {
   const minutes = pad(date.getMinutes());
   const seconds = pad(date.getSeconds());
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
-
-const parseDateTimeInputValue = (value: string) => {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-  return parsed;
 };
 
 export const TournamentEditor: React.FC<TournamentEditorProps> = ({
@@ -94,13 +88,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     import("@/types/winner").WinnerGroup[]
   >(tournament?.winnerGroups ?? []);
   const [status, setStatus] = React.useState<TournamentStatus>(getStatus(seed));
-  type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
-  const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
-  function isTeeColor(value: any): value is TeeColor {
-    return TEE_COLORS.includes(value);
-  }
   const [tee, setTee] = React.useState<TeeColor>(
-    isTeeColor(seed.tee) ? seed.tee : "Mixed",
+    isTeeColor(seed.tee) ? (seed.tee as TeeColor) : "Mixed",
   );
   const [assignedTeeTimes, setAssignedTeeTimes] = React.useState<boolean>(
     Boolean(seed.assignedTeeTimes),
@@ -114,16 +103,22 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [previousTournamentId, setPreviousTournamentId] = React.useState<
     string | undefined
   >(seed.previousTournamentId);
-  const [registrationStartInput, setRegistrationStartInput] = React.useState(
-    formatForDateTimeInput(seed.registrationStart),
-  );
-  const [registrationEndInput, setRegistrationEndInput] = React.useState(
-    formatForDateTimeInput(seed.registrationEnd),
-  );
+  const [registrationStart, setRegistrationStart] =
+    React.useState<CalendarDateTime | null>(
+      seed.registrationStart
+        ? parseDateTime(formatForDateTimeInput(seed.registrationStart))
+        : null,
+    );
+  const [registrationEnd, setRegistrationEnd] =
+    React.useState<CalendarDateTime | null>(
+      seed.registrationEnd
+        ? parseDateTime(formatForDateTimeInput(seed.registrationEnd))
+        : null,
+    );
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [registrations, setRegistrations] = React.useState<any[]>([]);
+  const [registrations, setRegistrations] = React.useState<Registration[]>([]);
   const [regsLoading, setRegsLoading] = React.useState(false);
   const [editingRegId, setEditingRegId] = React.useState<string | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
@@ -140,9 +135,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [regsOpen, setRegsOpen] = React.useState(false);
   const [bracketOpen, setBracketOpen] = React.useState(false);
   const [publishingBracket, setPublishingBracket] = React.useState(false);
-  const [weather, setWeather] = React.useState<
-    import("@/types/tournament").TournamentWeather | null
-  >(seed.weather || null);
+  const [weather, setWeather] = React.useState<TournamentWeather | null>(
+    seed.weather || null,
+  );
   const [fetchingWeather, setFetchingWeather] = React.useState(false);
 
   const { user } = useAuth();
@@ -170,8 +165,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       newErrors.maxTeams = "Must be at least 1 team";
     }
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
-    const parsedStart = parseDateTimeInputValue(registrationStartInput);
-    const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+    const parsedStart = registrationStart
+      ? new Date(registrationStart.toString())
+      : undefined;
+    const parsedEnd = registrationEnd
+      ? new Date(registrationEnd.toString())
+      : undefined;
     if (
       parsedStart &&
       parsedEnd &&
@@ -232,7 +231,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         });
       }
     } catch (error) {
-      console.error("Error fetching weather:", error);
+      Sentry.captureException(error);
       addToast({
         title: "Error",
         description: "Failed to fetch weather data",
@@ -293,8 +292,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         goldTeesEnabled,
       };
 
-      const parsedStart = parseDateTimeInputValue(registrationStartInput);
-      const parsedEnd = parseDateTimeInputValue(registrationEndInput);
+      const parsedStart = registrationStart
+        ? new Date(registrationStart.toString())
+        : undefined;
+      const parsedEnd = registrationEnd
+        ? new Date(registrationEnd.toString())
+        : undefined;
 
       if (parsedStart) {
         tournamentData.registrationStart = parsedStart;
@@ -335,7 +338,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       }
 
       const colRef = collection(db, "tournaments");
-      let createdDocRef: any = null;
+      let createdDocRef: { id?: string } | null = null;
       if (tournament && tournament.firestoreId) {
         const docRef = doc(db, "tournaments", tournament.firestoreId);
         await updateDoc(docRef, tournamentData);
@@ -377,7 +380,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         color: "success",
       });
     } catch (error) {
-      console.error("Error saving tournament:", error);
+      Sentry.captureException(error);
       addToast({
         title: "Error",
         description: "Failed to save tournament. Please try again.",
@@ -489,7 +492,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     };
   }, []);
 
-  const startEdit = (reg: any) => setEditingRegId(reg.id);
+  const startEdit = (reg: Registration) => setEditingRegId(reg.id);
   const cancelEdit = () => setEditingRegId(null);
   const deleteRegistration = async (regId: string) => {
     if (!tournament || !tournament.firestoreId) return;
@@ -511,10 +514,54 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         color: "danger",
       });
     } catch (err) {
-      console.error("Failed to delete registration", err);
+      Sentry.captureException(err);
       addToast({
         title: "Error",
         description: "Failed to delete registration.",
+        color: "danger",
+      });
+    }
+  };
+
+  const handleSaveEdit = async (
+    regId: string,
+    ids: string[],
+    openSpotsOptIn: boolean,
+    goldTees: string[],
+  ) => {
+    const team = ids.map((id) => {
+      const u = allUsers.find((x) => x.id === id);
+      return {
+        id,
+        displayName: u?.displayName || u?.email || id,
+        ...(goldTees.includes(id) ? { goldTee: true } : {}),
+      };
+    });
+    try {
+      const { doc, updateDoc } = await import("firebase/firestore");
+      const { db } = await import("@/config/firebase");
+      const regRef = doc(
+        db,
+        "tournaments",
+        tournament!.firestoreId!,
+        "registrations",
+        regId,
+      );
+      await updateDoc(regRef, { team, openSpotsOptIn });
+      setRegistrations((prev) =>
+        prev.map((r) => (r.id === regId ? { ...r, team, openSpotsOptIn } : r)),
+      );
+      addToast({
+        title: "Saved",
+        description: "Registration updated.",
+        color: "success",
+      });
+      cancelEdit();
+    } catch (err) {
+      Sentry.captureException(err);
+      addToast({
+        title: "Error",
+        description: "Failed to save registration.",
         color: "danger",
       });
     }
@@ -591,15 +638,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
-      <CardBody className="p-6 overflow-y-auto flex-1">
+    <Card className="w-full flex flex-col">
+      <Card.Content className="p-6 flex-1">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-medium">
             {isEditing ? "Edit Tournament" : "Create New Tournament"}
           </h2>
           <Button
-            color="default"
-            variant="light"
+            variant="ghost"
             isIconOnly
             onPress={onCancel}
             aria-label="Cancel"
@@ -613,675 +659,129 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <Input
-                label="Tournament Title"
-                placeholder="Enter tournament title"
-                value={title}
-                onValueChange={setTitle}
-                isRequired
-                isInvalid={!!errors.title}
-                errorMessage={errors.title}
+            <div className="space-y-6 min-w-0">
+              <BasicInfoSection
+                title={title}
+                setTitle={setTitle}
+                description={description}
+                setDescription={setDescription}
+                detailsMarkdown={detailsMarkdown}
+                setDetailsMarkdown={setDetailsMarkdown}
+                date={date}
+                setDate={setDate}
+                errors={errors}
+                onPopoutOpen={() => setDetailsPopoutOpen(true)}
               />
-              <Textarea
-                label="Description"
-                placeholder="Enter tournament description"
-                value={description}
-                onValueChange={setDescription}
-                isRequired
-                isInvalid={!!errors.description}
-                errorMessage={errors.description}
+              <RegistrationWindowSection
+                registrationStart={registrationStart}
+                setRegistrationStart={setRegistrationStart}
+                registrationEnd={registrationEnd}
+                setRegistrationEnd={setRegistrationEnd}
+                errors={errors}
               />
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <MarkdownEditor
-                    value={detailsMarkdown}
-                    onChange={setDetailsMarkdown}
-                    placeholder="Use markdown for rich tournament details (e.g. rules, schedule, notes)"
-                    minRows={10}
-                    onPopout={() => setDetailsPopoutOpen(true)}
-                  />
-                </div>
-              </div>
-              <DatePicker
-                label="Tournament Date"
-                value={date}
-                onChange={setDate}
-                isRequired
-                isInvalid={!!errors.date}
-                errorMessage={errors.date}
-              />
-              <Card>
-                <CardBody className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">
-                      Registration Window
-                    </h3>
-                    <span className="text-xs text-foreground-500">
-                      Stored in UTC
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    <DatePicker
-                      label="Opens"
-                      value={
-                        registrationStartInput
-                          ? parseDateTime(registrationStartInput)
-                          : null
-                      }
-                      onChange={(v: DateValue | null) =>
-                        setRegistrationStartInput(v ? v.toString() : "")
-                      }
-                      granularity="minute"
-                      isInvalid={!!errors.registrationWindow}
-                      errorMessage={errors.registrationWindow}
-                    />
-                    <DatePicker
-                      label="Closes"
-                      value={
-                        registrationEndInput
-                          ? parseDateTime(registrationEndInput)
-                          : null
-                      }
-                      onChange={(v: DateValue | null) =>
-                        setRegistrationEndInput(v ? v.toString() : "")
-                      }
-                      granularity="minute"
-                      isInvalid={!!errors.registrationWindow}
-                      errorMessage={errors.registrationWindow}
-                    />
-                    <p className="text-xs text-foreground-500">
-                      Times are displayed in your local timezone and saved in
-                      UTC.
-                    </p>
-                  </div>
-                </CardBody>
-              </Card>
             </div>
-            <div className="space-y-6">
-              <NumberInput
-                label="Number of Players On A Team"
-                placeholder="Enter number of players"
-                value={players}
-                onValueChange={setPlayers}
-                min={1}
-                max={100}
-                isInvalid={!!errors.players}
-                errorMessage={errors.players}
-              />
-              <NumberInput
-                label="Max Registered Teams (Optional)"
-                placeholder="Leave blank for unlimited"
-                value={maxTeams}
-                onValueChange={(value) => {
-                  setMaxTeams(
-                    typeof value === "number" &&
-                      Number.isFinite(value) &&
-                      value > 0
-                      ? value
-                      : undefined,
-                  );
-                }}
-                min={1}
-                isInvalid={!!errors.maxTeams}
-                errorMessage={errors.maxTeams}
-              />
-              <NumberInput
-                label="Prize Pool ($)"
-                placeholder="Enter prize amount"
-                value={prizePool}
-                onValueChange={setPrizePool}
-                min={0}
-                startContent={
-                  <div className="pointer-events-none flex items-center">
-                    <span className="text-default-400 text-small">$</span>
-                  </div>
-                }
-                isInvalid={!!errors.prizePool}
-                errorMessage={errors.prizePool}
-              />
-              <Select
-                label="Tee"
-                selectedKeys={[tee]}
-                disallowEmptySelection
-                classNames={{
-                  trigger: "bg-content2",
-                  popoverContent: "min-w-[160px]",
-                }}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
-                  if (val && isTeeColor(val)) setTee(val);
-                }}
-                renderValue={(items) => {
-                  const val = items[0]?.key as string | undefined;
-                  const cls = (v: string | undefined) =>
-                    v === "Blue"
-                      ? "text-blue-600 dark:text-blue-300"
-                      : v === "White"
-                        ? "text-default-700 dark:text-default-300"
-                        : v === "Gold"
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : v === "Red"
-                            ? "text-red-600 dark:text-red-400"
-                            : "text-teal-600 dark:text-teal-400";
-                  return (
-                    <div className={`flex items-center gap-2 ${cls(val)}`}>
-                      <Icon icon="lucide:flag" className="w-4 h-4 opacity-70" />
-                      <span>{val}</span>
-                    </div>
-                  );
-                }}
-              >
-                {["Blue", "White", "Gold", "Red", "Mixed"].map((opt) => (
-                  <SelectItem
-                    key={opt}
-                    textValue={opt}
-                    className="flex items-center"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          opt === "Blue"
-                            ? "w-3 h-3 rounded-full bg-blue-500 inline-block"
-                            : opt === "White"
-                              ? "w-3 h-3 rounded-full bg-default-300 inline-block border border-default-400"
-                              : opt === "Gold"
-                                ? "w-3 h-3 rounded-full bg-yellow-500 inline-block"
-                                : opt === "Red"
-                                  ? "w-3 h-3 rounded-full bg-red-500 inline-block"
-                                  : "w-3 h-3 rounded-full bg-teal-500 inline-block"
-                        }
-                      />
-                      <span
-                        className={
-                          opt === "Blue"
-                            ? "text-blue-600 dark:text-blue-300"
-                            : opt === "White"
-                              ? "text-default-700 dark:text-default-300"
-                              : opt === "Gold"
-                                ? "text-yellow-600 dark:text-yellow-400"
-                                : opt === "Red"
-                                  ? "text-red-600 dark:text-red-400"
-                                  : "text-teal-600 dark:text-teal-400"
-                        }
-                      >
-                        {opt}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </Select>
-
-              <Checkbox
-                isSelected={assignedTeeTimes}
-                onValueChange={setAssignedTeeTimes}
-              >
-                Assigned tee times
-              </Checkbox>
-              {isAdmin && (
-                <Checkbox
-                  isSelected={goldTeesEnabled}
-                  onValueChange={setGoldTeesEnabled}
-                >
-                  Allow gold tee selection during registration
-                </Checkbox>
-              )}
-              <Select
-                label="Previous Year's Tournament (Optional)"
-                placeholder="Link to previous tournament"
-                description="Show the defending champion from last year"
-                selectedKeys={
-                  previousTournamentId &&
-                  allTournaments.some(
-                    (t) =>
-                      t.firestoreId === previousTournamentId &&
-                      t.firestoreId !== tournament?.firestoreId,
-                  )
-                    ? [previousTournamentId]
-                    : []
-                }
-                classNames={{
-                  trigger: "bg-content2",
-                }}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string | undefined;
-                  setPreviousTournamentId(val || undefined);
-                }}
-              >
-                {allTournaments
-                  .filter(
-                    (t) =>
-                      t.firestoreId &&
-                      t.firestoreId !== tournament?.firestoreId,
-                  )
-                  .map((t) => {
-                    const year = t.date.getFullYear();
-                    const label = `${t.title} (${year})`;
-                    return (
-                      <SelectItem key={t.firestoreId!} textValue={label}>
-                        <div className="flex flex-col">
-                          <span>{t.title}</span>
-                          <span className="text-xs text-default-400">
-                            {year}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-              </Select>
-
-              {/* Weather Section */}
-              <Card>
-                <CardBody className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">
-                      Tournament Weather
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={handleFetchWeather}
-                      isLoading={fetchingWeather}
-                      isDisabled={!date}
-                      startContent={
-                        !fetchingWeather && (
-                          <Icon icon="lucide:cloud" className="w-4 h-4" />
-                        )
-                      }
-                    >
-                      {weather ? "Refresh" : "Fetch"} Weather
-                    </Button>
-                  </div>
-                  {weather ? (
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-foreground-500 text-xs">Condition</p>
-                        <p className="font-medium">{weather.condition}</p>
-                      </div>
-                      <div>
-                        <p className="text-foreground-500 text-xs">
-                          Temperature
-                        </p>
-                        <p className="font-medium">{weather.temperature}°F</p>
-                      </div>
-                      <div>
-                        <p className="text-foreground-500 text-xs">
-                          Wind Speed
-                        </p>
-                        <p className="font-medium">{weather.windSpeed} mph</p>
-                      </div>
-                      <div>
-                        <p className="text-foreground-500 text-xs">
-                          Precipitation
-                        </p>
-                        <p className="font-medium">{weather.precipitation}"</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-foreground-500">
-                      {date
-                        ? "Click 'Fetch Weather' to load historical weather data"
-                        : "Set a tournament date to fetch weather"}
-                    </p>
-                  )}
-                </CardBody>
-              </Card>
-
-              <div className="flex flex-col gap-4 pt-2">
-                <Select
-                  label="Status"
-                  selectedKeys={[status]}
-                  disallowEmptySelection
-                  onSelectionChange={(keys) => {
-                    const key = Array.from(keys)[0] as
-                      | TournamentStatus
-                      | undefined;
-                    const v = key ?? TournamentStatus.Upcoming;
-                    setStatus(v);
-                    // Allow winners to be managed when a tournament is In Progress
-                    // or Completed so editors can add results while the event is running.
-                    setCompleted(
-                      v === TournamentStatus.Completed ||
-                        v === TournamentStatus.InProgress,
-                    );
-                  }}
-                >
-                  <SelectItem
-                    key={TournamentStatus.Upcoming}
-                    textValue="Upcoming"
-                  >
-                    Upcoming (Registration Closed)
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.InProgress}
-                    textValue="In Progress"
-                  >
-                    In Progress
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.Completed}
-                    textValue="Completed"
-                  >
-                    Tournament Completed
-                  </SelectItem>
-                  <SelectItem
-                    key={TournamentStatus.Canceled}
-                    textValue="Canceled"
-                  >
-                    Tournament Canceled
-                  </SelectItem>
-                </Select>
-              </div>
-            </div>
+            <SettingsSection
+              players={players}
+              setPlayers={setPlayers}
+              maxTeams={maxTeams}
+              setMaxTeams={setMaxTeams}
+              prizePool={prizePool}
+              setPrizePool={setPrizePool}
+              tee={tee}
+              setTee={setTee}
+              assignedTeeTimes={assignedTeeTimes}
+              setAssignedTeeTimes={setAssignedTeeTimes}
+              goldTeesEnabled={goldTeesEnabled}
+              setGoldTeesEnabled={setGoldTeesEnabled}
+              isAdmin={isAdmin}
+              previousTournamentId={previousTournamentId}
+              setPreviousTournamentId={setPreviousTournamentId}
+              allTournaments={allTournaments}
+              currentTournamentId={tournament?.firestoreId}
+              status={status}
+              setStatus={setStatus}
+              setCompleted={setCompleted}
+              weather={weather}
+              date={date}
+              fetchingWeather={fetchingWeather}
+              onFetchWeather={handleFetchWeather}
+              errors={errors}
+            />
           </div>
-          {(isEditing ||
-            status === TournamentStatus.Completed ||
-            status === TournamentStatus.InProgress) && (
-            <div className="pt-4">
-              <Divider className="my-4" />
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <GroupedWinnersEditor
-                    groups={winnerGroups}
-                    onChange={setWinnerGroups}
-                    teamSize={players}
-                    prizePool={prizePool}
-                    isCompleted={completed}
-                    registrations={registrations}
-                  />
-                  {errors.winners && (
-                    <p className="text-danger text-sm mt-2">{errors.winners}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+
+          <WinnersSection
+            isEditing={isEditing}
+            status={status}
+            winnerGroups={winnerGroups}
+            setWinnerGroups={setWinnerGroups}
+            players={players}
+            prizePool={prizePool}
+            completed={completed}
+            registrations={registrations}
+            errors={errors}
+          />
+
           {isEditing && (
-            <div className="pt-6">
-              <Divider className="my-4" />
-              <button
-                type="button"
-                onClick={() => setRegsOpen((o) => !o)}
-                aria-expanded={regsOpen}
-                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                <h3 className="text-lg font-medium">Registrations</h3>
-                <Icon
-                  icon="lucide:chevron-down"
-                  className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${regsOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-              {regsOpen && (
-                <div className="pt-2">
-                  {isAdmin && (
-                    <div className="mb-4 flex items-center gap-3">
-                      <Button
-                        size="sm"
-                        color="primary"
-                        startContent={<PlusIcon className="w-4 h-4" />}
-                        onPress={() => setAddOpen(true)}
-                      >
-                        Add Registration
-                      </Button>
-                      <div className="text-xs text-foreground-500">
-                        Team size: {players}
-                      </div>
-                    </div>
-                  )}
-                  {regsLoading ? (
-                    <div>Loading registrations...</div>
-                  ) : registrations.length === 0 ? (
-                    <div className="text-sm text-foreground-500">
-                      No registrations yet.
-                    </div>
-                  ) : (
-                    <RegistrationsList
-                      registrations={registrations}
-                      users={allUsers.filter((u) => !u.isMigrated)}
-                      players={players}
-                      editingId={editingRegId}
-                      onStartEdit={(reg) => startEdit(reg)}
-                      onCancelEdit={() => cancelEdit()}
-                      onSave={async (regId, ids, openSpotsOptIn, goldTees) => {
-                        const team = ids.map((id) => {
-                          const u = allUsers.find((x) => x.id === id);
-                          return {
-                            id,
-                            displayName: u?.displayName || u?.email || id,
-                            ...(goldTees.includes(id) ? { goldTee: true } : {}),
-                          };
-                        });
-                        try {
-                          const { doc, updateDoc } =
-                            await import("firebase/firestore");
-                          const { db } = await import("@/config/firebase");
-                          const regRef = doc(
-                            db,
-                            "tournaments",
-                            tournament!.firestoreId!,
-                            "registrations",
-                            regId,
-                          );
-                          await updateDoc(regRef, { team, openSpotsOptIn });
-                          setRegistrations((prev) =>
-                            prev.map((r) =>
-                              r.id === regId
-                                ? { ...r, team, openSpotsOptIn }
-                                : r,
-                            ),
-                          );
-                          addToast({
-                            title: "Saved",
-                            description: "Registration updated.",
-                            color: "success",
-                          });
-                          cancelEdit();
-                        } catch (err) {
-                          console.error("Failed to save registration", err);
-                          addToast({
-                            title: "Error",
-                            description: "Failed to save registration.",
-                            color: "danger",
-                          });
-                        }
-                      }}
-                      onDelete={async (regId) => {
-                        await deleteRegistration(regId);
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
+            <RegistrationsSection
+              isAdmin={isAdmin}
+              regsOpen={regsOpen}
+              setRegsOpen={setRegsOpen}
+              addOpen={addOpen}
+              setAddOpen={setAddOpen}
+              regsLoading={regsLoading}
+              registrations={registrations}
+              allUsers={allUsers}
+              activeUsers={activeUsers}
+              players={players}
+              editingRegId={editingRegId}
+              onStartEdit={startEdit}
+              onCancelEdit={cancelEdit}
+              onSaveEdit={handleSaveEdit}
+              onDelete={deleteRegistration}
+              newMembers={newMembers}
+              setNewMembers={setNewMembers}
+              newOpenSpotsOptIn={newOpenSpotsOptIn}
+              setNewOpenSpotsOptIn={setNewOpenSpotsOptIn}
+              adding={adding}
+              onSubmitNewRegistration={submitNewRegistration}
+            />
           )}
+
           {isEditing && tournament?.firestoreId && (
-            <div className="pt-6">
-              <Divider className="my-4" />
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBracketOpen((o) => !o)}
-                  aria-expanded={bracketOpen}
-                  className="flex-1 flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  <h3 className="text-lg font-medium">Tournament Bracket</h3>
-                  <Icon
-                    icon="lucide:chevron-down"
-                    className={`w-5 h-5 text-foreground-400 transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color={tournament.bracketPublished ? "success" : "default"}
-                  isLoading={publishingBracket}
-                  startContent={
-                    !publishingBracket ? (
-                      <Icon
-                        icon={
-                          tournament.bracketPublished
-                            ? "lucide:eye"
-                            : "lucide:eye-off"
-                        }
-                        className="w-4 h-4"
-                      />
-                    ) : undefined
-                  }
-                  onPress={async () => {
-                    if (!tournament.firestoreId) return;
-                    setPublishingBracket(true);
-                    try {
-                      const next = !tournament.bracketPublished;
-                      await setBracketPublished(tournament.firestoreId, next);
-                      addToast({
-                        title: next
-                          ? "Bracket published"
-                          : "Bracket unpublished",
-                        description: next
-                          ? "The bracket is now visible to all members."
-                          : "The bracket is now hidden from members.",
-                        color: next ? "success" : "default",
-                      });
-                    } catch {
-                      addToast({
-                        title: "Update failed",
-                        description: "Could not update bracket visibility.",
-                        color: "danger",
-                      });
-                    } finally {
-                      setPublishingBracket(false);
-                    }
-                  }}
-                >
-                  {tournament.bracketPublished ? "Published" : "Publish"}
-                </Button>
-              </div>
-              {bracketOpen && (
-                <div className="pt-2">
-                  <BracketEditor
-                    tournamentId={tournament.firestoreId}
-                    registrations={registrations}
-                    allUsers={allUsers}
-                  />
-                </div>
-              )}
-            </div>
+            <BracketSection
+              bracketOpen={bracketOpen}
+              setBracketOpen={setBracketOpen}
+              publishingBracket={publishingBracket}
+              setPublishingBracket={setPublishingBracket}
+              tournament={tournament}
+              registrations={registrations}
+              allUsers={allUsers}
+            />
           )}
+
           <div className="pt-4" />
         </form>
-        {addOpen && isAdmin && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => {
-                if (!adding) {
-                  setAddOpen(false);
-                  setNewMembers([""]);
-                }
-              }}
-            />
-            <div className="bg-background dark:bg-default-100 rounded-lg p-6 w-full max-w-lg z-10">
-              <h3 className="text-lg font-medium mb-2">Add Registration</h3>
-              <RegistrationEditor
-                value={newMembers}
-                onChange={setNewMembers}
-                users={activeUsers}
-                maxSize={players}
-                disableAutoSelect={true}
-              />
-              {players > 1 ? (
-                <Checkbox
-                  isSelected={newOpenSpotsOptIn}
-                  onValueChange={setNewOpenSpotsOptIn}
-                >
-                  Let others contact this team to fill open spots
-                </Checkbox>
-              ) : null}
-              <div className="h-4" />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="flat"
-                  onPress={() => {
-                    if (!adding) {
-                      setAddOpen(false);
-                      setNewMembers([""]);
-                      setNewOpenSpotsOptIn(false);
-                    }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="primary"
-                  isLoading={adding}
-                  onPress={submitNewRegistration}
-                  isDisabled={newMembers.filter(Boolean).length === 0}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        {detailsPopoutOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setDetailsPopoutOpen(false)}
-            />
-            <div className="bg-background dark:bg-default-100 rounded-lg p-4 w-full max-w-5xl z-10 max-h-[80vh]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-medium">Details (Popout Editor)</h3>
-                <Button
-                  variant="flat"
-                  onPress={() => setDetailsPopoutOpen(false)}
-                >
-                  Close
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[70vh]">
-                <div className="col-span-1 h-full">
-                  <div className="h-full">
-                    <MarkdownEditor
-                      value={detailsMarkdown}
-                      onChange={setDetailsMarkdown}
-                      minRows={20}
-                      forceEdit
-                      hidePreviewToggle
-                      fillHeight
-                      label="Editor"
-                      placeholder="Edit tournament details (markdown)"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-1 border rounded-md p-3 bg-content2 h-full overflow-auto prose dark:prose-invert">
-                  {detailsMarkdown.trim() ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {detailsMarkdown}
-                    </ReactMarkdown>
-                  ) : (
-                    <div className="text-foreground-500 italic">No content</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardBody>
-      <CardFooter className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0">
-        <Button color="default" variant="flat" onPress={onCancel}>
+      </Card.Content>
+      <Card.Footer className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0 sticky bottom-0 z-10">
+        <Button variant="tertiary" onPress={onCancel}>
           Cancel
         </Button>
         <Button
-          color="primary"
           type="submit"
           form="tournament-editor-form"
-          isLoading={isSubmitting}
-          startContent={!isSubmitting && <Icon icon="lucide:save" />}
+          isDisabled={isSubmitting}
         >
+          {!isSubmitting && <Icon icon="lucide:save" />}
           {isEditing ? "Update Tournament" : "Create Tournament"}
         </Button>
-      </CardFooter>
+      </Card.Footer>
+
+      <DetailsPopoutModal
+        isOpen={detailsPopoutOpen}
+        onClose={() => setDetailsPopoutOpen(false)}
+        value={detailsMarkdown}
+        onChange={setDetailsMarkdown}
+      />
     </Card>
   );
 };

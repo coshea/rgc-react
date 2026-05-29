@@ -1,11 +1,4 @@
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
-  Link,
-} from "@heroui/react";
+import { Button, Dropdown, Header, Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
@@ -28,101 +21,146 @@ export const ProfileDropdown = () => {
     <>
       <NotificationBell />
       <Dropdown placement="bottom-end">
-        <DropdownTrigger>
-          <div className="relative inline-block ml-3" aria-label="Profile menu">
-            <UserAvatar
-              as="button"
-              isBordered
-              color={isAdmin ? "secondary" : "default"}
-              className="transition-transform"
-              size="sm"
-              user={
-                userProfile ??
-                (user
-                  ? {
-                      id: user.uid,
-                      displayName: user.displayName ?? undefined,
-                      email: user.email ?? undefined,
-                      photoURL: user.photoURL ?? undefined,
-                    }
-                  : undefined)
-              }
-              role="button"
-              tabIndex={0}
-            />
-            {isAdmin && (
-              <span
-                className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-linear-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
-                aria-label="Admin user"
-                title="Admin"
-              >
-                <span className="block w-1.5 h-1.5 rounded-full bg-white/90" />
-              </span>
-            )}
-          </div>
-        </DropdownTrigger>
-        <DropdownMenu aria-label="Profile Actions" variant="flat">
-          <DropdownItem
-            key="profile"
-            className="h-14 gap-2"
-            isReadOnly
-            textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
-          >
-            <span className="block text-xs text-default-500">Signed in as</span>
-            <span className="block truncate max-w-[200px] text-sm">
-              {user?.email ?? "user@example.com"}
-            </span>
-          </DropdownItem>
-
-          <DropdownItem
-            key="settings"
-            as={Link}
-            href={user ? `/profile/${user.uid}` : siteConfig.pages.profile.link}
-          >
-            My Profile
-          </DropdownItem>
-
-          <DropdownItem
-            key="theme"
-            closeOnSelect={false}
-            className="cursor-default"
-            textValue="Theme"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-sm text-foreground">Theme</span>
-              <ThemeSwitch />
-            </div>
-          </DropdownItem>
-
-          {isAdmin || isBoardMember ? (
-            <DropdownSection
+        <Button
+          isIconOnly
+          variant="ghost"
+          className="relative ml-3"
+          aria-label="Profile menu"
+        >
+          <UserAvatar
+            isBordered
+            color={isAdmin ? "accent" : "default"}
+            className="transition-transform"
+            size="sm"
+            user={
+              userProfile ??
+              (user
+                ? {
+                    id: user.uid,
+                    displayName: user.displayName ?? undefined,
+                    email: user.email ?? undefined,
+                    photoURL: user.photoURL ?? undefined,
+                  }
+                : undefined)
+            }
+          />
+          {isAdmin && (
+            <span
+              className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-linear-to-br from-purple-500 to-fuchsia-500 border-2 border-background shadow-sm flex items-center justify-center"
+              aria-label="Admin user"
               title="Admin"
-              showDivider
-              classNames={{
-                heading:
-                  "text-tiny font-semibold uppercase text-default-400 px-1",
+            >
+              <span className="block w-1.5 h-1.5 rounded-full bg-white/90" />
+            </span>
+          )}
+        </Button>
+        <Dropdown.Popover>
+          <Dropdown.Menu aria-label="Profile Actions">
+            <Dropdown.Item
+              id="profile-info"
+              className="gap-3 py-3"
+              isReadOnly
+              textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
+            >
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  size="sm"
+                  user={
+                    userProfile ??
+                    (user
+                      ? {
+                          id: user.uid,
+                          displayName: user.displayName ?? undefined,
+                          email: user.email ?? undefined,
+                          photoURL: user.photoURL ?? undefined,
+                        }
+                      : undefined)
+                  }
+                />
+                <div className="flex flex-col min-w-0">
+                  {(userProfile?.displayName || user?.displayName) && (
+                    <span className="block text-sm font-medium truncate max-w-[180px]">
+                      {userProfile?.displayName ?? user?.displayName}
+                    </span>
+                  )}
+                  <span className="block truncate max-w-[180px] text-xs text-muted">
+                    {user?.email ?? "user@example.com"}
+                  </span>
+                </div>
+              </div>
+            </Dropdown.Item>
+
+            <Dropdown.Item
+              id="settings"
+              textValue="My Profile"
+              startContent={
+                <Icon icon="lucide:user" className="text-base text-muted" />
+              }
+              onPress={() => {
+                const href = user
+                  ? `/profile/${user.uid}`
+                  : siteConfig.pages.profile.link;
+                window.location.href = href;
               }}
             >
-              <DropdownItem
-                key="admin-dashboard"
-                as={Link}
-                href={siteConfig.pages.adminDashboard.link}
-                startContent={
-                  <Icon
-                    icon="lucide:layout-dashboard"
-                    className="text-base text-default-500"
-                  />
-                }
-              >
-                Admin Dashboard
-              </DropdownItem>
-            </DropdownSection>
-          ) : null}
+              My Profile
+            </Dropdown.Item>
 
-          <DropdownItem key="logout" color="danger" onPress={logout}>
-            Log Out
-          </DropdownItem>
-        </DropdownMenu>
+            <Dropdown.Item
+              id="theme"
+              closeOnSelect={false}
+              className="cursor-default"
+              textValue="Theme"
+              startContent={
+                <Icon icon="lucide:sun-moon" className="text-base text-muted" />
+              }
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-foreground">Theme</span>
+                <ThemeSwitch />
+              </div>
+            </Dropdown.Item>
+
+            {(isAdmin || isBoardMember) && (
+              <>
+                <Separator />
+                <Dropdown.Section>
+                  <Header>Admin</Header>
+                  <Dropdown.Item
+                    id="admin-dashboard"
+                    textValue="Admin Dashboard"
+                    startContent={
+                      <Icon
+                        icon="lucide:layout-dashboard"
+                        className="text-base text-muted"
+                      />
+                    }
+                    onPress={() => {
+                      window.location.href =
+                        siteConfig.pages.adminDashboard.link;
+                    }}
+                  >
+                    Admin Dashboard
+                  </Dropdown.Item>
+                </Dropdown.Section>
+              </>
+            )}
+
+            <Separator />
+            <Dropdown.Section>
+              <Dropdown.Item
+                id="logout"
+                color="danger"
+                startContent={
+                  <Icon icon="lucide:log-out" className="text-base" />
+                }
+                onPress={logout}
+              >
+                Log Out
+              </Dropdown.Item>
+            </Dropdown.Section>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
       </Dropdown>
     </>
   );
