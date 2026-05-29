@@ -8,7 +8,11 @@ import AdminDashboardPage from "@/pages/admin-dashboard";
 // Stub the three tab components so routing tests stay isolated from their
 // own data-fetching dependencies.
 vi.mock("@/components/admin-dashboard/member-overview-tab", () => ({
-  MemberOverviewTab: () => <div>Members Tab Content</div>,
+  MemberOverviewTab: () => <div>Overview Tab Content</div>,
+}));
+
+vi.mock("@/components/admin-dashboard/member-data-grid-tab", () => ({
+  MemberDataGridTab: () => <div>Members Tab Content</div>,
 }));
 
 vi.mock("@/components/admin-dashboard/payments-tab", () => ({
@@ -32,8 +36,14 @@ function renderPage(search = "") {
 }
 
 describe("AdminDashboardPage — tab routing", () => {
-  it("defaults to Members tab when no ?tab param is present", async () => {
+  it("defaults to Overview tab when no ?tab param is present", async () => {
     renderPage();
+    const overviewTab = await screen.findByRole("tab", { name: /Overview/i });
+    expect(overviewTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("selects Members tab when ?tab=members is in the URL", async () => {
+    renderPage("?tab=members");
     const membersTab = await screen.findByRole("tab", { name: /Members/i });
     expect(membersTab).toHaveAttribute("aria-selected", "true");
   });
@@ -52,9 +62,9 @@ describe("AdminDashboardPage — tab routing", () => {
     expect(tournamentsTab).toHaveAttribute("aria-selected", "true");
   });
 
-  it("falls back to Members tab for an unrecognised ?tab value", async () => {
+  it("falls back to Overview tab for an unrecognised ?tab value", async () => {
     renderPage("?tab=foo");
-    const membersTab = await screen.findByRole("tab", { name: /Members/i });
-    expect(membersTab).toHaveAttribute("aria-selected", "true");
+    const overviewTab = await screen.findByRole("tab", { name: /Overview/i });
+    expect(overviewTab).toHaveAttribute("aria-selected", "true");
   });
 });
