@@ -815,8 +815,13 @@ const UserProfilePage: React.FC = () => {
 
       {/* Edit Profile Modal */}
       <Modal.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
-        <Modal.Container size="lg" placement="top">
-          <Modal.Dialog>
+        <Modal.Container
+          size="lg"
+          placement="top"
+          scroll="inside"
+          className="max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-3rem)]"
+        >
+          <Modal.Dialog className="max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-3rem)]">
             <>
               <Modal.Header className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold">Edit Profile</h2>
@@ -824,8 +829,8 @@ const UserProfilePage: React.FC = () => {
                   Update your profile information and settings
                 </p>
               </Modal.Header>
-              <Modal.Body>
-                <div className="h-full overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <Modal.Body className="overflow-hidden">
+                <div className="max-h-[calc(100dvh-14rem)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
                   <ProfileForm
                     hideActions
                     formId="profile-edit-form"

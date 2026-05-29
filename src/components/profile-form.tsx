@@ -9,6 +9,8 @@ import {
   TextField,
   Label,
   FieldError,
+  Checkbox,
+  Modal,
 } from "@heroui/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
@@ -26,6 +28,7 @@ interface FormData {
   phone: string;
   ghinNumber: string;
   profilePicture: File | null;
+  defaultGoldTee: boolean;
 }
 
 interface FormErrors {
@@ -61,6 +64,7 @@ export function ProfileForm({
     phone: "",
     ghinNumber: "",
     profilePicture: null,
+    defaultGoldTee: false,
   });
 
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -68,6 +72,7 @@ export function ProfileForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isDirty, setIsDirty] = React.useState(false);
+  const [goldTeeInfoOpen, setGoldTeeInfoOpen] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
@@ -103,6 +108,7 @@ export function ProfileForm({
         phone: profile.phone || user.phoneNumber || "",
         ghinNumber: profile.ghinNumber || "",
         profilePicture: null,
+        defaultGoldTee: profile.defaultGoldTee ?? false,
       });
       setImagePreview(profile.photoURL || user.photoURL || null);
     } else if (user && !isLoading) {
@@ -116,10 +122,11 @@ export function ProfileForm({
         phone: user.phoneNumber || "",
         ghinNumber: "",
         profilePicture: null,
+        defaultGoldTee: false,
       });
       setImagePreview(user.photoURL || null);
     }
-  }, [user, userProfile, , isDirty]);
+  }, [user, userProfile, isLoading, isDirty]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -231,6 +238,7 @@ export function ProfileForm({
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
+        defaultGoldTee: formData.defaultGoldTee,
         // Only include governance fields if current user is admin editing self (admin property on profile)
       };
 
@@ -288,7 +296,7 @@ export function ProfileForm({
   if (isLoading) {
     return (
       <Card className="p-6">
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-100">
           <Spinner size="lg" aria-label="Loading profile data..." />
         </div>
       </Card>
@@ -419,6 +427,48 @@ export function ProfileForm({
               <FieldError>{errors.ghinNumber}</FieldError>
             </TextField>
           </div>
+
+          {/* Gold Tees Default preference */}
+          <div className="pt-2 border-t">
+            <div className="flex items-start gap-3 rounded-lg border p-4 hover:bg-surface-secondary/50 transition-colors">
+              <Checkbox
+                isSelected={formData.defaultGoldTee}
+                onChange={(v) => {
+                  setIsDirty(true);
+                  setFormData((prev) => ({ ...prev, defaultGoldTee: v }));
+                }}
+                aria-label="Default to gold tees"
+                className="mt-0.5 shrink-0"
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-sm font-medium min-w-0">
+                    <Icon
+                      icon="lucide:flag"
+                      className="w-4 h-4 text-warning shrink-0"
+                    />
+                    <span className="truncate">
+                      Default to Gold (Senior) Tees
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="px-2 h-7 text-xs shrink-0"
+                    onPress={() => setGoldTeeInfoOpen(true)}
+                    aria-label="Gold tees information"
+                  >
+                    <Icon icon="lucide:info" className="w-3.5 h-3.5" />
+                    Info
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {!hideActions && (
@@ -458,6 +508,29 @@ export function ProfileForm({
           </div>
         )}
       </form>
+
+      <Modal.Backdrop
+        isOpen={goldTeeInfoOpen}
+        onOpenChange={setGoldTeeInfoOpen}
+      >
+        <Modal.Container size="sm">
+          <Modal.Dialog aria-label="Gold tees setting information">
+            <>
+              <Modal.Header>Gold Tees Default</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-muted">
+                  This setting is for seniors only. When enabled, you will be
+                  pre-selected for gold tees when you register for a tournament
+                  or when you are added to a team.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button onPress={() => setGoldTeeInfoOpen(false)}>Close</Button>
+              </Modal.Footer>
+            </>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Card>
   );
 }

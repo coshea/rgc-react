@@ -30,6 +30,7 @@ interface MemberRow {
   ghinNumber: string;
   membershipType: string;
   isActive: boolean;
+  defaultGoldTee: boolean | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +83,7 @@ function MemberEditDialog({
       ghinNumber: editing.ghinNumber ?? "",
       boardMember: !!editing.boardMember,
       role: editing.boardMember ? (editing.role ?? "") : "",
+      defaultGoldTee: !!editing.defaultGoldTee,
     });
   }, [editing]);
 
@@ -123,6 +125,7 @@ function MemberEditDialog({
           ghinNumber: String(form.ghinNumber ?? "").trim(),
           boardMember: !!form.boardMember,
           role: form.boardMember ? String(form.role ?? "").trim() : null,
+          defaultGoldTee: !!form.defaultGoldTee,
         }),
       );
       qc.invalidateQueries({ queryKey: ["users"] });
@@ -217,6 +220,7 @@ export function MemberDataGridTab() {
         ghinNumber: m.ghinNumber ?? "",
         membershipType: m.membershipType ?? "",
         isActive: activeSet.has(m.id),
+        defaultGoldTee: m.defaultGoldTee ?? null,
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [allMembers, activeSet, search]);
@@ -312,6 +316,26 @@ export function MemberDataGridTab() {
             {row.isActive ? "Active" : "Inactive"}
           </Chip>
         ),
+      },
+      {
+        id: "defaultGoldTee",
+        header: "Default Gold Tees",
+        accessorKey: "defaultGoldTee",
+        allowsSorting: true,
+        allowsResizing: true,
+        minWidth: 120,
+        cell: (row) =>
+          row.defaultGoldTee === null ? (
+            <span className="text-xs text-muted"></span>
+          ) : (
+            <Chip
+              color={row.defaultGoldTee ? "warning" : "default"}
+              size="sm"
+              variant="soft"
+            >
+              {row.defaultGoldTee ? "Yes" : "No"}
+            </Chip>
+          ),
       },
       {
         id: "actions",

@@ -351,6 +351,20 @@ export function EditMemberModal({
               </p>
             )}
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-primary h-4 w-4"
+              checked={!!form.defaultGoldTee}
+              disabled={saving}
+              onChange={(e) =>
+                onChange({ ...form, defaultGoldTee: e.target.checked })
+              }
+            />
+            <span className="flex items-center gap-1">
+              Default to Gold (Senior) Tees
+            </span>
+          </label>
         </div>
         {isAdmin && (
           <div className="mt-6 pt-4 border-t space-y-3 text-sm">
