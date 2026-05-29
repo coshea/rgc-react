@@ -5,7 +5,6 @@ import {
   Input,
   Button,
   Spinner,
-  Chip,
   TextField,
   Label,
   FieldError,
@@ -77,21 +76,6 @@ export function ProfileForm({
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
-
-  const membershipTypeChip =
-    userProfile?.membershipType === "full"
-      ? {
-          label: "Full Member",
-          color: "success" as const,
-          icon: "lucide:badge-check",
-        }
-      : userProfile?.membershipType === "handicap"
-        ? {
-            label: "Handicap Only",
-            color: "accent" as const,
-            icon: "lucide:golf",
-          }
-        : null;
 
   // Initialize form data from userProfile hook (simplified single source of truth)
   React.useEffect(() => {
@@ -304,15 +288,15 @@ export function ProfileForm({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-5">
       <form
         id={formId || "profile-form"}
         onSubmit={handleSubmit}
-        className="space-y-6"
+        className="space-y-4"
       >
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-4">
           <div
-            className="relative group cursor-pointer mb-3"
+            className="relative group cursor-pointer mb-2"
             onClick={triggerFileInput}
           >
             <UserAvatar
@@ -353,26 +337,10 @@ export function ProfileForm({
             onChange={handleFileChange}
           />
           <p className="text-muted text-sm">Click to upload profile picture</p>
-
-          {membershipTypeChip ? (
-            <div className="mt-2 flex justify-center">
-              <Chip
-                size="sm"
-                variant="tertiary"
-                color={membershipTypeChip.color}
-              >
-                <Icon
-                  icon={membershipTypeChip.icon}
-                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-                />
-                {membershipTypeChip.label}
-              </Chip>
-            </div>
-          ) : null}
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <TextField
               isRequired
               isInvalid={!!errors.firstName}
@@ -406,7 +374,7 @@ export function ProfileForm({
             <FieldError>{errors.email}</FieldError>
           </TextField>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TextField
               isInvalid={!!errors.phone}
               value={formData.phone}
