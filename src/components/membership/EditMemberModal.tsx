@@ -229,7 +229,7 @@ export function EditMemberModal({
             <Input
               placeholder="First Name"
               value={form.firstName || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, firstName: e.target.value })
               }
@@ -237,7 +237,7 @@ export function EditMemberModal({
             <Input
               placeholder="Last Name"
               value={form.lastName || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, lastName: e.target.value })
               }
@@ -247,14 +247,14 @@ export function EditMemberModal({
             placeholder="Email"
             value={form.email || ""}
             fullWidth
-            isDisabled={saving}
+            disabled={saving}
             onChange={(e: any) => onChange({ ...form, email: e.target.value })}
           />
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="Phone"
               value={form.phone || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, phone: e.target.value })
               }
@@ -265,7 +265,7 @@ export function EditMemberModal({
             <Input
               placeholder="GHIN Number"
               value={form.ghinNumber || ""}
-              isDisabled={saving}
+              disabled={saving}
               onChange={(e: any) =>
                 onChange({ ...form, ghinNumber: e.target.value })
               }
@@ -351,6 +351,20 @@ export function EditMemberModal({
               </p>
             )}
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-primary h-4 w-4"
+              checked={!!form.defaultGoldTee}
+              disabled={saving}
+              onChange={(e) =>
+                onChange({ ...form, defaultGoldTee: e.target.checked })
+              }
+            />
+            <span className="flex items-center gap-1">
+              Default to Gold (Senior) Tees
+            </span>
+          </label>
         </div>
         {isAdmin && (
           <div className="mt-6 pt-4 border-t space-y-3 text-sm">
@@ -415,7 +429,7 @@ export function EditMemberModal({
                     placeholder="Amount"
                     value={payment.amount || ""}
                     className="max-w-[100px]"
-                    isDisabled={saving}
+                    disabled={saving}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));
                       setPaymentDirty(true);

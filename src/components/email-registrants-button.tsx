@@ -65,7 +65,7 @@ export function EmailRegistrantsButton({
   const hasWaitlist = maxTeams !== undefined && allCount > maxTeams;
 
   return (
-    <Dropdown placement="bottom-end">
+    <Dropdown>
       <Button
         variant="primary"
         size={size}

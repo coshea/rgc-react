@@ -136,7 +136,6 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
         onChange={(val) => {
           if (val && isTeeColor(String(val))) setTee(String(val) as TeeColor);
         }}
-        disallowEmptySelection
       >
         <Label>Tee</Label>
         <Select.Trigger>
@@ -317,7 +316,6 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
                 v === TournamentStatus.InProgress,
             );
           }}
-          disallowEmptySelection
         >
           <Label>Status</Label>
           <Select.Trigger>

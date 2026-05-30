@@ -12,12 +12,7 @@
       (function () {
         try {
           var t = localStorage.getItem("heroui-theme");
-          var resolved =
-            t === "dark" || t === "light"
-              ? t
-              : window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light";
+          var resolved = t === "dark" || t === "light" ? t : "light";
           document.documentElement.classList.add(resolved);
           document.documentElement.setAttribute("data-theme", resolved);
         } catch (e) {}

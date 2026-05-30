@@ -26,6 +26,19 @@ import {
 import React, { useEffect, useState, createContext, useContext } from "react";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
+const HEROUI_THEME_STORAGE_KEY = "heroui-theme";
+
+function applyLightThemeForLoggedOutUser() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HEROUI_THEME_STORAGE_KEY, "light");
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+    document.documentElement.setAttribute("data-theme", "light");
+  } catch {
+    // Ignore storage/document errors and continue auth flow.
+  }
+}
 
 function normalizeAndValidateEmail(email: string): string {
   const trimmed = email.trim();
@@ -90,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser); // Store the original Firebase User object
       setUserLoggedIn(true);
     } else {
+      applyLightThemeForLoggedOutUser();
       setUser(null);
       setUserLoggedIn(false);
     }

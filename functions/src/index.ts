@@ -41,6 +41,7 @@ export {
   notify_team_registration,
   notify_team_registration_canceled,
 } from "./notifyTeamRegistration";
+export { notify_bracket_matchup } from "./notifyBracketMatchup";
 export { notify_tournament_canceled } from "./notifyTournamentCanceled";
 export { generate_blog_writeup } from "./generateBlogWriteup";
 

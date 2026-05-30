@@ -6,13 +6,15 @@ import { Icon } from "@iconify/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { PaymentsTab } from "@/components/admin-dashboard/payments-tab";
 import { MemberOverviewTab } from "@/components/admin-dashboard/member-overview-tab";
+import { MemberDataGridTab } from "@/components/admin-dashboard/member-data-grid-tab";
 import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-status-tab";
 import { NotificationsTab } from "@/components/admin-dashboard/notifications-tab";
 
-type TabKey = "overview" | "payments" | "tournaments" | "notifications";
+type TabKey = "overview" | "members" | "payments" | "tournaments" | "notifications";
 
 const VALID_TABS = new Set<TabKey>([
   "overview",
+  "members",
   "payments",
   "tournaments",
   "notifications",
@@ -57,7 +59,15 @@ export default function AdminDashboardPage() {
               aria-label="Admin Dashboard"
               className="mb-2 overflow-x-auto scrollbar-hide"
             >
-              <Tabs.Tab id="overview" aria-label="Members">
+              <Tabs.Tab id="overview" aria-label="Overview">
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:layout-dashboard" className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Overview</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="members" aria-label="Members">
+                <Tabs.Separator />
                 <div className="flex items-center gap-2">
                   <Icon icon="lucide:users" className="w-4 h-4 shrink-0" />
                   <span className="hidden sm:inline">Members</span>
@@ -95,6 +105,9 @@ export default function AdminDashboardPage() {
           </Tabs.ListContainer>
           <Tabs.Panel id="overview">
             <MemberOverviewTab />
+          </Tabs.Panel>
+          <Tabs.Panel id="members">
+            <MemberDataGridTab />
           </Tabs.Panel>
           <Tabs.Panel id="payments">
             <PaymentsTab isEmbedded />

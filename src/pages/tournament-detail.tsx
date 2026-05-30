@@ -761,7 +761,7 @@ img { display: block; max-width: 100%; }
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Dropdown placement="bottom-end">
+                    <Dropdown>
                       <Button
                         size="sm"
                         variant="secondary"
@@ -774,17 +774,21 @@ img { display: block; max-width: 100%; }
                         <Dropdown.Menu aria-label="Calendar options">
                           <Dropdown.Item
                             id="google"
-                            startContent={<Icon icon="lucide:calendar" />}
                             onPress={() => handleCalendarAction("google")}
                           >
-                            Add to Google Calendar
+                            <span className="flex items-center gap-2">
+                              <Icon icon="lucide:calendar" />
+                              <span>Add to Google Calendar</span>
+                            </span>
                           </Dropdown.Item>
                           <Dropdown.Item
                             id="ics"
-                            startContent={<Icon icon="lucide:download" />}
                             onPress={() => handleCalendarAction("ics")}
                           >
-                            Download calendar file (.ics)
+                            <span className="flex items-center gap-2">
+                              <Icon icon="lucide:download" />
+                              <span>Download calendar file (.ics)</span>
+                            </span>
                           </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown.Popover>
@@ -877,7 +881,7 @@ img { display: block; max-width: 100%; }
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Dropdown placement="bottom-end">
+                  <Dropdown>
                     <Button
                       size="sm"
                       variant="secondary"
@@ -890,17 +894,21 @@ img { display: block; max-width: 100%; }
                       <Dropdown.Menu aria-label="Calendar options">
                         <Dropdown.Item
                           id="google"
-                          startContent={<Icon icon="lucide:calendar" />}
                           onPress={() => handleCalendarAction("google")}
                         >
-                          Add to Google Calendar
+                          <span className="flex items-center gap-2">
+                            <Icon icon="lucide:calendar" />
+                            <span>Add to Google Calendar</span>
+                          </span>
                         </Dropdown.Item>
                         <Dropdown.Item
                           id="ics"
-                          startContent={<Icon icon="lucide:download" />}
                           onPress={() => handleCalendarAction("ics")}
                         >
-                          Download calendar file (.ics)
+                          <span className="flex items-center gap-2">
+                            <Icon icon="lucide:download" />
+                            <span>Download calendar file (.ics)</span>
+                          </span>
                         </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown.Popover>
@@ -1502,9 +1510,9 @@ img { display: block; max-width: 100%; }
               {/* Full Width: Registered Teams (Improved readability) */}
               <Card className="md:col-span-3">
                 <Card.Header className="pb-0 overflow-visible relative">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <h2 className="text-lg font-semibold flex items-center gap-2 sm:whitespace-nowrap">
                         <Icon
                           icon="lucide:users"
                           className="w-5 h-5 text-accent"
@@ -1523,16 +1531,17 @@ img { display: block; max-width: 100%; }
                         )}
                       </h2>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap justify-end pb-1">
+                    <div className="flex w-full items-center gap-2 sm:gap-3 flex-wrap sm:justify-end pb-1">
                       {!regsLoading && registrations.length > 0 && (
                         <SearchField
                           name="search"
                           aria-label="Search registered teams"
+                          className="w-full sm:w-auto"
                         >
                           <SearchField.Group>
                             <SearchField.SearchIcon />
                             <SearchField.Input
-                              className="w-44"
+                              className="w-full sm:w-44"
                               placeholder="Search players..."
                               value={teamSearch}
                               onChange={(
@@ -1574,27 +1583,16 @@ img { display: block; max-width: 100%; }
                       )}
                       {!regsLoading && registrations.length > 0 && (
                         <span
-                          className="inline-flex items-center group relative"
-                          aria-label="Registrations update in real time"
+                          className="inline-flex items-center"
+                          title="Updates in real time as teams register."
                         >
                           <span
                             className="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"
                             aria-hidden="true"
                           />
-                          <Tooltip closeDelay={0}>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => {}}
-                              aria-label="Real-time updates info"
-                              className="min-w-0 h-auto px-0 py-0 text-[11px] text-muted underline decoration-dotted underline-offset-2"
-                            >
-                              Live
-                            </Button>
-                            <Tooltip.Content placement="bottom" offset={6}>
-                              Updates in real time as teams register.
-                            </Tooltip.Content>
-                          </Tooltip>
+                          <span className="text-[11px] text-muted underline decoration-dotted underline-offset-2">
+                            Live
+                          </span>
                         </span>
                       )}
                     </div>

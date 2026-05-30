@@ -98,6 +98,12 @@ export type UserProfilePayload = {
   isMigrated?: boolean;
   migrationEligible?: boolean;
   notificationPreferences?: NotificationPreferences;
+  /**
+   * When true, the user prefers to play from the gold (senior) tees by default.
+   * When false, the user has explicitly opted out of the gold tees default.
+   * When undefined/null, the user has never been asked and has no explicit preference.
+   */
+  defaultGoldTee?: boolean;
 };
 
 // Firestore document payload for the `users` collection. When writing,

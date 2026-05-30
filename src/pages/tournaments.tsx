@@ -174,24 +174,26 @@ const Tournaments: React.FC<TournamentsProps> = () => {
               New Tournament
             </Modal.Header>
             <Modal.Body>
-              <RadioGroup
-                label="How would you like to start?"
-                value={createMethod}
-                onChange={(v) => setCreateMethod(v as "scratch" | "copy")}
-              >
-                <Radio value="scratch">
-                  <Radio.Control>
-                    <Radio.Indicator />
-                  </Radio.Control>
-                  <Radio.Content>Create from scratch</Radio.Content>
-                </Radio>
-                <Radio value="copy">
-                  <Radio.Control>
-                    <Radio.Indicator />
-                  </Radio.Control>
-                  <Radio.Content>Copy from previous</Radio.Content>
-                </Radio>
-              </RadioGroup>
+              <div>
+                <Label>How would you like to start?</Label>
+                <RadioGroup
+                  value={createMethod}
+                  onChange={(v) => setCreateMethod(v as "scratch" | "copy")}
+                >
+                  <Radio value="scratch">
+                    <Radio.Control>
+                      <Radio.Indicator />
+                    </Radio.Control>
+                    <Radio.Content>Create from scratch</Radio.Content>
+                  </Radio>
+                  <Radio value="copy">
+                    <Radio.Control>
+                      <Radio.Indicator />
+                    </Radio.Control>
+                    <Radio.Content>Copy from previous</Radio.Content>
+                  </Radio>
+                </RadioGroup>
+              </div>
               {createMethod === "copy" && (
                 <Select
                   value={templateId ?? null}
@@ -285,7 +287,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                 size="sm"
                 variant="tertiary"
                 aria-label="Subscribe to Google Calendar"
-                title="Subscribe to the club Google Calendar"
                 onPress={() =>
                   window.open(
                     googleCalendarSubscribeUrl,

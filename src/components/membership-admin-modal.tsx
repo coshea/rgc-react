@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Button,
+  FieldError,
   Input,
   InputGroup,
   Label,
@@ -369,50 +370,51 @@ export default function MembershipAdminModal({
                   storage folder{" "}
                   <span className="font-medium">public-docs</span>.
                 </p>
-                <Select
-                  value={membershipLetterUrl || undefined}
-                  onChange={(key) => {
-                    const value = key ? String(key) : "";
-                    setMembershipLetterUrl(value);
-                    if (errors.membershipLetterUrl) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        membershipLetterUrl: "",
-                      }));
+                <TextField isInvalid={!!errors.membershipLetterUrl}>
+                  <Select
+                    value={membershipLetterUrl || undefined}
+                    onChange={(key) => {
+                      const value = key ? String(key) : "";
+                      setMembershipLetterUrl(value);
+                      if (errors.membershipLetterUrl) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          membershipLetterUrl: "",
+                        }));
+                      }
+                    }}
+                    isDisabled={loadingDocs}
+                    placeholder={
+                      loadingDocs
+                        ? "Loading documents..."
+                        : "Select a membership letter"
                     }
-                  }}
-                  isDisabled={loadingDocs}
-                  isInvalid={!!errors.membershipLetterUrl}
-                  errorMessage={errors.membershipLetterUrl}
-                  placeholder={
-                    loadingDocs
-                      ? "Loading documents..."
-                      : "Select a membership letter"
-                  }
-                >
-                  <Label>Membership letter document</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {membershipLetterOptions.map((doc) => (
-                        <ListBox.Item
-                          key={doc.url}
-                          id={doc.url}
-                          textValue={doc.name}
-                        >
-                          {doc.name}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                  >
+                    <Label>Membership letter document</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {membershipLetterOptions.map((doc) => (
+                          <ListBox.Item
+                            key={doc.url}
+                            id={doc.url}
+                            textValue={doc.name}
+                          >
+                            {doc.name}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <FieldError>{errors.membershipLetterUrl}</FieldError>
+                </TextField>
                 <TextField value={membershipLetterUrl}>
                   <Label>Selected URL</Label>
-                  <Input isReadOnly />
+                  <Input readOnly />
                 </TextField>
               </div>
 
@@ -425,50 +427,51 @@ export default function MembershipAdminModal({
                   Documents are loaded from the storage folder{" "}
                   <span className="font-medium">public-docs</span>.
                 </p>
-                <Select
-                  value={membershipApplicationUrl || undefined}
-                  onChange={(key) => {
-                    const value = key ? String(key) : "";
-                    setMembershipApplicationUrl(value);
-                    if (errors.membershipApplicationUrl) {
-                      setErrors((prev) => ({
-                        ...prev,
-                        membershipApplicationUrl: "",
-                      }));
+                <TextField isInvalid={!!errors.membershipApplicationUrl}>
+                  <Select
+                    value={membershipApplicationUrl || undefined}
+                    onChange={(key) => {
+                      const value = key ? String(key) : "";
+                      setMembershipApplicationUrl(value);
+                      if (errors.membershipApplicationUrl) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          membershipApplicationUrl: "",
+                        }));
+                      }
+                    }}
+                    isDisabled={loadingDocs}
+                    placeholder={
+                      loadingDocs
+                        ? "Loading documents..."
+                        : "Select an application PDF"
                     }
-                  }}
-                  isDisabled={loadingDocs}
-                  isInvalid={!!errors.membershipApplicationUrl}
-                  errorMessage={errors.membershipApplicationUrl}
-                  placeholder={
-                    loadingDocs
-                      ? "Loading documents..."
-                      : "Select an application PDF"
-                  }
-                >
-                  <Label>Application document</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {membershipApplicationOptions.map((doc) => (
-                        <ListBox.Item
-                          key={doc.url}
-                          id={doc.url}
-                          textValue={doc.name}
-                        >
-                          {doc.name}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                  >
+                    <Label>Application document</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {membershipApplicationOptions.map((doc) => (
+                          <ListBox.Item
+                            key={doc.url}
+                            id={doc.url}
+                            textValue={doc.name}
+                          >
+                            {doc.name}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  <FieldError>{errors.membershipApplicationUrl}</FieldError>
+                </TextField>
                 <TextField value={membershipApplicationUrl}>
                   <Label>Selected URL</Label>
-                  <Input isReadOnly />
+                  <Input readOnly />
                 </TextField>
               </div>
 
@@ -482,19 +485,23 @@ export default function MembershipAdminModal({
                     This message will be displayed to members when registration
                     is closed
                   </p>
-                  <TextArea
-                    placeholder="Registration for the current year is closed. Please check back next year."
-                    value={closedMessage}
-                    onChange={(e) => {
-                      setClosedMessage(e.target.value);
-                      if (errors.closedMessage) {
-                        setErrors((prev) => ({ ...prev, closedMessage: "" }));
-                      }
-                    }}
-                    rows={3}
-                    isInvalid={!!errors.closedMessage}
-                    errorMessage={errors.closedMessage}
-                  />
+                  <TextField isInvalid={!!errors.closedMessage}>
+                    <TextArea
+                      placeholder="Registration for the current year is closed. Please check back next year."
+                      value={closedMessage}
+                      onChange={(e) => {
+                        setClosedMessage(e.target.value);
+                        if (errors.closedMessage) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            closedMessage: "",
+                          }));
+                        }
+                      }}
+                      rows={3}
+                    />
+                    <FieldError>{errors.closedMessage}</FieldError>
+                  </TextField>
                 </div>
               )}
 
