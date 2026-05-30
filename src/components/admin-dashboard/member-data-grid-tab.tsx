@@ -125,7 +125,7 @@ function MemberEditDialog({
           ghinNumber: String(form.ghinNumber ?? "").trim(),
           boardMember: !!form.boardMember,
           role: form.boardMember ? String(form.role ?? "").trim() : null,
-          defaultGoldTee: !!form.defaultGoldTee,
+          ...(form.defaultGoldTee !== undefined && form.defaultGoldTee !== null && { defaultGoldTee: !!form.defaultGoldTee }),
         }),
       );
       qc.invalidateQueries({ queryKey: ["users"] });
