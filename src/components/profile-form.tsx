@@ -92,7 +92,7 @@ export function ProfileForm({
         phone: profile.phone || user.phoneNumber || "",
         ghinNumber: profile.ghinNumber || "",
         profilePicture: null,
-        defaultGoldTee: profile.defaultGoldTee ?? false,
+        defaultGoldTee: profile.defaultGoldTee,
       });
       setImagePreview(profile.photoURL || user.photoURL || null);
     } else if (user && !isLoading) {
