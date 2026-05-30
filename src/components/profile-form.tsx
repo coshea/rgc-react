@@ -27,7 +27,7 @@ interface FormData {
   phone: string;
   ghinNumber: string;
   profilePicture: File | null;
-  defaultGoldTee: boolean;
+  defaultGoldTee?: boolean;
 }
 
 interface FormErrors {
