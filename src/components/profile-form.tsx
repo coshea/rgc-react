@@ -106,7 +106,7 @@ export function ProfileForm({
         phone: user.phoneNumber || "",
         ghinNumber: "",
         profilePicture: null,
-        defaultGoldTee: false,
+        defaultGoldTee: undefined,
       });
       setImagePreview(user.photoURL || null);
     }
