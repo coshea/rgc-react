@@ -6,6 +6,7 @@ const FONT =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const FROM_EMAIL = "Ridgefield Golf Club <noreply@ridgefieldgolfclub.org>";
 const CONTACT_EMAIL = "RidgefieldCTGolfClub@gmail.com";
+const RESEND_TIMEOUT_MS = 10_000;
 
 export interface BracketMatchupEmailParams {
   firstName: string;
@@ -147,14 +148,31 @@ async function callResendApi(
   apiKey: string,
   payload: ResendPayload,
 ): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), RESEND_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Resend API request timed out after ${RESEND_TIMEOUT_MS}ms`,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!response.ok) {
     const text = await response.text();
 

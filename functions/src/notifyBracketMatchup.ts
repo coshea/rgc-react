@@ -244,17 +244,16 @@ export const notify_bracket_matchup = onDocumentWritten(
     }
 
     const results = await Promise.allSettled(sendTasks);
-    const failed = results.filter((r) => r.status === "rejected");
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
 
     if (failed.length > 0) {
       logger.error(
         `[notify_bracket_matchup] Failed sends: ${failed.length} of ${results.length}`,
       );
       for (const failure of failed) {
-        logger.error(
-          "[notify_bracket_matchup] Send error",
-          failure.status === "rejected" ? failure.reason : "unknown",
-        );
+        logger.error("[notify_bracket_matchup] Send error", failure.reason);
       }
     }
 

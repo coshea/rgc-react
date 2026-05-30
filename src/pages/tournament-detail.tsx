@@ -1582,17 +1582,25 @@ img { display: block; max-width: 100%; }
                         </Button>
                       )}
                       {!regsLoading && registrations.length > 0 && (
-                        <span
-                          className="inline-flex items-center"
-                          title="Updates in real time as teams register."
-                        >
+                        <span className="inline-flex items-center shrink-0">
                           <span
                             className="w-2.5 h-2.5 rounded-full bg-success animate-pulse mr-2"
                             aria-hidden="true"
                           />
-                          <span className="text-[11px] text-muted underline decoration-dotted underline-offset-2">
-                            Live
-                          </span>
+                          <Tooltip closeDelay={0}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onPress={() => {}}
+                              aria-label="Registrations update in real time"
+                              className="min-w-0 h-auto px-0 py-0 text-[11px] leading-none text-muted underline decoration-dotted underline-offset-2"
+                            >
+                              Live
+                            </Button>
+                            <Tooltip.Content placement="bottom" offset={6}>
+                              Updates in real time as teams register.
+                            </Tooltip.Content>
+                          </Tooltip>
                         </span>
                       )}
                     </div>
