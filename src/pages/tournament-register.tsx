@@ -15,6 +15,7 @@ import RegistrationEditor from "@/components/registration-editor";
 // Static import for registrations list to ensure test mocks attach
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
 import { Icon } from "@iconify/react";
+import { saveUserProfile } from "@/api/users";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -58,6 +59,10 @@ const TournamentRegister: React.FC = () => {
 
   // Explicit opt-in: only advertise open spots when the user chooses to.
   const [openSpotsOptIn, setOpenSpotsOptIn] = React.useState(false);
+  const [goldDefaultPromptOpen, setGoldDefaultPromptOpen] =
+    React.useState(false);
+  const [savingGoldDefault, setSavingGoldDefault] = React.useState(false);
+  const [hasAskedGoldDefault, setHasAskedGoldDefault] = React.useState(false);
 
   const finalizeRegistration = React.useCallback(
     async (
@@ -200,6 +205,14 @@ const TournamentRegister: React.FC = () => {
     return Array.from(byId.values());
   }, [restoredTeamUsers, users]);
 
+  const usersById = React.useMemo(() => {
+    const byId = new Map<string, User>();
+    selectableUsers.forEach((entry) => {
+      byId.set(entry.id, entry);
+    });
+    return byId;
+  }, [selectableUsers]);
+
   const leaderName = currentUserRegistration?.ownerId
     ? memberTeam.find(
         (m: { id?: string; displayName?: string }) =>
@@ -318,6 +331,84 @@ const TournamentRegister: React.FC = () => {
       setGoldTees(goldTeeIds);
     }
   }, [ownerRegistration, registrationId, savedOwnerTeamIds, user?.uid]);
+
+  const handleTeammatesChange = React.useCallback(
+    (nextIds: string[]) => {
+      if (registrationId) {
+        setHasEditedExistingTeam(true);
+      }
+      setTeammates(nextIds);
+      pendingMembersRef.current = null;
+      setConflictsAcknowledged(false);
+
+      if (!tournament?.goldTeesEnabled) {
+        return;
+      }
+
+      const previousSelected = new Set(editorTeammates.filter(Boolean));
+      const nextSelected = nextIds.filter(Boolean);
+
+      setGoldTees((prev) => {
+        const nextGold = new Set(
+          prev.filter((id) => nextSelected.includes(id)),
+        );
+
+        nextSelected.forEach((id) => {
+          const addedNow = !previousSelected.has(id);
+          if (addedNow && usersById.get(id)?.defaultGoldTee === true) {
+            nextGold.add(id);
+          }
+        });
+
+        return Array.from(nextGold);
+      });
+    },
+    [registrationId, tournament?.goldTeesEnabled, editorTeammates, usersById],
+  );
+
+  const handleGoldTeesChange = React.useCallback(
+    (ids: string[]) => {
+      setGoldTees(ids);
+
+      if (!tournament?.goldTeesEnabled || !user?.uid) return;
+
+      const currentUserInSelection = ids.includes(user.uid);
+      if (!currentUserInSelection) return;
+
+      const userEntry = usersById.get(user.uid);
+      const hasExistingPreference =
+        userEntry?.defaultGoldTee === true ||
+        userEntry?.defaultGoldTee === false;
+
+      if (!hasExistingPreference && !hasAskedGoldDefault) {
+        setHasAskedGoldDefault(true);
+        setGoldDefaultPromptOpen(true);
+      }
+    },
+    [tournament?.goldTeesEnabled, user?.uid, usersById, hasAskedGoldDefault],
+  );
+
+  const saveCurrentUserGoldDefault = React.useCallback(
+    async (nextValue: boolean) => {
+      if (!user?.uid) return;
+      setSavingGoldDefault(true);
+      try {
+        await saveUserProfile(user.uid, { defaultGoldTee: nextValue });
+      } catch (error) {
+        console.error("Failed to save default gold tee preference", error);
+        addToast({
+          title: "Preference not saved",
+          description:
+            "You can update your Gold Tees default later in your profile.",
+          color: "warning",
+        });
+      } finally {
+        setSavingGoldDefault(false);
+        setGoldDefaultPromptOpen(false);
+      }
+    },
+    [user?.uid],
+  );
 
   const maxTeamSize = tournament?.players ?? 1;
   const minTeamSize = maxTeamSize <= 1 ? 1 : 2;
@@ -621,14 +712,7 @@ const TournamentRegister: React.FC = () => {
 
                 <RegistrationEditor
                   value={editorTeammates}
-                  onChange={(next) => {
-                    if (registrationId) {
-                      setHasEditedExistingTeam(true);
-                    }
-                    setTeammates(next);
-                    pendingMembersRef.current = null;
-                    setConflictsAcknowledged(false);
-                  }}
+                  onChange={handleTeammatesChange}
                   users={selectableUsers}
                   selectedUsers={restoredTeamUsers}
                   maxSize={maxTeamSize}
@@ -636,7 +720,9 @@ const TournamentRegister: React.FC = () => {
                   disabled={!user?.uid}
                   goldTees={goldTees}
                   onGoldTeesChange={
-                    tournament.goldTeesEnabled ? setGoldTees : undefined
+                    tournament.goldTeesEnabled
+                      ? handleGoldTeesChange
+                      : undefined
                   }
                   preserveUnknownIds={Boolean(registrationId)}
                 />
@@ -943,6 +1029,57 @@ const TournamentRegister: React.FC = () => {
                       }}
                     >
                       Continue Anyway
+                    </Button>
+                  </Modal.Footer>
+                </>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+
+          <Modal.Backdrop
+            isOpen={goldDefaultPromptOpen}
+            onOpenChange={(open) => {
+              if (!savingGoldDefault) {
+                setGoldDefaultPromptOpen(open);
+              }
+            }}
+          >
+            <Modal.Container size="md">
+              <Modal.Dialog aria-label="Set default gold tees preference">
+                <>
+                  <Modal.Header>Save Gold Tees as your default?</Modal.Header>
+                  <Modal.Body>
+                    <p className="text-sm text-muted">
+                      You selected yourself to play from the gold tees. Would
+                      you like this to be your default whenever you register for
+                      a tournament or are added to a team?
+                    </p>
+                    <p className="text-xs text-muted mt-2">
+                      You can change this anytime on your profile page.
+                    </p>
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button
+                      variant="outline"
+                      isDisabled={savingGoldDefault}
+                      onPress={() => {
+                        queueMicrotask(() => {
+                          void saveCurrentUserGoldDefault(false);
+                        });
+                      }}
+                    >
+                      No, don't ask again
+                    </Button>
+                    <Button
+                      variant="primary"
+                      isDisabled={savingGoldDefault}
+                      onPress={() => {
+                        queueMicrotask(() => {
+                          void saveCurrentUserGoldDefault(true);
+                        });
+                      }}
+                    >
+                      Yes, save as default
                     </Button>
                   </Modal.Footer>
                 </>

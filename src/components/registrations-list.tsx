@@ -50,6 +50,14 @@ export const RegistrationsList: React.FC<Props> = ({
     Record<string, string[]>
   >({});
 
+  const usersById = React.useMemo(() => {
+    const byId = new Map<string, User>();
+    users.forEach((entry) => {
+      byId.set(entry.id, entry);
+    });
+    return byId;
+  }, [users]);
+
   const selectedRegistration = React.useMemo(() => {
     return registrations.find((r) => r.id === deletingId) || null;
   }, [registrations, deletingId]);
@@ -86,6 +94,22 @@ export const RegistrationsList: React.FC<Props> = ({
 
   const updateLocal = (regId: string, ids: string[]) => {
     setLocalTeams((s) => ({ ...s, [regId]: ids }));
+    setLocalGoldTees((s) => {
+      const previousIds = new Set((localTeams[regId] ?? []).filter(Boolean));
+      const selectedIds = ids.filter(Boolean);
+      const nextGold = new Set(
+        (s[regId] ?? []).filter((id) => selectedIds.includes(id)),
+      );
+
+      selectedIds.forEach((id) => {
+        const addedNow = !previousIds.has(id);
+        if (addedNow && usersById.get(id)?.defaultGoldTee === true) {
+          nextGold.add(id);
+        }
+      });
+
+      return { ...s, [regId]: Array.from(nextGold) };
+    });
   };
 
   const updateOpenSpots = (regId: string, value: boolean) => {

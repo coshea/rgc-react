@@ -49,12 +49,6 @@ export default function SignUpPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [signupEmail, setSignupEmail] = React.useState("");
 
-  const stackedInputClassNames = {
-    base: "-mb-[2px]",
-    inputWrapper:
-      "rounded-none data-[hover=true]:z-10 group-data-[focus-visible=true]:z-10",
-  };
-
   const {
     userLoggedIn,
     signupEmailAndPassword,
@@ -357,7 +351,7 @@ export default function SignUpPage() {
           )}
           <div className="flex flex-col gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               className="w-full"
               onPress={handleGoogleSignUp}
               isDisabled={authLoading || isSubmitting}
@@ -382,19 +376,19 @@ export default function SignUpPage() {
               <TextField isRequired name="firstName">
                 <Label>First Name</Label>
                 <Input
-                  classNames={stackedInputClassNames}
+                  className="-mb-[2px] rounded-none"
                   placeholder="Enter your first name"
                   type="text"
-                  variant="outline"
+                  variant="secondary"
                 />
               </TextField>
               <TextField isRequired name="lastName">
                 <Label>Last Name</Label>
                 <Input
-                  classNames={stackedInputClassNames}
+                  className="-mb-[2px] rounded-none"
                   placeholder="Enter your last name"
                   type="text"
-                  variant="outline"
+                  variant="secondary"
                 />
               </TextField>
               <TextField
@@ -405,10 +399,10 @@ export default function SignUpPage() {
               >
                 <Label>Email Address</Label>
                 <Input
-                  classNames={stackedInputClassNames}
+                  className="-mb-[2px] rounded-none"
                   placeholder="Enter your email"
                   type="email"
-                  variant="outline"
+                  variant="secondary"
                 />
               </TextField>
               {signupMode === "password" && (
@@ -507,7 +501,6 @@ export default function SignUpPage() {
                   I agree with the&nbsp;
                   <Link
                     className="relative z-1"
-                    size="sm"
                     onPress={() => setIsTermsOpen(true)}
                     aria-label="View Terms of Use (opens dialog)"
                     aria-haspopup="dialog"
@@ -517,7 +510,6 @@ export default function SignUpPage() {
                   &nbsp; and&nbsp;
                   <Link
                     className="relative z-1"
-                    size="sm"
                     onPress={() => setIsPrivacyOpen(true)}
                     aria-label="View Privacy Policy (opens dialog)"
                     aria-haspopup="dialog"
@@ -558,7 +550,7 @@ export default function SignUpPage() {
           </div>
           <p className="text-center text-sm">
             Already have an account?&nbsp;
-            <Link href={siteConfig.pages.login.link} size="sm" color="primary">
+            <Link href={siteConfig.pages.login.link}>
               {siteConfig.pages.login.title}
             </Link>
           </p>

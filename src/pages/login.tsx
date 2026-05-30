@@ -618,7 +618,6 @@ export default function LoginPage() {
                 <Link
                   className="text-muted"
                   onPress={handleForgotPassword}
-                  size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
                 >
                   {isForgotPasswordLoading
@@ -633,7 +632,6 @@ export default function LoginPage() {
                 <Link
                   className="text-muted"
                   onPress={handleForgotPassword}
-                  size="sm"
                   isDisabled={isForgotPasswordLoading || forgotPasswordCooldown}
                 >
                   {isForgotPasswordLoading
@@ -679,9 +677,7 @@ export default function LoginPage() {
           </div>
           <p className="text-center text-sm">
             Need to create an account?&nbsp;
-            <Link href={siteConfig.pages.signup.link} size="sm">
-              Sign Up
-            </Link>
+            <Link href={siteConfig.pages.signup.link}>Sign Up</Link>
           </p>
         </div>
       </div>

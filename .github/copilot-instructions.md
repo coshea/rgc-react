@@ -51,6 +51,7 @@ Concise, project-specific guidance for AI coding agents. Focus on these conventi
 - Prefer HeroUI primitives (`Button`, `Input`, `Select`, `Textarea`, `Chip`, `Modal`, etc.) over raw HTML interactive elements in net-new code and on the specific lines changed to implement a request, unless no equivalent exists or the control is a specialized performance-critical primitive. Legacy preservation takes priority over this preference elsewhere in a touched file: preserve the local pattern unless the specific line being modified uses a raw HTML interactive element that must be changed to implement the requested feature. Do not proactively upgrade surrounding legacy controls. If raw HTML is necessary on a changed line, keep it accessible and document why.
 
 - Keep icon-only controls labeled, keep focus visible, and prefer component props (variant/size/radius/isIconOnly) plus Tailwind utilities over bespoke inline styles.
+- Accessibility naming rule: any interactive control without a visible text label must include an accessible name via `aria-label` or `aria-labelledby`. Apply this to HeroUI compound controls (for example `SearchField`, `Select`, `DatePicker`) at the correct root element, not only inner input elements.
 
 ### Avatar (UserAvatar) Fallback Contract
 

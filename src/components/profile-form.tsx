@@ -5,10 +5,11 @@ import {
   Input,
   Button,
   Spinner,
-  Chip,
   TextField,
   Label,
   FieldError,
+  Checkbox,
+  Modal,
 } from "@heroui/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
@@ -26,6 +27,7 @@ interface FormData {
   phone: string;
   ghinNumber: string;
   profilePicture: File | null;
+  defaultGoldTee?: boolean;
 }
 
 interface FormErrors {
@@ -61,6 +63,7 @@ export function ProfileForm({
     phone: "",
     ghinNumber: "",
     profilePicture: null,
+    defaultGoldTee: false,
   });
 
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -68,25 +71,11 @@ export function ProfileForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [isDirty, setIsDirty] = React.useState(false);
+  const [goldTeeInfoOpen, setGoldTeeInfoOpen] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
-
-  const membershipTypeChip =
-    userProfile?.membershipType === "full"
-      ? {
-          label: "Full Member",
-          color: "success" as const,
-          icon: "lucide:badge-check",
-        }
-      : userProfile?.membershipType === "handicap"
-        ? {
-            label: "Handicap Only",
-            color: "accent" as const,
-            icon: "lucide:golf",
-          }
-        : null;
 
   // Initialize form data from userProfile hook (simplified single source of truth)
   React.useEffect(() => {
@@ -103,6 +92,7 @@ export function ProfileForm({
         phone: profile.phone || user.phoneNumber || "",
         ghinNumber: profile.ghinNumber || "",
         profilePicture: null,
+        defaultGoldTee: profile.defaultGoldTee,
       });
       setImagePreview(profile.photoURL || user.photoURL || null);
     } else if (user && !isLoading) {
@@ -116,10 +106,11 @@ export function ProfileForm({
         phone: user.phoneNumber || "",
         ghinNumber: "",
         profilePicture: null,
+        defaultGoldTee: undefined,
       });
       setImagePreview(user.photoURL || null);
     }
-  }, [user, userProfile, , isDirty]);
+  }, [user, userProfile, isLoading, isDirty]);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -231,6 +222,9 @@ export function ProfileForm({
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
+        ...(typeof formData.defaultGoldTee === "boolean" && {
+          defaultGoldTee: formData.defaultGoldTee,
+        }),
         // Only include governance fields if current user is admin editing self (admin property on profile)
       };
 
@@ -288,7 +282,7 @@ export function ProfileForm({
   if (isLoading) {
     return (
       <Card className="p-6">
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-100">
           <Spinner size="lg" aria-label="Loading profile data..." />
         </div>
       </Card>
@@ -296,15 +290,15 @@ export function ProfileForm({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-5">
       <form
         id={formId || "profile-form"}
         onSubmit={handleSubmit}
-        className="space-y-6"
+        className="space-y-4"
       >
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-4">
           <div
-            className="relative group cursor-pointer mb-3"
+            className="relative group cursor-pointer mb-2"
             onClick={triggerFileInput}
           >
             <UserAvatar
@@ -345,26 +339,10 @@ export function ProfileForm({
             onChange={handleFileChange}
           />
           <p className="text-muted text-sm">Click to upload profile picture</p>
-
-          {membershipTypeChip ? (
-            <div className="mt-2 flex justify-center">
-              <Chip
-                size="sm"
-                variant="tertiary"
-                color={membershipTypeChip.color}
-              >
-                <Icon
-                  icon={membershipTypeChip.icon}
-                  className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-                />
-                {membershipTypeChip.label}
-              </Chip>
-            </div>
-          ) : null}
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <TextField
               isRequired
               isInvalid={!!errors.firstName}
@@ -398,7 +376,7 @@ export function ProfileForm({
             <FieldError>{errors.email}</FieldError>
           </TextField>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TextField
               isInvalid={!!errors.phone}
               value={formData.phone}
@@ -418,6 +396,48 @@ export function ProfileForm({
               <Input placeholder="Enter your GHIN number" type="text" />
               <FieldError>{errors.ghinNumber}</FieldError>
             </TextField>
+          </div>
+
+          {/* Gold Tees Default preference */}
+          <div className="pt-2 border-t">
+            <div className="flex items-start gap-3 rounded-lg border p-4 hover:bg-surface-secondary/50 transition-colors">
+              <Checkbox
+                isSelected={formData.defaultGoldTee}
+                onChange={(v) => {
+                  setIsDirty(true);
+                  setFormData((prev) => ({ ...prev, defaultGoldTee: v }));
+                }}
+                aria-label="Default to gold tees"
+                className="mt-0.5 shrink-0"
+              >
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+              </Checkbox>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-sm font-medium min-w-0">
+                    <Icon
+                      icon="lucide:flag"
+                      className="w-4 h-4 text-warning shrink-0"
+                    />
+                    <span className="truncate">
+                      Default to Gold (Senior) Tees
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="px-2 h-7 text-xs shrink-0"
+                    onPress={() => setGoldTeeInfoOpen(true)}
+                    aria-label="Gold tees information"
+                  >
+                    <Icon icon="lucide:info" className="w-3.5 h-3.5" />
+                    Info
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -458,6 +478,29 @@ export function ProfileForm({
           </div>
         )}
       </form>
+
+      <Modal.Backdrop
+        isOpen={goldTeeInfoOpen}
+        onOpenChange={setGoldTeeInfoOpen}
+      >
+        <Modal.Container size="sm">
+          <Modal.Dialog aria-label="Gold tees setting information">
+            <>
+              <Modal.Header>Gold Tees Default</Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-muted">
+                  This setting is for seniors only. When enabled, you will be
+                  pre-selected for gold tees when you register for a tournament
+                  or when you are added to a team.
+                </p>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button onPress={() => setGoldTeeInfoOpen(false)}>Close</Button>
+              </Modal.Footer>
+            </>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Card>
   );
 }

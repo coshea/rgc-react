@@ -85,20 +85,20 @@ describe("UserAvatar fallback precedence", () => {
     // No img element when no image URL provided
     const img = container.querySelector("img");
     expect(img).toBeFalsy();
-    // Name attribute reflects resolved display name (used for initials)
-    expect(avatar?.getAttribute("name")).toBe("Dora Explorer");
+    // Accessible name reflects resolved display name
+    expect(avatar?.getAttribute("aria-label")).toBe("Dora Explorer");
   });
 
   it("derives initials from single word names (first two letters)", () => {
     const user: any = { displayName: "Echo" };
     const { container } = render(<UserAvatar user={user} />);
     const avatar = container.querySelector(".avatar");
-    expect(avatar?.getAttribute("name")).toBe("Echo");
+    expect(avatar?.getAttribute("aria-label")).toBe("Echo");
   });
 
   it("falls back to name prop when user missing", () => {
     const { container } = render(<UserAvatar name="Frank Castle" />);
     const avatar = container.querySelector(".avatar");
-    expect(avatar?.getAttribute("name")).toBe("Frank Castle");
+    expect(avatar?.getAttribute("aria-label")).toBe("Frank Castle");
   });
 });
