@@ -83,7 +83,7 @@ function MemberEditDialog({
       ghinNumber: editing.ghinNumber ?? "",
       boardMember: !!editing.boardMember,
       role: editing.boardMember ? (editing.role ?? "") : "",
-      defaultGoldTee: !!editing.defaultGoldTee,
+      defaultGoldTee: editing.defaultGoldTee,
     });
   }, [editing]);
 
