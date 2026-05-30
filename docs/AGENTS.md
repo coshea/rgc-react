@@ -65,7 +65,7 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 8. Phone Numbers: Normalize digits; display `(xxx) xxx-xxxx` when 10 digits; keep helper logic consistent across pages & CSV import.
 9. Optimistic Updates: Follow `useUserProfile()` pattern (`onMutate` + rollback) for new cached mutations.
 10. Validation & Feedback: Use local `errors` object and HeroUI `isInvalid` + `errorMessage`; surface results with `addToast`.
-11. Accessibility: Provide `aria-label` for icon-only buttons; ensure modals trap focus if expanded beyond current simple overlays.
+11. Accessibility: Provide an accessible name for any control without visible text using `aria-label` or `aria-labelledby` (including icon-only buttons and compound inputs like SearchField/Select roots), and ensure modals trap focus if expanded beyond current simple overlays.
 12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
 13. Avoid Magic Strings: Prefer enums/typed constants for state-like values; define once and reuse across call sites.
 
@@ -124,4 +124,7 @@ Rationale: Ensures consistent accessibility behavior (Enter/Space support), prev
 
 ## Metadata
 
-Last updated: 2026-01-23 (avoid magic strings; prefer enums like `RegistrationWindowState`)
+Last updated: 2026-05-29
+
+- 2026-05-29: Require `aria-label` or `aria-labelledby` for all unlabeled interactive controls, including compound HeroUI control roots.
+- 2026-01-23: Avoid magic strings; prefer enums like `RegistrationWindowState`.

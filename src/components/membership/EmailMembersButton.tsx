@@ -90,7 +90,7 @@ export function EmailMembersButton({
   }
 
   return (
-    <Dropdown placement="bottom-end">
+    <Dropdown>
       <Button variant="primary" size={size} className="font-medium">
         <Icon icon="lucide:mail" className="w-4 h-4" />
         Email Members

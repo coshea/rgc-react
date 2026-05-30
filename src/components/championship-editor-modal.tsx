@@ -452,7 +452,7 @@ export function ChampionshipEditorModal({
             <Button
               variant="tertiary"
               onPress={handleClose}
-              disabled={isSubmitting}
+              isDisabled={isSubmitting}
             >
               Cancel
             </Button>

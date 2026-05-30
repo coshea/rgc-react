@@ -860,7 +860,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               <Icon icon="lucide:download" className="w-4 h-4" />
               Export CSV
             </Button>
-            <SearchField name="search">
+            <SearchField name="search" aria-label="Search payments">
               <SearchField.Group>
                 <SearchField.SearchIcon />
                 <SearchField.Input
@@ -876,6 +876,7 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
 
             <Input
               type="number"
+              aria-label="Payment year"
               value={String(year)}
               onChange={(e) => {
                 const next = Number(e.target.value);

@@ -761,7 +761,7 @@ img { display: block; max-width: 100%; }
                 <div className="flex items-center justify-between">
                   <BackButton />
                   <div className="flex items-center gap-2">
-                    <Dropdown placement="bottom-end">
+                    <Dropdown>
                       <Button
                         size="sm"
                         variant="secondary"
@@ -774,17 +774,21 @@ img { display: block; max-width: 100%; }
                         <Dropdown.Menu aria-label="Calendar options">
                           <Dropdown.Item
                             id="google"
-                            startContent={<Icon icon="lucide:calendar" />}
                             onPress={() => handleCalendarAction("google")}
                           >
-                            Add to Google Calendar
+                            <span className="flex items-center gap-2">
+                              <Icon icon="lucide:calendar" />
+                              <span>Add to Google Calendar</span>
+                            </span>
                           </Dropdown.Item>
                           <Dropdown.Item
                             id="ics"
-                            startContent={<Icon icon="lucide:download" />}
                             onPress={() => handleCalendarAction("ics")}
                           >
-                            Download calendar file (.ics)
+                            <span className="flex items-center gap-2">
+                              <Icon icon="lucide:download" />
+                              <span>Download calendar file (.ics)</span>
+                            </span>
                           </Dropdown.Item>
                         </Dropdown.Menu>
                       </Dropdown.Popover>
@@ -877,7 +881,7 @@ img { display: block; max-width: 100%; }
               <div className="hidden md:flex items-center justify-between">
                 <BackButton />
                 <div className="flex items-center gap-3">
-                  <Dropdown placement="bottom-end">
+                  <Dropdown>
                     <Button
                       size="sm"
                       variant="secondary"
@@ -890,17 +894,21 @@ img { display: block; max-width: 100%; }
                       <Dropdown.Menu aria-label="Calendar options">
                         <Dropdown.Item
                           id="google"
-                          startContent={<Icon icon="lucide:calendar" />}
                           onPress={() => handleCalendarAction("google")}
                         >
-                          Add to Google Calendar
+                          <span className="flex items-center gap-2">
+                            <Icon icon="lucide:calendar" />
+                            <span>Add to Google Calendar</span>
+                          </span>
                         </Dropdown.Item>
                         <Dropdown.Item
                           id="ics"
-                          startContent={<Icon icon="lucide:download" />}
                           onPress={() => handleCalendarAction("ics")}
                         >
-                          Download calendar file (.ics)
+                          <span className="flex items-center gap-2">
+                            <Icon icon="lucide:download" />
+                            <span>Download calendar file (.ics)</span>
+                          </span>
                         </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown.Popover>

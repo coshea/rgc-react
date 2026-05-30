@@ -20,7 +20,7 @@ export const ProfileDropdown = () => {
   return (
     <>
       <NotificationBell />
-      <Dropdown placement="bottom-end">
+      <Dropdown>
         <Button
           isIconOnly
           variant="ghost"
@@ -59,7 +59,6 @@ export const ProfileDropdown = () => {
             <Dropdown.Item
               id="profile-info"
               className="gap-3 py-3"
-              isReadOnly
               textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
             >
               <div className="flex items-center gap-3">
@@ -93,9 +92,6 @@ export const ProfileDropdown = () => {
             <Dropdown.Item
               id="settings"
               textValue="My Profile"
-              startContent={
-                <Icon icon="lucide:user" className="text-base text-muted" />
-              }
               onPress={() => {
                 const href = user
                   ? `/profile/${user.uid}`
@@ -103,20 +99,25 @@ export const ProfileDropdown = () => {
                 window.location.href = href;
               }}
             >
-              My Profile
+              <span className="flex items-center gap-2">
+                <Icon icon="lucide:user" className="text-base text-muted" />
+                <span>My Profile</span>
+              </span>
             </Dropdown.Item>
 
             <Dropdown.Item
               id="theme"
-              closeOnSelect={false}
               className="cursor-default"
               textValue="Theme"
-              startContent={
-                <Icon icon="lucide:sun-moon" className="text-base text-muted" />
-              }
             >
               <div className="flex items-center justify-between w-full">
-                <span className="text-sm text-foreground">Theme</span>
+                <span className="flex items-center gap-2 text-sm text-foreground">
+                  <Icon
+                    icon="lucide:sun-moon"
+                    className="text-base text-muted"
+                  />
+                  <span>Theme</span>
+                </span>
                 <ThemeSwitch />
               </div>
             </Dropdown.Item>
@@ -129,18 +130,18 @@ export const ProfileDropdown = () => {
                   <Dropdown.Item
                     id="admin-dashboard"
                     textValue="Admin Dashboard"
-                    startContent={
-                      <Icon
-                        icon="lucide:layout-dashboard"
-                        className="text-base text-muted"
-                      />
-                    }
                     onPress={() => {
                       window.location.href =
                         siteConfig.pages.adminDashboard.link;
                     }}
                   >
-                    Admin Dashboard
+                    <span className="flex items-center gap-2">
+                      <Icon
+                        icon="lucide:layout-dashboard"
+                        className="text-base text-muted"
+                      />
+                      <span>Admin Dashboard</span>
+                    </span>
                   </Dropdown.Item>
                 </Dropdown.Section>
               </>
@@ -150,13 +151,13 @@ export const ProfileDropdown = () => {
             <Dropdown.Section>
               <Dropdown.Item
                 id="logout"
-                color="danger"
-                startContent={
-                  <Icon icon="lucide:log-out" className="text-base" />
-                }
+                className="text-danger"
                 onPress={logout}
               >
-                Log Out
+                <span className="flex items-center gap-2">
+                  <Icon icon="lucide:log-out" className="text-base" />
+                  <span>Log Out</span>
+                </span>
               </Dropdown.Item>
             </Dropdown.Section>
           </Dropdown.Menu>

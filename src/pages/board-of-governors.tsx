@@ -57,42 +57,48 @@ const BoardOfGovernorsPage: React.FC = () => {
               ) : undefined;
 
             return (
-              <Card
+              <button
                 key={member.id}
-                onPress={() => navigate(`/profile/${member.id}`)}
-                className={`relative border bg-surface/60 hover:bg-surface-secondary transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
+                type="button"
+                onClick={() => navigate(`/profile/${member.id}`)}
+                className="text-left"
+                aria-label={`View profile for ${member.displayName || member.email}`}
               >
-                <Card.Header className="py-3 flex flex-col items-center text-center">
-                  <div className="relative mb-2">
-                    <UserAvatar
-                      user={member}
-                      className={`w-10 h-10 text-sm ${isPresident ? "border-2 border-warning" : ""}`}
-                      size="sm"
-                      alt={member.displayName || member.email}
-                    />
-                  </div>
-                  <h3 className="font-semibold text-sm leading-tight">
-                    {member.displayName || member.email}
-                  </h3>
-                  <div className="mt-2">
-                    {meta ? (
-                      <Chip
+                <Card
+                  className={`relative border bg-surface/60 hover:bg-surface-secondary transition-colors ${isPresident ? "ring-1 ring-warning" : ""}`}
+                >
+                  <Card.Header className="py-3 flex flex-col items-center text-center">
+                    <div className="relative mb-2">
+                      <UserAvatar
+                        user={member}
+                        className={`w-10 h-10 text-sm ${isPresident ? "border-2 border-warning" : ""}`}
                         size="sm"
-                        color={meta.color}
-                        variant={isPresident ? "primary" : "tertiary"}
-                      >
-                        {chipStart}
-                        {meta.label || member.roleLabel}
-                      </Chip>
-                    ) : (
-                      <Chip size="sm" variant="tertiary">
-                        {member.roleLabel}
-                      </Chip>
-                    )}
-                  </div>
-                </Card.Header>
-                <Card.Content className="pt-0 pb-3" />
-              </Card>
+                        alt={member.displayName || member.email}
+                      />
+                    </div>
+                    <h3 className="font-semibold text-sm leading-tight">
+                      {member.displayName || member.email}
+                    </h3>
+                    <div className="mt-2">
+                      {meta ? (
+                        <Chip
+                          size="sm"
+                          color={meta.color}
+                          variant={isPresident ? "primary" : "tertiary"}
+                        >
+                          {chipStart}
+                          {meta.label || member.roleLabel}
+                        </Chip>
+                      ) : (
+                        <Chip size="sm" variant="tertiary">
+                          {member.roleLabel}
+                        </Chip>
+                      )}
+                    </div>
+                  </Card.Header>
+                  <Card.Content className="pt-0 pb-3" />
+                </Card>
+              </button>
             );
           })}
         </div>
