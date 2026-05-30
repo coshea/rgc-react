@@ -59,6 +59,8 @@ interface MemberEditDialogProps {
   onSaved: (uid: string) => void;
 }
 
+type MemberEditFormState = Record<string, string | boolean | undefined | null>;
+
 function MemberEditDialog({
   open,
   editing,
@@ -67,7 +69,7 @@ function MemberEditDialog({
   onSaved,
 }: MemberEditDialogProps) {
   const qc = useQueryClient();
-  const [form, setForm] = useState<Record<string, string | boolean>>({});
+  const [form, setForm] = useState<MemberEditFormState>({});
 
   // Initialise form whenever the editing subject changes
   const prevIdRef = useRef<string | null>(null);
@@ -125,7 +127,10 @@ function MemberEditDialog({
           ghinNumber: String(form.ghinNumber ?? "").trim(),
           boardMember: !!form.boardMember,
           role: form.boardMember ? String(form.role ?? "").trim() : null,
-          ...(form.defaultGoldTee !== undefined && form.defaultGoldTee !== null && { defaultGoldTee: !!form.defaultGoldTee }),
+          ...(form.defaultGoldTee !== undefined &&
+            form.defaultGoldTee !== null && {
+              defaultGoldTee: !!form.defaultGoldTee,
+            }),
         }),
       );
       qc.invalidateQueries({ queryKey: ["users"] });
@@ -148,7 +153,7 @@ function MemberEditDialog({
       open={open}
       editing={editing}
       form={form}
-      onChange={(next) => setForm(next as Record<string, string | boolean>)}
+      onChange={(next) => setForm(next as MemberEditFormState)}
       onClose={onClose}
       onSave={handleSave}
       isAdmin={isAdmin}

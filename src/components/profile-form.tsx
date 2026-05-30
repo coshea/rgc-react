@@ -222,7 +222,9 @@ export function ProfileForm({
         phone: formData.phone,
         ghinNumber: formData.ghinNumber,
         photoURL: imagePreview || user.photoURL || null,
-        ...(formData.defaultGoldTee !== undefined && { defaultGoldTee: formData.defaultGoldTee }),
+        ...(typeof formData.defaultGoldTee === "boolean" && {
+          defaultGoldTee: formData.defaultGoldTee,
+        }),
         // Only include governance fields if current user is admin editing self (admin property on profile)
       };
 
