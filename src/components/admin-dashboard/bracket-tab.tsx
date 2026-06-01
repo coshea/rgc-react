@@ -785,10 +785,10 @@ export function BracketTab() {
                 {resultsSearch.trim() &&
                   (() => {
                     const searchTerm = resultsSearch.trim().toLowerCase();
+                    const teamMap = new Map(
+                      bracket.teams.map((t) => [t.id, t]),
+                    );
                     const hasAnyMatch = bracket.matches.some((m) => {
-                      const teamMap = new Map(
-                        bracket.teams.map((t) => [t.id, t]),
-                      );
                       const team1 = m.team1Id
                         ? teamMap.get(m.team1Id)
                         : undefined;

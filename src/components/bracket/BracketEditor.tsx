@@ -1379,10 +1379,8 @@ export function BracketEditor({
               {resultsSearch.trim() &&
                 (() => {
                   const searchTerm = resultsSearch.trim().toLowerCase();
+                  const teamMap = new Map(bracket.teams.map((t) => [t.id, t]));
                   const hasAnyMatch = bracket.matches.some((m) => {
-                    const teamMap = new Map(
-                      bracket.teams.map((t) => [t.id, t]),
-                    );
                     const team1 = m.team1Id
                       ? teamMap.get(m.team1Id)
                       : undefined;
@@ -1575,7 +1573,7 @@ export function BracketEditor({
                               (val as string) ?? null,
                             );
                           }}
-                          className="flex-1 min-w-35"
+                          className="flex-1 min-w-36"
                         >
                           <Select.Trigger>
                             <Select.Value />
@@ -1610,7 +1608,7 @@ export function BracketEditor({
                               (val as string) ?? null,
                             );
                           }}
-                          className="flex-1 min-w-35"
+                          className="flex-1 min-w-36"
                         >
                           <Select.Trigger>
                             <Select.Value />
