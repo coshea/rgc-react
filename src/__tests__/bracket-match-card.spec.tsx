@@ -56,7 +56,10 @@ describe("BracketMatchCard highlight visual", () => {
     );
 
     const card = container.firstElementChild as HTMLElement;
+    expect(card).toHaveClass("border-2");
     expect(card).toHaveClass("border-primary");
+    expect(card).toHaveClass("ring-2");
+    expect(card).toHaveClass("ring-primary/30");
     expect(card).toHaveClass("shadow-primary/20");
 
     const infoIcon = container.querySelector('[data-icon="lucide:info"]');
@@ -81,7 +84,9 @@ describe("BracketMatchCard highlight visual", () => {
     );
 
     const card = container.firstElementChild as HTMLElement;
+    expect(card).not.toHaveClass("border-2");
     expect(card).not.toHaveClass("border-primary");
+    expect(card).not.toHaveClass("ring-2");
     expect(card).not.toHaveClass("shadow-primary/20");
 
     const infoIcon = container.querySelector('[data-icon="lucide:info"]');

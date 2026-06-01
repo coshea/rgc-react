@@ -61,7 +61,7 @@ function TeamSlot({
   isHighlighted = false,
 }: SlotProps) {
   const base =
-    "relative px-3 py-2 transition-colors flex flex-col justify-center";
+    "relative pl-4 pr-3 py-2 transition-colors flex flex-col justify-center";
 
   if (isBye) {
     return (
@@ -257,8 +257,10 @@ export function BracketMatchCard({
     <div
       style={{ width }}
       className={[
-        "border rounded-xl bg-surface overflow-hidden shadow-sm transition-all",
-        isHighlighted ? "border-primary shadow-md shadow-primary/20" : "",
+        "ml-1 rounded-xl bg-surface overflow-hidden transition-all",
+        isHighlighted
+          ? "border-2 border-primary ring-2 ring-primary/30 shadow-lg shadow-primary/20"
+          : "border shadow-sm",
       ]
         .filter(Boolean)
         .join(" ")}
