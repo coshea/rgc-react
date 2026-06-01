@@ -8,6 +8,7 @@ interface BracketTeam {
   id: string;
   name?: string;
   memberIds?: string[];
+  memberNames?: string[];
 }
 
 interface BracketMatch {
@@ -113,6 +114,29 @@ function uniqueMemberIds(team: BracketTeam | undefined): string[] {
   return Array.from(new Set(team.memberIds.filter(Boolean)));
 }
 
+function buildTeamLabel(
+  team: BracketTeam | undefined,
+  fallback: string,
+  userMap: Map<string, UserData>,
+): string {
+  if (!team) return fallback;
+
+  const fromBracket = (team.memberNames ?? [])
+    .map((name) => name?.toString().trim())
+    .filter((name): name is string => Boolean(name));
+  if (fromBracket.length > 0) return fromBracket.join(", ");
+
+  const fromUsers = uniqueMemberIds(team)
+    .map((uid) => {
+      const user = userMap.get(uid);
+      return (user?.displayName ?? user?.email ?? uid).toString().trim();
+    })
+    .filter((name): name is string => Boolean(name));
+  if (fromUsers.length > 0) return fromUsers.join(", ");
+
+  return team.name ?? fallback;
+}
+
 export const notify_bracket_matchup = onDocumentWritten(
   {
     document: "brackets/{tournamentId}",
@@ -199,8 +223,8 @@ export const notify_bracket_matchup = onDocumentWritten(
         ...Array.from(team2MemberSet),
       ]);
 
-      const team1Name = team1.name ?? "Team 1";
-      const team2Name = team2.name ?? "Team 2";
+      const team1Name = buildTeamLabel(team1, "Team 1", userMap);
+      const team2Name = buildTeamLabel(team2, "Team 2", userMap);
       const matchupLabel = `${team1Name} vs ${team2Name}`;
       const roundLabel = buildRoundLabel(matchup.round, totalRounds);
 

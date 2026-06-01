@@ -169,6 +169,37 @@ const TournamentDetailPage: React.FC = () => {
   const [downloadingPng, setDownloadingPng] = React.useState(false);
   const [printingBracket, setPrintingBracket] = React.useState(false);
 
+  const userBracketMatchIds = React.useMemo((): Set<string> => {
+    const uid = user?.uid;
+    if (!uid || !bracket) return new Set();
+
+    // Prefer the bracket's own memberIds mapping because that is the direct source of truth for the bracket UI.
+    const userTeam = bracket.teams.find(
+      (team) => Array.isArray(team.memberIds) && team.memberIds.includes(uid),
+    );
+
+    // Fall back to the registration doc lookup if the bracket team mapping is missing or stale.
+    const userReg = userTeam
+      ? null
+      : registrations.find(
+          (r) =>
+            r.ownerId === uid ||
+            (Array.isArray(r.team) && r.team.some((m) => m.id === uid)),
+        );
+
+    const teamId = userTeam?.id ?? userReg?.id;
+    if (!teamId) return new Set();
+
+    // Collect ALL match IDs (across every round) where the user's team appears.
+    return new Set(
+      bracket.matches
+        .filter((m) => m.team1Id === teamId || m.team2Id === teamId)
+        .map((m) => m.id),
+    );
+  }, [bracket, user?.uid, registrations]);
+
+  const highlightedBracketMatchIds = userBracketMatchIds;
+
   const handlePrintBracket = React.useCallback(
     async (el: HTMLDivElement | null) => {
       if (!bracket || !el) return;
@@ -1490,6 +1521,7 @@ img { display: block; max-width: 100%; }
                         bracket={bracket}
                         onTeamPress={(team) => setBracketTeamModal(team)}
                         userPhotoMap={bracketUserPhotoMap}
+                        highlightMatchIds={highlightedBracketMatchIds}
                       />
                     </div>
                   </Card.Content>
@@ -1844,6 +1876,7 @@ img { display: block; max-width: 100%; }
                 </Tooltip>
               </div>
             </div>
+
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
               <div ref={fullscreenBracketRef}>
                 <BracketView
@@ -1853,6 +1886,7 @@ img { display: block; max-width: 100%; }
                     setBracketExpanded(false);
                   }}
                   userPhotoMap={bracketUserPhotoMap}
+                  highlightMatchIds={highlightedBracketMatchIds}
                 />
               </div>
             </div>
@@ -1929,50 +1963,188 @@ img { display: block; max-width: 100%; }
         )}
       </div>
 
-      <Modal.Backdrop
-        isOpen={openTeamModal}
-        onOpenChange={(open) => {
-          setOpenTeamModal(open);
-          if (!open) setOpenTeamModalData(null);
-        }}
-      >
-        <Modal.Container size="md">
-          <Modal.Dialog>
-            <>
-              <Modal.Header>
-                {openTeamModalData?.lookingForPartnerTeam
-                  ? "Seeking a partner team"
-                  : "Open spot"}
-              </Modal.Header>
-              <Modal.Body>
-                {openTeamModalData ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted">
-                      <div className="font-medium">
-                        Team {openTeamModalData.teamNumber}
+      <Modal>
+        <Modal.Backdrop
+          isOpen={openTeamModal}
+          onOpenChange={(open) => {
+            setOpenTeamModal(open);
+            if (!open) setOpenTeamModalData(null);
+          }}
+        >
+          <Modal.Container size="md">
+            <Modal.Dialog>
+              <>
+                <Modal.Header>
+                  {openTeamModalData?.lookingForPartnerTeam
+                    ? "Seeking a partner team"
+                    : "Open spot"}
+                </Modal.Header>
+                <Modal.Body>
+                  {openTeamModalData ? (
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted">
+                        <div className="font-medium">
+                          Team {openTeamModalData.teamNumber}
+                        </div>
+                        <div className="text-muted">
+                          {openTeamModalData.lookingForPartnerTeam
+                            ? "Looking for a partner team to complete a foursome"
+                            : openTeamModalData.openSpots === 1
+                              ? "1 spot open"
+                              : `${openTeamModalData.openSpots} spots open`}
+                        </div>
                       </div>
-                      <div className="text-muted">
-                        {openTeamModalData.lookingForPartnerTeam
-                          ? "Looking for a partner team to complete a foursome"
-                          : openTeamModalData.openSpots === 1
-                            ? "1 spot open"
-                            : `${openTeamModalData.openSpots} spots open`}
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      {openTeamModalData.team.map((m) => {
-                        const memberUser = usersMap.get(m.id);
-                        const name =
-                          (m.displayName || memberUser?.displayName || "")
-                            .toString()
-                            .trim() || m.id;
-                        const isLeader =
-                          !!openTeamModalData.leaderId &&
-                          m.id === openTeamModalData.leaderId;
-                        return (
+                      <div className="space-y-2">
+                        {openTeamModalData.team.map((m) => {
+                          const memberUser = usersMap.get(m.id);
+                          const name =
+                            (m.displayName || memberUser?.displayName || "")
+                              .toString()
+                              .trim() || m.id;
+                          const isLeader =
+                            !!openTeamModalData.leaderId &&
+                            m.id === openTeamModalData.leaderId;
+                          return (
+                            <div
+                              key={m.id}
+                              className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <UserAvatar
+                                  size="sm"
+                                  user={memberUser}
+                                  name={memberUser ? undefined : name}
+                                  alt={name}
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">
+                                      {name}
+                                    </span>
+                                    {isLeader &&
+                                    (tournament?.players ?? 1) > 1 ? (
+                                      <Chip
+                                        size="sm"
+                                        variant="tertiary"
+                                        className="h-5 px-2 text-[10px]"
+                                      >
+                                        Leader
+                                      </Chip>
+                                    ) : null}
+                                  </div>
+                                  {memberUser?.email ? (
+                                    <div className="text-[11px] text-muted truncate">
+                                      {memberUser.email}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="tertiary"
+                                onPress={() => {
+                                  setOpenTeamModal(false);
+                                  navigate(`/profile/${m.id}`);
+                                }}
+                                aria-label={`View profile for ${name}`}
+                              >
+                                View profile
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <p className="text-xs text-muted">
+                        Tip: use "View profile" to contact a team member or the
+                        leader.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted">Loading...</p>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  {openTeamModalData &&
+                    (() => {
+                      const emails = openTeamModalData.team
+                        .map((m) => usersMap.get(m.id)?.email)
+                        .filter((e): e is string => !!e);
+                      return emails.length > 0 ? (
+                        <Button
+                          variant="tertiary"
+                          onPress={() => {
+                            window.location.href = `mailto:${emails.join(",")}`;
+                          }}
+                        >
+                          <Icon icon="lucide:mail" className="w-4 h-4" />
+                          Email team
+                        </Button>
+                      ) : null;
+                    })()}
+                  <Button
+                    variant="ghost"
+                    onPress={() => setOpenTeamModal(false)}
+                  >
+                    Close
+                  </Button>
+                </Modal.Footer>
+              </>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      {/* Bracket team info modal */}
+      <Modal>
+        <Modal.Backdrop
+          isOpen={!!bracketTeamModal}
+          onOpenChange={(open) => {
+            if (!open) {
+              setBracketTeamModal(null);
+              setBracketMemberUsers(new Map());
+            }
+          }}
+        >
+          <Modal.Container size="md">
+            <Modal.Dialog>
+              {(() => {
+                const team = bracketTeamModal;
+                if (!team) return null;
+
+                const memberRows = team.memberIds.map((uid, i) => {
+                  // Prefer the directly-fetched user (not subject to orderBy exclusion)
+                  const memberUser =
+                    bracketMemberUsers.get(uid) ?? usersMap.get(uid);
+                  const name = (
+                    team.memberNames?.[i] ||
+                    memberUser?.displayName ||
+                    memberUser?.email ||
+                    uid
+                  )
+                    .toString()
+                    .trim();
+                  return { uid, memberUser, name };
+                });
+
+                const emails = memberRows
+                  .map((r) => r.memberUser?.email)
+                  .filter((e): e is string => !!e);
+
+                return (
+                  <>
+                    <Modal.Header className="flex flex-col gap-0.5">
+                      <span>{team.name}</span>
+                      <span className="text-sm font-normal text-muted">
+                        Team contact info
+                      </span>
+                    </Modal.Header>
+                    <Modal.Body>
+                      <div className="space-y-2">
+                        {memberRows.map(({ uid, memberUser, name }) => (
                           <div
-                            key={m.id}
+                            key={uid}
                             className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
                           >
                             <div className="flex items-center gap-2 min-w-0">
@@ -1983,20 +2155,8 @@ img { display: block; max-width: 100%; }
                                 alt={name}
                               />
                               <div className="min-w-0">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-sm font-medium truncate">
-                                    {name}
-                                  </span>
-                                  {isLeader &&
-                                  (tournament?.players ?? 1) > 1 ? (
-                                    <Chip
-                                      size="sm"
-                                      variant="tertiary"
-                                      className="h-5 px-2 text-[10px]"
-                                    >
-                                      Leader
-                                    </Chip>
-                                  ) : null}
+                                <div className="text-sm font-medium truncate">
+                                  {name}
                                 </div>
                                 {memberUser?.email ? (
                                   <div className="text-[11px] text-muted truncate">
@@ -2009,160 +2169,41 @@ img { display: block; max-width: 100%; }
                               size="sm"
                               variant="tertiary"
                               onPress={() => {
-                                setOpenTeamModal(false);
-                                navigate(`/profile/${m.id}`);
+                                setBracketTeamModal(null);
+                                navigate(`/profile/${uid}`);
                               }}
                               aria-label={`View profile for ${name}`}
                             >
                               View profile
                             </Button>
                           </div>
-                        );
-                      })}
-                    </div>
-
-                    <p className="text-xs text-muted">
-                      Tip: use "View profile" to contact a team member or the
-                      leader.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted">Loading...</p>
-                )}
-              </Modal.Body>
-              <Modal.Footer>
-                {openTeamModalData &&
-                  (() => {
-                    const emails = openTeamModalData.team
-                      .map((m) => usersMap.get(m.id)?.email)
-                      .filter((e): e is string => !!e);
-                    return emails.length > 0 ? (
-                      <Button
-                        variant="tertiary"
-                        onPress={() => {
-                          window.location.href = `mailto:${emails.join(",")}`;
-                        }}
-                      >
-                        <Icon icon="lucide:mail" className="w-4 h-4" />
-                        Email team
-                      </Button>
-                    ) : null;
-                  })()}
-                <Button variant="ghost" onPress={() => setOpenTeamModal(false)}>
-                  Close
-                </Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-
-      {/* Bracket team info modal */}
-      <Modal.Backdrop
-        isOpen={!!bracketTeamModal}
-        onOpenChange={(open) => {
-          if (!open) {
-            setBracketTeamModal(null);
-            setBracketMemberUsers(new Map());
-          }
-        }}
-      >
-        <Modal.Container size="md">
-          <Modal.Dialog>
-            {(() => {
-              const team = bracketTeamModal;
-              if (!team) return null;
-
-              const memberRows = team.memberIds.map((uid, i) => {
-                // Prefer the directly-fetched user (not subject to orderBy exclusion)
-                const memberUser =
-                  bracketMemberUsers.get(uid) ?? usersMap.get(uid);
-                const name = (
-                  team.memberNames?.[i] ||
-                  memberUser?.displayName ||
-                  memberUser?.email ||
-                  uid
-                )
-                  .toString()
-                  .trim();
-                return { uid, memberUser, name };
-              });
-
-              const emails = memberRows
-                .map((r) => r.memberUser?.email)
-                .filter((e): e is string => !!e);
-
-              return (
-                <>
-                  <Modal.Header className="flex flex-col gap-0.5">
-                    <span>{team.name}</span>
-                    <span className="text-sm font-normal text-muted">
-                      Team contact info
-                    </span>
-                  </Modal.Header>
-                  <Modal.Body>
-                    <div className="space-y-2">
-                      {memberRows.map(({ uid, memberUser, name }) => (
-                        <div
-                          key={uid}
-                          className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
+                        ))}
+                      </div>
+                    </Modal.Body>
+                    <Modal.Footer>
+                      {emails.length > 0 && (
+                        <Button
+                          variant="tertiary"
+                          onPress={() => copyOrMailtoEmails(emails)}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <UserAvatar
-                              size="sm"
-                              user={memberUser}
-                              name={memberUser ? undefined : name}
-                              alt={name}
-                            />
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {name}
-                              </div>
-                              {memberUser?.email ? (
-                                <div className="text-[11px] text-muted truncate">
-                                  {memberUser.email}
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="tertiary"
-                            onPress={() => {
-                              setBracketTeamModal(null);
-                              navigate(`/profile/${uid}`);
-                            }}
-                            aria-label={`View profile for ${name}`}
-                          >
-                            View profile
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </Modal.Body>
-                  <Modal.Footer>
-                    {emails.length > 0 && (
+                          <Icon icon="lucide:copy" className="w-4 h-4" />
+                          Copy emails
+                        </Button>
+                      )}
                       <Button
-                        variant="tertiary"
-                        onPress={() => copyOrMailtoEmails(emails)}
+                        variant="ghost"
+                        onPress={() => setBracketTeamModal(null)}
                       >
-                        <Icon icon="lucide:copy" className="w-4 h-4" />
-                        Copy emails
+                        Close
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      onPress={() => setBracketTeamModal(null)}
-                    >
-                      Close
-                    </Button>
-                  </Modal.Footer>
-                </>
-              );
-            })()}
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
+                    </Modal.Footer>
+                  </>
+                );
+              })()}
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </>
   );
 };
