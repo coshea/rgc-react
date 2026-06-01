@@ -18,6 +18,7 @@ import {
   ListBox,
   Select,
   Spinner,
+  SearchField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
@@ -67,18 +68,15 @@ interface RegistrationDoc {
 
 function registrationToTeam(reg: RegistrationDoc, seed?: number): BracketTeam {
   const members = reg.team ?? [];
-  const captain = members[0];
-  const rest = members.slice(1);
-
-  const name = captain?.displayName
-    ? rest.length > 0
-      ? `${captain.displayName} +${rest.length}`
-      : captain.displayName
-    : `Team ${reg.id.slice(-4).toUpperCase()}`;
 
   const memberNames = members
-    .map((m) => m.displayName)
+    .map((m) => m.displayName?.trim())
     .filter((n): n is string => Boolean(n));
+
+  const name =
+    memberNames.length > 0
+      ? memberNames.join(", ")
+      : `Team ${reg.id.slice(-4).toUpperCase()}`;
 
   return {
     id: reg.id,
@@ -87,6 +85,21 @@ function registrationToTeam(reg: RegistrationDoc, seed?: number): BracketTeam {
     memberNames: memberNames.length > 0 ? memberNames : undefined,
     seed,
   };
+}
+
+function bracketTeamDisplayName(team: BracketTeam | undefined): string {
+  if (!team) return "Unknown";
+  if (team.memberNames && team.memberNames.length > 0) {
+    return team.memberNames.join(", ");
+  }
+  return team.name;
+}
+
+function bracketTeamSearchText(team: BracketTeam | undefined): string {
+  if (!team) return "";
+  return [team.name, ...(team.memberNames ?? []), ...team.memberIds]
+    .join(" ")
+    .toLowerCase();
 }
 
 // ── SortableTeamRow ────────────────────────────────────────────────────────────
@@ -194,6 +207,7 @@ export function BracketTab() {
   const [pendingWinners, setPendingWinners] = useState<Record<string, string>>(
     {},
   );
+  const [resultsSearch, setResultsSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
   // When the bracket changes (real-time or after save), reset pending selections
@@ -509,8 +523,28 @@ export function BracketTab() {
 
             {/* Match results form */}
             <Card>
-              <Card.Header className="flex items-center justify-between">
-                <p className="font-semibold text-sm">Match Results</p>
+              <Card.Header className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <p className="font-semibold text-sm">Match Results</p>
+                  <SearchField
+                    name="admin-bracket-results-search"
+                    aria-label="Search bracket matches by player"
+                    className="w-full sm:w-72"
+                  >
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input
+                        placeholder="Search by player..."
+                        value={resultsSearch}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setResultsSearch(e.target.value)
+                        }
+                        aria-label="Search bracket matches by player"
+                      />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                </div>
                 <Button
                   size="sm"
                   onPress={handleSaveResults}
@@ -527,11 +561,27 @@ export function BracketTab() {
                   const rounds = Array.from(
                     new Set(bracket.matches.map((m) => m.round)),
                   ).sort((a, b) => a - b);
+                  const searchTerm = resultsSearch.trim().toLowerCase();
 
                   return rounds.map((round) => {
                     const roundMatches = bracket.matches
                       .filter((m) => m.round === round)
+                      .filter((m) => {
+                        if (!searchTerm) return true;
+                        const team1 = m.team1Id
+                          ? teamMap.get(m.team1Id)
+                          : undefined;
+                        const team2 = m.team2Id
+                          ? teamMap.get(m.team2Id)
+                          : undefined;
+                        return (
+                          bracketTeamSearchText(team1).includes(searchTerm) ||
+                          bracketTeamSearchText(team2).includes(searchTerm)
+                        );
+                      })
                       .sort((a, b) => a.position - b.position);
+
+                    if (roundMatches.length === 0) return null;
 
                     const label =
                       round === numRounds
@@ -590,7 +640,7 @@ export function BracketTab() {
                                       />
                                     )}
                                     <span className="truncate">
-                                      {byeTeam?.name ?? "Unknown"}
+                                      {bracketTeamDisplayName(byeTeam)}
                                     </span>
                                   </Button>
                                   <span className="text-xs text-muted shrink-0">
@@ -668,7 +718,9 @@ export function BracketTab() {
                                       className="w-3.5 h-3.5"
                                     />
                                   )}
-                                  <span className="truncate">{team1.name}</span>
+                                  <span className="truncate">
+                                    {bracketTeamDisplayName(team1)}
+                                  </span>
                                 </Button>
 
                                 <span className="text-xs text-muted shrink-0">
@@ -696,7 +748,9 @@ export function BracketTab() {
                                       className="w-3.5 h-3.5"
                                     />
                                   )}
-                                  <span className="truncate">{team2.name}</span>
+                                  <span className="truncate">
+                                    {bracketTeamDisplayName(team2)}
+                                  </span>
                                 </Button>
 
                                 {selectedWinner && (
@@ -728,6 +782,31 @@ export function BracketTab() {
                     );
                   });
                 })()}
+                {resultsSearch.trim() &&
+                  (() => {
+                    const searchTerm = resultsSearch.trim().toLowerCase();
+                    const teamMap = new Map(
+                      bracket.teams.map((t) => [t.id, t]),
+                    );
+                    const hasAnyMatch = bracket.matches.some((m) => {
+                      const team1 = m.team1Id
+                        ? teamMap.get(m.team1Id)
+                        : undefined;
+                      const team2 = m.team2Id
+                        ? teamMap.get(m.team2Id)
+                        : undefined;
+                      return (
+                        bracketTeamSearchText(team1).includes(searchTerm) ||
+                        bracketTeamSearchText(team2).includes(searchTerm)
+                      );
+                    });
+
+                    return hasAnyMatch ? null : (
+                      <div className="text-xs text-muted">
+                        No matches found for that player.
+                      </div>
+                    );
+                  })()}
               </Card.Content>
             </Card>
 

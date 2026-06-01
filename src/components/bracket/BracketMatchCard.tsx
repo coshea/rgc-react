@@ -43,6 +43,8 @@ interface SlotProps {
   seed?: number;
   /** uid → photo URL, for resolving member profile pictures */
   userPhotoMap?: Map<string, string>;
+  /** Highlight the info icon to indicate this is the current user's matchup */
+  isHighlighted?: boolean;
 }
 
 function TeamSlot({
@@ -56,9 +58,10 @@ function TeamSlot({
   onPress,
   seed,
   userPhotoMap,
+  isHighlighted = false,
 }: SlotProps) {
   const base =
-    "relative px-3 py-2 transition-colors flex flex-col justify-center";
+    "relative pl-4 pr-3 py-2 transition-colors flex flex-col justify-center";
 
   if (isBye) {
     return (
@@ -151,7 +154,12 @@ function TeamSlot({
       {onPress && (
         <Icon
           icon="lucide:info"
-          className="absolute top-2 right-2 w-3 h-3 text-muted group-hover:text-muted transition-colors"
+          className={[
+            "absolute top-2 right-2 w-3 h-3 transition-colors",
+            isHighlighted
+              ? "text-primary"
+              : "text-muted group-hover:text-muted",
+          ].join(" ")}
           aria-hidden="true"
         />
       )}
@@ -216,6 +224,8 @@ interface BracketMatchCardProps {
   onTeamPress?: (team: BracketTeam) => void;
   /** uid → photo URL for resolving member profile pictures */
   userPhotoMap?: Map<string, string>;
+  /** Highlights the entire matchup card (for current user/search focus). */
+  isHighlighted?: boolean;
 }
 
 export function BracketMatchCard({
@@ -225,6 +235,7 @@ export function BracketMatchCard({
   slotHeight,
   onTeamPress,
   userPhotoMap,
+  isHighlighted = false,
 }: BracketMatchCardProps) {
   const team1 = match.team1Id ? (teamMap.get(match.team1Id) ?? null) : null;
   const team2 = match.team2Id ? (teamMap.get(match.team2Id) ?? null) : null;
@@ -245,7 +256,14 @@ export function BracketMatchCard({
   return (
     <div
       style={{ width }}
-      className="border rounded-xl bg-surface overflow-hidden shadow-sm"
+      className={[
+        "ml-1 rounded-xl bg-surface overflow-hidden transition-all",
+        isHighlighted
+          ? "border-2 border-primary ring-2 ring-primary/30 shadow-lg shadow-primary/20"
+          : "border shadow-sm",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <TeamSlot
         team={team1}
@@ -258,6 +276,7 @@ export function BracketMatchCard({
         onPress={team1 && onTeamPress ? () => onTeamPress(team1) : undefined}
         seed={team1?.seed}
         userPhotoMap={userPhotoMap}
+        isHighlighted={isHighlighted}
       />
       <div className="border-t" />
       <TeamSlot
@@ -271,6 +290,7 @@ export function BracketMatchCard({
         onPress={team2 && onTeamPress ? () => onTeamPress(team2) : undefined}
         seed={team2?.seed}
         userPhotoMap={userPhotoMap}
+        isHighlighted={isHighlighted}
       />
     </div>
   );

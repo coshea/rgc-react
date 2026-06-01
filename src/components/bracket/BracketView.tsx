@@ -10,6 +10,7 @@ import type {
   BracketMatch,
   BracketTeam,
 } from "@/types/bracket";
+import React from "react";
 import { roundLabel } from "@/utils/bracketGenerator";
 import {
   BracketMatchCard,
@@ -73,12 +74,18 @@ interface BracketViewProps {
   onTeamPress?: (team: BracketTeam) => void;
   /** uid → photo URL for resolving member profile pictures */
   userPhotoMap?: Map<string, string>;
+  /** Match IDs to visually highlight (all rounds the user appears in). */
+  highlightMatchIds?: Set<string>;
+  /** Match ID to scroll into view. */
+  focusMatchId?: string | null;
 }
 
 export function BracketView({
   bracket,
   onTeamPress,
   userPhotoMap,
+  highlightMatchIds,
+  focusMatchId,
 }: BracketViewProps) {
   const { teams, matches, size } = bracket;
   const numRounds = Math.log2(size);
@@ -108,6 +115,20 @@ export function BracketView({
   const totalWidth = numRounds * MATCH_WIDTH + (numRounds - 1) * H_GAP;
   const bracketHeight = n1 * SLOT_UNIT - V_GAP;
   const totalHeight = ROUND_LABEL_HEIGHT + bracketHeight;
+
+  const matchRefMap = React.useRef<Map<string, HTMLDivElement>>(new Map());
+
+  React.useEffect(() => {
+    if (!focusMatchId) return;
+    const target = matchRefMap.current.get(focusMatchId);
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "center",
+    });
+  }, [focusMatchId]);
 
   type Line = { x1: number; y1: number; x2: number; y2: number; key: string };
   const connectorLines: Line[] = [];
@@ -212,6 +233,13 @@ export function BracketView({
             return (
               <div
                 key={match.id}
+                ref={(el) => {
+                  if (el) {
+                    matchRefMap.current.set(match.id, el);
+                  } else {
+                    matchRefMap.current.delete(match.id);
+                  }
+                }}
                 style={{
                   position: "absolute",
                   left: (round - 1) * (MATCH_WIDTH + H_GAP),
@@ -225,6 +253,7 @@ export function BracketView({
                   slotHeight={slotH}
                   onTeamPress={onTeamPress}
                   userPhotoMap={userPhotoMap}
+                  isHighlighted={highlightMatchIds?.has(match.id) ?? false}
                 />
               </div>
             );
