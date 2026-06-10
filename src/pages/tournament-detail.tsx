@@ -869,6 +869,7 @@ img { display: block; max-width: 100%; }
                               ? tournament.maxTeams
                               : undefined
                           }
+                          bracket={bracket}
                           size="sm"
                           className="w-full"
                         />
@@ -995,6 +996,7 @@ img { display: block; max-width: 100%; }
                                 ? tournament.maxTeams
                                 : undefined
                             }
+                            bracket={bracket}
                             size="sm"
                           />
                           <Tooltip>
