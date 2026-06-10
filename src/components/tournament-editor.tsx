@@ -677,6 +677,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 setRegistrationStart={setRegistrationStart}
                 registrationEnd={registrationEnd}
                 setRegistrationEnd={setRegistrationEnd}
+                tournamentDate={date}
                 errors={errors}
               />
             </div>
