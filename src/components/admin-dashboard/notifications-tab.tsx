@@ -24,6 +24,7 @@ import {
   DatePicker,
   TextField,
   FieldError,
+  Spinner,
 } from "@heroui/react";
 import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
@@ -533,16 +534,20 @@ export function NotificationsTab() {
                     id="__tournament_registrants__"
                     textValue="Tournament Registrants"
                   >
-                    <Icon icon="lucide:users" className="text-base" />
-                    Tournament Registrants
+                    <span className="flex items-center gap-2">
+                      <Icon icon="lucide:users" className="text-base" />
+                      Tournament Registrants
+                    </span>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                   <ListBox.Item
                     id="__tournament_non_registrants__"
                     textValue="Non-Registrants"
                   >
-                    <Icon icon="lucide:user-x" className="text-base" />
-                    Non-Registrants
+                    <span className="flex items-center gap-2">
+                      <Icon icon="lucide:user-x" className="text-base" />
+                      Non-Registrants
+                    </span>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                   {members.map((m) => (
@@ -662,9 +667,21 @@ export function NotificationsTab() {
           </div>
 
           <div className="flex justify-end">
-            <Button onPress={handleSend}>
-              {!sending && <Icon icon="lucide:send" className="text-base" />}
-              Send Notification
+            <Button
+              onPress={handleSend}
+              isDisabled={sending}
+              isPending={sending}
+            >
+              {({ isPending }) => (
+                <>
+                  {isPending ? (
+                    <Spinner color="current" size="sm" />
+                  ) : (
+                    <Icon icon="lucide:send" className="text-base" />
+                  )}
+                  {isPending ? "Sending…" : "Send Notification"}
+                </>
+              )}
             </Button>
           </div>
         </div>
