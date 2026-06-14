@@ -66,6 +66,9 @@ const AdminBackfillCreatedAtPage = lazy(
 const NotificationSettingsPage = lazy(
   () => import("@/pages/notification-settings"),
 );
+const BracketResultsEditorPage = lazy(
+  () => import("@/pages/bracket-results-editor"),
+);
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -148,6 +151,14 @@ function App() {
               <Route
                 element={<TournamentRegister />}
                 path="/tournaments/:firestoreId/register"
+              />
+              <Route
+                element={
+                  <RequireAdmin>
+                    <BracketResultsEditorPage />
+                  </RequireAdmin>
+                }
+                path="/tournaments/:firestoreId/bracket-results"
               />
               <Route element={<MembershipPage />} path="/membership" />
               <Route

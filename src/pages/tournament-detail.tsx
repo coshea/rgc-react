@@ -883,9 +883,25 @@ img { display: block; max-width: 100%; }
                           <Icon icon="lucide:download" />
                           Export
                         </Button>
+                        {bracket && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onPress={() =>
+                              navigate(
+                                `/tournaments/${firestoreId}/bracket-results`,
+                              )
+                            }
+                            aria-label="Edit bracket results (Admin only)"
+                            className="w-full"
+                          >
+                            <Icon icon="lucide:git-branch" />
+                            Bracket
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="danger-soft"
                           onPress={() => setEditOpen(true)}
                           aria-label="Edit tournament (Admin only)"
                           className="w-full"
@@ -1014,10 +1030,31 @@ img { display: block; max-width: 100%; }
                               Export registrations (Admin only)
                             </Tooltip.Content>
                           </Tooltip>
+                          {bracket && (
+                            <Tooltip>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onPress={() =>
+                                  navigate(
+                                    `/tournaments/${firestoreId}/bracket-results`,
+                                  )
+                                }
+                                aria-label="Edit bracket results (Admin only)"
+                                className="whitespace-nowrap"
+                              >
+                                <Icon icon="lucide:git-branch" />
+                                Bracket
+                              </Button>
+                              <Tooltip.Content>
+                                Edit bracket results (Admin only)
+                              </Tooltip.Content>
+                            </Tooltip>
+                          )}
                           <Tooltip>
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="danger-soft"
                               onPress={() => setEditOpen(true)}
                               aria-label="Edit tournament (Admin only)"
                               className="whitespace-nowrap"
