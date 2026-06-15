@@ -65,7 +65,9 @@ export const RegistrationWindowSection: React.FC<
   const setRecommendedWindow = () => {
     if (!tournamentDate) return;
 
-    const tournamentJsDate = new Date(tournamentDate.toString());
+    const tournamentJsDate = new Date(
+      Date.UTC(tournamentDate.year, tournamentDate.month - 1, tournamentDate.day)
+    );
     const utcDay = tournamentJsDate.getUTCDay();
     const daysFromMonday = (utcDay + 6) % 7;
 
