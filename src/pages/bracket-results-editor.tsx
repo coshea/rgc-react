@@ -130,9 +130,26 @@ export default function BracketResultsEditorPage() {
       await saveMatchResults(firestoreId, bracket, effectiveUpdates);
       addToast({ title: "Results saved!", color: "success" });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to save results";
-      addToast({ title: "Error", description: msg, color: "danger" });
-    } finally {
+      console.error("Failed to save bracket results:", err);
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code?: unknown }).code)
+          : undefined;
+
+      if (code === "permission-denied") {
+        addToast({
+          title: "Access Denied",
+          description: "You do not have permission to perform this action.",
+          color: "danger",
+        });
+      } else {
+        addToast({
+          title: "Error",
+          description: "Failed to save results. Please try again.",
+          color: "danger",
+        });
+      }
+    }
       setSaving(false);
     }
   }, [firestoreId, bracket, pendingWinners]);
