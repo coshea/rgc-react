@@ -79,7 +79,7 @@ export default function SignUpPage() {
     }
   }, []);
 
-  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
 

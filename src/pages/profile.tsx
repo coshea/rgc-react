@@ -17,7 +17,7 @@ const ProfilePage = () => {
     if (!loading && user && !user.emailVerified) {
       navigate(siteConfig.pages.verifyEmail.link);
     }
-  }, [user?.emailVerified, loading]);
+  }, [loading, navigate, user]);
 
   if (loading) {
     return (

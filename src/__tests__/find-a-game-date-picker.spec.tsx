@@ -154,7 +154,7 @@ vi.mock("@heroui/react", async (orig) => {
     ...rest
   }: {
     children?: React.ReactNode;
-    onSubmit?: React.FormEventHandler;
+    onSubmit?: (event: React.SyntheticEvent<HTMLFormElement>) => void;
     [k: string]: unknown;
   }) => (
     <form onSubmit={onSubmit} {...rest}>

@@ -56,8 +56,8 @@ vi.mock("@heroui/react", async (importOriginal) => {
       type,
       min,
       max,
-      isInvalid,
-      errorMessage,
+      isInvalid: _isInvalid,
+      errorMessage: _errorMessage,
       ...rest
     }: any) => {
       const ctx = React.useContext(TFCtx);

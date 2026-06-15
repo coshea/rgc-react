@@ -33,7 +33,9 @@ export const ContactForm = () => {
     message: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit: React.ComponentProps<typeof Form>["onSubmit"] = async (
+    e,
+  ) => {
     e.preventDefault();
 
     if (!isEmailJSConfigured()) {
@@ -91,7 +93,7 @@ export const ContactForm = () => {
     <div className="w-full py-8">
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="hidden md:block relative h-[500px] overflow-hidden rounded-2xl">
+          <div className="hidden md:block relative h-125 overflow-hidden rounded-2xl">
             <img
               src={golfBallHoleImage}
               alt="Contact Us"

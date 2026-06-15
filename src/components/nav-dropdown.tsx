@@ -61,7 +61,7 @@ export default function NavDropdown({
         onOtherOpen as EventListener,
       );
     };
-  }, [open]);
+  }, [label, open]);
 
   if (isMobile) {
     return (

@@ -1,21 +1,26 @@
+import type {
+  ComponentProps,
+  HTMLAttributes,
+  PropsWithChildren,
+  ReactNode,
+} from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { UserAvatar } from "@/components/avatar";
+
+type MockAvatarProps = PropsWithChildren<HTMLAttributes<HTMLSpanElement>>;
+type AvatarUser = NonNullable<ComponentProps<typeof UserAvatar>["user"]>;
 
 // Mock Avatar.Image to render as a real <img> in jsdom.
 // HeroUI v3 Avatar uses Radix Avatar.Image which only shows after the image loads —
 // since jsdom never loads images, Avatar.Image renders nothing without this mock.
 vi.mock("@heroui/react", async (orig) => {
-  const mod = await orig();
+  const mod = await orig<typeof import("@heroui/react")>();
   const MockAvatar = Object.assign(
-    (props: any) => {
-      const { children, name, className, ...rest } = props;
+    (props: MockAvatarProps) => {
+      const { children, className, ...rest } = props;
       return (
-        <span
-          className={`avatar ${className ?? ""}`.trim()}
-          name={name}
-          {...rest}
-        >
+        <span className={`avatar ${className ?? ""}`.trim()} {...rest}>
           {children}
         </span>
       );
@@ -24,21 +29,21 @@ vi.mock("@heroui/react", async (orig) => {
       Image: ({ src, alt }: { src?: string; alt?: string }) => (
         <img src={src} alt={alt} />
       ),
-      Fallback: ({ children }: { children?: any }) => (
+      Fallback: ({ children }: { children?: ReactNode }) => (
         <span className="avatar__fallback">{children}</span>
       ),
     },
   );
-  return { ...(mod as any), Avatar: MockAvatar };
+  return { ...mod, Avatar: MockAvatar };
 });
 
-// HeroUI v3: Avatar renders as <span class="avatar" name="..."> with src on
-// the <img> child (Avatar.Image). We assert resolved precedence by inspecting
-// img[src] for URL tests and .avatar[name] for initials/name tests.
+// HeroUI v3: Avatar renders as <span class="avatar"> with src on the <img>
+// child (Avatar.Image). We assert resolved precedence by inspecting img[src]
+// for URL tests and aria-label for initials/name tests.
 
 describe("UserAvatar fallback precedence", () => {
   it("uses explicit src prop when provided (over user.profileURL/photoURL)", () => {
-    const user: any = {
+    const user: AvatarUser = {
       displayName: "Alice Example",
       profileURL: "https://example.com/profile.jpg",
       photoURL: "https://example.com/photo.jpg",
@@ -53,7 +58,7 @@ describe("UserAvatar fallback precedence", () => {
   });
 
   it("falls back to profileURL when src missing (profileURL > photoURL)", () => {
-    const user: any = {
+    const user: AvatarUser = {
       displayName: "Bob Sample",
       profileURL: "https://example.com/profile2.jpg",
       photoURL: "https://example.com/photo2.jpg",
@@ -66,7 +71,7 @@ describe("UserAvatar fallback precedence", () => {
   });
 
   it("falls back to photoURL when profileURL absent", () => {
-    const user: any = {
+    const user: AvatarUser = {
       displayName: "Charlie User",
       photoURL: "https://example.com/photo3.jpg",
     };
@@ -78,7 +83,7 @@ describe("UserAvatar fallback precedence", () => {
   });
 
   it("renders initials when no src/profileURL/photoURL", () => {
-    const user: any = { displayName: "Dora Explorer" };
+    const user: AvatarUser = { displayName: "Dora Explorer" };
     const { container } = render(<UserAvatar user={user} />);
     const avatar = container.querySelector(".avatar");
     expect(avatar).toBeTruthy();
@@ -90,7 +95,7 @@ describe("UserAvatar fallback precedence", () => {
   });
 
   it("derives initials from single word names (first two letters)", () => {
-    const user: any = { displayName: "Echo" };
+    const user: AvatarUser = { displayName: "Echo" };
     const { container } = render(<UserAvatar user={user} />);
     const avatar = container.querySelector(".avatar");
     expect(avatar?.getAttribute("aria-label")).toBe("Echo");

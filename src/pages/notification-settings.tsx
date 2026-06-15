@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, type SubmitEvent } from "react";
 import { isSupported as messagingIsSupported } from "firebase/messaging";
 import { Card, Button, Separator, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -66,7 +66,7 @@ export default function NotificationSettingsPage() {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  async function handleSave(e: FormEvent) {
+  async function handleSave(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!user?.uid) return;
     setSaving(true);
@@ -207,7 +207,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Registration"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -217,7 +219,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Registration"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
             </div>
@@ -225,9 +229,7 @@ export default function NotificationSettingsPage() {
             {/* Tournament Updates */}
             <div className="flex items-center bg-surface-secondary rounded-lg px-4 py-3 gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-base">
-                  Tournament Updates & Cancellations
-                </p>
+                <p className="text-base">Tournament Updates & Cancellations</p>
                 <p className="text-sm text-muted">
                   When a tournament is canceled or has important updates
                 </p>
@@ -239,7 +241,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Updates"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -249,7 +253,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Updates"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
             </div>
@@ -269,7 +275,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Announcements"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -279,7 +287,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Announcements"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
             </div>
@@ -299,7 +309,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: New Features"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -309,7 +321,9 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: New Features"
                 >
-                  <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+                  <Switch.Control className="shrink-0">
+                    <Switch.Thumb />
+                  </Switch.Control>
                 </Switch>
               </div>
             </div>

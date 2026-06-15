@@ -306,8 +306,16 @@ img { display: block; max-width: 100%; }
           });
           return;
         }
-        printWindow.document.write(html);
-        printWindow.document.close();
+        const blob = new Blob([html], { type: "text/html" });
+        const printUrl = URL.createObjectURL(blob);
+        printWindow.addEventListener(
+          "load",
+          () => {
+            URL.revokeObjectURL(printUrl);
+          },
+          { once: true },
+        );
+        printWindow.location.replace(printUrl);
       } catch (err) {
         console.error("Failed to generate bracket for PDF:", err);
         addToast({
@@ -443,6 +451,15 @@ img { display: block; max-width: 100%; }
         (Array.isArray(r.team) && r.team.some((m) => m.id === userId)),
     );
   }, [registrations, userId]);
+
+  const registeredUserIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    registrations.forEach((r) => {
+      if (r.ownerId) ids.add(r.ownerId);
+      if (Array.isArray(r.team)) r.team.forEach((m) => ids.add(m.id));
+    });
+    return ids;
+  }, [registrations]);
 
   const hasOpenTeamSlots = React.useMemo(() => {
     const maxPlayers = tournament?.players;
@@ -869,6 +886,7 @@ img { display: block; max-width: 100%; }
                               ? tournament.maxTeams
                               : undefined
                           }
+                          bracket={bracket}
                           size="sm"
                           className="w-full"
                         />
@@ -882,9 +900,25 @@ img { display: block; max-width: 100%; }
                           <Icon icon="lucide:download" />
                           Export
                         </Button>
+                        {bracket && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onPress={() =>
+                              navigate(
+                                `/tournaments/${firestoreId}/bracket-results`,
+                              )
+                            }
+                            aria-label="Edit bracket results (Admin only)"
+                            className="w-full"
+                          >
+                            <Icon icon="lucide:git-branch" />
+                            Bracket
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="danger-soft"
                           onPress={() => setEditOpen(true)}
                           aria-label="Edit tournament (Admin only)"
                           className="w-full"
@@ -995,6 +1029,7 @@ img { display: block; max-width: 100%; }
                                 ? tournament.maxTeams
                                 : undefined
                             }
+                            bracket={bracket}
                             size="sm"
                           />
                           <Tooltip>
@@ -1012,10 +1047,31 @@ img { display: block; max-width: 100%; }
                               Export registrations (Admin only)
                             </Tooltip.Content>
                           </Tooltip>
+                          {bracket && (
+                            <Tooltip>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onPress={() =>
+                                  navigate(
+                                    `/tournaments/${firestoreId}/bracket-results`,
+                                  )
+                                }
+                                aria-label="Edit bracket results (Admin only)"
+                                className="whitespace-nowrap"
+                              >
+                                <Icon icon="lucide:git-branch" />
+                                Bracket
+                              </Button>
+                              <Tooltip.Content>
+                                Edit bracket results (Admin only)
+                              </Tooltip.Content>
+                            </Tooltip>
+                          )}
                           <Tooltip>
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="danger-soft"
                               onPress={() => setEditOpen(true)}
                               aria-label="Edit tournament (Admin only)"
                               className="whitespace-nowrap"
@@ -1536,6 +1592,7 @@ img { display: block; max-width: 100%; }
               isUserRegistered={isUserRegistered}
               maxTeamSize={tournament.players ?? 1}
               isAdmin={isAdmin}
+              registeredUserIds={registeredUserIds}
             />
 
             <div className="grid md:grid-cols-3 gap-6 mb-24 md:mb-16">
