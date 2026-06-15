@@ -22,8 +22,14 @@ export function useMediaQuery(query: string): boolean {
     // Ensure we’re synced even if query changes.
     setMatches(mql.matches);
 
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    }
+
+    // Safari < 14
+    mql.addListener(onChange);
+    return () => mql.removeListener(onChange);
   }, [query]);
 
   return matches;
