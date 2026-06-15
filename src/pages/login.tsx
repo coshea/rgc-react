@@ -113,6 +113,11 @@ export default function LoginPage() {
     };
   }, []);
 
+  const getFirebaseAuthErrorMessage = React.useCallback((error: unknown) => {
+    const firebaseError = extractFirebaseAuthError(error);
+    return getAuthErrorMessage(firebaseError?.code, firebaseError?.message);
+  }, []);
+
   const completeMagicLinkSignIn = React.useCallback(
     async (emailAddress: string, link: string) => {
       handledMagicLink.current = true;
@@ -184,7 +189,7 @@ export default function LoginPage() {
         }
       }
     },
-    [navigate, signInWithLink, state?.from],
+    [getFirebaseAuthErrorMessage, navigate, signInWithLink, state?.from],
   );
 
   useEffect(() => {
@@ -236,7 +241,9 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeMagicLinkSignIn]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit: React.ComponentProps<typeof Form>["onSubmit"] = async (
+    event,
+  ) => {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -401,11 +408,6 @@ export default function LoginPage() {
     }
   }
 
-  function getFirebaseAuthErrorMessage(error: unknown) {
-    const firebaseError = extractFirebaseAuthError(error);
-    return getAuthErrorMessage(firebaseError?.code, firebaseError?.message);
-  }
-
   // If already logged in and not loading, render null or a loading indicator to prevent flash of login form
   if (userLoggedIn && !authLoading) {
     return null; // Or a loading spinner
@@ -442,7 +444,7 @@ export default function LoginPage() {
   };
 
   const handleEmailConfirmationSubmit = async (
-    event: React.FormEvent<HTMLFormElement>,
+    event: React.SubmitEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
 

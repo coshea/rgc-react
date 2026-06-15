@@ -134,13 +134,19 @@ const TournamentRegister: React.FC = () => {
     memberRegistration.ownerId !== user?.uid,
   );
 
-  const memberTeam = Array.isArray(currentUserRegistration?.team)
-    ? currentUserRegistration.team
-    : [];
+  const memberTeam = React.useMemo(
+    () =>
+      Array.isArray(currentUserRegistration?.team)
+        ? currentUserRegistration.team
+        : [],
+    [currentUserRegistration?.team],
+  );
 
-  const ownerTeam = Array.isArray(ownerRegistration?.team)
-    ? ownerRegistration.team
-    : [];
+  const ownerTeam = React.useMemo(
+    () =>
+      Array.isArray(ownerRegistration?.team) ? ownerRegistration.team : [],
+    [ownerRegistration?.team],
+  );
 
   const savedOwnerTeamIds = React.useMemo<string[]>(() => {
     const maybeMemberIds = (ownerRegistration as Record<string, unknown> | null)
@@ -465,7 +471,7 @@ const TournamentRegister: React.FC = () => {
 
   // teammates state now stores user IDs directly; RegistrationEditor provides add/remove
 
-  const handleSubmit = async (e: React.FormEvent | Event) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!tournament || !tournament.firestoreId) {

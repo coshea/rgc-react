@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Spinner, Link } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 import { siteConfig } from "@/config/site";
-import { sendEmailVerification, ActionCodeSettings } from "firebase/auth";
+import { sendEmailVerification } from "firebase/auth";
 import { Icon } from "@iconify/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
@@ -19,16 +19,15 @@ export default function VerifyEmailPage() {
   const remainingMs = Math.max(0, cooldownEnds - Date.now());
   const remainingSeconds = Math.ceil(remainingMs / 1000);
 
-  const actionCodeSettings: ActionCodeSettings = {
-    url: window.location.origin + "/verify-email",
-    handleCodeInApp: true,
-  };
-
   const triggerResend = useCallback(async () => {
     if (!user || remainingMs > 0) return;
     setResendLoading(true);
     setMessage(null);
     try {
+      const actionCodeSettings = {
+        url: window.location.origin + "/verify-email",
+        handleCodeInApp: true,
+      };
       await sendEmailVerification(user, actionCodeSettings);
       setCooldownEnds(Date.now() + RESEND_DELAY_MS);
       setMessage("Verification email sent. Check your inbox.");

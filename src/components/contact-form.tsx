@@ -33,7 +33,9 @@ export const ContactForm = () => {
     message: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit: React.ComponentProps<typeof Form>["onSubmit"] = async (
+    e,
+  ) => {
     e.preventDefault();
 
     if (!isEmailJSConfigured()) {

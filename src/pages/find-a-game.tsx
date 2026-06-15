@@ -43,9 +43,12 @@ export default function FindAGamePage() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
-    // Keep create date clamped to today for the form, but list shows ALL future posts
+    // Keep create date clamped to today for the form.
     const today = toYMD(new Date());
     if (date < today) setDate(today);
+  }, [date]);
+
+  useEffect(() => {
     let cancelled = false;
     let unsub: undefined | (() => void);
     (async () => {

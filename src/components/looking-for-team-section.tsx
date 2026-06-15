@@ -24,6 +24,8 @@ export interface LookingForTeamSectionProps {
   maxTeamSize: number;
   /** Whether the viewer has admin privileges (can delete any post). */
   isAdmin?: boolean;
+  /** Set of all player UIDs already on a registered team — used to hide stale posts. */
+  registeredUserIds?: ReadonlySet<string>;
 }
 
 /**
@@ -39,6 +41,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
   isUserRegistered,
   maxTeamSize,
   isAdmin = false,
+  registeredUserIds,
 }) => {
   const [posts, setPosts] = useState<LookingForTeamPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,14 +168,17 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
     }
   };
 
-  // Derive visible posts: if the current user is now registered, hide their post
-  // from the list so they don't need to manually remove it.
+  // Derive visible posts: hide any poster who is already on a registered team.
+  // This covers both the current user and other users who were added to a team
+  // after posting here without removing their own post.
   const visiblePosts = useMemo(
     () =>
-      isUserRegistered
-        ? posts.filter((p) => p.ownerId !== currentUserId)
-        : posts,
-    [posts, isUserRegistered, currentUserId],
+      posts.filter((p) => {
+        if (registeredUserIds) return !registeredUserIds.has(p.ownerId);
+        // Fallback when registeredUserIds is not provided: only hide the current user.
+        return !(isUserRegistered && p.ownerId === currentUserId);
+      }),
+    [posts, registeredUserIds, isUserRegistered, currentUserId],
   );
 
   // Section hidden for solo tournaments, when registration is closed, or when logged out
@@ -183,36 +189,40 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
   return (
     <div className="mb-12">
       <Card>
-        <Card.Header className="pb-0 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Icon
-              icon="lucide:search"
-              className="w-5 h-5 text-secondary-500"
-              aria-hidden="true"
-            />
-            <h2 className="text-lg font-semibold">Looking For A Team</h2>
-            {!loading && visiblePosts.length > 0 && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary/10 text-secondary">
-                {visiblePosts.length}
-              </span>
+        <Card.Header className="pb-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Icon
+                icon="lucide:search"
+                className="w-5 h-5 text-secondary-500"
+                aria-hidden="true"
+              />
+              <h2 className="text-lg font-semibold">Looking For A Team</h2>
+              {!loading && visiblePosts.length > 0 && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-secondary/10 text-secondary">
+                  {visiblePosts.length}
+                </span>
+              )}
+            </div>
+            {canPost && (
+              <Button
+                size="sm"
+                variant={currentUserHasPost ? "tertiary" : "primary"}
+                onPress={handleTogglePost}
+              >
+                {!saving && (
+                  <Icon
+                    icon={currentUserHasPost ? "lucide:x" : "lucide:plus"}
+                    className="w-4 h-4"
+                    aria-hidden="true"
+                  />
+                )}
+                {currentUserHasPost
+                  ? "Remove my post"
+                  : "I'm looking for a team"}
+              </Button>
             )}
           </div>
-          {canPost && (
-            <Button
-              size="sm"
-              variant={currentUserHasPost ? "tertiary" : "primary"}
-              onPress={handleTogglePost}
-            >
-              {!saving && (
-                <Icon
-                  icon={currentUserHasPost ? "lucide:x" : "lucide:plus"}
-                  className="w-4 h-4"
-                  aria-hidden="true"
-                />
-              )}
-              {currentUserHasPost ? "Remove my post" : "I'm looking for a team"}
-            </Button>
-          )}
         </Card.Header>
         <Separator className="mt-3" />
         <Card.Content className="pt-4">

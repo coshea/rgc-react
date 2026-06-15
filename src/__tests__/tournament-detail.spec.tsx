@@ -131,34 +131,59 @@ vi.mock("@/components/tournament-editor", () => ({
 vi.mock("@heroui/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@heroui/react")>();
 
-  const CardMock = ({
-    children,
-    onPress,
-    "aria-label": ariaLabel,
-    className,
-    role,
-    tabIndex,
-    ...rest
-  }: any) => (
-    <div
-      role={onPress ? "button" : role}
-      tabIndex={onPress ? 0 : tabIndex}
-      aria-label={ariaLabel}
-      className={className}
-      onClick={onPress}
-      {...rest}
-    >
-      {children}
-    </div>
-  );
-  (CardMock as any).Content = ({ children, className }: any) => (
-    <div className={className}>{children}</div>
-  );
-  (CardMock as any).Header = ({ children, className }: any) => (
-    <div className={className}>{children}</div>
-  );
-  (CardMock as any).Footer = ({ children, className }: any) => (
-    <div className={className}>{children}</div>
+  type CardMockProps = React.PropsWithChildren<
+    React.HTMLAttributes<HTMLDivElement> & {
+      onPress?: React.MouseEventHandler<HTMLDivElement>;
+      "aria-label"?: string;
+    }
+  >;
+  type CardSectionProps = React.PropsWithChildren<{ className?: string }>;
+  type CardCompound = React.FC<CardMockProps> & {
+    Content: React.FC<CardSectionProps>;
+    Header: React.FC<CardSectionProps>;
+    Footer: React.FC<CardSectionProps>;
+  };
+
+  function CardContentMock({ children, className }: CardSectionProps) {
+    return <div className={className}>{children}</div>;
+  }
+
+  function CardHeaderMock({ children, className }: CardSectionProps) {
+    return <div className={className}>{children}</div>;
+  }
+
+  function CardFooterMock({ children, className }: CardSectionProps) {
+    return <div className={className}>{children}</div>;
+  }
+
+  const CardMock: CardCompound = Object.assign(
+    function CardMock({
+      children,
+      onPress,
+      "aria-label": ariaLabel,
+      className,
+      role,
+      tabIndex,
+      ...rest
+    }: CardMockProps) {
+      return (
+        <div
+          role={onPress ? "button" : role}
+          tabIndex={onPress ? 0 : tabIndex}
+          aria-label={ariaLabel}
+          className={className}
+          onClick={onPress}
+          {...rest}
+        >
+          {children}
+        </div>
+      );
+    },
+    {
+      Content: CardContentMock,
+      Header: CardHeaderMock,
+      Footer: CardFooterMock,
+    },
   );
 
   return {

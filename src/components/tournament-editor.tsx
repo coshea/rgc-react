@@ -142,13 +142,16 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
+  const incomingPreviousTournamentId =
+    tournament?.previousTournamentId ?? undefined;
+  const tournamentId = tournament?.firestoreId ?? null;
 
   // Sync previousTournamentId state with tournament prop updates
   React.useEffect(() => {
-    if (tournament?.previousTournamentId !== previousTournamentId) {
-      setPreviousTournamentId(tournament?.previousTournamentId);
+    if (incomingPreviousTournamentId !== previousTournamentId) {
+      setPreviousTournamentId(incomingPreviousTournamentId);
     }
-  }, [tournament?.previousTournamentId]);
+  }, [incomingPreviousTournamentId, previousTournamentId]);
 
   // NOTE: Admin Add Registration workflow should not auto-select the current user.
   // Admins need the ability to add arbitrary registrations on behalf of others.
@@ -242,7 +245,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsSubmitting(true);
@@ -395,7 +398,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     let unsubRegs: (() => void) | null = null;
     let unsubUsers: (() => void) | null = null;
     const init = async () => {
-      if (!tournament || !tournament.firestoreId) return;
+      if (!tournamentId) return;
       setRegsLoading(true);
       try {
         const { collection, onSnapshot, orderBy, query } =
@@ -414,7 +417,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         const regsCol = collection(
           db,
           "tournaments",
-          tournament.firestoreId,
+          tournamentId,
           "registrations",
         );
         const qRegs = query(regsCol, orderBy("registeredAt", "asc"));
@@ -448,7 +451,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       if (unsubRegs) unsubRegs();
       if (unsubUsers) unsubUsers();
     };
-  }, [tournament?.firestoreId]);
+  }, [tournamentId]);
 
   // Load all tournaments for the previous tournament selector
   React.useEffect(() => {

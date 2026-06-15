@@ -1,7 +1,10 @@
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
+
+type MockAvatarProps = PropsWithChildren<HTMLAttributes<HTMLSpanElement>>;
 
 // Mock auth
 vi.mock("@/providers/AuthProvider", () => ({
@@ -39,16 +42,12 @@ vi.mock("@/hooks/useUsers", () => ({
 // HeroUI v3 Avatar.Image (Radix) only shows when the image loads;
 // jsdom never loads images so Avatar.Image renders nothing without this mock.
 vi.mock("@heroui/react", async (orig) => {
-  const mod = await orig();
+  const mod = await orig<typeof import("@heroui/react")>();
   const MockAvatar = Object.assign(
-    (props: any) => {
-      const { children, name, className, ...rest } = props;
+    (props: MockAvatarProps) => {
+      const { children, className, ...rest } = props;
       return (
-        <span
-          className={`avatar ${className ?? ""}`.trim()}
-          name={name}
-          {...rest}
-        >
+        <span className={`avatar ${className ?? ""}`.trim()} {...rest}>
           {children}
         </span>
       );
@@ -57,12 +56,12 @@ vi.mock("@heroui/react", async (orig) => {
       Image: ({ src, alt }: { src?: string; alt?: string }) => (
         <img src={src} alt={alt} />
       ),
-      Fallback: ({ children }: { children?: any }) => (
+      Fallback: ({ children }: { children?: ReactNode }) => (
         <span className="avatar__fallback">{children}</span>
       ),
     },
   );
-  return { ...(mod as any), Avatar: MockAvatar };
+  return { ...mod, Avatar: MockAvatar };
 });
 
 describe("YearlyWinningsStandings avatar rendering", () => {
