@@ -149,7 +149,7 @@ export default function BracketResultsEditorPage() {
           color: "danger",
         });
       }
-    }
+    } finally {
       setSaving(false);
     }
   }, [firestoreId, bracket, pendingWinners]);
