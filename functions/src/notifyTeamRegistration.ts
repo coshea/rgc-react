@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import {
   onDocumentCreated,
   onDocumentDeleted,
+  onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "./logger";
@@ -10,6 +11,7 @@ import {
   buildTeamMembersHtml,
   sendTournamentLeaderEmail,
   sendTournamentMemberEmail,
+  sendTournamentRemovedMemberEmail,
 } from "./sendRegistrationEmails";
 
 interface RegistrationMember {
@@ -370,5 +372,203 @@ export const notify_team_registration_canceled = onDocumentDeleted(
       `[notify_team_registration_canceled] Sent ${eligibleMembers.length} notifications` +
         ` for tournament ${tournamentId} (registration ${event.params.registrationId})`,
     );
+  },
+);
+
+/**
+ * Firestore onUpdate trigger: when a team registration changes, send email to
+ * members who were added and to members who were removed.
+ */
+export const notify_team_registration_updated = onDocumentUpdated(
+  {
+    document: "tournaments/{tournamentId}/registrations/{registrationId}",
+    secrets: [RESEND_API_KEY],
+  },
+  async (event) => {
+    const beforeSnap = event.data?.before;
+    const afterSnap = event.data?.after;
+    if (!beforeSnap || !afterSnap) return;
+
+    const beforeData = beforeSnap.data() as RegistrationData;
+    const afterData = afterSnap.data() as RegistrationData;
+    const beforeTeam = Array.isArray(beforeData.team) ? beforeData.team : [];
+    const afterTeam = Array.isArray(afterData.team) ? afterData.team : [];
+
+    if (beforeTeam.length === 0 && afterTeam.length === 0) return;
+
+    const beforeMap = new Map<string, RegistrationMember>(
+      beforeTeam.map((member) => [member.id, member]),
+    );
+    const afterMap = new Map<string, RegistrationMember>(
+      afterTeam.map((member) => [member.id, member]),
+    );
+
+    const addedMembers = afterTeam.filter(
+      (member) => !beforeMap.has(member.id),
+    );
+    const removedMembers = beforeTeam.filter(
+      (member) => !afterMap.has(member.id),
+    );
+
+    if (addedMembers.length === 0 && removedMembers.length === 0) {
+      logger.info(
+        `[notify_team_registration_updated] No membership changes detected; skipping emails`,
+        {
+          registrationId: event.params.registrationId,
+          tournamentId: event.params.tournamentId,
+        },
+      );
+      return;
+    }
+
+    const apiKey = RESEND_API_KEY.value();
+    if (!apiKey) {
+      logger.error(
+        `[notify_team_registration_updated] RESEND_API_KEY not configured — skipping emails`,
+      );
+      return;
+    }
+
+    const { tournamentId } = event.params;
+    const db = admin.firestore();
+
+    const tournamentSnap = await db.doc(`tournaments/${tournamentId}`).get();
+    if (!tournamentSnap.exists) {
+      logger.warn(
+        `[notify_team_registration_updated] Tournament ${tournamentId} not found`,
+      );
+      return;
+    }
+
+    const tournament = tournamentSnap.data() as TournamentData;
+    const tournamentTitle = tournament.title ?? "Tournament";
+    const tournamentDate = tournament.date
+      ? tournament.date.toDate().toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        })
+      : "Date TBD";
+    const tournamentTee = tournament.tee ? `${tournament.tee} tees` : "TBD";
+    const tournamentTeeTimes = tournament.assignedTeeTimes
+      ? "Assigned"
+      : "Get your own";
+    const tournamentUrl = `https://ridgefieldgolfclub.org/tournaments/${tournamentId}`;
+
+    const ownerId = afterData.ownerId ?? beforeData.ownerId;
+    let leader: RegistrationMember | undefined;
+    if (ownerId) {
+      leader =
+        afterTeam.find((member) => member.id === ownerId) ??
+        beforeTeam.find((member) => member.id === ownerId);
+    }
+    const leaderDisplayName = leader?.displayName?.trim() || "Your team leader";
+
+    const userIds = Array.from(
+      new Set([
+        ...addedMembers.map((member) => member.id),
+        ...removedMembers.map((member) => member.id),
+      ]),
+    );
+
+    const userRefs = userIds.map((id) => db.doc(`users/${id}`));
+    const userSnaps = userRefs.length > 0 ? await db.getAll(...userRefs) : [];
+    const userDataMap = new Map<string, UserData>();
+    for (const snap of userSnaps) {
+      if (!snap.exists) continue;
+      userDataMap.set(snap.id, snap.data() as UserData);
+    }
+
+    const afterTeamMembersHtml = buildTeamMembersHtml(afterTeam, ownerId ?? "");
+    const beforeTeamMembersHtml = buildTeamMembersHtml(
+      beforeTeam,
+      ownerId ?? "",
+    );
+
+    logger.info(
+      `[notify_team_registration_updated] Sending membership update emails`,
+      {
+        registrationId: event.params.registrationId,
+        tournamentId,
+        addedMemberIds: addedMembers.map((member) => member.id),
+        removedMemberIds: removedMembers.map((member) => member.id),
+      },
+    );
+
+    for (const member of addedMembers) {
+      const memberData = userDataMap.get(member.id);
+      const memberEmail = memberData?.email;
+      const eligible = isEmailEligible(memberData);
+      logger.info(
+        `[notify_team_registration_updated] Added member email check — userId=${member.id}, email=${maskEmail(memberEmail)}, eligible=${eligible}`,
+      );
+      if (!memberEmail || !eligible) continue;
+
+      const firstName =
+        memberData?.firstName ||
+        firstWord(memberData?.displayName) ||
+        firstWord(member.displayName) ||
+        "there";
+
+      try {
+        await sendTournamentMemberEmail(apiKey, memberEmail, {
+          firstName,
+          leaderName: leaderDisplayName,
+          tournamentTitle,
+          tournamentDate,
+          tournamentTee,
+          tournamentTeeTimes,
+          teamMembersHtml: afterTeamMembersHtml,
+          tournamentUrl,
+        });
+        logger.info(
+          `[notify_team_registration_updated] Sent added-member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
+        );
+      } catch (err) {
+        logger.error(
+          `[notify_team_registration_updated] Failed to send added-member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
+          err,
+        );
+      }
+    }
+
+    for (const member of removedMembers) {
+      const memberData = userDataMap.get(member.id);
+      const memberEmail = memberData?.email;
+      const eligible = isEmailEligible(memberData);
+      logger.info(
+        `[notify_team_registration_updated] Removed member email check — userId=${member.id}, email=${maskEmail(memberEmail)}, eligible=${eligible}`,
+      );
+      if (!memberEmail || !eligible) continue;
+
+      const firstName =
+        memberData?.firstName ||
+        firstWord(memberData?.displayName) ||
+        firstWord(member.displayName) ||
+        "there";
+
+      try {
+        await sendTournamentRemovedMemberEmail(apiKey, memberEmail, {
+          firstName,
+          leaderName: leaderDisplayName,
+          tournamentTitle,
+          tournamentDate,
+          tournamentTee,
+          tournamentTeeTimes,
+          teamMembersHtml: beforeTeamMembersHtml,
+          tournamentUrl,
+        });
+        logger.info(
+          `[notify_team_registration_updated] Sent removed-member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
+        );
+      } catch (err) {
+        logger.error(
+          `[notify_team_registration_updated] Failed to send removed-member email to userId=${member.id}, email=${maskEmail(memberEmail)}`,
+          err,
+        );
+      }
+    }
   },
 );

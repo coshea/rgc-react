@@ -40,6 +40,7 @@ export { send_notification } from "./sendNotificationCallable";
 export {
   notify_team_registration,
   notify_team_registration_canceled,
+  notify_team_registration_updated,
 } from "./notifyTeamRegistration";
 export { notify_bracket_matchup } from "./notifyBracketMatchup";
 export { notify_tournament_canceled } from "./notifyTournamentCanceled";
