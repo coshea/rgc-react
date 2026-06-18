@@ -259,6 +259,23 @@ vi.mock("@heroui/react", async (orig) => {
   MockListBox.Item = MockListBoxItem;
   MockListBox.ItemIndicator = MockListBoxItemIndicator;
 
+  function MockCheckbox({ children, isSelected, onChange, id }: any) {
+    return (
+      <label htmlFor={id}>
+        <input
+          id={id}
+          type="checkbox"
+          checked={!!isSelected}
+          onChange={(e) => onChange?.(e.target.checked)}
+        />
+        {children}
+      </label>
+    );
+  }
+  MockCheckbox.Control = ({ children }: any) => <>{children}</>;
+  MockCheckbox.Indicator = () => null;
+  MockCheckbox.Content = ({ children }: any) => <>{children}</>;
+
   return {
     ...mod,
     TextField: MockTextField,
@@ -267,6 +284,7 @@ vi.mock("@heroui/react", async (orig) => {
     DatePicker: MockDatePicker,
     Select: MockSelect,
     ListBox: MockListBox,
+    Checkbox: MockCheckbox,
   };
 });
 
@@ -420,6 +438,52 @@ describe("TournamentEditor - edit mode", () => {
     await waitFor(() => {
       expect(updateDocMock).toHaveBeenCalled();
       expect(onSave).toHaveBeenCalled();
+    });
+  });
+
+  it("persists disabled registration-opening notifications", async () => {
+    const existing: Tournament = {
+      ...openRegistrationWindow(),
+      title: "Spring Open",
+      description: "Fun event",
+      players: 4,
+      status: TournamentStatus.Upcoming,
+      prizePool: 100,
+      winnerGroups: [],
+      date: new Date(),
+      tee: "Blue",
+      firestoreId: "abc123",
+      registrationOpeningNotificationEnabled: true,
+    };
+    const onSave = vi.fn();
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={existing}
+          onSave={onSave}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(
+      screen.getByLabelText(/Send push notification when registration opens/i),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
+
+    await waitFor(() => {
+      expect(updateDocMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          registrationOpeningNotificationEnabled: false,
+        }),
+      );
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          registrationOpeningNotificationEnabled: false,
+        }),
+      );
     });
   });
 });

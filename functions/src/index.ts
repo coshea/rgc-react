@@ -44,6 +44,7 @@ export {
 } from "./notifyTeamRegistration";
 export { notify_bracket_matchup } from "./notifyBracketMatchup";
 export { notify_tournament_canceled } from "./notifyTournamentCanceled";
+export { notify_registration_opening } from "./notifyRegistrationOpening";
 export { generate_blog_writeup } from "./generateBlogWriteup";
 
 export const verify_and_record_membership_payment = onRequest(

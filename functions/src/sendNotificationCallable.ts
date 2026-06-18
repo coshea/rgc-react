@@ -2,17 +2,16 @@ import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "./logger";
+import {
+  type NotificationType,
+  type UserPrefsData,
+  userWantsType,
+} from "./notificationPreferences";
 
 interface SendNotificationData {
   title: string;
   body: string;
-  type:
-    | "announcement"
-    | "tournament"
-    | "new_features"
-    | "tournament_canceled"
-    | "registration_opening"
-    | "registration_closing_soon";
+  type: NotificationType;
   /** Target user's UID. If omitted, broadcasts to all non-migrated members. */
   targetUid?: string;
   /** Target all registrants of a specific tournament instead of a single user or all members. */
@@ -36,49 +35,6 @@ interface SendNotificationData {
     link?: string;
     tournamentId?: string;
   };
-}
-
-interface UserPrefsData {
-  notificationPreferences?: {
-    tournamentUpdates?: boolean;
-    generalAnnouncements?: boolean;
-    newFeatures?: boolean;
-  };
-}
-
-/**
- * Maps a notification type to the user preference key that gates it.
- * Returns null if the type has no preference gate (always delivered).
- */
-function prefKeyForType(
-  type: SendNotificationData["type"],
-): keyof NonNullable<UserPrefsData["notificationPreferences"]> | null {
-  switch (type) {
-    case "announcement":
-      return "generalAnnouncements";
-    case "tournament":
-    case "tournament_canceled":
-    case "registration_opening":
-    case "registration_closing_soon":
-      return "tournamentUpdates";
-    case "new_features":
-      return "newFeatures";
-    default:
-      return null;
-  }
-}
-
-/**
- * Returns true when a user's stored prefs indicate they accept this notification
- * type. Defaults to true (opt-in) when the preference key is absent.
- */
-function userWantsType(
-  prefs: UserPrefsData["notificationPreferences"] | undefined,
-  type: SendNotificationData["type"],
-): boolean {
-  const key = prefKeyForType(type);
-  if (!key) return true;
-  return prefs?.[key] !== false;
 }
 
 /**

@@ -2,6 +2,7 @@ import React from "react";
 import {
   Button,
   Card,
+  Checkbox,
   DateField,
   DateRangePicker,
   FieldError,
@@ -23,6 +24,8 @@ interface RegistrationWindowSectionProps {
   setRegistrationStart: (v: CalendarDateTime | null) => void;
   registrationEnd: CalendarDateTime | null;
   setRegistrationEnd: (v: CalendarDateTime | null) => void;
+  registrationOpeningNotificationEnabled: boolean;
+  setRegistrationOpeningNotificationEnabled: (value: boolean) => void;
   tournamentDate: DateValue | null;
   errors: Record<string, string>;
 }
@@ -54,6 +57,8 @@ export const RegistrationWindowSection: React.FC<
   setRegistrationStart,
   registrationEnd,
   setRegistrationEnd,
+  registrationOpeningNotificationEnabled,
+  setRegistrationOpeningNotificationEnabled,
   tournamentDate,
   errors,
 }) => {
@@ -158,6 +163,24 @@ export const RegistrationWindowSection: React.FC<
             >
               {({ state }) => (
                 <>
+
+            <Checkbox
+              isSelected={registrationOpeningNotificationEnabled}
+              onChange={setRegistrationOpeningNotificationEnabled}
+              id="registration-opening-notification-enabled"
+            >
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Checkbox.Content>
+                <Label htmlFor="registration-opening-notification-enabled">
+                  Send push notification when registration opens
+                </Label>
+                <p className="text-xs text-muted">
+                  Disable this for tournaments you use to test registration behavior.
+                </p>
+              </Checkbox.Content>
+            </Checkbox>
                   <Label>Registration range</Label>
                   <DateField.Group
                     fullWidth

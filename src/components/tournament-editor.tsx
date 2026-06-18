@@ -115,6 +115,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         ? parseDateTime(formatForDateTimeInput(seed.registrationEnd))
         : null,
     );
+  const [registrationOpeningNotificationEnabled, setRegistrationOpeningNotificationEnabled] =
+    React.useState<boolean>(
+      seed.registrationOpeningNotificationEnabled !== false,
+    );
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -314,6 +318,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         tournamentData.registrationEnd = deleteField();
       }
 
+      tournamentData.registrationOpeningNotificationEnabled =
+        registrationOpeningNotificationEnabled;
+
       if (
         typeof maxTeams === "number" &&
         Number.isFinite(maxTeams) &&
@@ -370,6 +377,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         weather: weather || undefined,
         registrationStart: parsedStart || undefined,
         registrationEnd: parsedEnd || undefined,
+        registrationOpeningNotificationEnabled,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -680,6 +688,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 setRegistrationStart={setRegistrationStart}
                 registrationEnd={registrationEnd}
                 setRegistrationEnd={setRegistrationEnd}
+                registrationOpeningNotificationEnabled={
+                  registrationOpeningNotificationEnabled
+                }
+                setRegistrationOpeningNotificationEnabled={
+                  setRegistrationOpeningNotificationEnabled
+                }
                 tournamentDate={date}
                 errors={errors}
               />
