@@ -50,6 +50,21 @@ function normalizeAndValidateEmail(email: string): string {
   return trimmed;
 }
 
+function shouldUseRedirectForGoogleSignIn(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const isStandaloneDisplayMode =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+
+  const navigatorWithStandalone = navigator as Navigator & {
+    standalone?: boolean;
+  };
+  const isIosHomeScreenApp = navigatorWithStandalone.standalone === true;
+
+  return isStandaloneDisplayMode || isIosHomeScreenApp;
+}
+
 // Define the shape of the context value
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -166,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isCrossOriginIsolated: boolean | undefined =
       typeof window !== "undefined" &&
       (window as WindowWithCOI).crossOriginIsolated;
+    const shouldUseRedirect = shouldUseRedirectForGoogleSignIn();
 
     try {
       const provider = new GoogleAuthProvider();
@@ -177,10 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // popup-based flow to fail with console errors. Detect that and use the
       // redirect flow proactively to avoid the popup error noise.
 
-      if (isCrossOriginIsolated) {
-        console.info("Google auth using redirect due to crossOriginIsolated", {
+      if (isCrossOriginIsolated || shouldUseRedirect) {
+        console.info("Google auth using redirect", {
           currentUserUid: auth.currentUser?.uid ?? null,
           isCrossOriginIsolated,
+          shouldUseRedirect,
         });
         await withAuthPersistenceRetry(() =>
           signInWithRedirect(auth, provider),
