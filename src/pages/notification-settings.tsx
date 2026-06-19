@@ -15,11 +15,37 @@ import { addToast } from "@/providers/toast";
 import BackButton from "@/components/back-button";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
+function isIosDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  const userAgent = navigator.userAgent;
+  const isTouchMac =
+    navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+  return /iPad|iPhone|iPod/i.test(userAgent) || isTouchMac;
+}
+
+function isStandaloneApp(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const standaloneMatch =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+
+  const standaloneNavigator = navigator as Navigator & {
+    standalone?: boolean;
+  };
+
+  return standaloneMatch || standaloneNavigator.standalone === true;
+}
+
 export default function NotificationSettingsPage() {
   usePageTracking("Notification Settings");
   const { user } = useAuth();
   const { userProfile, isLoading } = useUserProfile();
   const { requestPermission } = useFCMToken(user?.uid ?? null);
+  const showIosNotificationHelp = isIosDevice();
+  const iosStandalone = isStandaloneApp();
 
   // Track browser-level push permission state
   const [pushPermission, setPushPermission] =
@@ -108,6 +134,47 @@ export default function NotificationSettingsPage() {
           </p>
         </Card.Header>
         <Card.Content className="overflow-visible">
+          {showIosNotificationHelp && pushPermission !== "granted" && (
+            <div
+              role="note"
+              aria-label="iPhone notification setup"
+              className="mb-4 rounded-2xl border border-warning/40 bg-warning/5 px-4 py-4"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10">
+                  <Icon
+                    icon="lucide:smartphone"
+                    className="text-xl text-warning"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    iPhone setup required
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    iPhone notifications only work from the Home Screen app, not
+                    a regular Safari tab.
+                  </p>
+                  <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs leading-relaxed text-muted">
+                    {!iosStandalone && (
+                      <>
+                        <li>Open this site in Safari.</li>
+                        <li>Tap Share, then Add to Home Screen.</li>
+                        <li>Open the RGC app from your Home Screen.</li>
+                      </>
+                    )}
+                    <li>Sign in from the Home Screen app.</li>
+                    <li>Come back here and tap Enable notifications.</li>
+                    <li>
+                      If notifications were previously blocked, re-enable them
+                      in iPhone Settings.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Push permission status */}
           {pushPermission !== null && (
             <>
