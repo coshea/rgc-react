@@ -51,7 +51,9 @@ function normalizeAndValidateEmail(email: string): string {
 }
 
 function shouldUseRedirectForGoogleSignIn(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
 
   const isStandaloneDisplayMode =
     typeof window.matchMedia === "function" &&

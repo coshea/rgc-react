@@ -52,7 +52,7 @@ function reloadOnceForChunkFailure(error: unknown): void {
     extra: {
       errorMessage: getErrorMessage(error),
       hasReloadedBefore: isRetry,
-      userAgent: window.navigator.userAgent,
+      userAgent: window.navigator?.userAgent ?? "unknown",
       url: window.location.href,
     },
   });

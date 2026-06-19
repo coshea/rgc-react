@@ -641,15 +641,17 @@ img { display: block; max-width: 100%; }
   const shareLink = async () => {
     if (!tournament?.firestoreId) return;
     const url = `${window.location.origin}/tournaments/${tournament.firestoreId}`;
+    const browserNavigator =
+      typeof navigator === "undefined" ? undefined : navigator;
     try {
-      if (navigator.share) {
-        await navigator.share({
+      if (browserNavigator?.share) {
+        await browserNavigator.share({
           title: tournament.title,
           text: `Check out the ${tournament.title} tournament`,
           url,
         });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
+      } else if (browserNavigator?.clipboard) {
+        await browserNavigator.clipboard.writeText(url);
         addToast({
           title: "Link copied",
           description: "Tournament URL copied to clipboard",

@@ -150,4 +150,41 @@ describe("AuthProvider signInWithGoogle", () => {
     expect(authMocks.signInWithPopup).toHaveBeenCalledTimes(1);
     expect(authMocks.signInWithRedirect).not.toHaveBeenCalled();
   });
+
+  it("uses popup when navigator is unavailable", async () => {
+    const { AuthProvider, useAuth } = await import("@/providers/AuthProvider");
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const navigatorDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      "navigator",
+    );
+
+    Object.defineProperty(window, "navigator", {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      await act(async () => {
+        await result.current.signInWithGoogle();
+      });
+    } finally {
+      if (navigatorDescriptor) {
+        Object.defineProperty(window, "navigator", navigatorDescriptor);
+      }
+    }
+
+    expect(authMocks.signInWithPopup).toHaveBeenCalledTimes(1);
+    expect(authMocks.signInWithRedirect).not.toHaveBeenCalled();
+  });
 });

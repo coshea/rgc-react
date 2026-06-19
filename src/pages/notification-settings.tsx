@@ -26,7 +26,9 @@ function isIosDevice(): boolean {
 }
 
 function isStandaloneApp(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
 
   const standaloneMatch =
     typeof window.matchMedia === "function" &&

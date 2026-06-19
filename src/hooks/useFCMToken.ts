@@ -109,10 +109,12 @@ function showForegroundNotification(payload: MessagePayload): void {
     icon: "/rgc_fav.png",
     data: payload.data ?? {},
   };
+  const browserNavigator =
+    typeof navigator === "undefined" ? undefined : navigator;
 
   // Prefer SW-backed showNotification (required for notificationclick to fire)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready
+  if (browserNavigator && "serviceWorker" in browserNavigator) {
+    browserNavigator.serviceWorker.ready
       .then((reg) => reg.showNotification(title, options))
       .catch(() => {
         // SW showNotification failed — fall back to direct Notification API
@@ -130,18 +132,23 @@ async function registerToken(uid: string): Promise<void> {
   try {
     const messaging = await messagingReady;
     if (!messaging) return;
+    const browserNavigator =
+      typeof navigator === "undefined" ? undefined : navigator;
     let swReg: ServiceWorkerRegistration | undefined;
-    if ("serviceWorker" in navigator) {
+    if (browserNavigator && "serviceWorker" in browserNavigator) {
       // Register the SW (idempotent), then use the *active* registration from
       // `ready`. During a SW update, `register()` may return the incoming
       // (installing) registration whose `.active` is null, while the old
       // worker is still active — passing that to `getToken` would cause
       // `pushManager.subscribe()` to fail. `ready` always resolves with the
       // currently-active registration so getToken succeeds.
-      await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
-        scope: "/",
-      });
-      swReg = await navigator.serviceWorker.ready;
+      await browserNavigator.serviceWorker.register(
+        "/firebase-messaging-sw.js",
+        {
+          scope: "/",
+        },
+      );
+      swReg = await browserNavigator.serviceWorker.ready;
     }
 
     const token = await getToken(messaging, {
@@ -158,7 +165,7 @@ async function registerToken(uid: string): Promise<void> {
     await setDoc(doc(db, "users", uid, "fcmTokens", tokenId), {
       token,
       createdAt: serverTimestamp(),
-      userAgent: navigator.userAgent.slice(0, 256),
+      userAgent: browserNavigator?.userAgent.slice(0, 256) ?? "",
     });
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
