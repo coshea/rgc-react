@@ -58,6 +58,19 @@ describe("shouldSendRegistrationOpeningNotification", () => {
     ).toBe(false);
   });
 
+  it("returns false after registration has already ended", () => {
+    expect(
+      shouldSendRegistrationOpeningNotification(
+        {
+          registrationStart: new Date("2026-06-18T10:00:00.000Z"),
+          registrationEnd: new Date("2026-06-18T11:30:00.000Z"),
+          status: "Upcoming",
+        },
+        now,
+      ),
+    ).toBe(false);
+  });
+
   it("returns false for canceled tournaments", () => {
     expect(
       shouldSendRegistrationOpeningNotification(

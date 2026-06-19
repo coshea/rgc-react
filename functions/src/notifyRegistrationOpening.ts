@@ -51,7 +51,13 @@ export function shouldSendRegistrationOpeningNotification(
   now: Date,
 ): boolean {
   const registrationStart = toDate(tournament.registrationStart);
+  const registrationEnd = toDate(tournament.registrationEnd);
+
   if (!registrationStart || registrationStart.getTime() > now.getTime()) {
+    return false;
+  }
+
+  if (registrationEnd && registrationEnd.getTime() <= now.getTime()) {
     return false;
   }
 
