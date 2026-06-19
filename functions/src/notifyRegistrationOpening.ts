@@ -165,29 +165,36 @@ export const notify_registration_opening = onSchedule(
     let notificationCount = 0;
 
     for (const tournamentDoc of tournamentsSnap.docs) {
-      const data = tournamentDoc.data() as TournamentNotificationData;
-      if (!shouldSendRegistrationOpeningNotification(data, now)) {
-        continue;
+      try {
+        const data = tournamentDoc.data() as TournamentNotificationData;
+        if (!shouldSendRegistrationOpeningNotification(data, now)) {
+          continue;
+        }
+
+        const sentCount = await sendRegistrationOpeningBroadcast(
+          db,
+          tournamentDoc.id,
+          data.title?.trim() || "Tournament",
+          toDate(data.registrationEnd),
+        );
+
+        await tournamentDoc.ref.update({
+          registrationOpeningNotificationSentAt: FieldValue.serverTimestamp(),
+        });
+
+        tournamentCount++;
+        notificationCount += sentCount;
+
+        logger.info("notify_registration_opening: tournament processed", {
+          tournamentId: tournamentDoc.id,
+          recipientCount: sentCount,
+        });
+      } catch (error) {
+        logger.error("notify_registration_opening: tournament failed", {
+          tournamentId: tournamentDoc.id,
+          error,
+        });
       }
-
-      const sentCount = await sendRegistrationOpeningBroadcast(
-        db,
-        tournamentDoc.id,
-        data.title?.trim() || "Tournament",
-        toDate(data.registrationEnd),
-      );
-
-      await tournamentDoc.ref.update({
-        registrationOpeningNotificationSentAt: FieldValue.serverTimestamp(),
-      });
-
-      tournamentCount++;
-      notificationCount += sentCount;
-
-      logger.info("notify_registration_opening: tournament processed", {
-        tournamentId: tournamentDoc.id,
-        recipientCount: sentCount,
-      });
     }
 
     logger.info("notify_registration_opening: run complete", {
