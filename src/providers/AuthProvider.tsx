@@ -8,6 +8,7 @@ import { MEMBERSHIP_TYPES } from "@@/types";
 import { siteConfig } from "@/config/site";
 import {
   onAuthStateChanged,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendEmailVerification,
@@ -111,7 +112,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, initializeUser);
-    return () => unsubscribe();
+
+    // After a signInWithRedirect flow (used for Google auth in iOS standalone
+    // mode), Firebase stores the pending credential in localStorage but does
+    // NOT resolve it until getRedirectResult is called. Without this call,
+    // onAuthStateChanged never fires with the signed-in user.
+    // We also re-call it on visibilitychange so that when the user returns to
+    // the standalone app after the in-app browser (SFSafariViewController)
+    // closes, the credential is picked up immediately.
+    const processRedirectResult = () => {
+      getRedirectResult(auth).catch((err: unknown) => {
+        const code = (err as { code?: string })?.code;
+        // These codes are normal when no redirect is in progress.
+        if (code !== "auth/no-auth-event" && code !== "auth/null-user") {
+          console.warn("[Auth] getRedirectResult error:", err);
+        }
+      });
+    };
+
+    processRedirectResult();
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") processRedirectResult();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
 
   // initializeUser is not async itself, but it's called by onAuthStateChanged

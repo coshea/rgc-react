@@ -10,6 +10,7 @@ const authMocks = vi.hoisted(() => {
 
   return {
     onAuthStateChanged: vi.fn(),
+    getRedirectResult: vi.fn(async () => null),
     signInWithPopup: vi.fn(),
     signInWithRedirect: vi.fn(),
     signInWithEmailAndPassword: vi.fn(),
@@ -50,6 +51,7 @@ vi.mock("firebase/analytics", () => ({
 
 vi.mock("firebase/auth", () => ({
   onAuthStateChanged: authMocks.onAuthStateChanged,
+  getRedirectResult: authMocks.getRedirectResult,
   signInWithEmailAndPassword: authMocks.signInWithEmailAndPassword,
   createUserWithEmailAndPassword: authMocks.createUserWithEmailAndPassword,
   sendEmailVerification: authMocks.sendEmailVerification,
