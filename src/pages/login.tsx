@@ -30,12 +30,23 @@ import { RGCLogo } from "@/components/icons";
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
 const MAGIC_LINK_EMAIL_KEY = "magicLinkEmail:login";
 
+function isStandaloneMode(): boolean {
+  if (typeof window === "undefined") return false;
+  const standaloneMedia =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+  const iosStandalone =
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return standaloneMedia || iosStandalone;
+}
+
 export default function LoginPage() {
   usePageTracking("Sign In");
   const [isVisible, setIsVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
+  const standalone = React.useMemo(() => isStandaloneMode(), []);
   const [loginMode, setLoginMode] = React.useState<"magic-link" | "password">(
-    "magic-link",
+    standalone ? "password" : "magic-link",
   );
   const [linkSent, setLinkSent] = React.useState(false);
   const [linkSentEmail, setLinkSentEmail] = React.useState("");
@@ -531,6 +542,17 @@ export default function LoginPage() {
             ) : null}
           </div>
 
+          {standalone && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-muted">
+              <span className="font-semibold text-foreground">
+                Home Screen app
+              </span>{" "}
+              — Google sign-in will open a browser tab and return you
+              automatically. Email magic links don&apos;t work from the Home
+              Screen app; use Google or email&nbsp;+&nbsp;password instead.
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             {/* Google Sign-In Button */}
             <Button
@@ -658,25 +680,27 @@ export default function LoginPage() {
             </Button>
           </Form>
 
-          <div className="flex flex-col items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted"
-              onPress={() => {
-                const nextMode =
-                  loginMode === "magic-link" ? "password" : "magic-link";
-                setLoginMode(nextMode);
-                if (nextMode === "magic-link") {
-                  setPassword("");
-                }
-              }}
-            >
-              {loginMode === "magic-link"
-                ? "Sign in with password instead"
-                : "Sign in with email link instead"}
-            </Button>
-          </div>
+          {!standalone && (
+            <div className="flex flex-col items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted"
+                onPress={() => {
+                  const nextMode =
+                    loginMode === "magic-link" ? "password" : "magic-link";
+                  setLoginMode(nextMode);
+                  if (nextMode === "magic-link") {
+                    setPassword("");
+                  }
+                }}
+              >
+                {loginMode === "magic-link"
+                  ? "Sign in with password instead"
+                  : "Sign in with email link instead"}
+              </Button>
+            </div>
+          )}
           <p className="text-center text-sm">
             Need to create an account?&nbsp;
             <Link href={siteConfig.pages.signup.link}>Sign Up</Link>
