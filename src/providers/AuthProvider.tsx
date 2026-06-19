@@ -121,13 +121,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // the standalone app after the in-app browser (SFSafariViewController)
     // closes, the credential is picked up immediately.
     const processRedirectResult = () => {
-      getRedirectResult(auth).catch((err: unknown) => {
-        const code = (err as { code?: string })?.code;
-        // These codes are normal when no redirect is in progress.
-        if (code !== "auth/no-auth-event" && code !== "auth/null-user") {
-          console.warn("[Auth] getRedirectResult error:", err);
-        }
-      });
+      getRedirectResult(auth)
+        .then(async (result) => {
+          if (result) {
+            const { getAdditionalUserInfo } = await import("firebase/auth");
+            const additionalUserInfo = getAdditionalUserInfo(result);
+            if (additionalUserInfo?.isNewUser) {
+              const { saveUserProfile } = await import("@/api/users");
+              const { parseDisplayName } =
+                await import("@/utils/profileCompletion");
+              const { firstName: first, lastName } = parseDisplayName(
+                result.user.displayName,
+              );
+              try {
+                await saveUserProfile(result.user.uid, {
+                  firstName: first,
+                  lastName: lastName,
+                  email: result.user.email || undefined,
+                });
+              } catch (profileError: unknown) {
+                console.error(
+                  "Failed to save profile after Google redirect sign-in",
+                  profileError,
+                );
+              }
+              window.location.href = siteConfig.pages.profile.link;
+            }
+          }
+        })
+        .catch((err: unknown) => {
+          const code = (err as { code?: string })?.code;
+          // These codes are normal when no redirect is in progress.
+          if (code !== "auth/no-auth-event" && code !== "auth/null-user") {
+            console.warn("[Auth] getRedirectResult error:", err);
+          }
+        });
     };
 
     processRedirectResult();

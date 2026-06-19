@@ -44,7 +44,7 @@ export default function LoginPage() {
   usePageTracking("Sign In");
   const [isVisible, setIsVisible] = React.useState(false);
   const [inlineError, setInlineError] = React.useState<string | null>(null);
-  const standalone = isStandaloneMode();
+  const standalone = React.useMemo(() => isStandaloneMode(), []);
   const [loginMode, setLoginMode] = React.useState<"magic-link" | "password">(
     standalone ? "password" : "magic-link",
   );
