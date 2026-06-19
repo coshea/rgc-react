@@ -14,6 +14,11 @@ export interface Tournament {
   registrationStart?: Date;
   registrationEnd?: Date;
   /**
+   * When false, suppress the automatic push notification that is sent when registration opens.
+   * Defaults to true when omitted.
+   */
+  registrationOpeningNotificationEnabled?: boolean;
+  /**
    * Unified status for the tournament. New code should prefer this over the legacy boolean flags.
    * For backward compatibility, the boolean flags are still present and kept in sync client-side.
    */

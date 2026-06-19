@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildLeaderEmailHtml,
   buildMemberEmailHtml,
+  buildRemovedMemberEmailHtml,
   buildTeamMembersHtml,
 } from "../sendRegistrationEmails";
 
@@ -20,6 +21,7 @@ const BASE_PARAMS = {
 
 const LEADER_PARAMS = { ...BASE_PARAMS };
 const MEMBER_PARAMS = { ...BASE_PARAMS, leaderName: "Bob Smith" };
+const REMOVED_MEMBER_PARAMS = { ...BASE_PARAMS, leaderName: "Bob Smith" };
 
 // ── buildTeamMembersHtml ─────────────────────────────────────────────────────
 
@@ -230,5 +232,45 @@ describe("buildMemberEmailHtml", () => {
   it("leader email does NOT mention the 'Need to make changes?' callout", () => {
     const html = buildLeaderEmailHtml(LEADER_PARAMS);
     expect(html).not.toContain("Need to make changes?");
+  });
+});
+
+// ── buildRemovedMemberEmailHtml ─────────────────────────────────────────────
+
+describe("buildRemovedMemberEmailHtml", () => {
+  it("is valid HTML with DOCTYPE and closing tags", () => {
+    const html = buildRemovedMemberEmailHtml(REMOVED_MEMBER_PARAMS);
+    expect(html.trimStart()).toMatch(/^<!DOCTYPE html>/i);
+    expect(html).toContain("</html>");
+    expect(html).toContain("</body>");
+  });
+
+  it("contains removal copy and leader name", () => {
+    const html = buildRemovedMemberEmailHtml(REMOVED_MEMBER_PARAMS);
+    expect(html).toContain("removed you from their team");
+    expect(html).toContain("Bob Smith");
+  });
+
+  it("contains tournament details and previous team heading", () => {
+    const html = buildRemovedMemberEmailHtml(REMOVED_MEMBER_PARAMS);
+    expect(html).toContain("Spring Scramble");
+    expect(html).toContain("Saturday, May 10, 2025");
+    expect(html).toContain("Previous Team");
+  });
+
+  it("CTA link has UTM parameters with content=member_removed", () => {
+    const html = buildRemovedMemberEmailHtml(REMOVED_MEMBER_PARAMS);
+    expect(html).toContain("utm_source=email");
+    expect(html).toContain("utm_campaign=tournament_registration");
+    expect(html).toContain("utm_content=member_removed");
+  });
+
+  it("escapes HTML entities in leader name", () => {
+    const html = buildRemovedMemberEmailHtml({
+      ...REMOVED_MEMBER_PARAMS,
+      leaderName: '<img src=x onerror="alert(1)">',
+    });
+    expect(html).not.toContain("<img src=x");
+    expect(html).toContain("&lt;img");
   });
 });

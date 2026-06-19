@@ -19,9 +19,20 @@ export async function copyOrMailtoEmails(emails: string[]): Promise<void> {
   }
 
   const emailString = normalized.join(",");
+  const clipboard =
+    typeof navigator === "undefined" ? undefined : navigator.clipboard;
+
+  if (!clipboard) {
+    addToast({
+      title: "Copy failed",
+      description: "Could not copy email addresses to clipboard.",
+      color: "danger",
+    });
+    return;
+  }
 
   try {
-    await navigator.clipboard.writeText(emailString);
+    await clipboard.writeText(emailString);
     addToast({
       title: "Emails copied to clipboard",
       description: `${normalized.length} email address${normalized.length === 1 ? "" : "es"} copied.`,

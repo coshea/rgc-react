@@ -89,6 +89,8 @@ export function mapTournamentDoc(d: any) {
     status,
     registrationStart,
     registrationEnd,
+    registrationOpeningNotificationEnabled:
+      data.registrationOpeningNotificationEnabled !== false,
     icon: data.icon,
     href: data.href,
     prizePool: data.prizePool || 0,

@@ -172,6 +172,25 @@ if (enabled) {
         return null;
       }
 
+      // Suppress Chrome's non-actionable View Transitions API errors:
+      //  - InvalidStateError: Skipping view transition because viewport size changed
+      //    (fired on mobile when soft keyboard dismisses during navigation)
+      //  - AbortError: Old view transition aborted by new view transition
+      //    (fired when two navigations race, e.g. magic-link then redirect)
+      // Both are browser-level noise; the navigation still completes normally.
+      const isViewTransitionError =
+        (/InvalidStateError/i.test(combinedText) &&
+          /Skipping view transition because viewport size changed/i.test(
+            combinedText,
+          )) ||
+        (/AbortError/i.test(combinedText) &&
+          /Old view transition aborted by new view transition/i.test(
+            combinedText,
+          ));
+      if (isViewTransitionError) {
+        return null;
+      }
+
       return event;
     },
     integrations: [

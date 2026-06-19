@@ -34,6 +34,8 @@ export interface MemberEmailParams extends LeaderEmailParams {
   leaderName: string;
 }
 
+export interface RemovedMemberEmailParams extends MemberEmailParams {}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Minimal HTML entity escaping for dynamic values rendered in email HTML. */
@@ -59,6 +61,18 @@ function buildTrackedUrl(url: string, content: "leader" | "member"): string {
     "&utm_medium=email" +
     "&utm_campaign=tournament_registration" +
     `&utm_content=${content}`
+  );
+}
+
+function buildTrackedUrlForRemovedMember(url: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return (
+    url +
+    separator +
+    "utm_source=email" +
+    "&utm_medium=email" +
+    "&utm_campaign=tournament_registration" +
+    "&utm_content=member_removed"
   );
 }
 
@@ -355,6 +369,136 @@ export function buildMemberEmailHtml(p: MemberEmailParams): string {
 </html>`;
 }
 
+export function buildRemovedMemberEmailHtml(
+  p: RemovedMemberEmailParams,
+): string {
+  const {
+    firstName,
+    leaderName,
+    tournamentTitle,
+    tournamentDate,
+    tournamentTee,
+    tournamentTeeTimes,
+    teamMembersHtml,
+    tournamentUrl,
+  } = p;
+  const trackedUrl = buildTrackedUrlForRemovedMember(tournamentUrl);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>You've Been Removed from a Tournament Team</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:${FONT};">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding-top:32px;padding-bottom:32px;padding-left:16px;padding-right:16px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;border:1px solid #e4e4e7;">
+
+          <!-- HEADER -->
+          <tr>
+            <td bgcolor="#1a5c2e" align="center" style="background-color:#1a5c2e;border-radius:13px 13px 0 0;padding:32px 40px;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td bgcolor="#ffffff" align="center" style="background-color:#ffffff;border-radius:8px;padding:8px 20px;">
+                    <img src="https://www.ridgefieldgolfclub.org/rgc_logo.png" width="160" height="48" border="0" alt="Ridgefield Golf Club" style="display:block;width:160px;height:auto;border:0;">
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:20px 0 0;font-size:26px;color:#ffffff;font-family:${FONT};font-weight:700;line-height:1.3;">Team Update</p>
+              <p style="margin:8px 0 0;font-size:14px;color:#bbf7d0;font-family:${FONT};line-height:1.5;">You were removed from a tournament team.</p>
+            </td>
+          </tr>
+
+          <!-- GREETING -->
+          <tr>
+            <td style="padding:28px 40px 0;">
+              <p style="margin:0;font-size:15px;color:#11181c;font-family:${FONT};line-height:1.6;">Hi <strong>${esc(firstName)}</strong>,</p>
+              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;"><strong>${esc(leaderName)}</strong> removed you from their team for the <strong>${esc(tournamentTitle)}</strong>.</p>
+            </td>
+          </tr>
+
+          <!-- TOURNAMENT DETAILS -->
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;border-radius:10px;border:1px solid #e4e4e7;">
+                <tr>
+                  <td style="padding:18px 20px;">
+                    <p style="margin:0;font-size:11px;color:#71717a;font-family:${FONT};font-weight:600;text-transform:uppercase;letter-spacing:1.5px;line-height:1.4;">Tournament Details</p>
+                    <p style="margin:8px 0 0;font-size:17px;color:#11181c;font-family:${FONT};font-weight:700;line-height:1.4;">${esc(tournamentTitle)}</p>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+                      <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128197; <strong>Date:</strong> ${esc(tournamentDate)}</p></td></tr>
+                      <tr><td style="padding-bottom:6px;"><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#9971; <strong>Tee:</strong> ${esc(tournamentTee)}</p></td></tr>
+                      <tr><td><p style="margin:0;font-size:14px;color:#3f3f46;font-family:${FONT};line-height:1.5;">&#128336; <strong>Tee Times:</strong> ${esc(tournamentTeeTimes)}</p></td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- PREVIOUS TEAM -->
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <p style="margin:0 0 10px;font-size:11px;color:#71717a;font-family:${FONT};font-weight:600;text-transform:uppercase;letter-spacing:1.5px;line-height:1.4;">Previous Team</p>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;">
+                ${teamMembersHtml}
+              </table>
+            </td>
+          </tr>
+
+          <!-- INFO -->
+          <tr>
+            <td style="padding:20px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e6f1fe;border-radius:10px;border:1px solid #bdd7f9;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;font-size:13px;color:#004493;font-family:${FONT};font-weight:700;line-height:1.5;">Need help?</p>
+                    <p style="margin:8px 0 0;font-size:13px;color:#004493;font-family:${FONT};line-height:1.6;">If this change looks incorrect, contact your team leader <strong>${esc(leaderName)}</strong> or email the club for support.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="padding:28px 40px 0;">
+              <a href="${esc(trackedUrl)}" target="_blank" style="display:inline-block;background-color:#006fee;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:10px;">View Tournament &#8594;</a>
+            </td>
+          </tr>
+
+          <!-- DIVIDER -->
+          <tr>
+            <td style="padding:28px 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="border-top:1px solid #e4e4e7;font-size:1px;line-height:1px;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CONTACT + FOOTER -->
+          <tr>
+            <td style="padding:20px 40px 0;">
+              <p style="margin:0;font-size:13px;color:#71717a;font-family:${FONT};line-height:1.6;">Questions? Email us at <a href="mailto:RidgefieldCTGolfClub@gmail.com" style="color:#006fee;text-decoration:underline;">RidgefieldCTGolfClub@gmail.com</a></p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:16px 40px 28px;">
+              <p style="margin:0;font-size:12px;color:#a1a1aa;font-family:${FONT};line-height:1.6;">Ridgefield Golf Club &bull; PO Box 24, Ridgefield, CT 06877</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 // ── Resend API ────────────────────────────────────────────────────────────────
 
 interface ResendPayload {
@@ -435,5 +579,18 @@ export async function sendTournamentMemberEmail(
     to: [to],
     subject: `You've been added to a team: ${params.tournamentTitle}`,
     html: buildMemberEmailHtml(params),
+  });
+}
+
+export async function sendTournamentRemovedMemberEmail(
+  apiKey: string,
+  to: string,
+  params: RemovedMemberEmailParams,
+): Promise<void> {
+  await callResendApi(apiKey, {
+    from: FROM_EMAIL,
+    to: [to],
+    subject: `You've been removed from a team: ${params.tournamentTitle}`,
+    html: buildRemovedMemberEmailHtml(params),
   });
 }

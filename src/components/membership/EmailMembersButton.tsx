@@ -65,10 +65,12 @@ export function EmailMembersButton({
 
     const emailString = emails.join(",");
     const isLarge = emailString.length > 2000;
+    const clipboard =
+      typeof navigator === "undefined" ? undefined : navigator.clipboard;
 
-    if (isLarge && navigator.clipboard) {
+    if (isLarge && clipboard) {
       try {
-        await navigator.clipboard.writeText(emailString);
+        await clipboard.writeText(emailString);
         addToast({
           title: "Emails copied to clipboard",
           description: `${emails.length} email addresses copied. Paste into your email client manually.`,

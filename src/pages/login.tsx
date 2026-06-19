@@ -400,9 +400,9 @@ export default function LoginPage() {
       case "auth/cancelled-popup-request":
         return "Sign in was cancelled. Try again.";
       case "auth/expired-action-code":
-        return "The sign-in link has expired. Please try again.";
+        return "This sign-in link has expired. Please request a new one.";
       case "auth/invalid-action-code":
-        return "The sign-in link is invalid. Please try again.";
+        return "This sign-in link has already been used or is no longer valid — your email app may have pre-scanned it. Please request a new sign-in link.";
       default:
         return fallback || "Failed to sign in. Please try again.";
     }
