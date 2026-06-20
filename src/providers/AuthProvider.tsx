@@ -56,16 +56,9 @@ function shouldUseRedirectForGoogleSignIn(): boolean {
     return false;
   }
 
-  const isStandaloneDisplayMode =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(display-mode: standalone)").matches;
-
-  const navigatorWithStandalone = navigator as Navigator & {
-    standalone?: boolean;
-  };
-  const isIosHomeScreenApp = navigatorWithStandalone.standalone === true;
-
-  return isStandaloneDisplayMode || isIosHomeScreenApp;
+  // Standalone PWAs should default to signInWithPopup to keep the user in the app container.
+  // Avoid forcing redirect for standalone PWA or iOS Home Screen App display modes.
+  return false;
 }
 
 // Define the shape of the context value

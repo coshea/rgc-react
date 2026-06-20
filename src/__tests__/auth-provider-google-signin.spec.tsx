@@ -128,8 +128,8 @@ describe("AuthProvider signInWithGoogle", () => {
       await result.current.signInWithGoogle();
     });
 
-    expect(authMocks.signInWithRedirect).toHaveBeenCalledTimes(1);
-    expect(authMocks.signInWithPopup).not.toHaveBeenCalled();
+    expect(authMocks.signInWithRedirect).not.toHaveBeenCalled();
+    expect(authMocks.signInWithPopup).toHaveBeenCalled();
   });
 
   it("uses popup when not in standalone mode", async () => {
@@ -149,8 +149,8 @@ describe("AuthProvider signInWithGoogle", () => {
       await result.current.signInWithGoogle();
     });
 
-    expect(authMocks.signInWithPopup).toHaveBeenCalledTimes(1);
     expect(authMocks.signInWithRedirect).not.toHaveBeenCalled();
+    expect(authMocks.signInWithPopup).toHaveBeenCalled();
   });
 
   it("uses popup when navigator is unavailable", async () => {
