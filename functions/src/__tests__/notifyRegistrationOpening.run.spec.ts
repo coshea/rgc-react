@@ -8,6 +8,7 @@ const schedulerState = vi.hoisted(() => {
 
 const firestoreState = vi.hoisted(() => {
   const get = vi.fn();
+  const registrationsGet = vi.fn();
   const stream = vi.fn();
   const batchSet = vi.fn();
   const batchCommit = vi.fn();
@@ -35,6 +36,10 @@ const firestoreState = vi.hoisted(() => {
         return tournamentsQuery;
       }
 
+      if (name.endsWith("/registrations")) {
+        return { get: registrationsGet };
+      }
+
       if (name === "users") {
         return { stream };
       }
@@ -54,6 +59,7 @@ const firestoreState = vi.hoisted(() => {
     db,
     get,
     notificationsCollection,
+    registrationsGet,
     stream,
     tournamentsQuery,
   };
@@ -122,6 +128,7 @@ describe("notify_registration_opening handler", () => {
     vi.resetModules();
     schedulerState.handler = undefined;
     firestoreState.get.mockResolvedValue({ docs: [] });
+    firestoreState.registrationsGet.mockResolvedValue({ docs: [] });
     firestoreState.stream.mockReturnValue(emptyUserStream());
   });
 
@@ -165,6 +172,58 @@ describe("notify_registration_opening handler", () => {
       expect.objectContaining({
         tournamentCount: 1,
         notificationCount: 0,
+      }),
+    );
+  });
+
+  it("skips users already registered for the tournament", async () => {
+    const tournamentId = "Registered Tournament";
+
+    firestoreState.get.mockResolvedValue({
+      docs: [createTournamentDoc(tournamentId, async () => undefined)],
+    });
+    firestoreState.registrationsGet.mockResolvedValue({
+      docs: [
+        {
+          data: () => ({
+            ownerId: "registered-user",
+            team: [{ id: "registered-user" }, { id: "teammate" }],
+          }),
+        },
+      ],
+    });
+    firestoreState.stream.mockReturnValue(
+      (async function* () {
+        yield {
+          id: "registered-user",
+          data: () => ({
+            notificationPreferences: {
+              tournamentUpdates: true,
+            },
+          }),
+        };
+
+        yield {
+          id: "open-user",
+          data: () => ({
+            notificationPreferences: {
+              tournamentUpdates: true,
+            },
+          }),
+        };
+      })(),
+    );
+
+    await import("../notifyRegistrationOpening");
+
+    expect(schedulerState.handler).toBeTypeOf("function");
+    await schedulerState.handler?.();
+
+    expect(firestoreState.batchSet).toHaveBeenCalledTimes(1);
+    expect(firestoreState.batchSet.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({
+        uid: "open-user",
+        data: expect.objectContaining({ tournamentId }),
       }),
     );
   });

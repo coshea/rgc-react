@@ -138,7 +138,8 @@ All Firebase initialization is centralized in `src/config/firebase.ts`.
 
 ### Deploys
 
-- Local build + deploy via Firebase CLI is supported. GitHub Actions CI requires a `firebaseServiceAccount` secret (JSON service account) for deploys.
+- Local build + deploy via Firebase CLI is supported. GitHub Actions CI uses the `FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB` secret (JSON service account) for deploys.
+- Scheduled Cloud Functions are deployed from the functions workflow at [.github/workflows/firebase-deploy-functions.yml](.github/workflows/firebase-deploy-functions.yml); redeploy that workflow after changing any `onSchedule()` function so Firebase provisions the scheduler job.
 - App Hosting config lives in `apphosting.yaml`.
 
 #### Firebase Functions parameters and secrets

@@ -7,6 +7,7 @@ import {
   type UserPrefsData,
   userWantsType,
 } from "./notificationPreferences";
+import { collectRegisteredUserIds } from "./registrationRecipients";
 
 interface SendNotificationData {
   title: string;
@@ -171,17 +172,7 @@ export const send_notification = onCall(async (request) => {
         ? regsSnap.docs.slice(0, maxTeams)
         : regsSnap.docs;
 
-    const uidSet = new Set<string>();
-    for (const regDoc of regDocs) {
-      const team = regDoc.data().team;
-      if (Array.isArray(team)) {
-        team.forEach((m: { id?: string }) => {
-          if (m.id) uidSet.add(m.id);
-        });
-      }
-    }
-
-    const uids = Array.from(uidSet);
+    const uids = Array.from(collectRegisteredUserIds(regDocs));
     if (uids.length === 0) return { success: true, count: 0 };
 
     // Filter by each registrant's notification preferences
@@ -237,15 +228,7 @@ export const send_notification = onCall(async (request) => {
         `tournaments/${targetNonRegistrantsTournamentId}/registrations`,
       )
       .get();
-    const registeredUids = new Set<string>();
-    for (const regDoc of regsSnap.docs) {
-      const team = regDoc.data().team;
-      if (Array.isArray(team)) {
-        team.forEach((m: { id?: string }) => {
-          if (m.id) registeredUids.add(m.id);
-        });
-      }
-    }
+    const registeredUids = collectRegisteredUserIds(regsSnap.docs);
 
     // Stream all users sequentially to avoid loading the full collection
     // into memory. Filter isMigrated and registeredUids inline.
@@ -253,7 +236,9 @@ export const send_notification = onCall(async (request) => {
     let count = 0;
     let batch = db.batch();
 
-    const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+    const userStream = db
+      .collection("users")
+      .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
     for await (const userDoc of userStream) {
       const data = userDoc.data();
       if (data.isMigrated === true || registeredUids.has(userDoc.id)) continue;
@@ -298,7 +283,9 @@ export const send_notification = onCall(async (request) => {
   let count = 0;
   let batch = db.batch();
 
-  const userStream = db.collection("users").stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
+  const userStream = db
+    .collection("users")
+    .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
   for await (const userDoc of userStream) {
     const data = userDoc.data();
     if (data.isMigrated === true) continue;

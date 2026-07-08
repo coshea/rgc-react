@@ -6,6 +6,7 @@ import {
   type UserPrefsData,
   userWantsType,
 } from "./notificationPreferences";
+import { collectRegisteredUserIds } from "./registrationRecipients";
 import { logger } from "./logger";
 
 const REGISTRATION_OPENING_TYPE: NotificationType = "registration_opening";
@@ -94,6 +95,7 @@ async function sendRegistrationOpeningBroadcast(
   tournamentId: string,
   tournamentTitle: string,
   registrationEnd: Date | undefined,
+  registeredUserIds: ReadonlySet<string>,
 ): Promise<number> {
   const now = new Date();
   const expiresAt = resolveExpiresAt(registrationEnd, now);
@@ -108,6 +110,10 @@ async function sendRegistrationOpeningBroadcast(
     .stream() as unknown as AsyncIterable<admin.firestore.QueryDocumentSnapshot>;
 
   for await (const userDoc of userStream) {
+    if (registeredUserIds.has(userDoc.id)) {
+      continue;
+    }
+
     const data = userDoc.data() as UserPrefsData & { isMigrated?: boolean };
     if (data.isMigrated === true) continue;
     if (
@@ -152,7 +158,7 @@ async function sendRegistrationOpeningBroadcast(
 
 export const notify_registration_opening = onSchedule(
   {
-    schedule: "0 09 * * *",
+    schedule: "0 09,21 * * *",
     timeZone: "America/New_York",
   },
   async () => {
@@ -177,11 +183,19 @@ export const notify_registration_opening = onSchedule(
           continue;
         }
 
+        const registrationsSnap = await db
+          .collection(`tournaments/${tournamentDoc.id}/registrations`)
+          .get();
+        const registeredUserIds = collectRegisteredUserIds(
+          registrationsSnap.docs,
+        );
+
         const sentCount = await sendRegistrationOpeningBroadcast(
           db,
           tournamentDoc.id,
           data.title?.trim() || "Tournament",
           toDate(data.registrationEnd),
+          registeredUserIds,
         );
 
         await tournamentDoc.ref.update({
