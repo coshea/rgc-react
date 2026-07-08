@@ -385,6 +385,55 @@ describe("TournamentDetailPage", () => {
     expect(screen.getAllByText("Runner").length).toBeGreaterThan(0);
   });
 
+  it("uses the lowest-order winner group for defending champion when no overall group exists", async () => {
+    renderWithRoute("prev-fallback-1");
+    emitDoc("tournaments/prev-fallback-1", {
+      ...baseTournament,
+      previousTournamentId: "prev-fallback-source",
+    });
+
+    emitDoc("tournaments/prev-fallback-source", {
+      ...baseTournament,
+      date: new Date("2025-08-15T00:00:00.000Z"),
+      winnerGroups: [
+        {
+          id: "flight-b",
+          label: "Flight B",
+          type: "flight",
+          order: 2,
+          winners: [
+            {
+              place: 1,
+              competitors: [
+                { userId: "u-flight", displayName: "Flight Champ" },
+              ],
+            },
+          ],
+        },
+        {
+          id: "custom-net",
+          label: "Net Winners",
+          type: "custom",
+          order: 0,
+          winners: [
+            {
+              place: 1,
+              competitors: [
+                { userId: "u-custom", displayName: "Custom Champ" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    await screen.findByText("Club Championship");
+    await screen.findByRole("heading", { name: /Defending Champion/i });
+
+    expect(screen.getAllByText("Custom Champ").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Flight Champ")).toBeNull();
+  });
+
   it("shows admin action buttons when user is admin", async () => {
     renderWithRoute("admin1");
     // Set admin flag via hook mock

@@ -52,6 +52,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getWeatherIcon } from "@/utils/weather";
 import {
   getTournamentGoogleCalendarUrl,
@@ -59,6 +60,27 @@ import {
 } from "@/utils/calendar";
 import { copyOrMailtoEmails } from "@/utils/email";
 import { EmailRegistrantsButton } from "@/components/email-registrants-button";
+
+const byOrderAsc = (a: { order: number }, b: { order: number }) =>
+  a.order - b.order;
+
+const byPlaceAsc = (a: { place: number }, b: { place: number }) =>
+  a.place - b.place;
+
+function getDefendingChampionPlace(
+  groups: WinnerGroup[] | undefined,
+): WinnerPlace | undefined {
+  if (!groups?.length) return undefined;
+
+  const groupsSortedByOrder = [...groups].sort(byOrderAsc);
+  const selectedGroup =
+    groupsSortedByOrder.find(
+      (group) => group.type === "overall" && (group.winners?.length ?? 0) > 0,
+    ) ?? groupsSortedByOrder.find((group) => (group.winners?.length ?? 0) > 0);
+
+  if (!selectedGroup?.winners?.length) return undefined;
+  return [...selectedGroup.winners].sort(byPlaceAsc)[0];
+}
 
 const formatLocalDateTime = (date?: Date) => {
   if (!date) return undefined;
@@ -599,22 +621,17 @@ img { display: block; max-width: 100%; }
   const defendingChampions = React.useMemo(() => {
     if (!previousTournament) return null;
 
-    // Check for grouped winners
-    const groups = previousTournament.winnerGroups;
-    if (groups?.length) {
-      const overallGroup = groups.find((g) => g.type === "overall");
-      if (overallGroup?.winners?.length) {
-        const firstPlace = overallGroup.winners.find((w) => w.place === 1);
-        if (firstPlace?.competitors?.length) {
-          return {
-            competitors: firstPlace.competitors.map((c) => ({
-              id: c.userId,
-              name: c.displayName || "Unknown",
-            })),
-            score: firstPlace.score,
-          };
-        }
-      }
+    const championPlace = getDefendingChampionPlace(
+      previousTournament.winnerGroups,
+    );
+    if (championPlace?.competitors?.length) {
+      return {
+        competitors: championPlace.competitors.map((c) => ({
+          id: c.userId,
+          name: c.displayName || "Unknown",
+        })),
+        score: championPlace.score,
+      };
     }
 
     return null;
