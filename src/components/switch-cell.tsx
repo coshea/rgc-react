@@ -7,7 +7,7 @@ export type SwitchCellProps = SwitchProps & {
   description: string;
 };
 
-const SwitchCell = React.forwardRef<HTMLLabelElement, SwitchCellProps>(
+const SwitchCell = React.forwardRef<HTMLDivElement, SwitchCellProps>(
   ({ label, description, className, ...props }, ref) => (
     <div
       className={cn(
@@ -20,7 +20,9 @@ const SwitchCell = React.forwardRef<HTMLLabelElement, SwitchCellProps>(
         <p className="text-sm text-muted">{description}</p>
       </div>
       <Switch ref={ref} {...props}>
-        <Switch.Control className="shrink-0"><Switch.Thumb /></Switch.Control>
+        <Switch.Control className="shrink-0">
+          <Switch.Thumb />
+        </Switch.Control>
       </Switch>
     </div>
   ),

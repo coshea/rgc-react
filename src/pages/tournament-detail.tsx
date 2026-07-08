@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   onTournament,
   onTournamentRegistrations,
@@ -127,6 +127,7 @@ interface RegistrationDoc {
 const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
 
@@ -465,6 +466,22 @@ img { display: block; max-width: 100%; }
   const registrationOpen =
     registrationWindowInfo.state === RegistrationWindowState.Open;
 
+  React.useEffect(() => {
+    if (location.hash !== "#winners") return;
+
+    const timeoutId = window.setTimeout(() => {
+      const winnersSection = document.getElementById("tournament-winners");
+      if (winnersSection) {
+        winnersSection.scrollIntoView?.({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, currentStatus, tournament?.winnerGroups]);
+
   const isUserRegistered = React.useMemo(() => {
     if (!userId) return false;
     return registrations.some(
@@ -650,6 +667,11 @@ img { display: block; max-width: 100%; }
     if (!tournament?.firestoreId) return;
     navigate(`/tournaments/${tournament.firestoreId}/register`);
   };
+
+  const handleViewLinkedTournamentWinners = React.useCallback(() => {
+    if (!previousTournament?.firestoreId) return;
+    navigate(`/tournaments/${previousTournament.firestoreId}#winners`);
+  }, [navigate, previousTournament?.firestoreId]);
 
   const toggleShowNeedingPlayers = () => setShowNeedingPlayers((prev) => !prev);
   const toggleShowPartnerTeams = () => setShowPartnerTeams((prev) => !prev);
@@ -1465,17 +1487,29 @@ img { display: block; max-width: 100%; }
                           {previousTournament?.date.getFullYear()} Winner
                           {defendingChampions.competitors.length > 1 ? "s" : ""}
                         </p>
-                        <WinnerDisplay
-                          place={1}
-                          competitors={defendingChampions.competitors.map(
-                            (c: { id: string; name: string }) => ({
-                              userId: c.id,
-                              displayName: c.name,
-                            }),
-                          )}
-                          score={defendingChampions.score}
-                          isChampion={true}
-                        />
+                        <Button
+                          variant="ghost"
+                          onPress={handleViewLinkedTournamentWinners}
+                          isDisabled={!previousTournament?.firestoreId}
+                          aria-label="View full winners from linked tournament"
+                          className="h-auto p-0 justify-start"
+                          style={{
+                            display: "inline-flex",
+                            width: "fit-content",
+                          }}
+                        >
+                          <WinnerDisplay
+                            place={1}
+                            competitors={defendingChampions.competitors.map(
+                              (c: { id: string; name: string }) => ({
+                                userId: c.id,
+                                displayName: c.name,
+                              }),
+                            )}
+                            score={defendingChampions.score}
+                            isChampion={true}
+                          />
+                        </Button>
                       </>
                     ) : (
                       <p className="text-sm text-muted italic">
@@ -1491,7 +1525,7 @@ img { display: block; max-width: 100%; }
               (tournament.winnerGroups ?? []).some(
                 (g) => (g.winners ?? []).length > 0,
               ) && (
-                <div className="mb-12">
+                <div id="tournament-winners" className="mb-12">
                   <Card>
                     <Card.Header className="pb-0">
                       <h2 className="text-lg font-semibold">
