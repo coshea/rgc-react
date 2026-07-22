@@ -14,8 +14,8 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { siteConfig } from "@/config/site";
-import { useAuth } from "@/providers/AuthProvider"; // Import useAuth
-import { useNavigate, useLocation } from "react-router-dom"; // Import useNavigate
+import { useAuth } from "@/providers/AuthProvider";
+import { useNavigate, useLocation } from "react-router-dom";
 import { addToast } from "@/providers/toast";
 import { isSignInWithEmailLink, getAdditionalUserInfo } from "firebase/auth";
 import { auth } from "@/config/firebase";
@@ -80,6 +80,12 @@ export default function LoginPage() {
   >(null);
   const [magicLinkSubmitting, setMagicLinkSubmitting] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Debug: ?auth_debug=1 in the URL forces redirect sign-in.
+  const showAuthDebug = React.useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("auth_debug") === "1";
+  }, [location.search]);
 
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -705,6 +711,12 @@ export default function LoginPage() {
             Need to create an account?&nbsp;
             <Link href={siteConfig.pages.signup.link}>Sign Up</Link>
           </p>
+          {showAuthDebug && (
+            <div className="rounded-xl border border-warning/50 bg-warning/5 px-3 py-2 text-xs text-warning">
+              <span className="font-semibold">Debug:</span> redirect sign-in
+              active
+            </div>
+          )}
         </div>
       </div>
       <Modal.Backdrop isOpen={linkSent} isDismissable={false}>

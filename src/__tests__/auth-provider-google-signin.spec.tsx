@@ -1,6 +1,7 @@
 import React from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FORCE_REDIRECT_AUTH_KEY } from "@/providers/AuthProvider";
 
 const authMocks = vi.hoisted(() => {
   class MockGoogleAuthProvider {
@@ -95,6 +96,8 @@ describe("AuthProvider signInWithGoogle", () => {
       configurable: true,
       value: false,
     });
+
+    window.localStorage.clear();
   });
 
   it("uses redirect when running in standalone display mode", async () => {
@@ -128,8 +131,31 @@ describe("AuthProvider signInWithGoogle", () => {
       await result.current.signInWithGoogle();
     });
 
-    expect(authMocks.signInWithRedirect).not.toHaveBeenCalled();
-    expect(authMocks.signInWithPopup).toHaveBeenCalled();
+    expect(authMocks.signInWithRedirect).toHaveBeenCalled();
+    expect(authMocks.signInWithPopup).not.toHaveBeenCalled();
+  });
+
+  it("uses redirect when force-redirect flag is set in localStorage", async () => {
+    window.localStorage.setItem(FORCE_REDIRECT_AUTH_KEY, "true");
+
+    const { AuthProvider, useAuth } = await import("@/providers/AuthProvider");
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+
+    expect(authMocks.signInWithRedirect).toHaveBeenCalled();
+    expect(authMocks.signInWithPopup).not.toHaveBeenCalled();
   });
 
   it("uses popup when not in standalone mode", async () => {
