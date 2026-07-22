@@ -11,7 +11,7 @@ importScripts(
 
 firebase.initializeApp({
   apiKey: "AIzaSyCdj-5oF0d92kfoseQFENIdw7E4Ft7A_7w",
-  authDomain: "ridgefield-golf-club.firebaseapp.com",
+  authDomain: "ridgefieldgolfclub.org",
   projectId: "ridgefield-golf-club",
   storageBucket: "ridgefield-golf-club.firebasestorage.app",
   messagingSenderId: "210348651103",

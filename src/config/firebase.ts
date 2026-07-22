@@ -21,7 +21,10 @@ import { getMessaging, type Messaging } from "firebase/messaging";
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCdj-5oF0d92kfoseQFENIdw7E4Ft7A_7w",
-  authDomain: "ridgefield-golf-club.firebaseapp.com",
+  // Use the custom domain so Firebase's auth redirect handler runs on the same
+  // origin as the app. This avoids Safari ITP blocking the cross-origin iframe
+  // that transfers the credential from ridgefield-golf-club.firebaseapp.com.
+  authDomain: "ridgefieldgolfclub.org",
   projectId: "ridgefield-golf-club",
   storageBucket: "ridgefield-golf-club.firebasestorage.app",
   messagingSenderId: "210348651103",
