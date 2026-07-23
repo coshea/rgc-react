@@ -21,9 +21,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages - displayed as OS-level notifications when the app is not focused.
+// We only manually show a notification if the payload doesn't already have one,
+// to avoid duplicates on browsers that handle the 'notification' property automatically.
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title ?? "Ridgefield Golf Club";
-  const body = payload.notification?.body ?? "";
+  if (payload.notification) {
+    // Browser already handled it
+    return;
+  }
+
+  const title = "Ridgefield Golf Club";
+  const body = payload.data?.body || "";
   const icon = "/rgc_fav.png";
 
   self.registration.showNotification(title, {

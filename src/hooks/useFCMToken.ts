@@ -134,6 +134,12 @@ async function registerToken(uid: string): Promise<void> {
     if (!messaging) return;
     const browserNavigator =
       typeof navigator === "undefined" ? undefined : navigator;
+
+    // Detect standalone mode (PWA)
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (browserNavigator as any)?.standalone === true;
+
     let swReg: ServiceWorkerRegistration | undefined;
     if (browserNavigator && "serviceWorker" in browserNavigator) {
       // Register the SW (idempotent), then use the *active* registration from
@@ -166,6 +172,7 @@ async function registerToken(uid: string): Promise<void> {
       token,
       createdAt: serverTimestamp(),
       userAgent: browserNavigator?.userAgent.slice(0, 256) ?? "",
+      standalone: isStandalone,
     });
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
