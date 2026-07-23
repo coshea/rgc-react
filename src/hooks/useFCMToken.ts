@@ -108,6 +108,7 @@ function showForegroundNotification(payload: MessagePayload): void {
     body: payload.notification?.body ?? "",
     icon: "/rgc_fav.png",
     data: payload.data ?? {},
+    tag: payload.data?.notificationId, // Collapse identical notifications
   };
   const browserNavigator =
     typeof navigator === "undefined" ? undefined : navigator;

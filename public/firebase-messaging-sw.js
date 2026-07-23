@@ -29,13 +29,14 @@ messaging.onBackgroundMessage((payload) => {
     return;
   }
 
-  const title = "Ridgefield Golf Club";
+  const title = payload.data?.title || "Ridgefield Golf Club";
   const body = payload.data?.body || "";
   const icon = "/rgc_fav.png";
 
   self.registration.showNotification(title, {
     body,
     icon,
+    tag: payload.data?.notificationId,
     data: payload.data ?? {},
   });
 });
