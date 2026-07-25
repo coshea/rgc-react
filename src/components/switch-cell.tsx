@@ -10,6 +10,7 @@ export type SwitchCellProps = SwitchProps & {
 const SwitchCell = React.forwardRef<HTMLDivElement, SwitchCellProps>(
   ({ label, description, className, ...props }, ref) => (
     <div
+      ref={ref}
       className={cn(
         "flex items-center justify-between gap-4 bg-surface-secondary rounded-lg p-4",
         className,
@@ -19,7 +20,7 @@ const SwitchCell = React.forwardRef<HTMLDivElement, SwitchCellProps>(
         <p className="text-base">{label}</p>
         <p className="text-sm text-muted">{description}</p>
       </div>
-      <Switch ref={ref} {...props}>
+      <Switch {...props}>
         <Switch.Control className="shrink-0">
           <Switch.Thumb />
         </Switch.Control>

@@ -453,6 +453,7 @@ img { display: block; max-width: 100%; }
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const cardBracketRef = React.useRef<HTMLDivElement>(null);
   const fullscreenBracketRef = React.useRef<HTMLDivElement>(null);
+  const hasScrolledRef = React.useRef(false);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -467,7 +468,11 @@ img { display: block; max-width: 100%; }
     registrationWindowInfo.state === RegistrationWindowState.Open;
 
   React.useEffect(() => {
-    if (location.hash !== "#winners") return;
+    if (location.hash !== "#winners") {
+      hasScrolledRef.current = false;
+      return;
+    }
+    if (hasScrolledRef.current) return;
 
     const timeoutId = window.setTimeout(() => {
       const winnersSection = document.getElementById("tournament-winners");
@@ -476,11 +481,12 @@ img { display: block; max-width: 100%; }
           behavior: "smooth",
           block: "start",
         });
+        hasScrolledRef.current = true;
       }
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [location.hash, currentStatus, tournament?.winnerGroups]);
+  }, [location.hash, tournament?.winnerGroups]);
 
   const isUserRegistered = React.useMemo(() => {
     if (!userId) return false;
@@ -1492,11 +1498,7 @@ img { display: block; max-width: 100%; }
                           onPress={handleViewLinkedTournamentWinners}
                           isDisabled={!previousTournament?.firestoreId}
                           aria-label="View full winners from linked tournament"
-                          className="h-auto p-0 justify-start"
-                          style={{
-                            display: "inline-flex",
-                            width: "fit-content",
-                          }}
+                          className="h-auto p-0 justify-start inline-flex w-fit"
                         >
                           <WinnerDisplay
                             place={1}
