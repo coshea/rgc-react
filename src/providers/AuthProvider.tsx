@@ -144,12 +144,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const processRedirectResult = () => {
       getRedirectResult(auth)
         .then(async (result) => {
-          console.info(
-            "[Auth] getRedirectResult:",
-            result
-              ? `resolved uid=${result.user.uid}`
-              : "null (no pending redirect)",
-          );
           if (result) {
             const { getAdditionalUserInfo } = await import("firebase/auth");
             const additionalUserInfo = getAdditionalUserInfo(result);
@@ -200,10 +194,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // initializeUser is not async itself, but it's called by onAuthStateChanged
   function initializeUser(firebaseUser: FirebaseUser | null) {
-    console.info(
-      "[Auth] onAuthStateChanged:",
-      firebaseUser ? `uid=${firebaseUser.uid}` : "null",
-    );
     if (firebaseUser) {
       setUser(firebaseUser); // Store the original Firebase User object
       setUserLoggedIn(true);

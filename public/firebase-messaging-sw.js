@@ -21,23 +21,25 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages - displayed as OS-level notifications when the app is not focused.
-// We only manually show a notification if the payload doesn't already have one,
-// to avoid duplicates on browsers that handle the 'notification' property automatically.
+// We always call showNotification manually to ensure payload.data is attached,
+// which is required for our notificationclick deep-linking logic. By using a
+// consistent 'tag', we handle potential duplicates on browsers that also
+// auto-show notifications when the 'notification' property is present.
 messaging.onBackgroundMessage((payload) => {
-  if (payload.notification) {
-    // Browser already handled it
-    return;
-  }
+  const title =
+    payload.notification?.title ||
+    payload.data?.title ||
+    "Ridgefield Golf Club";
+  const body = payload.notification?.body || payload.data?.body || "";
+  const icon = payload.notification?.icon || "/rgc_fav.png";
 
-  const title = payload.data?.title || "Ridgefield Golf Club";
-  const body = payload.data?.body || "";
-  const icon = "/rgc_fav.png";
-
-  self.registration.showNotification(title, {
+  return self.registration.showNotification(title, {
     body,
     icon,
-    tag: payload.data?.notificationId,
+    tag: payload.notification?.tag || payload.data?.notificationId,
+    // Critical for deep-linking in the notificationclick handler
     data: payload.data ?? {},
+    ...payload.notification,
   });
 });
 

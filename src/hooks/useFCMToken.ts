@@ -135,11 +135,14 @@ async function registerToken(uid: string): Promise<void> {
     if (!messaging) return;
     const browserNavigator =
       typeof navigator === "undefined" ? undefined : navigator;
+    const browserWindow = typeof window === "undefined" ? undefined : window;
 
     // Detect standalone mode (PWA)
     const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (browserNavigator as any)?.standalone === true;
+      (browserWindow?.matchMedia?.("(display-mode: standalone)").matches ??
+        false) ||
+      (browserNavigator as Navigator & { standalone?: boolean })?.standalone ===
+        true;
 
     let swReg: ServiceWorkerRegistration | undefined;
     if (browserNavigator && "serviceWorker" in browserNavigator) {
