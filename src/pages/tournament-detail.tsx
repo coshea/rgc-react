@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   onTournament,
   onTournamentRegistrations,
@@ -52,6 +52,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/components/membership/hooks";
 import { WinnerDisplay } from "@/components/winner-display";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getWeatherIcon } from "@/utils/weather";
 import {
   getTournamentGoogleCalendarUrl,
@@ -59,6 +60,27 @@ import {
 } from "@/utils/calendar";
 import { copyOrMailtoEmails } from "@/utils/email";
 import { EmailRegistrantsButton } from "@/components/email-registrants-button";
+
+const byOrderAsc = (a: { order: number }, b: { order: number }) =>
+  a.order - b.order;
+
+const byPlaceAsc = (a: { place: number }, b: { place: number }) =>
+  a.place - b.place;
+
+function getDefendingChampionPlace(
+  groups: WinnerGroup[] | undefined,
+): WinnerPlace | undefined {
+  if (!groups?.length) return undefined;
+
+  const groupsSortedByOrder = [...groups].sort(byOrderAsc);
+  const selectedGroup =
+    groupsSortedByOrder.find(
+      (group) => group.type === "overall" && (group.winners?.length ?? 0) > 0,
+    ) ?? groupsSortedByOrder.find((group) => (group.winners?.length ?? 0) > 0);
+
+  if (!selectedGroup?.winners?.length) return undefined;
+  return [...selectedGroup.winners].sort(byPlaceAsc)[0];
+}
 
 const formatLocalDateTime = (date?: Date) => {
   if (!date) return undefined;
@@ -105,6 +127,7 @@ interface RegistrationDoc {
 const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
 
@@ -430,6 +453,7 @@ img { display: block; max-width: 100%; }
   const desktopAdminButtonsRef = React.useRef<HTMLDivElement>(null);
   const cardBracketRef = React.useRef<HTMLDivElement>(null);
   const fullscreenBracketRef = React.useRef<HTMLDivElement>(null);
+  const hasScrolledRef = React.useRef(false);
   const userId = user?.uid;
   const currentStatus = tournament
     ? getStatus(tournament)
@@ -442,6 +466,27 @@ img { display: block; max-width: 100%; }
   );
   const registrationOpen =
     registrationWindowInfo.state === RegistrationWindowState.Open;
+
+  React.useEffect(() => {
+    if (location.hash !== "#winners") {
+      hasScrolledRef.current = false;
+      return;
+    }
+    if (hasScrolledRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const winnersSection = document.getElementById("tournament-winners");
+      if (winnersSection) {
+        winnersSection.scrollIntoView?.({
+          behavior: "smooth",
+          block: "start",
+        });
+        hasScrolledRef.current = true;
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, tournament?.winnerGroups]);
 
   const isUserRegistered = React.useMemo(() => {
     if (!userId) return false;
@@ -599,22 +644,17 @@ img { display: block; max-width: 100%; }
   const defendingChampions = React.useMemo(() => {
     if (!previousTournament) return null;
 
-    // Check for grouped winners
-    const groups = previousTournament.winnerGroups;
-    if (groups?.length) {
-      const overallGroup = groups.find((g) => g.type === "overall");
-      if (overallGroup?.winners?.length) {
-        const firstPlace = overallGroup.winners.find((w) => w.place === 1);
-        if (firstPlace?.competitors?.length) {
-          return {
-            competitors: firstPlace.competitors.map((c) => ({
-              id: c.userId,
-              name: c.displayName || "Unknown",
-            })),
-            score: firstPlace.score,
-          };
-        }
-      }
+    const championPlace = getDefendingChampionPlace(
+      previousTournament.winnerGroups,
+    );
+    if (championPlace?.competitors?.length) {
+      return {
+        competitors: championPlace.competitors.map((c) => ({
+          id: c.userId,
+          name: c.displayName || "Unknown",
+        })),
+        score: championPlace.score,
+      };
     }
 
     return null;
@@ -633,6 +673,11 @@ img { display: block; max-width: 100%; }
     if (!tournament?.firestoreId) return;
     navigate(`/tournaments/${tournament.firestoreId}/register`);
   };
+
+  const handleViewLinkedTournamentWinners = React.useCallback(() => {
+    if (!previousTournament?.firestoreId) return;
+    navigate(`/tournaments/${previousTournament.firestoreId}#winners`);
+  }, [navigate, previousTournament?.firestoreId]);
 
   const toggleShowNeedingPlayers = () => setShowNeedingPlayers((prev) => !prev);
   const toggleShowPartnerTeams = () => setShowPartnerTeams((prev) => !prev);
@@ -1448,17 +1493,25 @@ img { display: block; max-width: 100%; }
                           {previousTournament?.date.getFullYear()} Winner
                           {defendingChampions.competitors.length > 1 ? "s" : ""}
                         </p>
-                        <WinnerDisplay
-                          place={1}
-                          competitors={defendingChampions.competitors.map(
-                            (c: { id: string; name: string }) => ({
-                              userId: c.id,
-                              displayName: c.name,
-                            }),
-                          )}
-                          score={defendingChampions.score}
-                          isChampion={true}
-                        />
+                        <Button
+                          variant="ghost"
+                          onPress={handleViewLinkedTournamentWinners}
+                          isDisabled={!previousTournament?.firestoreId}
+                          aria-label="View full winners from linked tournament"
+                          className="h-auto p-0 justify-start inline-flex w-fit"
+                        >
+                          <WinnerDisplay
+                            place={1}
+                            competitors={defendingChampions.competitors.map(
+                              (c: { id: string; name: string }) => ({
+                                userId: c.id,
+                                displayName: c.name,
+                              }),
+                            )}
+                            score={defendingChampions.score}
+                            isChampion={true}
+                          />
+                        </Button>
                       </>
                     ) : (
                       <p className="text-sm text-muted italic">
@@ -1474,7 +1527,7 @@ img { display: block; max-width: 100%; }
               (tournament.winnerGroups ?? []).some(
                 (g) => (g.winners ?? []).length > 0,
               ) && (
-                <div className="mb-12">
+                <div id="tournament-winners" className="mb-12">
                   <Card>
                     <Card.Header className="pb-0">
                       <h2 className="text-lg font-semibold">

@@ -42,6 +42,11 @@ export interface Tournament {
   // When true, the bracket is visible to all users on the tournament detail page.
   // Admins can always see it. Defaults to false (unpublished).
   bracketPublished?: boolean;
+  /**
+   * When true, suppress bracket matchup email notifications for this tournament.
+   * Defaults to false (emails enabled) when omitted.
+   */
+  bracketNotificationsDisabled?: boolean;
 }
 
 export interface TournamentWeather {

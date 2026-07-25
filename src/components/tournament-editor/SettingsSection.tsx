@@ -7,10 +7,10 @@ import {
   ListBox,
   Checkbox,
   TextField,
+  Label,
   FieldError,
   Button,
 } from "@heroui/react";
-import { Label } from "react-aria-components";
 import { Icon } from "@iconify/react";
 import {
   Tournament,
@@ -38,7 +38,8 @@ interface SettingsSectionProps {
   setAssignedTeeTimes: (v: boolean) => void;
   goldTeesEnabled: boolean;
   setGoldTeesEnabled: (v: boolean) => void;
-  isAdmin: boolean;
+  bracketNotificationsDisabled: boolean;
+  setBracketNotificationsDisabled: (v: boolean) => void;
   previousTournamentId: string | undefined;
   setPreviousTournamentId: (v: string | undefined) => void;
   allTournaments: Tournament[];
@@ -66,7 +67,8 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   setAssignedTeeTimes,
   goldTeesEnabled,
   setGoldTeesEnabled,
-  isAdmin,
+  bracketNotificationsDisabled,
+  setBracketNotificationsDisabled,
   previousTournamentId,
   setPreviousTournamentId,
   allTournaments,
@@ -187,29 +189,43 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
         onChange={setAssignedTeeTimes}
         id="assigned-tee-times"
       >
-        <Checkbox.Control>
-          <Checkbox.Indicator />
-        </Checkbox.Control>
         <Checkbox.Content>
-          <Label htmlFor="assigned-tee-times">Assigned tee times</Label>
-        </Checkbox.Content>
-      </Checkbox>
-      {isAdmin && (
-        <Checkbox
-          isSelected={goldTeesEnabled}
-          onChange={setGoldTeesEnabled}
-          id="gold-tees-enabled"
-        >
           <Checkbox.Control>
             <Checkbox.Indicator />
           </Checkbox.Control>
-          <Checkbox.Content>
-            <Label htmlFor="gold-tees-enabled">
-              Allow gold tee selection during registration
-            </Label>
-          </Checkbox.Content>
-        </Checkbox>
-      )}
+          <Label htmlFor="assigned-tee-times" className="text-sm">
+            Assigned tee times
+          </Label>
+        </Checkbox.Content>
+      </Checkbox>
+      <Checkbox
+        isSelected={goldTeesEnabled}
+        onChange={setGoldTeesEnabled}
+        id="gold-tees-enabled"
+      >
+        <Checkbox.Content>
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+          <Label htmlFor="gold-tees-enabled" className="text-sm">
+            Allow gold tee selection during registration
+          </Label>
+        </Checkbox.Content>
+      </Checkbox>
+      <Checkbox
+        isSelected={bracketNotificationsDisabled}
+        onChange={setBracketNotificationsDisabled}
+        id="bracket-notifications-disabled"
+      >
+        <Checkbox.Content>
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+          <Label htmlFor="bracket-notifications-disabled" className="text-sm">
+            Disable bracket matchup email notifications
+          </Label>
+        </Checkbox.Content>
+      </Checkbox>
       <Select
         value={
           previousTournamentId &&

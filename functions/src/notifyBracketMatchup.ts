@@ -27,6 +27,7 @@ interface BracketData {
 interface TournamentData {
   title?: string;
   bracketPublished?: boolean;
+  bracketNotificationsDisabled?: boolean;
 }
 
 interface UserData {
@@ -171,6 +172,13 @@ export const notify_bracket_matchup = onDocumentWritten(
     if (tournament?.bracketPublished !== true) {
       logger.info(
         `[notify_bracket_matchup] Skipping sends because bracket is not published for tournament=${tournamentId}`,
+      );
+      return;
+    }
+
+    if (tournament?.bracketNotificationsDisabled === true) {
+      logger.info(
+        `[notify_bracket_matchup] Skipping sends because bracket notifications are disabled for tournament=${tournamentId}`,
       );
       return;
     }

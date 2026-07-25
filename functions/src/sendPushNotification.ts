@@ -54,11 +54,22 @@ export const dispatch_push_notification = onDocumentCreated(
       // FCM data payload (string map) — read by both the SW background handler
       // and the in-app foreground handler to resolve deep-link on click.
       data: {
+        notificationId: event.params.notificationId,
+        title,
+        body: body ?? "",
         ...(data?.link ? { link: data.link } : {}),
         ...(data?.tournamentId ? { tournamentId: data.tournamentId } : {}),
       },
+      apns: {
+        headers: {
+          "apns-collapse-id": event.params.notificationId,
+        },
+      },
       webpush: {
-        notification: { icon: "/rgc_fav.png" },
+        notification: {
+          icon: "/rgc_fav.png",
+          tag: event.params.notificationId, // Collapse duplicates on Android/Chrome
+        },
         ...(data?.link ? { fcmOptions: { link: data.link } } : {}),
       },
     };

@@ -108,6 +108,7 @@ function showForegroundNotification(payload: MessagePayload): void {
     body: payload.notification?.body ?? "",
     icon: "/rgc_fav.png",
     data: payload.data ?? {},
+    tag: payload.data?.notificationId, // Collapse identical notifications
   };
   const browserNavigator =
     typeof navigator === "undefined" ? undefined : navigator;
@@ -134,6 +135,15 @@ async function registerToken(uid: string): Promise<void> {
     if (!messaging) return;
     const browserNavigator =
       typeof navigator === "undefined" ? undefined : navigator;
+    const browserWindow = typeof window === "undefined" ? undefined : window;
+
+    // Detect standalone mode (PWA)
+    const isStandalone =
+      (browserWindow?.matchMedia?.("(display-mode: standalone)").matches ??
+        false) ||
+      (browserNavigator as Navigator & { standalone?: boolean })?.standalone ===
+        true;
+
     let swReg: ServiceWorkerRegistration | undefined;
     if (browserNavigator && "serviceWorker" in browserNavigator) {
       // Register the SW (idempotent), then use the *active* registration from
@@ -166,6 +176,7 @@ async function registerToken(uid: string): Promise<void> {
       token,
       createdAt: serverTimestamp(),
       userAgent: browserNavigator?.userAgent.slice(0, 256) ?? "",
+      standalone: isStandalone,
     });
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);

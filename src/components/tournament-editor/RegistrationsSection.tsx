@@ -10,7 +10,6 @@ import RegistrationsList, {
 } from "@/components/registrations-list";
 
 interface RegistrationsSectionProps {
-  isAdmin: boolean;
   regsOpen: boolean;
   setRegsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   addOpen: boolean;
@@ -39,7 +38,6 @@ interface RegistrationsSectionProps {
 }
 
 export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
-  isAdmin,
   regsOpen,
   setRegsOpen,
   addOpen,
@@ -78,15 +76,13 @@ export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
       </button>
       {regsOpen && (
         <div className="pt-2">
-          {isAdmin && (
-            <div className="mb-4 flex items-center gap-3">
-              <Button size="sm" onPress={() => setAddOpen(true)}>
-                <PlusIcon className="w-4 h-4" />
-                Add Registration
-              </Button>
-              <div className="text-xs text-muted">Team size: {players}</div>
-            </div>
-          )}
+          <div className="mb-4 flex items-center gap-3">
+            <Button size="sm" onPress={() => setAddOpen(true)}>
+              <PlusIcon className="w-4 h-4" />
+              Add Registration
+            </Button>
+            <div className="text-xs text-muted">Team size: {players}</div>
+          </div>
           {regsLoading ? (
             <div>Loading registrations...</div>
           ) : registrations.length === 0 ? (
@@ -107,7 +103,7 @@ export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
       )}
 
       {/* Add Registration Dialog */}
-      {addOpen && isAdmin && (
+      {addOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/40"

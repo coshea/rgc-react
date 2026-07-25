@@ -11,7 +11,7 @@ importScripts(
 
 firebase.initializeApp({
   apiKey: "AIzaSyCdj-5oF0d92kfoseQFENIdw7E4Ft7A_7w",
-  authDomain: "ridgefield-golf-club.firebaseapp.com",
+  authDomain: "ridgefieldgolfclub.org",
   projectId: "ridgefield-golf-club",
   storageBucket: "ridgefield-golf-club.firebasestorage.app",
   messagingSenderId: "210348651103",
@@ -21,15 +21,25 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages - displayed as OS-level notifications when the app is not focused.
+// We always call showNotification manually to ensure payload.data is attached,
+// which is required for our notificationclick deep-linking logic. By using a
+// consistent 'tag', we handle potential duplicates on browsers that also
+// auto-show notifications when the 'notification' property is present.
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title ?? "Ridgefield Golf Club";
-  const body = payload.notification?.body ?? "";
-  const icon = "/rgc_fav.png";
+  const title =
+    payload.notification?.title ||
+    payload.data?.title ||
+    "Ridgefield Golf Club";
+  const body = payload.notification?.body || payload.data?.body || "";
+  const icon = payload.notification?.icon || "/rgc_fav.png";
 
-  self.registration.showNotification(title, {
+  return self.registration.showNotification(title, {
     body,
     icon,
+    tag: payload.notification?.tag || payload.data?.notificationId,
+    // Critical for deep-linking in the notificationclick handler
     data: payload.data ?? {},
+    ...payload.notification,
   });
 });
 

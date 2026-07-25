@@ -232,6 +232,10 @@ function renderWithRoute(
         <Routes>
           <Route path="/t/:firestoreId" element={<TournamentDetailPage />} />
           <Route
+            path="/tournaments/:firestoreId"
+            element={<TournamentDetailPage />}
+          />
+          <Route
             path="/tournaments"
             element={<div data-testid="tournaments-list">Tournaments List</div>}
           />
@@ -383,6 +387,150 @@ describe("TournamentDetailPage", () => {
     // Position badges now show trophy icons with ordinal text, names are in responsive layout
     expect(screen.getAllByText("Champ").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Runner").length).toBeGreaterThan(0);
+  });
+
+  it("uses the lowest-order winner group for defending champion when no overall group exists", async () => {
+    renderWithRoute("prev-fallback-1");
+    emitDoc("tournaments/prev-fallback-1", {
+      ...baseTournament,
+      previousTournamentId: "prev-fallback-source",
+    });
+
+    emitDoc("tournaments/prev-fallback-source", {
+      ...baseTournament,
+      date: new Date("2025-08-15T00:00:00.000Z"),
+      winnerGroups: [
+        {
+          id: "flight-b",
+          label: "Flight B",
+          type: "flight",
+          order: 2,
+          winners: [
+            {
+              place: 1,
+              competitors: [
+                { userId: "u-flight", displayName: "Flight Champ" },
+              ],
+            },
+          ],
+        },
+        {
+          id: "custom-net",
+          label: "Net Winners",
+          type: "custom",
+          order: 0,
+          winners: [
+            {
+              place: 1,
+              competitors: [
+                { userId: "u-custom", displayName: "Custom Champ" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    await screen.findByText("Club Championship");
+    await screen.findByRole("heading", { name: /Defending Champion/i });
+
+    expect(screen.getAllByText("Custom Champ").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Flight Champ")).toBeNull();
+  });
+
+  it("navigates to linked tournament winners when defending champion card is clicked", async () => {
+    renderWithRoute("link-current");
+
+    emitDoc("tournaments/link-current", {
+      ...baseTournament,
+      previousTournamentId: "link-previous",
+    });
+
+    emitDoc("tournaments/link-previous", {
+      ...baseTournament,
+      title: "Previous Championship",
+      status: TournamentStatus.Completed,
+      winnerGroups: [
+        {
+          id: "overall",
+          label: "Overall",
+          type: "overall",
+          order: 1,
+          winners: [
+            {
+              place: 1,
+              competitors: [{ userId: "u-prev", displayName: "Prev Champ" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    await screen.findByText("Club Championship");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /View full winners from linked tournament/i,
+      }),
+    );
+
+    emitDoc("tournaments/link-previous", {
+      ...baseTournament,
+      title: "Previous Championship",
+      status: TournamentStatus.Completed,
+      winnerGroups: [
+        {
+          id: "overall",
+          label: "Overall",
+          type: "overall",
+          order: 1,
+          winners: [
+            {
+              place: 1,
+              competitors: [{ userId: "u-prev", displayName: "Prev Champ" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    await screen.findByText("Previous Championship");
+    expect(
+      screen.getByRole("heading", { name: /Tournament Winners/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("scrolls to winners section when URL hash is winners", async () => {
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    const scrollIntoViewMock = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
+
+    try {
+      renderWithRoute("hash-winners-1", ["/t/hash-winners-1#winners"]);
+      emitDoc("tournaments/hash-winners-1", {
+        ...baseTournament,
+        status: TournamentStatus.Completed,
+        winnerGroups: [
+          {
+            id: "overall",
+            label: "Overall",
+            type: "overall",
+            order: 1,
+            winners: [
+              {
+                place: 1,
+                competitors: [{ userId: "u-hash", displayName: "Hash Champ" }],
+              },
+            ],
+          },
+        ],
+      });
+
+      await screen.findByRole("heading", { name: /Tournament Winners/i });
+      await waitFor(() => expect(scrollIntoViewMock).toHaveBeenCalled());
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    }
   });
 
   it("shows admin action buttons when user is admin", async () => {

@@ -51,14 +51,42 @@ function normalizeAndValidateEmail(email: string): string {
   return trimmed;
 }
 
+// localStorage key that forces redirect-based Google sign-in for debugging.
+// Set to "true" in the browser console to test the redirect flow on desktop.
+export const FORCE_REDIRECT_AUTH_KEY = "rgc_force_redirect_auth";
+
 function shouldUseRedirectForGoogleSignIn(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return false;
   }
 
-  // Standalone PWAs should default to signInWithPopup to keep the user in the app container.
-  // Avoid forcing redirect for standalone PWA or iOS Home Screen App display modes.
-  return false;
+  // Debug override: ?auth_debug=1 in the URL or the localStorage flag forces
+  // redirect for testing on any platform (e.g. desktop Chrome).
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth_debug") === "1") {
+      return true;
+    }
+    if (window.localStorage.getItem(FORCE_REDIRECT_AUTH_KEY) === "true") {
+      return true;
+    }
+  } catch {
+    // URL/localStorage may be unavailable in some sandboxed contexts.
+  }
+
+  // Standalone PWA / iOS Home Screen apps must use signInWithRedirect because
+  // signInWithPopup on iOS opens a SFSafariViewController (separate process).
+  // When that in-app browser closes the popup result is lost — there is no
+  // window.opener postMessage channel between SFSafariViewController and the
+  // WKWebView that hosts the PWA. signInWithRedirect navigates the WKWebView
+  // itself, and getRedirectResult picks up the credential after the page reloads.
+  const standaloneMedia =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+  const standaloneNavigator =
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  return standaloneMedia || standaloneNavigator;
 }
 
 // Define the shape of the context value
