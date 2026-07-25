@@ -10,8 +10,6 @@ import {
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 import { auth } from "@/config/firebase";
-import { useAuth } from "@/providers/AuthProvider";
-import { useAdminFlag } from "@/components/membership/hooks";
 import { User } from "@/api/users";
 import { isActiveFullMember } from "@/utils/membership";
 import type { Registration } from "@/components/registrations-list";
@@ -115,10 +113,14 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         ? parseDateTime(formatForDateTimeInput(seed.registrationEnd))
         : null,
     );
-  const [registrationOpeningNotificationEnabled, setRegistrationOpeningNotificationEnabled] =
-    React.useState<boolean>(
-      seed.registrationOpeningNotificationEnabled !== false,
-    );
+  const [
+    registrationOpeningNotificationEnabled,
+    setRegistrationOpeningNotificationEnabled,
+  ] = React.useState<boolean>(
+    seed.registrationOpeningNotificationEnabled !== false,
+  );
+  const [bracketNotificationsDisabled, setBracketNotificationsDisabled] =
+    React.useState<boolean>(Boolean(seed.bracketNotificationsDisabled));
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -144,8 +146,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   );
   const [fetchingWeather, setFetchingWeather] = React.useState(false);
 
-  const { user } = useAuth();
-  const { isAdmin } = useAdminFlag(user);
   const incomingPreviousTournamentId =
     tournament?.previousTournamentId ?? undefined;
   const tournamentId = tournament?.firestoreId ?? null;
@@ -297,6 +297,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         tee,
         assignedTeeTimes,
         goldTeesEnabled,
+        bracketNotificationsDisabled,
       };
 
       const parsedStart = registrationStart
@@ -378,6 +379,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         registrationStart: parsedStart || undefined,
         registrationEnd: parsedEnd || undefined,
         registrationOpeningNotificationEnabled,
+        bracketNotificationsDisabled,
       };
       if (createdDocRef && createdDocRef.id) {
         savedTournament.firestoreId = createdDocRef.id;
@@ -711,7 +713,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               setAssignedTeeTimes={setAssignedTeeTimes}
               goldTeesEnabled={goldTeesEnabled}
               setGoldTeesEnabled={setGoldTeesEnabled}
-              isAdmin={isAdmin}
+              bracketNotificationsDisabled={bracketNotificationsDisabled}
+              setBracketNotificationsDisabled={setBracketNotificationsDisabled}
               previousTournamentId={previousTournamentId}
               setPreviousTournamentId={setPreviousTournamentId}
               allTournaments={allTournaments}
@@ -741,7 +744,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
           {isEditing && (
             <RegistrationsSection
-              isAdmin={isAdmin}
               regsOpen={regsOpen}
               setRegsOpen={setRegsOpen}
               addOpen={addOpen}
