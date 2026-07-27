@@ -72,6 +72,7 @@ export function useMembersPushStatus(enabled: boolean) {
       },
       (err) => {
         console.error("[useMembersPushStatus] snapshot error", err);
+        setPushEnabledUids(new Set());
         setLoading(false);
       },
     );
