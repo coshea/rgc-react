@@ -8,7 +8,10 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useMembers } from "@/hooks/useMembers";
 import { useAuth } from "@/providers/AuthProvider";
-import { useAdminFlag } from "@/components/membership/hooks";
+import {
+  useAdminFlag,
+  useMembersPushStatus,
+} from "@/components/membership/hooks";
 import { EditMemberModal } from "@/components/membership";
 import { UserAvatar } from "@/components/avatar";
 import { updateUser } from "@/api/users";
@@ -31,6 +34,7 @@ interface MemberRow {
   membershipType: string;
   isActive: boolean;
   defaultGoldTee: boolean | null;
+  pushEnabled: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -185,6 +189,7 @@ export function MemberDataGridTab() {
   const { isAdmin } = useAdminFlag(authUser);
 
   const { allMembers, loading, activeSet } = useMembers(currentYear);
+  const { pushEnabledUids } = useMembersPushStatus(isAdmin);
 
   // Search filter
   const [search, setSearch] = useState("");
@@ -226,9 +231,10 @@ export function MemberDataGridTab() {
         membershipType: m.membershipType ?? "",
         isActive: activeSet.has(m.id),
         defaultGoldTee: m.defaultGoldTee ?? null,
+        pushEnabled: pushEnabledUids.has(m.id),
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [allMembers, activeSet, search]);
+  }, [allMembers, activeSet, search, pushEnabledUids]);
 
   // ── Open edit modal ──────────────────────────────────────────────────────────
 
@@ -320,6 +326,22 @@ export function MemberDataGridTab() {
           >
             {row.isActive ? "Active" : "Inactive"}
           </Chip>
+        ),
+      },
+      {
+        id: "pushEnabled",
+        header: "Push Enabled",
+        accessorKey: "pushEnabled",
+        allowsSorting: true,
+        allowsResizing: true,
+        minWidth: 80,
+        cell: (row) => (
+          <div className="flex justify-center w-full">
+            <Icon
+              icon={row.pushEnabled ? "lucide:bell" : "lucide:bell-off"}
+              className={`w-4 h-4 ${row.pushEnabled ? "text-success" : "text-muted/40"}`}
+            />
+          </div>
         ),
       },
       {

@@ -275,14 +275,15 @@ export default function MembershipDirectoryPage() {
         members={allMembers}
         activeSet={activeSet}
         currentYear={currentYear}
-        activeOnly={activeOnly}
-        onActiveOnlyChange={setActiveOnly}
       />
       <DirectorySearchBar
         filter={filter}
         onFilterChange={setFilter}
         count={visibleCount}
         total={members.length}
+        isAdmin={isAdmin}
+        activeOnly={activeOnly}
+        onActiveOnlyChange={setActiveOnly}
       />
 
       <MembersList

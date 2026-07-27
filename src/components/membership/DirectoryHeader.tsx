@@ -1,5 +1,4 @@
-import { useState, useRef } from "react";
-import { Button, Switch, Tooltip, Label } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Icon } from "@iconify/react";
 
@@ -15,8 +14,6 @@ interface DirectoryHeaderProps {
   members?: User[];
   activeSet?: Set<string>;
   currentYear?: number;
-  activeOnly?: boolean;
-  onActiveOnlyChange?: (value: boolean) => void;
 }
 
 export function DirectoryHeader({
@@ -28,12 +25,7 @@ export function DirectoryHeader({
   members = [],
   activeSet = new Set(),
   currentYear = new Date().getFullYear(),
-  activeOnly = true,
-  onActiveOnlyChange,
 }: DirectoryHeaderProps) {
-  const [adminOpen, setAdminOpen] = useState(false);
-  const buttonsRef = useRef<HTMLDivElement>(null);
-
   return (
     <div className="mb-4 flex flex-col gap-3">
       {/* ── Title row ── */}
@@ -70,63 +62,24 @@ export function DirectoryHeader({
             </div>
           )}
 
-          {/* Admin-only accordion row */}
+          {/* Admin-only actions row */}
           {isAdmin && (
-            <div className="flex flex-col gap-2">
-              <Button
-                size="sm"
-                variant="tertiary"
-                onPress={() => setAdminOpen((o) => !o)}
-                aria-expanded={adminOpen}
-                aria-label="Toggle admin actions"
-                className="w-full justify-between font-medium"
-              >
-                Admin only
-                <Icon
-                  icon="lucide:chevron-down"
-                  className={`w-4 h-4 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                />
-              </Button>
-              {adminOpen && (
-                <div className="grid grid-cols-2 gap-2">
-                  {onActiveOnlyChange && (
-                    <div className="col-span-2 flex items-center gap-2 px-1">
-                      <Switch
-                        size="sm"
-                        isSelected={activeOnly}
-                        onChange={onActiveOnlyChange}
-                        aria-label="Toggle active members only"
-                      >
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                        <Switch.Content>
-                          <Label>Active Last 2 Years</Label>
-                        </Switch.Content>
-                      </Switch>
-                    </div>
-                  )}
-                  {onFindDuplicates && (
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      onPress={onFindDuplicates}
-                      className="font-medium w-full"
-                    >
-                      <Icon icon="lucide:users" className="w-4 h-4" />
-                      Find Duplicates
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onPress={onAdd}
-                    className="font-medium w-full"
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Add Member
-                  </Button>
-                </div>
+            <div className="grid grid-cols-2 gap-2">
+              {onFindDuplicates && (
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  onPress={onFindDuplicates}
+                  className="font-medium w-full"
+                >
+                  <Icon icon="lucide:users" className="w-4 h-4" />
+                  Find Duplicates
+                </Button>
               )}
+              <Button size="sm" onPress={onAdd} className="font-medium w-full">
+                <PlusIcon className="w-4 h-4" />
+                Add Member
+              </Button>
             </div>
           )}
         </div>
@@ -161,70 +114,28 @@ export function DirectoryHeader({
               )}
             </div>
           )}
-          {/* Admin only: horizontal sliding drawer */}
+          {/* Admin only: direct actions */}
           {isAdmin && (
             <div className="flex items-center gap-2 pl-2 border-l border-divider">
+              {onFindDuplicates && (
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  onPress={onFindDuplicates}
+                  className="font-medium whitespace-nowrap"
+                >
+                  <Icon icon="lucide:users" className="w-4 h-4" />
+                  Find Duplicates
+                </Button>
+              )}
               <Button
                 size="sm"
-                variant="tertiary"
-                onPress={() => setAdminOpen((o) => !o)}
-                aria-expanded={adminOpen}
-                aria-label="Toggle admin actions"
-                className="font-medium"
+                onPress={onAdd}
+                className="font-medium whitespace-nowrap"
               >
-                Admin only
-                <Icon
-                  icon="lucide:chevron-right"
-                  className={`w-3 h-3 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`}
-                />
+                <PlusIcon className="w-4 h-4" />
+                Add Member
               </Button>
-              <div
-                className="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
-                style={{
-                  maxWidth: adminOpen
-                    ? `${buttonsRef.current?.scrollWidth ?? 400}px`
-                    : "0px",
-                  opacity: adminOpen ? 1 : 0,
-                }}
-              >
-                <div ref={buttonsRef} className="flex items-center gap-2">
-                  {onActiveOnlyChange && (
-                    <Switch
-                      size="sm"
-                      isSelected={activeOnly}
-                      onChange={onActiveOnlyChange}
-                      aria-label="Toggle active members only"
-                      className="whitespace-nowrap"
-                    >
-                      <Switch.Control>
-                        <Switch.Thumb />
-                      </Switch.Control>
-                      <Switch.Content>
-                        <Label>Active Last 2 Years</Label>
-                      </Switch.Content>
-                    </Switch>
-                  )}
-                  {onFindDuplicates && (
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      onPress={onFindDuplicates}
-                      className="font-medium whitespace-nowrap"
-                    >
-                      <Icon icon="lucide:users" className="w-4 h-4" />
-                      Find Duplicates
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onPress={onAdd}
-                    className="font-medium whitespace-nowrap"
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Add Member
-                  </Button>
-                </div>
-              </div>
             </div>
           )}
         </div>
