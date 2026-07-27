@@ -6,6 +6,7 @@ import {
   doc,
   onSnapshot,
   collection,
+  collectionGroup,
   type DocumentData,
   type DocumentSnapshot,
   type FirestoreError,
@@ -26,6 +27,17 @@ export function onUserDoc(
   error?: (error: FirestoreError) => void,
 ) {
   return onSnapshot(doc(db, "users", uid), next, error);
+}
+
+/**
+ * Subscribe to all registered FCM tokens across all users.
+ * Used by admin dashboard to identify who has push notifications enabled.
+ */
+export function onAllFCMTokens(
+  next: (snap: QuerySnapshot<DocumentData>) => void,
+  error?: (error: FirestoreError) => void,
+) {
+  return onSnapshot(collectionGroup(db, "fcmTokens"), next, error);
 }
 
 /**

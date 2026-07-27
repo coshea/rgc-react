@@ -105,7 +105,7 @@ service cloud.firestore {
       // creation — this prevents one authenticated session from silently
       // overwriting a token registered by a different device.
       match /fcmTokens/{tokenId} {
-        allow read:   if request.auth != null && request.auth.uid == userId;
+        allow read:   if request.auth != null && (request.auth.uid == userId || isAdmin());
 
         // Create: require a non-empty token string.
         // Note: createdAt is written as serverTimestamp() — do not assert `is timestamp`

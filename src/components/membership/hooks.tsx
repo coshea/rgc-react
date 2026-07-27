@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { onAdminDoc, onUserDoc, onUsersCollection } from "@/api/membershipData";
+import {
+  onAdminDoc,
+  onUserDoc,
+  onUsersCollection,
+  onAllFCMTokens,
+} from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
 import type {
   DocumentData,
@@ -32,6 +37,49 @@ export function useAdminFlag(user: { uid?: string } | null) {
     return () => unsub();
   }, [user?.uid]);
   return { isAdmin, loadingAdmin };
+}
+
+/**
+ * Hook to track which users have at least one registered FCM token.
+ * Only intended for admin use; returns a Set of UIDs.
+ */
+export function useMembersPushStatus(enabled: boolean) {
+  const [pushEnabledUids, setPushEnabledUids] = useState<Set<string>>(
+    new Set(),
+  );
+  const [loading, setLoading] = useState(enabled);
+
+  useEffect(() => {
+    if (!enabled) {
+      setPushEnabledUids(new Set());
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    // Subscribe to all FCM tokens (collection group)
+    const unsub = onAllFCMTokens(
+      (snap) => {
+        const uids = new Set<string>();
+        snap.forEach((doc) => {
+          // Path is users/{uid}/fcmTokens/{tokenId}
+          const pathSegments = doc.ref.path.split("/");
+          const uid = pathSegments[1];
+          if (uid) uids.add(uid);
+        });
+        setPushEnabledUids(uids);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("[useMembersPushStatus] snapshot error", err);
+        setLoading(false);
+      },
+    );
+
+    return () => unsub();
+  }, [enabled]);
+
+  return { pushEnabledUids, loading };
 }
 
 // Hook: useBoardMemberFlag - real-time subscription to the user's boardMember field.
