@@ -241,8 +241,8 @@ const TYPE_ORDER = [
 ];
 
 function sortByTypeOrder(
-  [typeA]: [string, unknown],
-  [typeB]: [string, unknown],
+  [typeA]: [string, UnifiedChampionship[]],
+  [typeB]: [string, UnifiedChampionship[]],
 ) {
   const iA = TYPE_ORDER.indexOf(typeA);
   const iB = TYPE_ORDER.indexOf(typeB);
