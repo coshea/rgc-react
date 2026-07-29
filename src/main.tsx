@@ -91,12 +91,7 @@ window.sessionStorage.removeItem(CHUNK_RELOAD_GUARD_KEY);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <Provider>
           <DefaultLayout>
