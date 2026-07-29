@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Button, Link } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import { ChampionshipsList } from "@/components/championship-display";
 import { DirectorySearchBar } from "@/components/membership/DirectorySearchBar";
@@ -21,6 +22,7 @@ export default function PastChampions({
   skipTracking = false,
 }: PastChampionsProps) {
   usePageTracking("Past Champions", skipTracking);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
 
@@ -199,10 +201,15 @@ export default function PastChampions({
           <h1 className="text-2xl font-bold">Past Champions</h1>
           <div className="flex flex-wrap items-center gap-2">
             {!showAllYears && (
-              <Link href="/past-champions" className="self-start sm:self-auto">
+              <Button
+                size="sm"
+                variant="tertiary"
+                onPress={() => navigate("/past-champions")}
+                className="self-start sm:self-auto"
+              >
                 View All
                 <Icon icon="lucide:arrow-right" className="w-3 h-3" />
-              </Link>
+              </Button>
             )}
             {isAdmin && showAllYears && (
               <Button
