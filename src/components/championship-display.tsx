@@ -30,9 +30,8 @@ export function ChampionshipCard({
     ] || championship.championshipType;
 
   // Tee-colour styling per club championship flight
-  const TEE_STYLES: Record<
-    string,
-    { border: string; text: string; iconColor: string }
+  const TEE_STYLES: Partial<
+    Record<string, { border: string; text: string; iconColor: string }>
   > = {
     "club-champion": {
       border: "border-2 border-blue-500",
