@@ -3,6 +3,8 @@ export interface HistoricalChampionship {
   year: number;
   championshipType:
     | "club-champion"
+    | "club-tee-champion"
+    | "senior-club-champion"
     | "presidents-cup"
     | "pisano-cup"
     | "team-match-play"
