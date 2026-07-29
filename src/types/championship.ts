@@ -42,6 +42,8 @@ export interface UnifiedChampionship {
 // Championship type display names
 export const CHAMPIONSHIP_TYPES = {
   "club-champion": "Club Champion",
+  "club-tee-champion": "Club Tee Champion",
+  "senior-club-champion": "Senior Club Champion",
   "presidents-cup": "President's Cup",
   "pisano-cup": "The Pisano Cup",
   "team-match-play": "Team Match Play",
