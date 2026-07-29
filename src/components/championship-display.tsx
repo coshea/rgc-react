@@ -61,8 +61,8 @@ export function ChampionshipCard({
     <Card
       className={`w-full shadow-sm ${teeStyle ? teeStyle.border : "border border-default/40"}`}
     >
-      <Card.Header className="flex items-center justify-between py-1 px-2.5">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <Card.Header className="flex items-center justify-between py-1.5 px-2.5 min-h-[32px]">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {teeStyle && (
             <Icon
               icon="lucide:trophy"
@@ -70,23 +70,23 @@ export function ChampionshipCard({
             />
           )}
           <h3
-            className={`text-xs font-bold truncate ${teeStyle ? teeStyle.text : "text-foreground"}`}
+            className={`text-sm font-bold truncate ${teeStyle ? teeStyle.text : "text-foreground"}`}
           >
             {championshipTitle}
           </h3>
+          {showEditButton && onEdit && (
+            <Button
+              size="sm"
+              variant="tertiary"
+              isIconOnly
+              aria-label="Edit championship"
+              onPress={() => onEdit(championship)}
+              className="shrink-0 h-6 w-6 min-w-0"
+            >
+              <Icon icon="lucide:edit" className="w-3 h-3" />
+            </Button>
+          )}
         </div>
-        {showEditButton && onEdit && (
-          <Button
-            size="sm"
-            variant="tertiary"
-            isIconOnly
-            aria-label="Edit championship"
-            onPress={() => onEdit(championship)}
-            className="shrink-0 ml-1"
-          >
-            <Icon icon="lucide:edit" className="w-3 h-3" />
-          </Button>
-        )}
       </Card.Header>
 
       <Separator />
