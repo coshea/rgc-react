@@ -153,9 +153,11 @@ describe("TournamentEditor - Add Registration prepopulate", () => {
     fireEvent.click(addTeammate);
 
     const trigger = findAutocompleteButton(/Team Leader/i);
-    // Click trigger to open the Autocomplete popover, then type to filter and verify the option appears
+    // Click trigger to open the chooser, then type to filter and verify the option appears.
     fireEvent.click(trigger);
-    const searchInput = await screen.findByPlaceholderText("Search...");
+    const searchInput = await screen.findByRole("combobox", {
+      name: /Team Leader/i,
+    });
     fireEvent.change(searchInput, { target: { value: "Admin" } });
     const option = await screen.findByRole("option", { name: /Admin User/i });
     expect(option).toBeInTheDocument();
