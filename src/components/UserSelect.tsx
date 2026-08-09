@@ -87,12 +87,14 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   if (multiple) {
     // Multiple selection mode: use ComboBox's native multi-select support.
     const selected = Array.isArray(value) ? (value as string[]) : [];
-    const selectedExisting = selected.filter((id) => idSet.has(id));
-    const selectedSet = new Set(selectedExisting);
+    const selectedValues = selected.filter(
+      (id, index, all) => Boolean(id) && all.indexOf(id) === index,
+    );
+    const selectedSet = new Set(selectedValues);
     const canAddMore = !(
       typeof maxSelected === "number" &&
       maxSelected > 0 &&
-      selected.length >= maxSelected
+      selectedValues.length >= maxSelected
     );
     const disabledKeys = canAddMore
       ? undefined
@@ -122,7 +124,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
       <div className={className}>
         <ComboBox
           selectionMode="multiple"
-          value={selectedExisting}
+          value={selectedValues}
           onChange={setUsers}
           disabledKeys={disabledKeys}
           defaultFilter={contains}
@@ -161,10 +163,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
   }
 
   // Single selection mode
-  const selectedKey =
-    !Array.isArray(value) && value && idSet.has(value)
-      ? (value as string)
-      : null;
+  const selectedKey = !Array.isArray(value) && value ? (value as string) : null;
 
   return (
     <div className={className}>
