@@ -18,6 +18,7 @@ import { updateUser } from "@/api/users";
 import type { User } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
 import { formatPhone } from "@/utils/phone";
+import { hasStoredPushPreferenceEnabled } from "@/utils/notificationPreferences";
 import { isAllowedBoardRole } from "@/types/roles";
 import { addToast } from "@/providers/toast";
 import * as Sentry from "@sentry/react";
@@ -231,7 +232,9 @@ export function MemberDataGridTab() {
         membershipType: m.membershipType ?? "",
         isActive: activeSet.has(m.id),
         defaultGoldTee: m.defaultGoldTee ?? null,
-        pushEnabled: pushEnabledUids.has(m.id),
+        pushEnabled:
+          pushEnabledUids.has(m.id) ||
+          hasStoredPushPreferenceEnabled(m.notificationPreferences),
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [allMembers, activeSet, search, pushEnabledUids]);

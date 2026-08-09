@@ -25,3 +25,20 @@ export function resolvePreferences(
 ): NotificationPreferences {
   return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...stored };
 }
+
+/**
+ * Treat an explicitly stored push preference object as enabled when at least
+ * one in-app notification type is not turned off.
+ */
+export function hasStoredPushPreferenceEnabled(
+  stored: Partial<NotificationPreferences> | undefined,
+): boolean {
+  if (!stored) return false;
+
+  return (
+    stored.tournamentRegistration !== false ||
+    stored.tournamentUpdates !== false ||
+    stored.generalAnnouncements !== false ||
+    stored.newFeatures !== false
+  );
+}
