@@ -160,12 +160,10 @@ describe("TournamentRegister existing registration restore", () => {
     ).toBeInTheDocument();
 
     await waitFor(() => {
-      const selected = Array.from(
-        document.querySelectorAll('[data-slot="autocomplete-value"]'),
-      );
-      expect(selected.some((el) => /Beta/.test(el.textContent ?? ""))).toBe(
-        true,
-      );
+      const selected = screen.getAllByRole("combobox");
+      expect(
+        selected.some((el) => /Beta/.test((el as HTMLInputElement).value)),
+      ).toBe(true);
     });
   });
 

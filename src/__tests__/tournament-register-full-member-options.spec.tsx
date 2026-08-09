@@ -90,7 +90,9 @@ describe("TournamentRegister teammate options", () => {
 
     // Open the dropdown once; reuse the same search input for all filter checks
     fireEvent.click(trigger);
-    const searchInput = await screen.findByPlaceholderText("Search...");
+    const searchInput = await screen.findByRole("combobox", {
+      name: /Team Leader/i,
+    });
 
     const openAndExpectOption = async (filter: string, optionName: string) => {
       fireEvent.change(searchInput, { target: { value: filter } });

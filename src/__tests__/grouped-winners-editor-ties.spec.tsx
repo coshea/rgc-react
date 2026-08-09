@@ -136,13 +136,13 @@ describe("GroupedWinnersEditor - ties and selection", () => {
     await pickOptionForCombobox(triggerA, "Alpha");
     await pickOptionForCombobox(triggerB, "Bravo");
 
-    // Selections should be independent — each tied row shows its own selected value
-    expect(within(place2Rows[0]).getAllByText(/Alpha/i).length).toBeGreaterThan(
-      0,
-    );
-    expect(within(place2Rows[1]).getAllByText(/Bravo/i).length).toBeGreaterThan(
-      0,
-    );
+    // Selections should be independent — each tied row stores its own input value.
+    expect(
+      within(place2Rows[0]).getByRole("combobox", { name: /Winner/i }),
+    ).toHaveValue("Alpha");
+    expect(
+      within(place2Rows[1]).getByRole("combobox", { name: /Winner/i }),
+    ).toHaveValue("Bravo");
 
     // Display ranks should skip after ties: expect a label "Place 4" present for next distinct place
     expect(screen.getByText(/Place 4/i)).toBeInTheDocument();

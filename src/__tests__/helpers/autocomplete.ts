@@ -1,13 +1,11 @@
 import { screen, fireEvent, within } from "@testing-library/react";
 
 /**
- * Find the Autocomplete indicator button (aria-haspopup="listbox") by its label text.
+ * Find a select trigger button (aria-haspopup="listbox") by its label text.
  *
- * In HeroUI v3 the Autocomplete container (`data-slot="autocomplete"`) wraps
- * both the label span and the trigger group. We locate the label first, walk
- * up to the autocomplete container, then query for the indicator button inside
- * it. This avoids false-positive matches against sibling "Remove teammate X"
- * buttons that share the same label text.
+ * Supports both HeroUI Autocomplete (`data-slot="autocomplete"`) and ComboBox
+ * (`data-slot="combo-box"`). We locate the label first, walk up to the control
+ * container, then query for the listbox trigger button inside it.
  */
 export function findAutocompleteButton(
   labelText: string | RegExp,
@@ -15,9 +13,11 @@ export function findAutocompleteButton(
 ): HTMLElement {
   const allText = within(container).getAllByText(labelText);
   for (const textEl of allText) {
-    const autocompleteDiv = textEl.closest('[data-slot="autocomplete"]');
-    if (autocompleteDiv) {
-      const triggerBtn = autocompleteDiv.querySelector(
+    const controlDiv = textEl.closest(
+      '[data-slot="autocomplete"], [data-slot="combo-box"]',
+    );
+    if (controlDiv) {
+      const triggerBtn = controlDiv.querySelector(
         'button[aria-haspopup="listbox"]',
       ) as HTMLElement | null;
       if (triggerBtn) return triggerBtn;
@@ -45,8 +45,11 @@ export async function pickOptionForCombobox(
 ) {
   // Click the trigger to open the popover
   fireEvent.click(triggerBtn);
-  // Find the search input inside the opened popover
-  const searchInput = await screen.findByPlaceholderText("Search...");
+  // Find the opened combobox input (works for both Autocomplete and ComboBox).
+  const comboInputs = await screen.findAllByRole("combobox");
+  const searchInput =
+    comboInputs.find((el) => el.getAttribute("aria-expanded") === "true") ||
+    comboInputs[0];
   // Type to filter options
   fireEvent.change(searchInput, { target: { value: optionText } });
   // Select the option from the portal menu

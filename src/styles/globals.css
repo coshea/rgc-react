@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 @import "@heroui-pro/react/css/components/stepper.css";
+@import "@heroui-pro/react/css/components/data-grid.css";
 
 /* Prevent any overflowing element from causing horizontal page scroll on mobile */
 html,
