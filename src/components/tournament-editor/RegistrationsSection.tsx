@@ -123,25 +123,23 @@ export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
               disableAutoSelect={true}
             />
             {players > 1 ? (
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  isSelected={newOpenSpotsOptIn}
-                  onChange={setNewOpenSpotsOptIn}
-                  id="new-open-spots-opt-in"
-                >
-                  <Checkbox.Content>
-                    <Checkbox.Control>
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
-                  </Checkbox.Content>
-                </Checkbox>
-                <Label
-                  htmlFor="new-open-spots-opt-in"
-                  className="cursor-pointer"
-                >
-                  Let others contact this team to fill open spots
-                </Label>
-              </div>
+              <Checkbox
+                isSelected={newOpenSpotsOptIn}
+                onChange={setNewOpenSpotsOptIn}
+                id="new-open-spots-opt-in"
+              >
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <Label
+                    htmlFor="new-open-spots-opt-in"
+                    className="cursor-pointer"
+                  >
+                    Let others contact this team to fill open spots
+                  </Label>
+                </Checkbox.Content>
+              </Checkbox>
             ) : null}
             <div className="h-4" />
             <div className="flex justify-end gap-2">
