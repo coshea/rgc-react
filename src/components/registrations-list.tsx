@@ -302,22 +302,27 @@ export const RegistrationsList: React.FC<Props> = ({
                   />
                   {players > 1 ? (
                     <div className="mt-3">
-                      <Checkbox
-                        isSelected={openSpotsValue}
-                        onChange={(v) => updateOpenSpots(reg.id, v)}
-                        id={`open-spots-${reg.id}`}
-                      >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
-                        <Checkbox.Content>
-                          <Label htmlFor={`open-spots-${reg.id}`}>
-                            {players === 2
-                              ? "Looking for a partner team / open to new players"
-                              : "Let others contact this team to fill open spots"}
-                          </Label>
-                        </Checkbox.Content>
-                      </Checkbox>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          isSelected={openSpotsValue}
+                          onChange={(v) => updateOpenSpots(reg.id, v)}
+                          id={`open-spots-${reg.id}`}
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Label
+                          htmlFor={`open-spots-${reg.id}`}
+                          className="cursor-pointer"
+                        >
+                          {players === 2
+                            ? "Looking for a partner team / open to new players"
+                            : "Let others contact this team to fill open spots"}
+                        </Label>
+                      </div>
                     </div>
                   ) : null}
                 </div>

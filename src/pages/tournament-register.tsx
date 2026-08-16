@@ -1,6 +1,14 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Card, Button, Separator, Checkbox, Modal } from "@heroui/react";
+import {
+  Alert,
+  Card,
+  Button,
+  Separator,
+  Checkbox,
+  Label,
+  Modal,
+} from "@heroui/react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { addToast } from "@/providers/toast";
 import { Tournament } from "@/types/tournament";
@@ -734,79 +742,95 @@ const TournamentRegister: React.FC = () => {
                 />
 
                 {maxTeamSize > 1 && openSlotsCount > 0 && hasMinTeamSize ? (
-                  <label
-                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  <div
+                    className={`w-full rounded-lg border p-3 transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
                         : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
-                    <div
-                      className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
-                        openSpotsOptIn
-                          ? "bg-warning/15 text-warning"
-                          : "bg-default/60 text-muted"
-                      }`}
-                    >
-                      <Icon icon="lucide:user-plus" className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">
-                        Open to new players
+                    <div className="flex items-start gap-3 min-w-0">
+                      <Checkbox
+                        id="register-open-spots"
+                        isSelected={openSpotsOptIn}
+                        onChange={setOpenSpotsOptIn}
+                        aria-label="Let others contact me to fill open spots"
+                        className="mt-0.5 shrink-0"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
+                      <div
+                        className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
+                          openSpotsOptIn
+                            ? "bg-warning/15 text-warning"
+                            : "bg-default/60 text-muted"
+                        }`}
+                      >
+                        <Icon icon="lucide:user-plus" className="w-4 h-4" />
                       </div>
-                      <div className="text-xs text-muted mt-0.5">
-                        Let others know your team has open spots and contact you
-                        to join.
-                      </div>
+                      <Label
+                        htmlFor="register-open-spots"
+                        className="flex-1 min-w-0 cursor-pointer"
+                      >
+                        <div className="text-sm font-medium">
+                          Open to new players
+                        </div>
+                        <div className="text-xs text-muted mt-0.5">
+                          Let others know your team has open spots and contact
+                          you to join.
+                        </div>
+                      </Label>
                     </div>
-                    <Checkbox
-                      isSelected={openSpotsOptIn}
-                      onChange={setOpenSpotsOptIn}
-                      aria-label="Let others contact me to fill open spots"
-                      className="mt-0.5 shrink-0"
-                    >
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                    </Checkbox>
-                  </label>
+                  </div>
                 ) : maxTeamSize === 2 && hasMinTeamSize ? (
-                  <label
-                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  <div
+                    className={`w-full rounded-lg border p-3 transition-colors ${
                       openSpotsOptIn
                         ? "border-warning/60 bg-warning/5"
                         : "bg-surface-secondary/60 hover:bg-surface-secondary"
                     }`}
                   >
-                    <div
-                      className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
-                        openSpotsOptIn
-                          ? "bg-warning/15 text-warning"
-                          : "bg-default/60 text-muted"
-                      }`}
-                    >
-                      <Icon icon="lucide:users" className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">
-                        Looking for a partner team
+                    <div className="flex items-start gap-3 min-w-0">
+                      <Checkbox
+                        id="register-partner-team"
+                        isSelected={openSpotsOptIn}
+                        onChange={setOpenSpotsOptIn}
+                        aria-label="Looking for a partner team to join our foursome"
+                        className="mt-0.5 shrink-0"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
+                      <div
+                        className={`mt-0.5 shrink-0 rounded-full p-1.5 transition-colors ${
+                          openSpotsOptIn
+                            ? "bg-warning/15 text-warning"
+                            : "bg-default/60 text-muted"
+                        }`}
+                      >
+                        <Icon icon="lucide:users" className="w-4 h-4" />
                       </div>
-                      <div className="text-xs text-muted mt-0.5">
-                        Advertise that your pair is looking for another team to
-                        form a foursome.
-                      </div>
+                      <Label
+                        htmlFor="register-partner-team"
+                        className="flex-1 min-w-0 cursor-pointer"
+                      >
+                        <div className="text-sm font-medium">
+                          Looking for a partner team
+                        </div>
+                        <div className="text-xs text-muted mt-0.5">
+                          Advertise that your pair is looking for another team
+                          to form a foursome.
+                        </div>
+                      </Label>
                     </div>
-                    <Checkbox
-                      isSelected={openSpotsOptIn}
-                      onChange={setOpenSpotsOptIn}
-                      aria-label="Looking for a partner team to join our foursome"
-                      className="mt-0.5 shrink-0"
-                    >
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                    </Checkbox>
-                  </label>
+                  </div>
                 ) : null}
 
                 {minTeamSize > 1 && !hasMinTeamSize ? (
