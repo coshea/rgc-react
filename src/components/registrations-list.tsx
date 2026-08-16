@@ -307,11 +307,14 @@ export const RegistrationsList: React.FC<Props> = ({
                         onChange={(v) => updateOpenSpots(reg.id, v)}
                         id={`open-spots-${reg.id}`}
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
                         <Checkbox.Content>
-                          <Label htmlFor={`open-spots-${reg.id}`}>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                          <Label
+                            htmlFor={`open-spots-${reg.id}`}
+                            className="cursor-pointer"
+                          >
                             {players === 2
                               ? "Looking for a partner team / open to new players"
                               : "Let others contact this team to fill open spots"}

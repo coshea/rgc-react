@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentRegister from "@/pages/tournament-register";
 import "@testing-library/jest-dom";
@@ -204,6 +204,52 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
     expect(
       screen.queryByText(/Looking for a partner team/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("lets the user toggle open-spots option and saves it on submit", async () => {
+    fetchTournamentMock.mockResolvedValueOnce({
+      ...openRegistrationWindow(),
+      firestoreId: "t1",
+      title: "Four Player Tourney",
+      date: new Date(),
+      description: "d",
+      players: 4,
+      status: TournamentStatus.Upcoming,
+      prizePool: 0,
+      winners: [],
+      tee: "Mixed",
+    });
+    fetchAllRegistrationsMock.mockResolvedValueOnce([
+      {
+        id: "reg1",
+        team: [
+          { id: "u1", displayName: "Alpha" },
+          { id: "u2", displayName: "Beta" },
+        ],
+        ownerId: "u1",
+        openSpotsOptIn: false,
+      },
+    ]);
+
+    renderPage();
+    await screen.findByText(/Register for\s+Four Player Tourney/i);
+
+    const openToNewPlayersText =
+      await screen.findByText(/Open to new players/i);
+    fireEvent.click(openToNewPlayersText);
+
+    const submitBtn = screen.getByRole("button", {
+      name: /Update registration/i,
+    });
+    await act(async () => {
+      submitBtn.click();
+    });
+
+    expect(upsertRegistrationMock).toHaveBeenCalledWith(
+      "t1",
+      "reg1",
+      expect.objectContaining({ openSpotsOptIn: true }),
+    );
   });
 
   it("hides 'Looking for a partner team' card when 2-player tournament min is not met (leader only)", async () => {
