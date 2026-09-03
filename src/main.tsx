@@ -81,7 +81,31 @@ function installChunkLoadRecovery(): void {
   });
 }
 
+function registerAppServiceWorker(): void {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    return;
+  }
+
+  window.addEventListener(
+    "load",
+    () => {
+      navigator.serviceWorker
+        .register("/firebase-messaging-sw.js", { scope: "/" })
+        .catch((error) => {
+          Sentry.captureException(error, {
+            level: "warning",
+            tags: {
+              error_type: "service_worker_registration_failure",
+            },
+          });
+        });
+    },
+    { once: true },
+  );
+}
+
 installChunkLoadRecovery();
+registerAppServiceWorker();
 
 // If we previously reloaded to recover from a chunk load failure, clear the
 // guard now that the main bundle has loaded successfully. This ensures that a
