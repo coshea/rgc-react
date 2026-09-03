@@ -33,6 +33,39 @@ afterEach(() => {
   vi.resetModules();
 });
 
+function mockBadgeApi() {
+  const postMessage = vi.fn();
+  const serviceWorker = {
+    ready: Promise.resolve({
+      active: { postMessage },
+    }),
+  } as unknown as ServiceWorkerContainer;
+
+  Object.defineProperty(globalThis.navigator, "setAppBadge", {
+    value: vi.fn().mockResolvedValue(undefined),
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis.navigator, "clearAppBadge", {
+    value: vi.fn().mockResolvedValue(undefined),
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis.navigator, "serviceWorker", {
+    value: serviceWorker,
+    writable: true,
+    configurable: true,
+  });
+
+  return {
+    postMessage,
+    setAppBadge: globalThis.navigator.setAppBadge as ReturnType<typeof vi.fn>,
+    clearAppBadge: globalThis.navigator.clearAppBadge as ReturnType<
+      typeof vi.fn
+    >,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -64,6 +97,7 @@ describe("useNotifications", () => {
   });
 
   it("populates notifications from onSnapshot and computes unreadCount", async () => {
+    const { postMessage, setAppBadge } = mockBadgeApi();
     const n1 = makeNotification({ id: "a", read: false });
     const n2 = makeNotification({ id: "b", read: true });
     const n3 = makeNotification({ id: "c", read: false });
@@ -106,6 +140,52 @@ describe("useNotifications", () => {
     expect(result.current.notifications).toHaveLength(3);
     expect(result.current.unreadCount).toBe(2);
     expect(result.current.loading).toBe(false);
+    expect(setAppBadge).toHaveBeenCalledWith(2);
+    expect(postMessage).toHaveBeenCalledWith({ type: "BADGE_SYNC", count: 2 });
+  });
+
+  it("clears the app badge when there are no unread notifications", async () => {
+    const { postMessage, clearAppBadge } = mockBadgeApi();
+    const readNotification = makeNotification({ id: "read-1", read: true });
+
+    let capturedNext: ((snap: object) => void) | undefined;
+
+    vi.doMock("@/config/firebase", () => ({ db: {} }));
+    vi.doMock("firebase/firestore", () => ({
+      collection: vi.fn(() => ({})),
+      query: vi.fn(() => ({})),
+      where: vi.fn(() => ({})),
+      orderBy: vi.fn(() => ({})),
+      limit: vi.fn(() => ({})),
+      onSnapshot: vi.fn((_, next: (snap: object) => void) => {
+        capturedNext = next;
+        return () => {};
+      }),
+      doc: vi.fn(),
+      updateDoc: vi.fn(),
+      deleteDoc: vi.fn(),
+      writeBatch: vi.fn(),
+    }));
+
+    const { renderHook, act } = await import("@testing-library/react");
+    const { useNotifications } = await import("@/hooks/useNotifications");
+
+    const { result } = renderHook(() => useNotifications("user-123"));
+
+    await act(async () => {
+      capturedNext?.({
+        docs: [
+          {
+            id: "read-1",
+            data: () => ({ ...readNotification, id: undefined }),
+          },
+        ],
+      });
+    });
+
+    expect(result.current.unreadCount).toBe(0);
+    expect(clearAppBadge).toHaveBeenCalled();
+    expect(postMessage).toHaveBeenCalledWith({ type: "BADGE_SYNC", count: 0 });
   });
 
   it("markRead calls updateDoc with { read: true }", async () => {

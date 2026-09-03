@@ -14,6 +14,44 @@ import {
 } from "firebase/firestore";
 import type { AppNotification } from "@/types/notification";
 
+type BadgeNavigator = Navigator & {
+  setAppBadge?: (contents?: number) => Promise<void>;
+  clearAppBadge?: () => Promise<void>;
+};
+
+async function syncServiceWorkerBadgeCount(count: number): Promise<void> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    registration.active?.postMessage({ type: "BADGE_SYNC", count });
+  } catch {
+    // Badge syncing is opportunistic and should never break notifications.
+  }
+}
+
+async function syncAppBadge(count: number): Promise<void> {
+  if (typeof navigator === "undefined") return;
+
+  const badgeNavigator = navigator as BadgeNavigator;
+
+  try {
+    if (count > 0) {
+      await badgeNavigator.setAppBadge?.(count);
+    } else if (badgeNavigator.clearAppBadge) {
+      await badgeNavigator.clearAppBadge();
+    } else {
+      await badgeNavigator.setAppBadge?.(0);
+    }
+  } catch {
+    // Ignore badging failures on unsupported or restricted browsers.
+  }
+
+  await syncServiceWorkerBadgeCount(count);
+}
+
 export interface UseNotificationsReturn {
   notifications: AppNotification[];
   unreadCount: number;
@@ -71,6 +109,16 @@ export function useNotifications(
   }, [uid]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (!uid) {
+      void syncAppBadge(0);
+      return;
+    }
+
+    if (loading) return;
+    void syncAppBadge(unreadCount);
+  }, [uid, unreadCount, loading]);
 
   const markRead = useCallback(
     async (id: string) => {
