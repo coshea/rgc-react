@@ -103,9 +103,12 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 import type { MessagePayload } from "firebase/messaging";
 
 function showForegroundNotification(payload: MessagePayload): void {
-  const title = payload.notification?.title ?? "Ridgefield Golf Club";
+  const title =
+    payload.notification?.title ??
+    payload.data?.title ??
+    "Ridgefield Golf Club";
   const options: NotificationOptions = {
-    body: payload.notification?.body ?? "",
+    body: payload.notification?.body ?? payload.data?.body ?? "",
     icon: "/rgc_fav.png",
     data: payload.data ?? {},
     tag: payload.data?.notificationId, // Collapse identical notifications

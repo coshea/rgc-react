@@ -2,6 +2,47 @@ import * as admin from "firebase-admin";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { logger } from "./logger";
 
+interface PushNotificationData {
+  link?: string;
+  tournamentId?: string;
+}
+
+interface StoredNotification {
+  uid: string;
+  title: string;
+  body: string;
+  data?: PushNotificationData;
+}
+
+export function buildPushNotificationMessage(
+  notificationId: string,
+  tokens: string[],
+  notification: StoredNotification,
+): admin.messaging.MulticastMessage {
+  const { title, body, data } = notification;
+
+  return {
+    tokens,
+    // Data-only payload for web clients. The service worker renders exactly one
+    // notification, which avoids duplicate OS alerts on iOS Home Screen apps.
+    data: {
+      notificationId,
+      title,
+      body: body ?? "",
+      ...(data?.link ? { link: data.link } : {}),
+      ...(data?.tournamentId ? { tournamentId: data.tournamentId } : {}),
+    },
+    apns: {
+      headers: {
+        "apns-collapse-id": notificationId,
+      },
+    },
+    webpush: {
+      ...(data?.link ? { fcmOptions: { link: data.link } } : {}),
+    },
+  };
+}
+
 /**
  * Firestore trigger: fires whenever a new notification document is created under
  * /notifications/{notificationId}.
@@ -16,12 +57,7 @@ export const dispatch_push_notification = onDocumentCreated(
     if (!snap) return;
 
     const notification = snap.data();
-    const { uid, title, body, data } = notification as {
-      uid: string;
-      title: string;
-      body: string;
-      data?: { link?: string; tournamentId?: string };
-    };
+    const { uid, title } = notification as StoredNotification;
 
     if (!uid || !title) {
       logger.warn(
@@ -48,31 +84,11 @@ export const dispatch_push_notification = onDocumentCreated(
 
     if (tokens.length === 0) return;
 
-    const message: admin.messaging.MulticastMessage = {
+    const message = buildPushNotificationMessage(
+      event.params.notificationId,
       tokens,
-      notification: { title, body: body ?? "" },
-      // FCM data payload (string map) — read by both the SW background handler
-      // and the in-app foreground handler to resolve deep-link on click.
-      data: {
-        notificationId: event.params.notificationId,
-        title,
-        body: body ?? "",
-        ...(data?.link ? { link: data.link } : {}),
-        ...(data?.tournamentId ? { tournamentId: data.tournamentId } : {}),
-      },
-      apns: {
-        headers: {
-          "apns-collapse-id": event.params.notificationId,
-        },
-      },
-      webpush: {
-        notification: {
-          icon: "/rgc_fav.png",
-          tag: event.params.notificationId, // Collapse duplicates on Android/Chrome
-        },
-        ...(data?.link ? { fcmOptions: { link: data.link } } : {}),
-      },
-    };
+      notification as StoredNotification,
+    );
 
     const response = await admin.messaging().sendEachForMulticast(message);
 
