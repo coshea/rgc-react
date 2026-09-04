@@ -11,7 +11,7 @@ vi.mock("@/api/users", () => ({
 }));
 vi.mock("@/api/storage", () => ({
   uploadProfilePicture: vi.fn(
-    async (_uid: string, _file: File) => "https://storage.test/avatar.png"
+    async (_uid: string, _file: File) => "https://storage.test/avatar.png",
   ),
 }));
 
@@ -46,5 +46,31 @@ describe("useUserProfile", () => {
 
     // After save, refetch should have been triggered; ensure no errors
     expect(result.current.saveError).toBeNull();
+  });
+
+  it("preserves birth year and T-shirt size on save", async () => {
+    const { result } = renderHook(() => useUserProfile(), { wrapper });
+
+    await act(async () => {
+      await result.current.save({
+        data: {
+          firstName: "Taylor",
+          lastName: "Member",
+          email: "taylor@example.com",
+          birthYear: 1984,
+          tShirtSize: "XL",
+        },
+      });
+    });
+
+    const { saveUserProfile } = await import("@/api/users");
+    expect(saveUserProfile).toHaveBeenLastCalledWith(
+      "uid123",
+      expect.objectContaining({
+        birthYear: 1984,
+        tShirtSize: "XL",
+        displayName: "Taylor Member",
+      }),
+    );
   });
 });

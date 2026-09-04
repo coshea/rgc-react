@@ -59,15 +59,16 @@ Ask first: install packages, delete files, run full build/test suite, push commi
 2. UI: HeroUI + Tailwind only; use `onPress` on HeroUI components; avoid raw `div` wrappers—prefer composition (`Dropdown` + `DropdownTrigger` + `Button`, `Tooltip` + `Button`).
 3. Modals: Use custom overlay pattern (see directory & tournament editor) for confirmations; never `window.confirm`.
 4. Membership Directory: Show avatar, name, email, phone only (unless explicitly extending). Use `User` model; admin-only edits persist to `users` collection.
-5. Admin Detection (must OR all): `users/{uid}.admin` OR `admin/{uid}.isAdmin` OR ID token claim `admin`.
-6. Firestore Access: Subscribe only after confirming auth; keep `admin` collection at root; preserve UID validation logic in write helpers.
-7. Roles: Validate with `isAllowedBoardRole`; reject legacy/unrecognized roles unless in migration path.
-8. Phone Numbers: Normalize digits; display `(xxx) xxx-xxxx` when 10 digits; keep helper logic consistent across pages & CSV import.
-9. Optimistic Updates: Follow `useUserProfile()` pattern (`onMutate` + rollback) for new cached mutations.
-10. Validation & Feedback: Use local `errors` object and HeroUI `isInvalid` + `errorMessage`; surface results with `addToast`.
-11. Accessibility: Provide an accessible name for any control without visible text using `aria-label` or `aria-labelledby` (including icon-only buttons and compound inputs like SearchField/Select roots), and ensure modals trap focus if expanded beyond current simple overlays.
-12. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
-13. Avoid Magic Strings: Prefer enums/typed constants for state-like values; define once and reuse across call sites.
+5. Public Profile Privacy: `birthYear` and `tShirtSize` may be collected and edited internally, but must not be displayed on the public user profile page.
+6. Admin Detection (must OR all): `users/{uid}.admin` OR `admin/{uid}.isAdmin` OR ID token claim `admin`.
+7. Firestore Access: Subscribe only after confirming auth; keep `admin` collection at root; preserve UID validation logic in write helpers.
+8. Roles: Validate with `isAllowedBoardRole`; reject legacy/unrecognized roles unless in migration path.
+9. Phone Numbers: Normalize digits; display `(xxx) xxx-xxxx` when 10 digits; keep helper logic consistent across pages & CSV import.
+10. Optimistic Updates: Follow `useUserProfile()` pattern (`onMutate` + rollback) for new cached mutations.
+11. Validation & Feedback: Use local `errors` object and HeroUI `isInvalid` + `errorMessage`; surface results with `addToast`.
+12. Accessibility: Provide an accessible name for any control without visible text using `aria-label` or `aria-labelledby` (including icon-only buttons and compound inputs like SearchField/Select roots), and ensure modals trap focus if expanded beyond current simple overlays.
+13. Build Gate: Non-trivial change sets must pass `npm run build` + relevant tests before concluding.
+14. Avoid Magic Strings: Prefer enums/typed constants for state-like values; define once and reuse across call sites.
 
 ### UserAvatar Fallback Contract
 
@@ -124,7 +125,8 @@ Rationale: Ensures consistent accessibility behavior (Enter/Space support), prev
 
 ## Metadata
 
-Last updated: 2026-05-29
+Last updated: 2026-09-04
 
+- 2026-09-04: Keep `birthYear` and `tShirtSize` off the public user profile page; they are internal/admin-use profile fields.
 - 2026-05-29: Require `aria-label` or `aria-labelledby` for all unlabeled interactive controls, including compound HeroUI control roots.
 - 2026-01-23: Avoid magic strings; prefer enums like `RegistrationWindowState`.

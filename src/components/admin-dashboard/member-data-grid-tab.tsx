@@ -31,7 +31,9 @@ interface MemberRow {
   displayName: string;
   email: string;
   phone: string;
+  birthYear: string;
   ghinNumber: string;
+  tShirtSize: string;
   membershipType: string;
   isActive: boolean;
   defaultGoldTee: boolean | null;
@@ -87,7 +89,10 @@ function MemberEditDialog({
       lastName: editing.lastName ?? "",
       email: editing.email ?? "",
       phone: editing.phone ?? "",
+      birthYear:
+        typeof editing.birthYear === "number" ? String(editing.birthYear) : "",
       ghinNumber: editing.ghinNumber ?? "",
+      tShirtSize: editing.tShirtSize ?? "",
       boardMember: !!editing.boardMember,
       role: editing.boardMember ? (editing.role ?? "") : "",
       defaultGoldTee: editing.defaultGoldTee,
@@ -129,7 +134,9 @@ function MemberEditDialog({
           lastName: String(form.lastName ?? "").trim(),
           email: String(form.email ?? ""),
           phone: phoneToSave,
+          birthYear: Number(String(form.birthYear ?? "")),
           ghinNumber: String(form.ghinNumber ?? "").trim(),
+          tShirtSize: String(form.tShirtSize ?? "") as User["tShirtSize"],
           boardMember: !!form.boardMember,
           role: form.boardMember ? String(form.role ?? "").trim() : null,
           ...(form.defaultGoldTee !== undefined &&
@@ -214,7 +221,9 @@ export function MemberDataGridTab() {
         return (
           name.includes(q) ||
           (m.email ?? "").toLowerCase().includes(q) ||
+          String(m.birthYear ?? "").includes(q) ||
           (m.ghinNumber ?? "").toLowerCase().includes(q) ||
+          (m.tShirtSize ?? "").toLowerCase().includes(q) ||
           (m.phone ?? "").toLowerCase().includes(q)
         );
       })
@@ -228,7 +237,9 @@ export function MemberDataGridTab() {
           m.id,
         email: m.email ?? "",
         phone: m.phone ?? "",
+        birthYear: String(m.birthYear ?? ""),
         ghinNumber: m.ghinNumber ?? "",
+        tShirtSize: m.tShirtSize ?? "",
         membershipType: m.membershipType ?? "",
         isActive: activeSet.has(m.id),
         defaultGoldTee: m.defaultGoldTee ?? null,
@@ -285,6 +296,16 @@ export function MemberDataGridTab() {
         cell: (row) => <span>{row.phone || "—"}</span>,
       },
       {
+        id: "birthYear",
+        header: "Birth Year",
+        accessorKey: "birthYear",
+        allowsSorting: true,
+        allowsResizing: true,
+        minWidth: 110,
+        cellClassName: "text-sm text-muted",
+        cell: (row) => <span>{row.birthYear || "—"}</span>,
+      },
+      {
         id: "ghinNumber",
         header: "GHIN",
         accessorKey: "ghinNumber",
@@ -293,6 +314,16 @@ export function MemberDataGridTab() {
         minWidth: 120,
         cellClassName: "font-mono text-xs text-muted",
         cell: (row) => <span>{row.ghinNumber || "—"}</span>,
+      },
+      {
+        id: "tShirtSize",
+        header: "T-Shirt",
+        accessorKey: "tShirtSize",
+        allowsSorting: true,
+        allowsResizing: true,
+        minWidth: 100,
+        cellClassName: "text-sm text-muted",
+        cell: (row) => <span>{row.tShirtSize || "—"}</span>,
       },
       {
         id: "membershipType",
@@ -408,7 +439,7 @@ export function MemberDataGridTab() {
           allowsColumnResize
           aria-label="Members"
           columns={columns}
-          contentClassName="min-w-[800px]"
+          contentClassName="min-w-[1040px]"
           data={rows}
           defaultSortDescriptor={{ column: "member", direction: "ascending" }}
           getRowId={(row) => row.id}

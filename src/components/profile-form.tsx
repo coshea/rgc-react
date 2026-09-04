@@ -10,12 +10,19 @@ import {
   FieldError,
   Checkbox,
   Modal,
+  Select,
+  ListBox,
 } from "@heroui/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
-import { saveUserProfile, type UserProfilePayload } from "@/api/users";
+import {
+  saveUserProfile,
+  T_SHIRT_SIZES,
+  type TShirtSize,
+  type UserProfilePayload,
+} from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -25,7 +32,9 @@ interface FormData {
   displayName: string; // derived
   email: string;
   phone: string;
+  birthYear: string;
   ghinNumber: string;
+  tShirtSize: string;
   profilePicture: File | null;
   defaultGoldTee?: boolean;
 }
@@ -35,7 +44,9 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   phone?: string;
+  birthYear?: string;
   ghinNumber?: string;
+  tShirtSize?: string;
 }
 
 type ProfileFormProps = {
@@ -55,13 +66,16 @@ export function ProfileForm({
   formId,
   onSaved,
 }: ProfileFormProps) {
+  const currentYear = new Date().getFullYear();
   const [formData, setFormData] = React.useState<FormData>({
     firstName: "",
     lastName: "",
     displayName: "",
     email: "",
     phone: "",
+    birthYear: "",
     ghinNumber: "",
+    tShirtSize: "",
     profilePicture: null,
     defaultGoldTee: false,
   });
@@ -90,7 +104,12 @@ export function ProfileForm({
         displayName: profile.displayName || user.displayName || "",
         email: profile.email || user.email || "",
         phone: profile.phone || user.phoneNumber || "",
+        birthYear:
+          typeof profile.birthYear === "number"
+            ? String(profile.birthYear)
+            : "",
         ghinNumber: profile.ghinNumber || "",
+        tShirtSize: profile.tShirtSize || "",
         profilePicture: null,
         defaultGoldTee: profile.defaultGoldTee,
       });
@@ -104,7 +123,9 @@ export function ProfileForm({
         displayName: user.displayName || "",
         email: user.email || "",
         phone: user.phoneNumber || "",
+        birthYear: "",
         ghinNumber: "",
+        tShirtSize: "",
         profilePicture: null,
         defaultGoldTee: undefined,
       });
@@ -139,10 +160,28 @@ export function ProfileForm({
       newErrors.phone = "Please enter a valid phone number";
     }
 
+    if (!formData.birthYear.trim()) {
+      newErrors.birthYear = "Birth year is required";
+    } else {
+      const birthYear = Number(formData.birthYear);
+
+      if (!/^\d{4}$/.test(formData.birthYear) || Number.isNaN(birthYear)) {
+        newErrors.birthYear = "Birth year must be a 4-digit year";
+      } else if (birthYear < 1900 || birthYear > currentYear) {
+        newErrors.birthYear = `Birth year must be between 1900 and ${currentYear}`;
+      }
+    }
+
     if (formData.ghinNumber) {
       if (!/^\d+$/.test(formData.ghinNumber)) {
         newErrors.ghinNumber = "GHIN number must be an integer";
       }
+    }
+
+    if (!formData.tShirtSize) {
+      newErrors.tShirtSize = "T-shirt size is required";
+    } else if (!T_SHIRT_SIZES.includes(formData.tShirtSize as TShirtSize)) {
+      newErrors.tShirtSize = "Please select a valid T-shirt size";
     }
 
     setErrors(newErrors);
@@ -155,11 +194,14 @@ export function ProfileForm({
       const next = { ...prev };
       if (field === "phone") {
         next.phone = formatPhone(value);
+      } else if (field === "birthYear") {
+        next.birthYear = value.replace(/\D/g, "").slice(0, 4);
       } else if (
         field === "firstName" ||
         field === "lastName" ||
         field === "email" ||
-        field === "ghinNumber"
+        field === "ghinNumber" ||
+        field === "tShirtSize"
       ) {
         next[field] = value;
       }
@@ -220,7 +262,9 @@ export function ProfileForm({
         displayName: formData.displayName, // server will recompute anyway
         email: formData.email,
         phone: formData.phone,
+        birthYear: Number(formData.birthYear),
         ghinNumber: formData.ghinNumber,
+        tShirtSize: formData.tShirtSize as UserProfilePayload["tShirtSize"],
         photoURL: imagePreview || user.photoURL || null,
         ...(typeof formData.defaultGoldTee === "boolean" && {
           defaultGoldTee: formData.defaultGoldTee,
@@ -396,6 +440,60 @@ export function ProfileForm({
               <Input placeholder="Enter your GHIN number" type="text" />
               <FieldError>{errors.ghinNumber}</FieldError>
             </TextField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <TextField
+              isRequired
+              isInvalid={!!errors.birthYear}
+              value={formData.birthYear}
+              onChange={(v) => handleInputChange("birthYear")(v)}
+            >
+              <Label>Birth Year</Label>
+              <Input
+                placeholder="Enter your birth year"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                maxLength={4}
+                autoComplete="bday-year"
+              />
+              <FieldError>{errors.birthYear}</FieldError>
+            </TextField>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">
+                T-Shirt Size <span className="text-danger">*</span>
+              </label>
+              <Select
+                aria-label="T-Shirt Size"
+                placeholder="Select a T-shirt size"
+                value={formData.tShirtSize || undefined}
+                onChange={(key) =>
+                  handleInputChange("tShirtSize")(key ? String(key) : "")
+                }
+                isInvalid={!!errors.tShirtSize}
+                className="max-w-full"
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {T_SHIRT_SIZES.map((size) => (
+                      <ListBox.Item key={size} id={size} textValue={size}>
+                        {size}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              {errors.tShirtSize && (
+                <p className="text-sm text-danger">{errors.tShirtSize}</p>
+              )}
+            </div>
           </div>
 
           {/* Gold Tees Default preference */}

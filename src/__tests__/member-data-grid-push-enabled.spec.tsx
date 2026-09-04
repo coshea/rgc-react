@@ -106,6 +106,8 @@ describe("MemberDataGridTab push enabled column", () => {
           id: "prefs-user",
           displayName: "Prefs User",
           email: "prefs@example.com",
+          birthYear: 1988,
+          tShirtSize: "M",
           notificationPreferences: {
             tournamentRegistration: true,
             tournamentUpdates: true,
@@ -161,6 +163,12 @@ describe("MemberDataGridTab push enabled column", () => {
         .getAllByRole("cell")
         .some((cell) => cell.querySelector('[data-icon="lucide:bell"]')),
     ).toBe(true);
+    expect(
+      within(prefsRow as HTMLTableRowElement).getByText("1988"),
+    ).toBeInTheDocument();
+    expect(
+      within(prefsRow as HTMLTableRowElement).getByText("M"),
+    ).toBeInTheDocument();
     expect(
       within(tokenRow as HTMLTableRowElement)
         .getAllByRole("cell")

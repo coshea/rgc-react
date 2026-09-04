@@ -44,6 +44,10 @@ export interface NotificationPreferences {
 // Utility type for Firestore timestamp fields that can be either Timestamp or Date
 export type FirestoreTimestamp = Timestamp | Date | FieldValue;
 
+export const T_SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
+
+export type TShirtSize = (typeof T_SHIRT_SIZES)[number];
+
 /**
  * Utility function to safely convert Firestore timestamp to Date
  */
@@ -73,7 +77,9 @@ export function toDate(timestamp: FirestoreTimestamp | undefined): Date | null {
  *   Avoid setting manually unless importing legacy data.
  * - email: Primary contact + identity fallback when no name; required for login‑based flows.
  * - phone: Normalized phone string (see format helpers) used for directory and contact; optional.
+ * - birthYear: Four-digit birth year for club reporting and age-based features; optional.
  * - ghinNumber: External GHIN / handicap system identifier.
+ * - tShirtSize: Preferred apparel size selected from the supported club order options; optional.
  * - photoURL: Avatar image URL (Firebase Storage or external); null indicates explicit removal.
  * - boardMember: True if serving on the Board of Governors (governs visibility of role and directory highlighting).
  * - role: Normalized board role string (validated against ALLOWED_BOARD_ROLES elsewhere). Null/empty when not a board member.
@@ -88,7 +94,9 @@ export type UserProfilePayload = {
   displayName?: string;
   email?: string;
   phone?: string;
+  birthYear?: number;
   ghinNumber?: string;
+  tShirtSize?: TShirtSize;
   photoURL?: string | null;
   profileURL?: string | null;
   boardMember?: boolean;
@@ -138,7 +146,9 @@ export async function createUser(data: UserProfilePayload) {
     displayName: displayName || undefined,
     email: data.email || "",
     phone: data.phone || "",
+    birthYear: data.birthYear,
     ghinNumber: data.ghinNumber || "",
+    tShirtSize: data.tShirtSize,
     photoURL: data.photoURL ?? null,
     boardMember: !!data.boardMember,
     role: data.boardMember ? data.role || null : null,
