@@ -8,7 +8,7 @@ import {
 } from "@/api/membership";
 import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
-import type { User } from "@/api/users";
+import { T_SHIRT_SIZES, type TShirtSize, type User } from "@/api/users";
 import { formatPhone } from "@/utils/phone";
 import { addToast } from "@/providers/toast";
 
@@ -33,6 +33,10 @@ export function EditMemberModal({
 }: EditMemberModalProps) {
   const currentYear = new Date().getFullYear();
   const qc = useQueryClient();
+  const [fieldErrors, setFieldErrors] = useState<{
+    birthYear?: string;
+    tShirtSize?: string;
+  }>({});
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [paymentDirty, setPaymentDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,6 +77,7 @@ export function EditMemberModal({
         })
         .finally(() => setLoadingPayment(false));
     } else if (!open) {
+      setFieldErrors({});
       setPaymentDirty(false);
       setPayment({});
     }
@@ -108,6 +113,39 @@ export function EditMemberModal({
 
   async function handleSave() {
     if (saving) return; // guard double submit
+    const birthYearRaw = String(form.birthYear ?? "").trim();
+    const tShirtSize = String(form.tShirtSize ?? "").trim();
+    const nextFieldErrors: { birthYear?: string; tShirtSize?: string } = {};
+
+    if (!birthYearRaw) {
+      nextFieldErrors.birthYear = "Birth year is required.";
+    } else {
+      const birthYear = Number(birthYearRaw);
+      if (!/^\d{4}$/.test(birthYearRaw) || Number.isNaN(birthYear)) {
+        nextFieldErrors.birthYear = "Birth year must be a 4-digit year.";
+      } else if (birthYear < 1900 || birthYear > currentYear) {
+        nextFieldErrors.birthYear = `Birth year must be between 1900 and ${currentYear}.`;
+      }
+    }
+
+    if (!tShirtSize) {
+      nextFieldErrors.tShirtSize = "T-shirt size is required.";
+    } else if (!T_SHIRT_SIZES.includes(tShirtSize as TShirtSize)) {
+      nextFieldErrors.tShirtSize = "Please select a valid T-shirt size.";
+    }
+
+    if (nextFieldErrors.birthYear || nextFieldErrors.tShirtSize) {
+      setFieldErrors(nextFieldErrors);
+      addToast({
+        title: "Missing profile details",
+        description:
+          "Birth year and T-shirt size are required before saving a member.",
+        color: "warning",
+      });
+      return;
+    }
+
+    setFieldErrors({});
     setSaving(true);
     try {
       // First run existing onSave for user profile
@@ -271,6 +309,74 @@ export function EditMemberModal({
               }
             />
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 items-start">
+            <div className="w-full space-y-1">
+              <Input
+                placeholder="Birth Year"
+                value={String(form.birthYear ?? "")}
+                disabled={saving}
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                onChange={(e: any) => {
+                  const value = String(e.target.value)
+                    .replace(/\D/g, "")
+                    .slice(0, 4);
+                  onChange({ ...form, birthYear: value });
+                  if (fieldErrors.birthYear) {
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      birthYear: undefined,
+                    }));
+                  }
+                }}
+              />
+              {fieldErrors.birthYear && (
+                <p className="text-[11px] text-danger">
+                  {fieldErrors.birthYear}
+                </p>
+              )}
+            </div>
+            <div className="w-full space-y-1">
+              <Select
+                aria-label="T-Shirt Size"
+                placeholder="T-Shirt Size"
+                value={String(form.tShirtSize ?? "") || undefined}
+                isDisabled={saving}
+                isInvalid={!!fieldErrors.tShirtSize}
+                onChange={(key) => {
+                  onChange({ ...form, tShirtSize: key ? String(key) : "" });
+                  if (fieldErrors.tShirtSize) {
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      tShirtSize: undefined,
+                    }));
+                  }
+                }}
+                className="w-full"
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {T_SHIRT_SIZES.map((size) => (
+                      <ListBox.Item key={size} id={size} textValue={size}>
+                        {size}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              {fieldErrors.tShirtSize && (
+                <p className="text-[11px] text-danger">
+                  {fieldErrors.tShirtSize}
+                </p>
+              )}
+            </div>
+          </div>
           <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -406,7 +512,7 @@ export function EditMemberModal({
                         setPaymentDirty(true);
                       }
                     }}
-                    className="min-w-[130px]"
+                    className="min-w-32.5"
                   >
                     <Select.Trigger>
                       <Select.Value />
@@ -428,7 +534,7 @@ export function EditMemberModal({
                   <Input
                     placeholder="Amount"
                     value={payment.amount || ""}
-                    className="max-w-[100px]"
+                    className="max-w-25"
                     disabled={saving}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       setPayment((p) => ({ ...p, amount: e.target.value }));

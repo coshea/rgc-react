@@ -272,9 +272,18 @@ vi.mock("@heroui/react", async (orig) => {
       </label>
     );
   }
-  MockCheckbox.Control = ({ children }: any) => <>{children}</>;
-  MockCheckbox.Indicator = () => null;
-  MockCheckbox.Content = ({ children }: any) => <>{children}</>;
+  function MockCheckboxControl({ children }: any) {
+    return <>{children}</>;
+  }
+  function MockCheckboxIndicator() {
+    return null;
+  }
+  function MockCheckboxContent({ children }: any) {
+    return <>{children}</>;
+  }
+  MockCheckbox.Control = MockCheckboxControl;
+  MockCheckbox.Indicator = MockCheckboxIndicator;
+  MockCheckbox.Content = MockCheckboxContent;
 
   return {
     ...mod,

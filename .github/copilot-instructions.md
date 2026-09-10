@@ -39,6 +39,7 @@ Concise, project-specific guidance for AI coding agents. Focus on these conventi
 - Tournament model: `src/types/tournament.ts` (includes `winners`, `tee`, `registrationOpen`, `detailsMarkdown`). Use these fields verbatim; don’t rename.
 - Board roles: `ALLOWED_BOARD_ROLES` + `ROLE_PRIORITY` in `src/types/roles.ts`. Always validate with `isAllowedBoardRole()`; normalize via `normalizeRole()` when persisting or displaying.
 - User profile payload shape in `api/users.ts`; form UIs should not expose admin flags unless explicitly building an admin management feature.
+- `birthYear` and `tShirtSize` are collected for internal/admin use only; do not display either field on the public user profile page.
 
 ## 6. UI & UX Conventions
 

@@ -123,7 +123,9 @@ export default function MembershipDirectoryPage() {
       lastName: "",
       email: "",
       phone: "",
+      birthYear: "",
       ghinNumber: "",
+      tShirtSize: "",
       boardMember: false,
       role: "",
     });
@@ -137,7 +139,9 @@ export default function MembershipDirectoryPage() {
       lastName: u.lastName || "",
       email: u.email || "",
       phone: u.phone || "",
+      birthYear: typeof u.birthYear === "number" ? String(u.birthYear) : "",
       ghinNumber: u.ghinNumber || "",
+      tShirtSize: u.tShirtSize || "",
       boardMember: !!u.boardMember,
       role: u.boardMember ? u.role || "" : "",
     });
@@ -176,7 +180,9 @@ export default function MembershipDirectoryPage() {
           lastName: (form.lastName || "").trim(),
           email: form.email || "",
           phone: phoneToSave || "",
+          birthYear: Number(form.birthYear || 0),
           ghinNumber: (form.ghinNumber || "").trim(),
+          tShirtSize: (form.tShirtSize || "").trim() as User["tShirtSize"],
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
         });
@@ -190,7 +196,10 @@ export default function MembershipDirectoryPage() {
           lastName: (form.lastName || "").trim() || undefined,
           email: form.email || "",
           phone: phoneToSave || "",
+          birthYear: Number(form.birthYear || 0) || undefined,
           ghinNumber: (form.ghinNumber || "").trim() || undefined,
+          tShirtSize:
+            ((form.tShirtSize || "").trim() as User["tShirtSize"]) || undefined,
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
           migrationEligible: true,
