@@ -2,12 +2,7 @@ import { Skeleton } from "@heroui/react";
 import { lazy, Suspense, useEffect } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useLocation } from "react-router-dom";
-
-const RecentBlogPosts = lazy(() =>
-  import("@/components/recent-blog-posts").then((module) => ({
-    default: module.RecentBlogPosts,
-  })),
-);
+import { RecentBlogPosts } from "@/components/recent-blog-posts";
 
 const TournamentSection = lazy(() =>
   import("@/components/tournament-section").then((module) => ({
@@ -21,25 +16,6 @@ const ContactForm = lazy(() =>
     default: module.ContactForm,
   })),
 );
-
-function BlogSectionSkeleton() {
-  return (
-    <section className="w-full max-w-6xl mx-auto px-4 py-6">
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-48 rounded-lg" />
-        <Skeleton className="h-4 w-96 max-w-[90vw] rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            <Skeleton
-              key={`blog-skel-${idx}`}
-              className="h-64 w-full rounded-xl"
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function TournamentSectionSkeleton() {
   return (
@@ -109,9 +85,7 @@ export default function HomePage() {
 
   return (
     <section className="flex flex-col items-center justify-center overflow-x-hidden">
-      <Suspense fallback={<BlogSectionSkeleton />}>
-        <RecentBlogPosts limit={3} />
-      </Suspense>
+      <RecentBlogPosts limit={3} />
 
       <Suspense fallback={<TournamentSectionSkeleton />}>
         <TournamentSection />

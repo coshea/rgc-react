@@ -472,12 +472,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 function AnalyticsUserTagger({ uid }: { uid: string }) {
   useEffect(() => {
     let cancelled = false;
+    let retryInterval: ReturnType<typeof setInterval> | null = null;
+
+    const isFirestoreOfflineError = (error: unknown) => {
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? (error as { code?: unknown }).code
+          : undefined;
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "";
+
+      return (
+        code === "unavailable" ||
+        /client is offline|could not reach cloud firestore backend/i.test(
+          message,
+        )
+      );
+    };
 
     async function tag() {
       const instance = getAnalyticsInstance();
       if (!instance) return false; // not ready yet
 
-      const profile = await getUserProfile(uid);
+      let profile;
+      try {
+        profile = await getUserProfile(uid);
+      } catch (error) {
+        if (isFirestoreOfflineError(error)) {
+          return false;
+        }
+        throw error;
+      }
+
       if (cancelled) return true;
 
       const tier =
@@ -493,18 +523,22 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
     // Try immediately; if analytics isn't ready yet, poll until it is.
     tag().then((done) => {
       if (done || cancelled) return;
-      const interval = setInterval(() => {
+      retryInterval = setInterval(() => {
         tag().then((done) => {
-          if (done || cancelled) clearInterval(interval);
+          if ((done || cancelled) && retryInterval) {
+            clearInterval(retryInterval);
+            retryInterval = null;
+          }
         });
       }, 2000);
-      // Safety clean-up so the interval doesn't outlive the component.
-      // (cancelled flag also stops the async work inside tag())
-      return () => clearInterval(interval);
     });
 
     return () => {
       cancelled = true;
+      if (retryInterval) {
+        clearInterval(retryInterval);
+        retryInterval = null;
+      }
     };
   }, [uid]);
   return null;

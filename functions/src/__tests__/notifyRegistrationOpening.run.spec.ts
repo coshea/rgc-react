@@ -147,7 +147,7 @@ describe("notify_registration_opening handler", () => {
       docs: [failedDoc, successfulDoc],
     });
 
-    await import("../notifyRegistrationOpening");
+    await import("../notifyRegistrationOpening.js");
 
     expect(schedulerState.handler).toBeTypeOf("function");
     await schedulerState.handler?.();
@@ -214,7 +214,7 @@ describe("notify_registration_opening handler", () => {
       })(),
     );
 
-    await import("../notifyRegistrationOpening");
+    await import("../notifyRegistrationOpening.js");
 
     expect(schedulerState.handler).toBeTypeOf("function");
     await schedulerState.handler?.();

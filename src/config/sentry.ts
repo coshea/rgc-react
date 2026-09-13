@@ -191,6 +191,34 @@ if (enabled) {
         return null;
       }
 
+      const hasBrowserExtensionFrame = exceptionValues.some((value) =>
+        value.stacktrace?.frames?.some((frame) => {
+          const filename = frame.filename;
+          return (
+            typeof filename === "string" &&
+            /(?:chrome|moz|safari-web|edge)-extension:\/\//i.test(filename)
+          );
+        }),
+      );
+      const isBrowserExtensionSendMessageNoise =
+        (/runtime\.sendmessage/i.test(combinedText) &&
+          /\btab not found\b/i.test(combinedText)) ||
+        (hasBrowserExtensionFrame && /\btab not found\b/i.test(combinedText));
+      if (isBrowserExtensionSendMessageNoise) {
+        return null;
+      }
+
+      const isChunkLoadFailure =
+        /failed to fetch dynamically imported module/i.test(combinedText) ||
+        /importing a module script failed/i.test(combinedText) ||
+        /loading chunk/i.test(combinedText) ||
+        /not a valid javascript mime type/i.test(combinedText);
+      const isExplicitChunkRecoveryEvent =
+        event.tags?.error_type === "chunk_load_failure";
+      if (isChunkLoadFailure && !isExplicitChunkRecoveryEvent) {
+        return null;
+      }
+
       return event;
     },
     integrations: [
