@@ -8,6 +8,8 @@ const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_KEY as string | undefined;
 const DISMISSED_KEY = "rgc_notif_prompt_dismissed";
 /** localStorage key storing the tokenId registered on the current device. */
 export const FCM_TOKEN_ID_KEY = "rgc_fcm_token_id";
+const FCM_TOKEN_REFRESHED_AT_KEY = "rgc_fcm_token_refreshed_at";
+const TOKEN_REFRESH_INTERVAL_MS = 1000 * 60 * 60 * 12;
 
 export interface UseFCMTokenReturn {
   /** True when permission is 'default' and the user hasn't dismissed the prompt. */
@@ -35,6 +37,44 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
     let cancelled = false;
+    const browserWindow = window;
+    const browserDocument = document;
+    const browserNavigator = navigator;
+
+    const refreshTokenRegistration = (force = false) => {
+      if (Notification.permission !== "granted") return;
+      void registerToken(uid, { force });
+    };
+
+    const handleVisibilityChange = () => {
+      if (browserDocument.visibilityState === "visible") {
+        refreshTokenRegistration();
+      }
+    };
+
+    const handleFocus = () => {
+      refreshTokenRegistration();
+    };
+
+    const handlePageShow = () => {
+      refreshTokenRegistration();
+    };
+
+    const handleControllerChange = () => {
+      refreshTokenRegistration(true);
+    };
+
+    browserDocument.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+    browserWindow.addEventListener("focus", handleFocus);
+    browserWindow.addEventListener("pageshow", handlePageShow);
+    browserWindow.addEventListener("online", handleFocus);
+    browserNavigator.serviceWorker?.addEventListener(
+      "controllerchange",
+      handleControllerChange,
+    );
 
     messagingReady
       .then((messaging) => {
@@ -45,7 +85,7 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 
         if (permission === "granted") {
           // Already granted — register/refresh token silently
-          registerToken(uid);
+          refreshTokenRegistration(true);
           // Forward foreground (app-focused) FCM messages to the OS notification tray.
           // Background messages are handled by firebase-messaging-sw.js.
           unsubscribeRef.current?.();
@@ -65,6 +105,17 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
       cancelled = true;
       unsubscribeRef.current?.();
       unsubscribeRef.current = null;
+      browserDocument.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      browserWindow.removeEventListener("focus", handleFocus);
+      browserWindow.removeEventListener("pageshow", handlePageShow);
+      browserWindow.removeEventListener("online", handleFocus);
+      browserNavigator.serviceWorker?.removeEventListener(
+        "controllerchange",
+        handleControllerChange,
+      );
     };
   }, [uid]);
 
@@ -131,7 +182,10 @@ function showForegroundNotification(payload: MessagePayload): void {
   }
 }
 
-async function registerToken(uid: string): Promise<void> {
+async function registerToken(
+  uid: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
   if (!VAPID_KEY) return;
   try {
     const messaging = await messagingReady;
@@ -175,14 +229,28 @@ async function registerToken(uid: string): Promise<void> {
     const tokenId = btoa(token)
       .replace(/[^a-zA-Z0-9]/g, "")
       .slice(0, 28);
+
+    const previousTokenId = localStorage.getItem(FCM_TOKEN_ID_KEY);
+    const lastRefreshedAtRaw = localStorage.getItem(FCM_TOKEN_REFRESHED_AT_KEY);
+    const lastRefreshedAt = Number.parseInt(lastRefreshedAtRaw ?? "", 10);
+    const refreshExpired =
+      !Number.isFinite(lastRefreshedAt) ||
+      Date.now() - lastRefreshedAt >= TOKEN_REFRESH_INTERVAL_MS;
+
+    if (!options.force && previousTokenId === tokenId && !refreshExpired) {
+      return;
+    }
+
     await setDoc(doc(db, "users", uid, "fcmTokens", tokenId), {
       token,
       createdAt: serverTimestamp(),
+      lastSeenAt: serverTimestamp(),
       userAgent: browserNavigator?.userAgent.slice(0, 256) ?? "",
       standalone: isStandalone,
     });
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
+    localStorage.setItem(FCM_TOKEN_REFRESHED_AT_KEY, String(Date.now()));
   } catch (err) {
     Sentry.captureException(err);
     console.warn("[FCM] Token registration failed:", err);
