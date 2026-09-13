@@ -32,7 +32,6 @@ interface FormData {
   displayName: string; // derived
   email: string;
   phone: string;
-  birthYear: string;
   ghinNumber: string;
   tShirtSize: string;
   profilePicture: File | null;
@@ -44,7 +43,6 @@ interface FormErrors {
   lastName?: string;
   email?: string;
   phone?: string;
-  birthYear?: string;
   ghinNumber?: string;
   tShirtSize?: string;
 }
@@ -66,14 +64,12 @@ export function ProfileForm({
   formId,
   onSaved,
 }: ProfileFormProps) {
-  const currentYear = new Date().getFullYear();
   const [formData, setFormData] = React.useState<FormData>({
     firstName: "",
     lastName: "",
     displayName: "",
     email: "",
     phone: "",
-    birthYear: "",
     ghinNumber: "",
     tShirtSize: "",
     profilePicture: null,
@@ -104,10 +100,6 @@ export function ProfileForm({
         displayName: profile.displayName || user.displayName || "",
         email: profile.email || user.email || "",
         phone: profile.phone || user.phoneNumber || "",
-        birthYear:
-          typeof profile.birthYear === "number"
-            ? String(profile.birthYear)
-            : "",
         ghinNumber: profile.ghinNumber || "",
         tShirtSize: profile.tShirtSize || "",
         profilePicture: null,
@@ -123,7 +115,6 @@ export function ProfileForm({
         displayName: user.displayName || "",
         email: user.email || "",
         phone: user.phoneNumber || "",
-        birthYear: "",
         ghinNumber: "",
         tShirtSize: "",
         profilePicture: null,
@@ -160,18 +151,6 @@ export function ProfileForm({
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    if (!formData.birthYear.trim()) {
-      newErrors.birthYear = "Birth year is required";
-    } else {
-      const birthYear = Number(formData.birthYear);
-
-      if (!/^\d{4}$/.test(formData.birthYear) || Number.isNaN(birthYear)) {
-        newErrors.birthYear = "Birth year must be a 4-digit year";
-      } else if (birthYear < 1900 || birthYear > currentYear) {
-        newErrors.birthYear = `Birth year must be between 1900 and ${currentYear}`;
-      }
-    }
-
     if (formData.ghinNumber) {
       if (!/^\d+$/.test(formData.ghinNumber)) {
         newErrors.ghinNumber = "GHIN number must be an integer";
@@ -194,8 +173,6 @@ export function ProfileForm({
       const next = { ...prev };
       if (field === "phone") {
         next.phone = formatPhone(value);
-      } else if (field === "birthYear") {
-        next.birthYear = value.replace(/\D/g, "").slice(0, 4);
       } else if (
         field === "firstName" ||
         field === "lastName" ||
@@ -262,7 +239,6 @@ export function ProfileForm({
         displayName: formData.displayName, // server will recompute anyway
         email: formData.email,
         phone: formData.phone,
-        birthYear: Number(formData.birthYear),
         ghinNumber: formData.ghinNumber,
         tShirtSize: formData.tShirtSize as UserProfilePayload["tShirtSize"],
         photoURL: imagePreview || user.photoURL || null,
@@ -443,24 +419,6 @@ export function ProfileForm({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextField
-              isRequired
-              isInvalid={!!errors.birthYear}
-              value={formData.birthYear}
-              onChange={(v) => handleInputChange("birthYear")(v)}
-            >
-              <Label>Birth Year</Label>
-              <Input
-                placeholder="Enter your birth year"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]{4}"
-                maxLength={4}
-                autoComplete="bday-year"
-              />
-              <FieldError>{errors.birthYear}</FieldError>
-            </TextField>
-
             <div className="space-y-1">
               <label className="text-sm font-medium text-foreground">
                 T-Shirt Size <span className="text-danger">*</span>
