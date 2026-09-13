@@ -14,6 +14,15 @@ interface StoredNotification {
   data?: PushNotificationData;
 }
 
+const STALE_TOKEN_ERROR_CODES = new Set([
+  "messaging/registration-token-not-registered",
+  "messaging/invalid-registration-token",
+]);
+
+export function isStaleTokenErrorCode(code: string | undefined): boolean {
+  return typeof code === "string" && STALE_TOKEN_ERROR_CODES.has(code);
+}
+
 export function buildPushNotificationMessage(
   notificationId: string,
   tokens: string[],
@@ -38,6 +47,9 @@ export function buildPushNotificationMessage(
       },
     },
     webpush: {
+      headers: {
+        Urgency: "high",
+      },
       ...(data?.link ? { fcmOptions: { link: data.link } } : {}),
     },
   };
@@ -99,13 +111,29 @@ export const dispatch_push_notification = onDocumentCreated(
       failureCount: response.failureCount,
     });
 
+    const failures = response.responses.flatMap((result, index) => {
+      if (result.success) return [];
+      return [
+        {
+          tokenDocId: tokenDocs[index]?.id,
+          code: result.error?.code ?? "unknown",
+          message: result.error?.message ?? "Unknown messaging error",
+        },
+      ];
+    });
+
+    if (failures.length > 0) {
+      logger.warn("dispatch_push_notification: delivery failures", {
+        notificationId: event.params.notificationId,
+        uid,
+        failures,
+      });
+    }
+
     // Remove stale tokens so they don't accumulate
     const staleDocIds: string[] = [];
     response.responses.forEach((r, i) => {
-      if (
-        !r.success &&
-        r.error?.code === "messaging/registration-token-not-registered"
-      ) {
+      if (!r.success && isStaleTokenErrorCode(r.error?.code)) {
         staleDocIds.push(tokenDocs[i].id);
       }
     });

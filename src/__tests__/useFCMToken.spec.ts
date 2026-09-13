@@ -240,3 +240,48 @@ describe("useFCMToken — requestPermission", () => {
     expect(setDoc).not.toHaveBeenCalled();
   });
 });
+
+describe("useFCMToken — token refresh lifecycle", () => {
+  it("re-registers the current token when the app regains focus after a long idle period", async () => {
+    const setDoc = vi.fn().mockResolvedValue(undefined);
+    const getToken = vi.fn().mockResolvedValue("device-token-xyz");
+
+    Object.defineProperty(window, "Notification", {
+      value: { permission: "granted" },
+      writable: true,
+      configurable: true,
+    });
+
+    const mockMessaging = {};
+    vi.doMock("@/config/firebase", () => ({
+      db: {},
+      messagingReady: Promise.resolve(mockMessaging),
+    }));
+    vi.doMock("firebase/messaging", () => ({
+      getToken,
+      onMessage: vi.fn(() => vi.fn()),
+    }));
+    vi.doMock("firebase/firestore", () => ({
+      doc: vi.fn(() => ({})),
+      setDoc,
+      serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
+    }));
+    vi.stubEnv("VITE_FCM_VAPID_KEY", "test-vapid-key");
+
+    const { renderHook, waitFor } = await import("@testing-library/react");
+    const { useFCMToken } = await import("@/hooks/useFCMToken");
+
+    renderHook(() => useFCMToken("user-123"));
+
+    await waitFor(() => expect(setDoc).toHaveBeenCalledTimes(1));
+
+    localStorage.setItem(
+      "rgc_fcm_token_refreshed_at",
+      String(Date.now() - 13 * 60 * 60 * 1000),
+    );
+
+    window.dispatchEvent(new Event("focus"));
+
+    await waitFor(() => expect(setDoc).toHaveBeenCalledTimes(2));
+  });
+});
