@@ -1523,7 +1523,8 @@ img { display: block; max-width: 100%; }
               </div>
             ) : null}
 
-            {currentStatus === TournamentStatus.Completed &&
+            {(currentStatus === TournamentStatus.Completed ||
+              currentStatus === TournamentStatus.InProgress) &&
               (tournament.winnerGroups ?? []).some(
                 (g) => (g.winners ?? []).length > 0,
               ) && (
@@ -1531,7 +1532,9 @@ img { display: block; max-width: 100%; }
                   <Card>
                     <Card.Header className="pb-0">
                       <h2 className="text-lg font-semibold">
-                        Tournament Winners
+                        {currentStatus === TournamentStatus.InProgress
+                          ? "Live Winners & Payouts"
+                          : "Tournament Winners"}
                       </h2>
                     </Card.Header>
                     <Separator />

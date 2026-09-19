@@ -8,6 +8,7 @@ export type WinnerGroupType =
   | "day"
   | "flight"
   | "closestToPin"
+  | "bracketRound"
   | "custom";
 
 export interface Competitor {

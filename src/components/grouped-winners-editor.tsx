@@ -13,6 +13,7 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useUsers } from "@/hooks/useUsers";
+import type { BracketRoundPayout } from "@/types/tournament";
 import type {
   WinnerGroup,
   WinnerPlace,
@@ -33,6 +34,12 @@ interface GroupedWinnersEditorProps {
   teamSize: number;
   prizePool: number;
   isCompleted: boolean;
+  bracketRoundPayouts?: BracketRoundPayout[];
+  setBracketRoundPayouts?: (payouts: BracketRoundPayout[]) => void;
+  onRecalculateBracketPayouts?: () => void;
+  recalculatingBracketPayouts?: boolean;
+  automatedBracketWinnerGroupsCount?: number;
+  errors?: Record<string, string>;
   /** Optional list of registrations to allow picking winners by team (default behavior when provided). */
   registrations?: Array<{
     id: string;
@@ -57,23 +64,46 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   teamSize,
   prizePool,
   isCompleted,
+  bracketRoundPayouts = [],
+  setBracketRoundPayouts,
+  onRecalculateBracketPayouts,
+  recalculatingBracketPayouts = false,
+  automatedBracketWinnerGroupsCount = 0,
+  errors = {},
   registrations = [],
 }) => {
   const { users, isLoading: usersLoading } = useUsers();
+  const bracketRoundModeAvailable =
+    typeof setBracketRoundPayouts === "function";
 
   // Winner source mode: "teams" when registrations are available, "users" otherwise.
   // Auto-switches to "teams" when registrations load asynchronously, unless the user
   // has already made a manual selection.
-  type SourceMode = "teams" | "users";
-  const [sourceMode, setSourceMode] = React.useState<SourceMode>(
-    registrations.length > 0 ? "teams" : "users",
-  );
+  type SourceMode = "teams" | "users" | "bracketRounds";
+  const defaultSourceMode = React.useMemo<SourceMode>(() => {
+    if (
+      bracketRoundModeAvailable &&
+      bracketRoundPayouts.length > 0 &&
+      groups.length === 0
+    ) {
+      return "bracketRounds";
+    }
+
+    return registrations.length > 0 ? "teams" : "users";
+  }, [
+    bracketRoundModeAvailable,
+    bracketRoundPayouts.length,
+    groups.length,
+    registrations.length,
+  ]);
+  const [sourceMode, setSourceMode] =
+    React.useState<SourceMode>(defaultSourceMode);
   const userChoseModeRef = React.useRef(false);
   React.useEffect(() => {
-    if (!userChoseModeRef.current && registrations.length > 0) {
-      setSourceMode("teams");
+    if (!userChoseModeRef.current && sourceMode !== defaultSourceMode) {
+      setSourceMode(defaultSourceMode);
     }
-  }, [registrations.length]);
+  }, [defaultSourceMode, sourceMode]);
 
   // Effective team size for winner assignment. Defaults to the max competitor count
   // already saved in the data (so reloading persists grouped teams), falling back to
@@ -291,17 +321,104 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     updatePlace(groupId, placeOrId, { competitors });
   };
 
-  if (!isCompleted) {
-    return (
-      <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
-        <Icon
-          icon="lucide:trophy"
-          className="mx-auto text-2xl mb-2 text-muted"
-        />
-        <p>Winners can be added once the tournament is marked as completed</p>
-      </div>
+  const setSequentialBracketRoundPayouts = React.useCallback(
+    (payouts: BracketRoundPayout[]) => {
+      if (!setBracketRoundPayouts) return;
+
+      setBracketRoundPayouts(
+        payouts.map((payout, index) => {
+          const nextPayout: BracketRoundPayout = {
+            amount: payout.amount,
+            round: index + 1,
+          };
+
+          if (
+            index === payouts.length - 1 &&
+            payout.runnerUpAmount !== undefined
+          ) {
+            nextPayout.runnerUpAmount = payout.runnerUpAmount;
+          }
+
+          return nextPayout;
+        }),
+      );
+    },
+    [setBracketRoundPayouts],
+  );
+
+  const updateBracketRoundPayoutAmount = (index: number, amount: number) => {
+    setSequentialBracketRoundPayouts(
+      bracketRoundPayouts.map((payout, payoutIndex) =>
+        payoutIndex === index ? { ...payout, amount } : payout,
+      ),
     );
-  }
+  };
+
+  const updateFinalRunnerUpAmount = (
+    index: number,
+    runnerUpAmount: number | undefined,
+  ) => {
+    setSequentialBracketRoundPayouts(
+      bracketRoundPayouts.map((payout, payoutIndex) => {
+        if (payoutIndex !== index) return payout;
+
+        const nextPayout: BracketRoundPayout = {
+          ...payout,
+          amount: payout.amount,
+          round: payout.round,
+        };
+
+        if (runnerUpAmount !== undefined) {
+          nextPayout.runnerUpAmount = runnerUpAmount;
+        } else {
+          delete nextPayout.runnerUpAmount;
+        }
+
+        return nextPayout;
+      }),
+    );
+  };
+
+  const addBracketRoundPayout = () => {
+    setSequentialBracketRoundPayouts([
+      ...bracketRoundPayouts,
+      { round: bracketRoundPayouts.length + 1, amount: 0 },
+    ]);
+  };
+
+  const removeBracketRoundPayout = (index: number) => {
+    setSequentialBracketRoundPayouts(
+      bracketRoundPayouts.filter((_, payoutIndex) => payoutIndex !== index),
+    );
+  };
+
+  const bracketChampionTotal = React.useMemo(
+    () =>
+      bracketRoundPayouts.reduce(
+        (sum, payout) =>
+          sum + Math.max(0, payout.amount || 0) * Math.max(1, teamSize),
+        0,
+      ),
+    [bracketRoundPayouts, teamSize],
+  );
+
+  const bracketTotalAllocated = React.useMemo(() => {
+    if (bracketRoundPayouts.length === 0) return 0;
+
+    const totalRounds = bracketRoundPayouts.length;
+    const winnerTotal = bracketRoundPayouts.reduce((sum, payout, index) => {
+      const winnersInRound = Math.pow(2, totalRounds - index - 1);
+      return (
+        sum +
+        Math.max(0, payout.amount || 0) * winnersInRound * Math.max(1, teamSize)
+      );
+    }, 0);
+
+    const runnerUpAmount =
+      bracketRoundPayouts[bracketRoundPayouts.length - 1]?.runnerUpAmount ?? 0;
+
+    return winnerTotal + Math.max(0, runnerUpAmount) * Math.max(1, teamSize);
+  }, [bracketRoundPayouts, teamSize]);
 
   const totalAllocated = computeTotalPayout(groups);
   const remaining = prizePool - totalAllocated;
@@ -312,49 +429,54 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-medium">Winners</h3>
-        <div className="flex flex-wrap items-center gap-2 justify-end">
-          <Chip
-            color={remaining < 0 ? "danger" : "success"}
-            variant="tertiary"
-            className="min-w-[100px] justify-center"
-          >
-            ${remaining.toLocaleString()}
-          </Chip>
-          <Button
-            size="sm"
-            variant="tertiary"
-            onPress={() => addGroup("overall")}
-          >
-            Add Overall
-          </Button>
-          <Button size="sm" variant="tertiary" onPress={() => addGroup("day")}>
-            Add Day
-          </Button>
-          <Button
-            size="sm"
-            variant="tertiary"
-            onPress={() => addGroup("closestToPin")}
-          >
-            Add Closest to Pin
-          </Button>
-          <Button
-            size="sm"
-            variant="tertiary"
-            onPress={() => addGroup("custom")}
-          >
-            Add Custom
-          </Button>
-        </div>
+        {sourceMode !== "bracketRounds" && isCompleted && (
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <Chip
+              color={remaining < 0 ? "danger" : "success"}
+              variant="tertiary"
+              className="min-w-[100px] justify-center"
+            >
+              ${remaining.toLocaleString()}
+            </Chip>
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => addGroup("overall")}
+            >
+              Add Overall
+            </Button>
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => addGroup("day")}
+            >
+              Add Day
+            </Button>
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => addGroup("closestToPin")}
+            >
+              Add Closest to Pin
+            </Button>
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => addGroup("custom")}
+            >
+              Add Custom
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Source mode selector */}
       <div className="flex items-start gap-3">
         <Select
           value={sourceMode}
           onChange={(val) => {
             const v = val as SourceMode;
             userChoseModeRef.current = true;
-            setSourceMode(v || (registrations.length > 0 ? "teams" : "users"));
+            setSourceMode(v || defaultSourceMode);
           }}
           className="w-[260px]"
         >
@@ -373,6 +495,12 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                 Registered Teams {registrations.length === 0 ? "(none)" : ""}
                 <ListBox.ItemIndicator />
               </ListBox.Item>
+              {bracketRoundModeAvailable && (
+                <ListBox.Item id="bracketRounds" textValue="Bracket Rounds">
+                  Bracket Rounds
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              )}
               <ListBox.Item id="users" textValue="All Users">
                 All Users
                 <ListBox.ItemIndicator />
@@ -380,24 +508,171 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
             </ListBox>
           </Select.Popover>
         </Select>
-        <TextField
-          value={String(effectiveTeamSize)}
-          onChange={(v) =>
-            setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))
-          }
-          className="w-[160px]"
-        >
-          <Label>Winners per place</Label>
-          <Input type="number" min={1} max={20} />
-          {teamSize !== effectiveTeamSize && (
-            <p className="text-xs text-muted mt-1">
-              Tournament default: {teamSize}
-            </p>
-          )}
-        </TextField>
+        {sourceMode !== "bracketRounds" && (
+          <TextField
+            value={String(effectiveTeamSize)}
+            onChange={(v) =>
+              setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))
+            }
+            className="w-[160px]"
+          >
+            <Label>Winners per place</Label>
+            <Input type="number" min={1} max={20} />
+            {teamSize !== effectiveTeamSize && (
+              <p className="text-xs text-muted mt-1">
+                Tournament default: {teamSize}
+              </p>
+            )}
+          </TextField>
+        )}
       </div>
 
-      {sorted.length === 0 ? (
+      {sourceMode === "bracketRounds" ? (
+        <Card>
+          <Card.Content className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold">Bracket Round Payouts</h4>
+                <p className="text-xs text-muted mt-1">
+                  Amounts are paid per competitor each time a team wins that
+                  round in the bracket.
+                </p>
+                <p className="text-xs text-muted mt-1">
+                  {automatedBracketWinnerGroupsCount > 0
+                    ? `Saved match results currently generate ${automatedBracketWinnerGroupsCount} bracket winner group${automatedBracketWinnerGroupsCount === 1 ? "" : "s"}.`
+                    : "Bracket standings and payouts will be generated automatically from saved match results."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {onRecalculateBracketPayouts && (
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    onPress={onRecalculateBracketPayouts}
+                    isDisabled={recalculatingBracketPayouts}
+                  >
+                    {!recalculatingBracketPayouts && (
+                      <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
+                    )}
+                    Recalculate Payouts
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  onPress={addBracketRoundPayout}
+                >
+                  <Icon icon="lucide:plus" className="w-4 h-4" />
+                  Add Round
+                </Button>
+              </div>
+            </div>
+
+            {bracketRoundPayouts.length === 0 ? (
+              <p className="text-sm text-muted">
+                No bracket payouts configured yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip variant="tertiary" className="min-w-[170px]">
+                    Champion total: ${bracketChampionTotal.toLocaleString()}
+                  </Chip>
+                  <Chip variant="tertiary" className="min-w-[170px]">
+                    Allocated: ${bracketTotalAllocated.toLocaleString()}
+                  </Chip>
+                </div>
+
+                {bracketRoundPayouts.map((payout, index) => (
+                  <div
+                    key={`${payout.round}-${index}`}
+                    className="flex items-end gap-3"
+                  >
+                    <TextField className="flex-1 min-w-0">
+                      <Label className="text-sm">
+                        Round {index + 1} Winner ($ per player)
+                      </Label>
+                      <InputGroup>
+                        <InputGroup.Prefix>
+                          <span className="text-muted text-sm px-1">$</span>
+                        </InputGroup.Prefix>
+                        <InputGroup.Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={String(payout.amount)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            updateBracketRoundPayoutAmount(
+                              index,
+                              Math.max(0, parseFloat(e.target.value) || 0),
+                            )
+                          }
+                        />
+                      </InputGroup>
+                    </TextField>
+
+                    {index === bracketRoundPayouts.length - 1 && (
+                      <TextField className="w-56 shrink-0">
+                        <Label className="text-sm">
+                          Final Runner-Up ($ per player)
+                        </Label>
+                        <InputGroup>
+                          <InputGroup.Prefix>
+                            <span className="text-muted text-sm px-1">$</span>
+                          </InputGroup.Prefix>
+                          <InputGroup.Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={payout.runnerUpAmount?.toString() ?? ""}
+                            placeholder="Optional"
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => {
+                              const rawValue = e.target.value.trim();
+                              updateFinalRunnerUpAmount(
+                                index,
+                                rawValue === ""
+                                  ? undefined
+                                  : Math.max(0, parseFloat(rawValue) || 0),
+                              );
+                            }}
+                          />
+                        </InputGroup>
+                      </TextField>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      isIconOnly
+                      aria-label={`Remove payout for round ${payout.round}`}
+                      onPress={() => removeBracketRoundPayout(index)}
+                      className="shrink-0"
+                    >
+                      <Icon icon="lucide:trash-2" className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {errors.bracketRoundPayouts && (
+              <p className="text-xs text-danger">
+                {errors.bracketRoundPayouts}
+              </p>
+            )}
+          </Card.Content>
+        </Card>
+      ) : !isCompleted ? (
+        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
+          <Icon
+            icon="lucide:trophy"
+            className="mx-auto text-2xl mb-2 text-muted"
+          />
+          <p>Winners can be added once the tournament is marked as completed</p>
+        </div>
+      ) : sorted.length === 0 ? (
         <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
           <p>No winner groups yet. Add one to get started.</p>
         </div>
@@ -742,7 +1017,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
         </div>
       )}
 
-      {sorted.length > 0 && (
+      {sourceMode !== "bracketRounds" && isCompleted && sorted.length > 0 && (
         <div className="flex flex-wrap justify-between items-center gap-2 pt-2 text-sm">
           <div>Total allocated: ${totalAllocated.toLocaleString()}</div>
           <div className={remaining < 0 ? "text-danger" : "text-success"}>

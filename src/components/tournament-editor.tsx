@@ -2,7 +2,9 @@ import React from "react";
 import { Card, Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
+import { recalculateTournamentBracketPayouts } from "@/api/brackets";
 import {
+  BracketRoundPayout,
   Tournament,
   TournamentStatus,
   TournamentWeather,
@@ -20,6 +22,11 @@ import {
   CalendarDateTime,
 } from "@internationalized/date";
 import { computeTotalPayout } from "@/utils/winners";
+import {
+  isAutomatedBracketWinnerGroup,
+  mergeBracketWinnerGroups,
+  normalizeBracketRoundPayouts,
+} from "@/utils/bracketPayouts";
 import type { DocumentData } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
 
@@ -85,6 +92,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [winnerGroups, setWinnerGroups] = React.useState<
     import("@/types/winner").WinnerGroup[]
   >(tournament?.winnerGroups ?? []);
+  const [bracketRoundPayouts, setBracketRoundPayouts] = React.useState<
+    BracketRoundPayout[]
+  >(() => normalizeBracketRoundPayouts(seed.bracketRoundPayouts));
   const [status, setStatus] = React.useState<TournamentStatus>(getStatus(seed));
   const [tee, setTee] = React.useState<TeeColor>(
     isTeeColor(seed.tee) ? (seed.tee as TeeColor) : "Mixed",
@@ -145,6 +155,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     seed.weather || null,
   );
   const [fetchingWeather, setFetchingWeather] = React.useState(false);
+  const [recalculatingBracketPayouts, setRecalculatingBracketPayouts] =
+    React.useState(false);
 
   const incomingPreviousTournamentId =
     tournament?.previousTournamentId ?? undefined;
@@ -160,6 +172,54 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   // NOTE: Admin Add Registration workflow should not auto-select the current user.
   // Admins need the ability to add arbitrary registrations on behalf of others.
 
+  const automatedBracketWinnerGroups = React.useMemo(
+    () => winnerGroups.filter(isAutomatedBracketWinnerGroup),
+    [winnerGroups],
+  );
+
+  const manualWinnerGroups = React.useMemo(
+    () => winnerGroups.filter((group) => !isAutomatedBracketWinnerGroup(group)),
+    [winnerGroups],
+  );
+
+  const handleManualWinnerGroupsChange = React.useCallback(
+    (nextManualGroups: WinnerGroup[]) => {
+      setWinnerGroups(
+        mergeBracketWinnerGroups(
+          nextManualGroups,
+          automatedBracketWinnerGroups,
+        ),
+      );
+    },
+    [automatedBracketWinnerGroups],
+  );
+
+  const getBracketRoundPayoutError = React.useCallback(
+    (payouts: BracketRoundPayout[]): string | undefined => {
+      const seenPayoutRounds = new Set<number>();
+      for (const payout of payouts) {
+        if (!Number.isFinite(payout.round) || payout.round < 1) {
+          return "Bracket payout rounds must be 1 or greater";
+        }
+        if (!Number.isFinite(payout.amount) || payout.amount < 0) {
+          return "Bracket payout amounts cannot be negative";
+        }
+        if (
+          payout.runnerUpAmount !== undefined &&
+          (!Number.isFinite(payout.runnerUpAmount) || payout.runnerUpAmount < 0)
+        ) {
+          return "Runner-up payouts cannot be negative";
+        }
+        if (seenPayoutRounds.has(payout.round)) {
+          return "Each bracket round can only be configured once";
+        }
+        seenPayoutRounds.add(payout.round);
+      }
+      return undefined;
+    },
+    [],
+  );
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -172,6 +232,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       newErrors.maxTeams = "Must be at least 1 team";
     }
     if (prizePool < 0) newErrors.prizePool = "Prize pool cannot be negative";
+    const bracketRoundPayoutError =
+      getBracketRoundPayoutError(bracketRoundPayouts);
+    if (bracketRoundPayoutError) {
+      newErrors.bracketRoundPayouts = bracketRoundPayoutError;
+    }
     const parsedStart = registrationStart
       ? new Date(registrationStart.toString())
       : undefined;
@@ -206,6 +271,78 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const handleRecalculateBracketPayouts = React.useCallback(async () => {
+    if (!tournamentId) return;
+
+    const bracketRoundPayoutError =
+      getBracketRoundPayoutError(bracketRoundPayouts);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (bracketRoundPayoutError) {
+        next.bracketRoundPayouts = bracketRoundPayoutError;
+      } else {
+        delete next.bracketRoundPayouts;
+      }
+      return next;
+    });
+    if (bracketRoundPayoutError) return;
+
+    setRecalculatingBracketPayouts(true);
+    try {
+      const result = await recalculateTournamentBracketPayouts({
+        tournamentId,
+        bracketRoundPayouts,
+        existingWinnerGroups: winnerGroups,
+      });
+
+      setWinnerGroups(result.winnerGroups);
+      setBracketRoundPayouts(result.bracketRoundPayouts);
+
+      if (result.bracket) {
+        addToast({
+          title: "Bracket payouts recalculated",
+          description:
+            "Saved bracket winners were refreshed using the current payout amounts.",
+          color: "success",
+        });
+      } else {
+        addToast({
+          title: "Payout settings saved",
+          description:
+            "No bracket exists yet, so there were no winners to recalculate.",
+          color: "warning",
+        });
+      }
+    } catch (error) {
+      Sentry.captureException(error);
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? String((error as { code?: unknown }).code)
+          : undefined;
+
+      if (code === "permission-denied") {
+        addToast({
+          title: "Access Denied",
+          description: "You do not have permission to perform this action.",
+          color: "danger",
+        });
+      } else {
+        addToast({
+          title: "Error",
+          description: "Failed to recalculate bracket payouts.",
+          color: "danger",
+        });
+      }
+    } finally {
+      setRecalculatingBracketPayouts(false);
+    }
+  }, [
+    tournamentId,
+    getBracketRoundPayoutError,
+    bracketRoundPayouts,
+    winnerGroups,
+  ]);
 
   const handleFetchWeather = async () => {
     if (!date) {
@@ -266,6 +403,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const { db } = await import("@/config/firebase");
       const { collection, addDoc, updateDoc, doc, deleteField } =
         await import("firebase/firestore");
+      const sanitizedBracketRoundPayouts =
+        normalizeBracketRoundPayouts(bracketRoundPayouts);
       // Sanitize winnerGroups to avoid writing `undefined` fields to Firestore
       const sanitizedGroups: WinnerGroup[] = (winnerGroups || []).map((g) => ({
         ...g,
@@ -322,6 +461,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       tournamentData.registrationOpeningNotificationEnabled =
         registrationOpeningNotificationEnabled;
 
+      if (sanitizedBracketRoundPayouts.length > 0) {
+        tournamentData.bracketRoundPayouts = sanitizedBracketRoundPayouts;
+      } else if (tournament && tournament.firestoreId) {
+        tournamentData.bracketRoundPayouts = deleteField();
+      }
+
       if (
         typeof maxTeams === "number" &&
         Number.isFinite(maxTeams) &&
@@ -364,6 +509,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         status,
         prizePool,
         winnerGroups: sanitizedGroups,
+        bracketRoundPayouts:
+          sanitizedBracketRoundPayouts.length > 0
+            ? sanitizedBracketRoundPayouts
+            : undefined,
         date: date ? new Date(date.toString()) : new Date(),
         tee,
         assignedTeeTimes,
@@ -733,12 +882,21 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           <WinnersSection
             isEditing={isEditing}
             status={status}
-            winnerGroups={winnerGroups}
-            setWinnerGroups={setWinnerGroups}
+            winnerGroups={manualWinnerGroups}
+            setWinnerGroups={handleManualWinnerGroupsChange}
             players={players}
             prizePool={prizePool}
             completed={completed}
+            bracketRoundPayouts={bracketRoundPayouts}
+            setBracketRoundPayouts={setBracketRoundPayouts}
+            onRecalculateBracketPayouts={
+              tournamentId ? handleRecalculateBracketPayouts : undefined
+            }
+            recalculatingBracketPayouts={recalculatingBracketPayouts}
             registrations={registrations}
+            automatedBracketWinnerGroupsCount={
+              automatedBracketWinnerGroups.length
+            }
             errors={errors}
           />
 

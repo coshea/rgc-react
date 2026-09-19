@@ -5,12 +5,13 @@
 
 import { db } from "@/config/firebase";
 import {
+  deleteField,
   doc,
   getDoc,
   setDoc,
-  deleteDoc,
   onSnapshot,
   serverTimestamp,
+  writeBatch,
   type FirestoreError,
 } from "firebase/firestore";
 import type {
@@ -18,8 +19,147 @@ import type {
   BracketMatch,
   BracketTeam,
 } from "@/types/bracket";
+import type { BracketRoundPayout } from "@/types/tournament";
+import type { WinnerGroup } from "@/types/winner";
+import {
+  buildBracketWinnerGroups,
+  mergeBracketWinnerGroups,
+  normalizeBracketRoundPayouts,
+} from "@/utils/bracketPayouts";
 
 const bracketRef = (tournamentId: string) => doc(db, "brackets", tournamentId);
+const tournamentRef = (tournamentId: string) =>
+  doc(db, "tournaments", tournamentId);
+
+function parseBracketRoundPayouts(value: unknown): BracketRoundPayout[] {
+  if (!Array.isArray(value)) return [];
+
+  return normalizeBracketRoundPayouts(
+    value
+      .map((entry) => {
+        if (typeof entry !== "object" || entry === null) return null;
+        const record = entry as Record<string, unknown>;
+        const round =
+          typeof record.round === "number"
+            ? record.round
+            : Number(record.round);
+        const amount =
+          typeof record.amount === "number"
+            ? record.amount
+            : Number(record.amount);
+        const runnerUpAmount =
+          typeof record.runnerUpAmount === "number"
+            ? record.runnerUpAmount
+            : record.runnerUpAmount === undefined
+              ? undefined
+              : Number(record.runnerUpAmount);
+
+        if (!Number.isFinite(round) || !Number.isFinite(amount)) return null;
+        if (runnerUpAmount !== undefined && !Number.isFinite(runnerUpAmount)) {
+          return null;
+        }
+        return {
+          round,
+          amount,
+          ...(runnerUpAmount !== undefined ? { runnerUpAmount } : {}),
+        } satisfies BracketRoundPayout;
+      })
+      .filter((entry): entry is BracketRoundPayout => entry !== null),
+  );
+}
+
+function parseWinnerGroups(value: unknown): WinnerGroup[] {
+  return Array.isArray(value) ? (value as WinnerGroup[]) : [];
+}
+
+async function syncTournamentBracketWinnerGroups(
+  tournamentId: string,
+  nextBracket: TournamentBracket | null,
+  batch?: ReturnType<typeof writeBatch>,
+  options?: {
+    existingGroups?: WinnerGroup[];
+    roundPayouts?: BracketRoundPayout[];
+    persistRoundPayouts?: BracketRoundPayout[];
+  },
+): Promise<WinnerGroup[]> {
+  const tournamentSnap = await getDoc(tournamentRef(tournamentId));
+  if (!tournamentSnap.exists()) return [];
+
+  const data = tournamentSnap.data() as Record<string, unknown>;
+  const existingGroups =
+    options?.existingGroups ?? parseWinnerGroups(data.winnerGroups);
+  const roundPayouts =
+    options?.roundPayouts ?? parseBracketRoundPayouts(data.bracketRoundPayouts);
+  const mergedWinnerGroups = mergeBracketWinnerGroups(
+    existingGroups,
+    buildBracketWinnerGroups(nextBracket, roundPayouts),
+  );
+  const payload: Record<string, unknown> = {
+    winnerGroups: stripUndefined(mergedWinnerGroups),
+  };
+
+  if (options?.persistRoundPayouts && options.persistRoundPayouts.length > 0) {
+    payload.bracketRoundPayouts = stripUndefined(options.persistRoundPayouts);
+  } else if (options && "persistRoundPayouts" in options) {
+    payload.bracketRoundPayouts = deleteField();
+  }
+
+  if (batch) {
+    batch.set(tournamentRef(tournamentId), payload, { merge: true });
+    return mergedWinnerGroups;
+  }
+
+  await setDoc(tournamentRef(tournamentId), payload, { merge: true });
+  return mergedWinnerGroups;
+}
+
+export async function recalculateTournamentBracketPayouts(params: {
+  tournamentId: string;
+  bracketRoundPayouts: BracketRoundPayout[];
+  existingWinnerGroups?: WinnerGroup[];
+}): Promise<{
+  bracket: TournamentBracket | null;
+  winnerGroups: WinnerGroup[];
+  bracketRoundPayouts: BracketRoundPayout[];
+}> {
+  const [tournamentSnap, bracketSnap] = await Promise.all([
+    getDoc(tournamentRef(params.tournamentId)),
+    getDoc(bracketRef(params.tournamentId)),
+  ]);
+
+  if (!tournamentSnap.exists()) {
+    throw new Error("Tournament not found.");
+  }
+
+  const normalizedPayouts = normalizeBracketRoundPayouts(
+    params.bracketRoundPayouts,
+  );
+  const bracket = bracketSnap.exists()
+    ? (() => {
+        const { createdAt: _c, updatedAt: _u, ...rest } = bracketSnap.data();
+        return rest as TournamentBracket;
+      })()
+    : null;
+
+  const winnerGroups = await syncTournamentBracketWinnerGroups(
+    params.tournamentId,
+    bracket,
+    undefined,
+    {
+      existingGroups:
+        params.existingWinnerGroups ??
+        parseWinnerGroups(tournamentSnap.data().winnerGroups),
+      roundPayouts: normalizedPayouts,
+      persistRoundPayouts: normalizedPayouts,
+    },
+  );
+
+  return {
+    bracket,
+    winnerGroups,
+    bracketRoundPayouts: normalizedPayouts,
+  };
+}
 
 // ── One-off fetch ────────────────────────────────────────────────────────────
 
@@ -74,11 +214,14 @@ function stripUndefined<T>(obj: T): T {
 }
 
 export async function saveBracket(bracket: TournamentBracket): Promise<void> {
-  await setDoc(bracketRef(bracket.tournamentId), {
+  const batch = writeBatch(db);
+  batch.set(bracketRef(bracket.tournamentId), {
     ...stripUndefined(bracket),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+  await syncTournamentBracketWinnerGroups(bracket.tournamentId, bracket, batch);
+  await batch.commit();
 }
 
 // ── Advance a team to the next round ────────────────────────────────────────
@@ -115,11 +258,18 @@ export async function advanceTeam(
     }
   }
 
-  await setDoc(
+  const nextBracket: TournamentBracket = {
+    ...currentBracket,
+    matches,
+  };
+  const batch = writeBatch(db);
+  batch.set(
     bracketRef(tournamentId),
     { matches, updatedAt: serverTimestamp() },
     { merge: true },
   );
+  await syncTournamentBracketWinnerGroups(tournamentId, nextBracket, batch);
+  await batch.commit();
 }
 
 // ── Save multiple match results at once ──────────────────────────────────────
@@ -175,11 +325,18 @@ export async function saveMatchResults(
     }
   }
 
-  await setDoc(
+  const nextBracket: TournamentBracket = {
+    ...currentBracket,
+    matches,
+  };
+  const batch = writeBatch(db);
+  batch.set(
     bracketRef(tournamentId),
     { matches, updatedAt: serverTimestamp() },
     { merge: true },
   );
+  await syncTournamentBracketWinnerGroups(tournamentId, nextBracket, batch);
+  await batch.commit();
 }
 
 /**
@@ -317,15 +474,25 @@ export async function updateFirstRoundMatchups(
     match.team2Id = team2Id;
   }
 
-  await setDoc(
+  const nextBracket: TournamentBracket = {
+    ...currentBracket,
+    matches,
+  };
+  const batch = writeBatch(db);
+  batch.set(
     bracketRef(tournamentId),
     { matches, updatedAt: serverTimestamp() },
     { merge: true },
   );
+  await syncTournamentBracketWinnerGroups(tournamentId, nextBracket, batch);
+  await batch.commit();
 }
 
 // ── Delete ───────────────────────────────────────────────────────────────────
 
 export async function deleteBracket(tournamentId: string): Promise<void> {
-  await deleteDoc(bracketRef(tournamentId));
+  const batch = writeBatch(db);
+  batch.delete(bracketRef(tournamentId));
+  await syncTournamentBracketWinnerGroups(tournamentId, null, batch);
+  await batch.commit();
 }

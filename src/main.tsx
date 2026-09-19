@@ -86,6 +86,36 @@ function registerAppServiceWorker(): void {
     return;
   }
 
+  if (import.meta.env.DEV) {
+    window.addEventListener(
+      "load",
+      () => {
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then(async (registrations) => {
+            await Promise.all(
+              registrations.map((registration) => registration.unregister()),
+            );
+
+            if (typeof window.caches === "undefined") return;
+
+            const cacheKeys = await window.caches.keys();
+            await Promise.all(
+              cacheKeys
+                .filter((key) => key.startsWith("rgc-"))
+                .map((key) => window.caches.delete(key)),
+            );
+          })
+          .catch(() => {
+            // Ignore cleanup failures in local development.
+          });
+      },
+      { once: true },
+    );
+
+    return;
+  }
+
   window.addEventListener(
     "load",
     () => {

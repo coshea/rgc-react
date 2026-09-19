@@ -100,6 +100,7 @@ export function aggregateWinnings(
       for (const g of t.winnerGroups) {
         for (const w of g.winners || []) {
           const amountPerCompetitor = w.prizeAmount || 0;
+          if (amountPerCompetitor <= 0) continue;
           for (let i = 0; i < (w.competitors?.length || 0); i++) {
             const comp = w.competitors![i];
             const uid = comp.userId;

@@ -16,6 +16,7 @@ import type { Tournament } from "@/types/tournament";
 import type { WinnerGroup } from "@/types/winner";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
+import { isBracketRoundGroup } from "@/utils/bracketPayouts";
 
 interface Props {
   year: number;
@@ -63,6 +64,7 @@ export function TournamentBreakdown({ year }: Props) {
       })
       .map((t) => {
         const rows: ResultRow[] = [];
+        const placementRows: ResultRow[] = [];
         const winnerIds = new Set<string>();
         // Team aggregation across all groups for full results
         const teamMap = new Map<
@@ -91,23 +93,30 @@ export function TournamentBreakdown({ year }: Props) {
                 userId: c.userId,
                 displayName: c.displayName || c.userId,
               }));
-              comps.forEach((c, idx) => {
-                winnerIds.add(c.userId);
-                rows.push({
-                  id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
-                  position: w.place,
-                  userId: c.userId,
-                  name: c.displayName || c.userId,
-                  prize: w.prizeAmount || 0,
-                  score: w.score,
-                  teamSize: comps.length,
+              const prizeAmount = w.prizeAmount || 0;
+              const rowEntries = comps.map((c, idx) => ({
+                id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
+                position: w.place,
+                userId: c.userId,
+                name: c.displayName || c.userId,
+                prize: prizeAmount,
+                score: w.score,
+                teamSize: comps.length,
+              }));
+              if (prizeAmount > 0) {
+                comps.forEach((c, idx) => {
+                  winnerIds.add(c.userId);
+                  rows.push(rowEntries[idx]);
                 });
-              });
+              }
+              if (!isBracketRoundGroup(g)) {
+                placementRows.push(...rowEntries);
+              }
               // Aggregate team totals
-              if (comps.length) {
+              if (comps.length && prizeAmount > 0) {
                 const teamKey = makeTeamKey(comps);
                 const existing = teamMap.get(teamKey);
-                const teamPrize = (w.prizeAmount || 0) * comps.length; // prizeAmount assumed per player share
+                const teamPrize = prizeAmount * comps.length; // prizeAmount assumed per player share
                 const bestPosition = Math.min(
                   w.place,
                   existing?.bestPosition ?? Number.POSITIVE_INFINITY,
@@ -125,8 +134,11 @@ export function TournamentBreakdown({ year }: Props) {
         }
 
         rows.sort((a, b) => a.position - b.position);
+        placementRows.sort((a, b) => a.position - b.position);
         const positions = new Map<number, ResultRow[]>();
-        rows.forEach((r) => {
+        const podiumSourceRows =
+          placementRows.length > 0 ? placementRows : rows;
+        podiumSourceRows.forEach((r) => {
           const list = positions.get(r.position) || [];
           list.push(r);
           positions.set(r.position, list);

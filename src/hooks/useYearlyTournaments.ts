@@ -69,6 +69,7 @@ export function useYearlyTournaments({
           status,
           prizePool: data.prizePool || 0,
           winnerGroups: data.winnerGroups || [],
+          bracketRoundPayouts: data.bracketRoundPayouts || [],
           detailsMarkdown: data.detailsMarkdown,
           tee: data.tee,
           registrationStart,

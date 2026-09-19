@@ -95,6 +95,7 @@ export function mapTournamentDoc(d: any) {
     href: data.href,
     prizePool: data.prizePool || 0,
     winnerGroups: data.winnerGroups || [],
+    bracketRoundPayouts: data.bracketRoundPayouts || [],
     tee: data.tee || "Mixed",
     assignedTeeTimes: Boolean(data.assignedTeeTimes),
     maxTeams: typeof data.maxTeams === "number" ? data.maxTeams : undefined,
@@ -102,6 +103,7 @@ export function mapTournamentDoc(d: any) {
     weather: data.weather,
     goldTeesEnabled: Boolean(data.goldTeesEnabled),
     bracketPublished: Boolean(data.bracketPublished),
+    bracketNotificationsDisabled: Boolean(data.bracketNotificationsDisabled),
   };
 }
 
