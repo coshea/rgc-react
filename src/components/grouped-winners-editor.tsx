@@ -395,10 +395,11 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const bracketChampionTotal = React.useMemo(
     () =>
       bracketRoundPayouts.reduce(
-        (sum, payout) => sum + Math.max(0, payout.amount || 0),
+        (sum, payout) =>
+          sum + Math.max(0, payout.amount || 0) * Math.max(1, teamSize),
         0,
       ),
-    [bracketRoundPayouts],
+    [bracketRoundPayouts, teamSize],
   );
 
   const bracketTotalAllocated = React.useMemo(() => {
@@ -407,14 +408,17 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     const totalRounds = bracketRoundPayouts.length;
     const winnerTotal = bracketRoundPayouts.reduce((sum, payout, index) => {
       const winnersInRound = Math.pow(2, totalRounds - index - 1);
-      return sum + Math.max(0, payout.amount || 0) * winnersInRound;
+      return (
+        sum +
+        Math.max(0, payout.amount || 0) * winnersInRound * Math.max(1, teamSize)
+      );
     }, 0);
 
     const runnerUpAmount =
       bracketRoundPayouts[bracketRoundPayouts.length - 1]?.runnerUpAmount ?? 0;
 
-    return winnerTotal + Math.max(0, runnerUpAmount);
-  }, [bracketRoundPayouts]);
+    return winnerTotal + Math.max(0, runnerUpAmount) * Math.max(1, teamSize);
+  }, [bracketRoundPayouts, teamSize]);
 
   const totalAllocated = computeTotalPayout(groups);
   const remaining = prizePool - totalAllocated;
