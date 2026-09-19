@@ -75,7 +75,7 @@ export function YearlyTeamWinners({ year }: Props) {
               if (countsAsPlacement && (w.place as number) <= 3) {
                 existing.podiums += 1;
               }
-              existing.totalPerPlayer += (w.prizeAmount as number) || 0;
+              existing.totalPerPlayer += prizePerPlayer;
             } else {
               const names = sorted.map((c) => c.displayName || c.userId);
               map.set(key, {

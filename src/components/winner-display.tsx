@@ -72,6 +72,7 @@ export function WinnerDisplay({
 
   const formatPrize = (amount: number) => `$${amount.toLocaleString()}`;
   const hasPrize = typeof prize === "number" && (showZeroPrize || prize > 0);
+  const prizeText = hasPrize && prize !== undefined ? formatPrize(prize) : "";
 
   return (
     <div
@@ -129,7 +130,7 @@ export function WinnerDisplay({
           <p className="text-[11px] text-muted text-center">
             {score !== undefined ? `Score: ${score}` : ""}
             {score !== undefined && hasPrize ? " • " : ""}
-            {hasPrize ? formatPrize(prize) : ""}
+            {prizeText}
           </p>
         )}
       </div>
@@ -148,7 +149,7 @@ export function WinnerDisplay({
           <p className="text-[11px] text-muted">
             {score !== undefined ? `Score: ${score}` : ""}
             {score !== undefined && hasPrize ? " • " : ""}
-            {hasPrize ? formatPrize(prize) : ""}
+            {prizeText}
           </p>
         )}
       </div>
