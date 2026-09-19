@@ -37,10 +37,9 @@ export function normalizeBracketRoundPayouts(
       Number.isFinite(payout.runnerUpAmount) && (payout.runnerUpAmount ?? 0) > 0
         ? Number(payout.runnerUpAmount)
         : undefined;
-    if (amount <= 0 && runnerUpAmount === undefined) continue;
     deduped.set(Math.trunc(payout.round), {
       round: Math.trunc(payout.round),
-      amount,
+      amount: Math.max(0, amount),
       ...(runnerUpAmount !== undefined ? { runnerUpAmount } : {}),
     });
   }

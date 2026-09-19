@@ -56,6 +56,31 @@ function Harness({ initial = [] as WinnerGroup[] }) {
   );
 }
 
+function HarnessWithBracketPayouts({
+  initial = [] as WinnerGroup[],
+  isCompleted = false,
+}: {
+  initial?: WinnerGroup[];
+  isCompleted?: boolean;
+}) {
+  const [groups, setGroups] = useState<WinnerGroup[]>(initial);
+  const [bracketRoundPayouts, setBracketRoundPayouts] = useState([
+    { round: 1, amount: 25 },
+  ]);
+
+  return (
+    <GroupedWinnersEditor
+      groups={groups}
+      onChange={setGroups}
+      teamSize={2}
+      prizePool={100}
+      isCompleted={isCompleted}
+      bracketRoundPayouts={bracketRoundPayouts}
+      setBracketRoundPayouts={setBracketRoundPayouts}
+    />
+  );
+}
+
 /** Solo registrations — each player registered individually. */
 const soloRegistrations = [
   { id: "reg1", team: [{ id: "u1", displayName: "Alpha" }], ownerId: "u1" },
@@ -298,6 +323,37 @@ describe("GroupedWinnersEditor - registered team multi-select", () => {
     }) as HTMLInputElement;
     expect(winnersPerPlaceInput).not.toBeNull();
     expect(winnersPerPlaceInput.value).toBe("4");
+  });
+});
+
+describe("GroupedWinnersEditor - bracket round payouts", () => {
+  it("shows bracket payout controls even before the tournament is completed", () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <HarnessWithBracketPayouts />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText(/Bracket Round Payouts/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue("25")).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /Winners can be added once the tournament is marked as completed/i,
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows champion and allocated payout totals for bracket rounds", () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <HarnessWithBracketPayouts />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText(/Champion total: \$25/i)).toBeInTheDocument();
+    expect(screen.getByText(/Allocated: \$25/i)).toBeInTheDocument();
   });
 });
 

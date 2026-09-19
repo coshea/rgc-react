@@ -1,6 +1,6 @@
 import React from "react";
 import { Separator } from "@heroui/react";
-import { TournamentStatus } from "@/types/tournament";
+import { BracketRoundPayout, TournamentStatus } from "@/types/tournament";
 import type { WinnerGroup } from "@/types/winner";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
 import type { Registration } from "@/components/registrations-list";
@@ -13,6 +13,10 @@ interface WinnersSectionProps {
   players: number;
   prizePool: number;
   completed: boolean;
+  bracketRoundPayouts: BracketRoundPayout[];
+  setBracketRoundPayouts: (v: BracketRoundPayout[]) => void;
+  onRecalculateBracketPayouts?: () => void;
+  recalculatingBracketPayouts?: boolean;
   registrations: Registration[];
   automatedBracketWinnerGroupsCount?: number;
   errors: Record<string, string>;
@@ -26,6 +30,10 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
   players,
   prizePool,
   completed,
+  bracketRoundPayouts,
+  setBracketRoundPayouts,
+  onRecalculateBracketPayouts,
+  recalculatingBracketPayouts = false,
   registrations,
   automatedBracketWinnerGroupsCount = 0,
   errors,
@@ -35,25 +43,27 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
     status === TournamentStatus.Completed ||
     status === TournamentStatus.InProgress;
 
-  if (!show) return null;
+  if (!show && bracketRoundPayouts.length === 0) return null;
 
   return (
     <div className="pt-4">
       <Separator className="my-4" />
       <div className="grid grid-cols-1 gap-6">
         <div>
-          {automatedBracketWinnerGroupsCount > 0 && (
-            <p className="text-xs text-muted mb-3">
-              Bracket standings and payouts are generated automatically from
-              saved match results and are not edited here.
-            </p>
-          )}
           <GroupedWinnersEditor
             groups={winnerGroups}
             onChange={setWinnerGroups}
             teamSize={players}
             prizePool={prizePool}
             isCompleted={completed}
+            bracketRoundPayouts={bracketRoundPayouts}
+            setBracketRoundPayouts={setBracketRoundPayouts}
+            onRecalculateBracketPayouts={onRecalculateBracketPayouts}
+            recalculatingBracketPayouts={recalculatingBracketPayouts}
+            automatedBracketWinnerGroupsCount={
+              automatedBracketWinnerGroupsCount
+            }
+            errors={errors}
             registrations={registrations
               .filter((r) => r.team != null)
               .map((r) => ({
@@ -65,7 +75,7 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
                 ownerId: r.ownerId,
               }))}
           />
-          {errors.winners && (
+          {completed && errors.winners && (
             <p className="text-danger text-sm mt-2">{errors.winners}</p>
           )}
         </div>

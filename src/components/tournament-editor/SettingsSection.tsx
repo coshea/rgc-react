@@ -13,7 +13,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
-  BracketRoundPayout,
   Tournament,
   TournamentStatus,
   TournamentWeather,
@@ -33,8 +32,6 @@ interface SettingsSectionProps {
   setMaxTeams: (v: number | undefined) => void;
   prizePool: number;
   setPrizePool: (v: number) => void;
-  bracketRoundPayouts: BracketRoundPayout[];
-  setBracketRoundPayouts: (v: BracketRoundPayout[]) => void;
   tee: TeeColor;
   setTee: (v: TeeColor) => void;
   assignedTeeTimes: boolean;
@@ -54,8 +51,6 @@ interface SettingsSectionProps {
   date: DateValue | null;
   fetchingWeather: boolean;
   onFetchWeather: () => void;
-  onRecalculateBracketPayouts?: () => void;
-  recalculatingBracketPayouts?: boolean;
   errors: Record<string, string>;
 }
 
@@ -66,8 +61,6 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   setMaxTeams,
   prizePool,
   setPrizePool,
-  bracketRoundPayouts,
-  setBracketRoundPayouts,
   tee,
   setTee,
   assignedTeeTimes,
@@ -87,64 +80,8 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   date,
   fetchingWeather,
   onFetchWeather,
-  onRecalculateBracketPayouts,
-  recalculatingBracketPayouts = false,
   errors,
 }) => {
-  const setSequentialBracketRoundPayouts = (payouts: BracketRoundPayout[]) => {
-    setBracketRoundPayouts(
-      payouts.map((payout, index) => {
-        const nextPayout: BracketRoundPayout = {
-          ...payout,
-          round: index + 1,
-        };
-
-        if (index !== payouts.length - 1) {
-          delete nextPayout.runnerUpAmount;
-        }
-
-        return nextPayout;
-      }),
-    );
-  };
-
-  const updateBracketRoundPayoutAmount = (index: number, amount: number) => {
-    setSequentialBracketRoundPayouts(
-      bracketRoundPayouts.map((payout, payoutIndex) =>
-        payoutIndex === index ? { ...payout, amount } : payout,
-      ),
-    );
-  };
-
-  const updateFinalRunnerUpAmount = (
-    index: number,
-    runnerUpAmount: number | undefined,
-  ) => {
-    setSequentialBracketRoundPayouts(
-      bracketRoundPayouts.map((payout, payoutIndex) =>
-        payoutIndex === index
-          ? {
-              ...payout,
-              ...(runnerUpAmount !== undefined ? { runnerUpAmount } : {}),
-            }
-          : payout,
-      ),
-    );
-  };
-
-  const addBracketRoundPayout = () => {
-    setSequentialBracketRoundPayouts([
-      ...bracketRoundPayouts,
-      { round: bracketRoundPayouts.length + 1, amount: 0 },
-    ]);
-  };
-
-  const removeBracketRoundPayout = (index: number) => {
-    setSequentialBracketRoundPayouts(
-      bracketRoundPayouts.filter((_, payoutIndex) => payoutIndex !== index),
-    );
-  };
-
   return (
     <div className="space-y-6 min-w-0">
       <TextField
@@ -196,124 +133,6 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
           <p className="text-xs text-danger">{errors.prizePool}</p>
         )}
       </div>
-      <Card>
-        <Card.Content className="p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold">Bracket Round Payouts</h3>
-              <p className="text-xs text-muted mt-1">
-                Amounts are paid per competitor each time a team wins that round
-                in the bracket.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              {currentTournamentId && onRecalculateBracketPayouts && (
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={onRecalculateBracketPayouts}
-                  isDisabled={recalculatingBracketPayouts}
-                >
-                  {!recalculatingBracketPayouts && (
-                    <Icon icon="lucide:refresh-cw" className="w-4 h-4" />
-                  )}
-                  Recalculate Payouts
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="tertiary"
-                onPress={addBracketRoundPayout}
-              >
-                <Icon icon="lucide:plus" className="w-4 h-4" />
-                Add Round
-              </Button>
-            </div>
-          </div>
-
-          {bracketRoundPayouts.length === 0 ? (
-            <p className="text-sm text-muted">
-              No bracket payouts configured yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {bracketRoundPayouts.map((payout, index) => (
-                <div
-                  key={`${payout.round}-${index}`}
-                  className="flex items-end gap-3"
-                >
-                  <TextField className="flex-1 min-w-0">
-                    <Label className="text-sm">
-                      Round {index + 1} Winner ($)
-                    </Label>
-                    <InputGroup>
-                      <InputGroup.Prefix>
-                        <span className="text-muted text-sm px-1">$</span>
-                      </InputGroup.Prefix>
-                      <InputGroup.Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={String(payout.amount)}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          updateBracketRoundPayoutAmount(
-                            index,
-                            Math.max(0, parseFloat(e.target.value) || 0),
-                          )
-                        }
-                      />
-                    </InputGroup>
-                  </TextField>
-
-                  {index === bracketRoundPayouts.length - 1 && (
-                    <TextField className="w-56 shrink-0">
-                      <Label className="text-sm">Final Runner-Up ($)</Label>
-                      <InputGroup>
-                        <InputGroup.Prefix>
-                          <span className="text-muted text-sm px-1">$</span>
-                        </InputGroup.Prefix>
-                        <InputGroup.Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={payout.runnerUpAmount?.toString() ?? ""}
-                          placeholder="Optional"
-                          onChange={(
-                            e: React.ChangeEvent<HTMLInputElement>,
-                          ) => {
-                            const rawValue = e.target.value.trim();
-                            updateFinalRunnerUpAmount(
-                              index,
-                              rawValue === ""
-                                ? undefined
-                                : Math.max(0, parseFloat(rawValue) || 0),
-                            );
-                          }}
-                        />
-                      </InputGroup>
-                    </TextField>
-                  )}
-
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    isIconOnly
-                    aria-label={`Remove payout for round ${payout.round}`}
-                    onPress={() => removeBracketRoundPayout(index)}
-                    className="shrink-0"
-                  >
-                    <Icon icon="lucide:trash-2" className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {errors.bracketRoundPayouts && (
-            <p className="text-xs text-danger">{errors.bracketRoundPayouts}</p>
-          )}
-        </Card.Content>
-      </Card>
       <Select
         value={tee}
         onChange={(val) => {

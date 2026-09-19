@@ -5,6 +5,7 @@ import {
   isAutomatedBracketWinnerGroup,
   isBracketRoundGroup,
   mergeBracketWinnerGroups,
+  normalizeBracketRoundPayouts,
 } from "@/utils/bracketPayouts";
 import type { TournamentBracket } from "@/types/bracket";
 import type { WinnerGroup } from "@/types/winner";
@@ -219,6 +220,18 @@ describe("buildBracketWinnerGroups", () => {
     ]);
 
     expect(groups).toEqual([]);
+  });
+
+  it("preserves zero-dollar opening rounds so later rounds do not get renumbered", () => {
+    expect(
+      normalizeBracketRoundPayouts([
+        { round: 1, amount: 0 },
+        { round: 2, amount: 100 },
+      ]),
+    ).toEqual([
+      { round: 1, amount: 0 },
+      { round: 2, amount: 100 },
+    ]);
   });
 });
 

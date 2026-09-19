@@ -856,8 +856,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               setMaxTeams={setMaxTeams}
               prizePool={prizePool}
               setPrizePool={setPrizePool}
-              bracketRoundPayouts={bracketRoundPayouts}
-              setBracketRoundPayouts={setBracketRoundPayouts}
               tee={tee}
               setTee={setTee}
               assignedTeeTimes={assignedTeeTimes}
@@ -877,8 +875,6 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               date={date}
               fetchingWeather={fetchingWeather}
               onFetchWeather={handleFetchWeather}
-              onRecalculateBracketPayouts={handleRecalculateBracketPayouts}
-              recalculatingBracketPayouts={recalculatingBracketPayouts}
               errors={errors}
             />
           </div>
@@ -891,6 +887,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
             players={players}
             prizePool={prizePool}
             completed={completed}
+            bracketRoundPayouts={bracketRoundPayouts}
+            setBracketRoundPayouts={setBracketRoundPayouts}
+            onRecalculateBracketPayouts={
+              tournamentId ? handleRecalculateBracketPayouts : undefined
+            }
+            recalculatingBracketPayouts={recalculatingBracketPayouts}
             registrations={registrations}
             automatedBracketWinnerGroupsCount={
               automatedBracketWinnerGroups.length
