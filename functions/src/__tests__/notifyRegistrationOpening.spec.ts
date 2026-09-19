@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildRegistrationOpeningNotificationId,
+  getAdminEmails,
   shouldSendRegistrationOpeningNotification,
 } from "../notifyRegistrationOpening";
 
@@ -89,5 +90,46 @@ describe("buildRegistrationOpeningNotificationId", () => {
     expect(
       buildRegistrationOpeningNotificationId("tournament-1", "user-1"),
     ).toBe("registration_opening_tournament-1_user-1");
+  });
+});
+
+describe("getAdminEmails", () => {
+  it("reads emails from admin docs and removes duplicates", async () => {
+    const userDocs = new Map<string, { email?: string }>([
+      ["admin-1", { email: "admin1@example.com" }],
+      ["admin-2", { email: "admin1@example.com" }],
+      ["admin-3", { email: "admin3@example.com" }],
+    ]);
+
+    const db = {
+      collection: (name: string) => {
+        if (name !== "admin") {
+          throw new Error(`Unexpected collection ${name}`);
+        }
+
+        return {
+          get: async () => ({
+            docs: [
+              { id: "admin-1", data: () => ({ isAdmin: true }) },
+              { id: "admin-2", data: () => ({ admin: "true" }) },
+              { id: "admin-3", data: () => ({ admin: true }) },
+              { id: "admin-4", data: () => ({ isAdmin: false }) },
+            ],
+          }),
+        };
+      },
+      doc: (path: string) => {
+        const uid = path.replace("users/", "");
+        return {
+          get: async () => ({
+            data: () => userDocs.get(uid),
+          }),
+        };
+      },
+    };
+
+    await expect(
+      getAdminEmails(db as unknown as Parameters<typeof getAdminEmails>[0]),
+    ).resolves.toEqual(["admin1@example.com", "admin3@example.com"]);
   });
 });

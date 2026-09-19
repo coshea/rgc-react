@@ -8,8 +8,10 @@ const schedulerState = vi.hoisted(() => {
 
 const firestoreState = vi.hoisted(() => {
   const get = vi.fn();
+  const adminGet = vi.fn();
   const registrationsGet = vi.fn();
   const stream = vi.fn();
+  const userGet = vi.fn();
   const batchSet = vi.fn();
   const batchCommit = vi.fn();
   const batch = vi.fn(() => ({
@@ -40,6 +42,10 @@ const firestoreState = vi.hoisted(() => {
         return { get: registrationsGet };
       }
 
+      if (name === "admin") {
+        return { get: adminGet };
+      }
+
       if (name === "users") {
         return { stream };
       }
@@ -50,9 +56,13 @@ const firestoreState = vi.hoisted(() => {
 
       throw new Error(`Unexpected collection: ${name}`);
     }),
+    doc: vi.fn((path: string) => ({
+      get: () => userGet(path),
+    })),
   };
 
   return {
+    adminGet,
     batch,
     batchCommit,
     batchSet,
@@ -62,12 +72,22 @@ const firestoreState = vi.hoisted(() => {
     registrationsGet,
     stream,
     tournamentsQuery,
+    userGet,
   };
 });
 
 const loggerState = vi.hoisted(() => ({
   error: vi.fn(),
   info: vi.fn(),
+  warn: vi.fn(),
+}));
+
+const resendState = vi.hoisted(() => ({
+  value: vi.fn(() => "test-resend-key"),
+}));
+
+const adminEmailState = vi.hoisted(() => ({
+  send: vi.fn(),
 }));
 
 vi.mock("firebase-functions/v2/scheduler", () => ({
@@ -89,6 +109,14 @@ vi.mock("firebase-admin/firestore", () => ({
 
 vi.mock("../logger", () => ({
   logger: loggerState,
+}));
+
+vi.mock("../resendConfig", () => ({
+  RESEND_API_KEY: resendState,
+}));
+
+vi.mock("../sendRegistrationOpeningEmails", () => ({
+  sendRegistrationOpeningAdminEmail: adminEmailState.send,
 }));
 
 function createTournamentDoc(
@@ -128,8 +156,12 @@ describe("notify_registration_opening handler", () => {
     vi.resetModules();
     schedulerState.handler = undefined;
     firestoreState.get.mockResolvedValue({ docs: [] });
+    firestoreState.adminGet.mockResolvedValue({ docs: [] });
     firestoreState.registrationsGet.mockResolvedValue({ docs: [] });
     firestoreState.stream.mockReturnValue(emptyUserStream());
+    firestoreState.userGet.mockResolvedValue({ data: () => undefined });
+    resendState.value.mockReturnValue("test-resend-key");
+    adminEmailState.send.mockResolvedValue(undefined);
   });
 
   it("continues processing tournaments after one tournament fails", async () => {
@@ -163,6 +195,7 @@ describe("notify_registration_opening handler", () => {
     expect(loggerState.info).toHaveBeenCalledWith(
       "notify_registration_opening: tournament processed",
       expect.objectContaining({
+        adminEmailCount: 0,
         tournamentId: "Healthy Tournament",
         recipientCount: 0,
       }),
@@ -170,6 +203,7 @@ describe("notify_registration_opening handler", () => {
     expect(loggerState.info).toHaveBeenCalledWith(
       "notify_registration_opening: run complete",
       expect.objectContaining({
+        adminEmailCount: 0,
         tournamentCount: 1,
         notificationCount: 0,
       }),
@@ -224,6 +258,34 @@ describe("notify_registration_opening handler", () => {
       expect.objectContaining({
         uid: "open-user",
         data: expect.objectContaining({ tournamentId }),
+      }),
+    );
+  });
+
+  it("sends a registration-opening email to admin recipients", async () => {
+    const tournamentId = "Member-Member";
+
+    firestoreState.get.mockResolvedValue({
+      docs: [createTournamentDoc(tournamentId, async () => undefined)],
+    });
+    firestoreState.adminGet.mockResolvedValue({
+      docs: [{ id: "admin-user", data: () => ({ isAdmin: true }) }],
+    });
+    firestoreState.userGet.mockResolvedValue({
+      data: () => ({ email: "admin@example.com" }),
+    });
+
+    await import("../notifyRegistrationOpening.js");
+
+    expect(schedulerState.handler).toBeTypeOf("function");
+    await schedulerState.handler?.();
+
+    expect(adminEmailState.send).toHaveBeenCalledWith(
+      "test-resend-key",
+      ["admin@example.com"],
+      expect.objectContaining({
+        tournamentTitle: tournamentId,
+        tournamentUrl: `https://ridgefieldgolfclub.org/tournaments/${tournamentId}`,
       }),
     );
   });

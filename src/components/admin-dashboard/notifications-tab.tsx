@@ -25,12 +25,14 @@ import {
   TextField,
   FieldError,
   Spinner,
+  Tooltip,
 } from "@heroui/react";
 import { parseDateTime, getLocalTimeZone } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
 import { Icon } from "@iconify/react";
 import { functions, db } from "@/config/firebase";
 import { addToast } from "@/providers/toast";
+import { useAuth } from "@/providers/AuthProvider";
 import type { User } from "@/api/users";
 import type { AppNotification, NotificationType } from "@/types/notification";
 import { NOTIFICATION_TYPE_META } from "@/types/notification";
@@ -164,6 +166,8 @@ function toDateTimeValue(date: Date): DateValue {
 }
 
 export function NotificationsTab() {
+  const { user } = useAuth();
+
   // ── Form state ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -383,6 +387,43 @@ export function NotificationsTab() {
       const message = err instanceof Error ? err.message : "Unknown error";
       addToast({
         title: "Failed to send notification",
+        description: message,
+        color: "danger",
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleSendRegistrationOpenPreview() {
+    if (!selectedTournamentId) {
+      addToast({
+        title: "Select a tournament",
+        description: "Choose a tournament before sending the test email.",
+        color: "warning",
+      });
+      return;
+    }
+
+    try {
+      const previewEmail = httpsCallable<
+        { tournamentId: string },
+        { success: boolean; recipientEmail: string }
+      >(functions, "send_registration_opening_preview_email");
+
+      setSending(true);
+      await previewEmail({ tournamentId: selectedTournamentId });
+      addToast({
+        title: "Test email sent",
+        description: user?.email
+          ? `A preview email was sent to ${user.email}.`
+          : "A preview email was sent to your account.",
+        color: "success",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      addToast({
+        title: "Failed to send test email",
         description: message,
         color: "danger",
       });
@@ -666,7 +707,21 @@ export function NotificationsTab() {
             </p>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-3">
+            <Tooltip closeDelay={0}>
+              <Button
+                variant="secondary"
+                onPress={handleSendRegistrationOpenPreview}
+                isDisabled={sending || !selectedTournamentId}
+              >
+                <Icon icon="lucide:mail-check" className="text-base" />
+                Send test registration email
+              </Button>
+              <Tooltip.Content placement="top">
+                Sends the registration-open email to your account only for
+                preview.
+              </Tooltip.Content>
+            </Tooltip>
             <Button
               onPress={handleSend}
               isDisabled={sending}
