@@ -354,6 +354,9 @@ describe("GroupedWinnersEditor - bracket round payouts", () => {
 
     expect(screen.getByText(/Champion total: \$50/i)).toBeInTheDocument();
     expect(screen.getByText(/Allocated: \$50/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Round 1 Winner \(\$ per player\)/i),
+    ).toBeInTheDocument();
   });
 });
 

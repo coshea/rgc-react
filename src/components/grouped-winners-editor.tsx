@@ -590,7 +590,7 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                   >
                     <TextField className="flex-1 min-w-0">
                       <Label className="text-sm">
-                        Round {index + 1} Winner ($)
+                        Round {index + 1} Winner ($ per player)
                       </Label>
                       <InputGroup>
                         <InputGroup.Prefix>
@@ -613,7 +613,9 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
 
                     {index === bracketRoundPayouts.length - 1 && (
                       <TextField className="w-56 shrink-0">
-                        <Label className="text-sm">Final Runner-Up ($)</Label>
+                        <Label className="text-sm">
+                          Final Runner-Up ($ per player)
+                        </Label>
                         <InputGroup>
                           <InputGroup.Prefix>
                             <span className="text-muted text-sm px-1">$</span>
