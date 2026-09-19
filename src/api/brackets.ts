@@ -98,7 +98,7 @@ async function syncTournamentBracketWinnerGroups(
     winnerGroups: stripUndefined(mergedWinnerGroups),
   };
 
-  if (options?.persistRoundPayouts) {
+  if (options?.persistRoundPayouts && options.persistRoundPayouts.length > 0) {
     payload.bracketRoundPayouts = stripUndefined(options.persistRoundPayouts);
   } else if (options && "persistRoundPayouts" in options) {
     payload.bracketRoundPayouts = deleteField();
