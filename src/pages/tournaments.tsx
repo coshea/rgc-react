@@ -149,6 +149,9 @@ const Tournaments: React.FC<TournamentsProps> = () => {
           detailsMarkdown: tpl.detailsMarkdown,
           players: tpl.players,
           prizePool: tpl.prizePool,
+          bracketRoundPayouts: tpl.bracketRoundPayouts?.map((payout) => ({
+            ...payout,
+          })),
           tee: tpl.tee,
           assignedTeeTimes: tpl.assignedTeeTimes,
         };
