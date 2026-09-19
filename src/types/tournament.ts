@@ -47,6 +47,8 @@ export interface Tournament {
    * Defaults to false (emails enabled) when omitted.
    */
   bracketNotificationsDisabled?: boolean;
+  /** Optional per-round payouts for bracket tournaments. Amounts are per competitor. */
+  bracketRoundPayouts?: BracketRoundPayout[];
 }
 
 export interface TournamentWeather {
@@ -62,4 +64,10 @@ export enum TournamentStatus {
   InProgress = "In Progress",
   Completed = "Completed",
   Canceled = "Canceled",
+}
+
+export interface BracketRoundPayout {
+  round: number;
+  amount: number;
+  runnerUpAmount?: number;
 }

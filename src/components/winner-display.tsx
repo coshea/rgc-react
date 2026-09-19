@@ -14,6 +14,7 @@ interface WinnerDisplayProps {
   competitors: Competitor[];
   score?: number | string;
   prize?: number;
+  showZeroPrize?: boolean;
   isChampion?: boolean;
 }
 
@@ -44,6 +45,7 @@ export function WinnerDisplay({
   competitors,
   score,
   prize,
+  showZeroPrize = false,
   isChampion = false,
 }: WinnerDisplayProps) {
   const { usersMap } = useUsersMap();
@@ -69,6 +71,7 @@ export function WinnerDisplay({
   }
 
   const formatPrize = (amount: number) => `$${amount.toLocaleString()}`;
+  const hasPrize = typeof prize === "number" && (showZeroPrize || prize > 0);
 
   return (
     <div
@@ -122,11 +125,11 @@ export function WinnerDisplay({
         >
           {nameContent}
         </p>
-        {(score !== undefined || prize) && (
+        {(score !== undefined || hasPrize) && (
           <p className="text-[11px] text-muted text-center">
             {score !== undefined ? `Score: ${score}` : ""}
-            {score !== undefined && prize ? " • " : ""}
-            {prize ? formatPrize(prize) : ""}
+            {score !== undefined && hasPrize ? " • " : ""}
+            {hasPrize ? formatPrize(prize) : ""}
           </p>
         )}
       </div>
@@ -141,11 +144,11 @@ export function WinnerDisplay({
         >
           {nameContent}
         </p>
-        {(score !== undefined || prize) && (
+        {(score !== undefined || hasPrize) && (
           <p className="text-[11px] text-muted">
             {score !== undefined ? `Score: ${score}` : ""}
-            {score !== undefined && prize ? " • " : ""}
-            {prize ? formatPrize(prize) : ""}
+            {score !== undefined && hasPrize ? " • " : ""}
+            {hasPrize ? formatPrize(prize) : ""}
           </p>
         )}
       </div>

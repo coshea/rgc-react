@@ -4,6 +4,7 @@ import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
+import { isBracketRoundGroup } from "@/utils/bracketPayouts";
 
 interface Props {
   year: number;
@@ -43,6 +44,9 @@ export function YearlyTeamWinners({ year }: Props) {
           (g.winners || []).forEach((w: any) => {
             const competitors = w.competitors || [];
             if (competitors.length <= 1) return;
+            const prizePerPlayer = Number(w.prizeAmount || 0);
+            if (prizePerPlayer <= 0) return;
+            const countsAsPlacement = !isBracketRoundGroup(g);
             const sorted = [...competitors].sort((a, b) =>
               a.userId.localeCompare(b.userId),
             );
@@ -62,13 +66,15 @@ export function YearlyTeamWinners({ year }: Props) {
               title: t.title,
               date: t.date instanceof Date ? t.date : new Date(t.date),
               place: w.place as number,
-              prizePerPlayer: (w.prizeAmount as number) || 0,
+              prizePerPlayer,
               score: w.score as string | undefined,
             };
             if (existing) {
               existing.tournaments.push(entry);
-              if (w.place === 1) existing.wins += 1;
-              if ((w.place as number) <= 3) existing.podiums += 1;
+              if (countsAsPlacement && w.place === 1) existing.wins += 1;
+              if (countsAsPlacement && (w.place as number) <= 3) {
+                existing.podiums += 1;
+              }
               existing.totalPerPlayer += (w.prizeAmount as number) || 0;
             } else {
               const names = sorted.map((c) => c.displayName || c.userId);
@@ -77,9 +83,9 @@ export function YearlyTeamWinners({ year }: Props) {
                 userIds,
                 displayNames: names,
                 tournaments: [entry],
-                wins: w.place === 1 ? 1 : 0,
-                podiums: (w.place as number) <= 3 ? 1 : 0,
-                totalPerPlayer: (w.prizeAmount as number) || 0,
+                wins: countsAsPlacement && w.place === 1 ? 1 : 0,
+                podiums: countsAsPlacement && (w.place as number) <= 3 ? 1 : 0,
+                totalPerPlayer: prizePerPlayer,
               });
             }
           });

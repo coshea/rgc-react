@@ -2,8 +2,8 @@
 // Handles background push notifications when the app is not in focus.
 // Uses the Firebase compat SDK because service workers cannot use ES module imports.
 // The version should broadly match the firebase npm package installed in the app.
-const APP_SHELL_CACHE = "rgc-app-shell-v1";
-const STATIC_ASSET_CACHE = "rgc-static-v1";
+const APP_SHELL_CACHE = "rgc-app-shell-v2";
+const STATIC_ASSET_CACHE = "rgc-static-v2";
 const BADGE_CACHE = "rgc-badge-v1";
 const BADGE_COUNT_URL = "/__badge_count__";
 const APP_SHELL_URLS = [
@@ -20,9 +20,7 @@ function isSameOrigin(url) {
 }
 
 function isCacheableAssetRequest(request) {
-  return ["font", "image", "manifest", "script", "style"].includes(
-    request.destination,
-  );
+  return ["font", "image", "manifest"].includes(request.destination);
 }
 
 function getBadgeCountRequest() {

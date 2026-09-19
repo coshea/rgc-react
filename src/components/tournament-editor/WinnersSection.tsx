@@ -14,6 +14,7 @@ interface WinnersSectionProps {
   prizePool: number;
   completed: boolean;
   registrations: Registration[];
+  automatedBracketWinnerGroupsCount?: number;
   errors: Record<string, string>;
 }
 
@@ -26,6 +27,7 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
   prizePool,
   completed,
   registrations,
+  automatedBracketWinnerGroupsCount = 0,
   errors,
 }) => {
   const show =
@@ -40,6 +42,12 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
       <Separator className="my-4" />
       <div className="grid grid-cols-1 gap-6">
         <div>
+          {automatedBracketWinnerGroupsCount > 0 && (
+            <p className="text-xs text-muted mb-3">
+              Bracket standings and payouts are generated automatically from
+              saved match results and are not edited here.
+            </p>
+          )}
           <GroupedWinnersEditor
             groups={winnerGroups}
             onChange={setWinnerGroups}

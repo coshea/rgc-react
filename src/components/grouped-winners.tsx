@@ -1,19 +1,23 @@
 import { Icon } from "@iconify/react";
 import type { WinnerGroup, WinnerPlace } from "@/types/winner";
+import { isAutomatedBracketWinnerGroup } from "@/utils/bracketPayouts";
 import { sortGroups, sortPlaces } from "@/utils/winners";
 import { WinnerDisplay } from "@/components/winner-display";
 
 function PlaceRow({
   place,
   groupType,
+  showZeroPrize,
 }: {
   place: WinnerPlace;
   displayPlace: number;
   groupType: string;
+  showZeroPrize: boolean;
 }) {
   const isChampion = place.place === 1 && groupType === "overall";
   const prize =
-    typeof place.prizeAmount === "number" && place.prizeAmount > 0
+    typeof place.prizeAmount === "number" &&
+    (showZeroPrize || place.prizeAmount > 0)
       ? place.prizeAmount
       : undefined;
 
@@ -23,6 +27,7 @@ function PlaceRow({
       competitors={place.competitors || []}
       score={place.score}
       prize={prize}
+      showZeroPrize={showZeroPrize}
       isChampion={isChampion}
     />
   );
@@ -31,12 +36,12 @@ function PlaceRow({
 export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
   const sorted = sortGroups(groups);
   if (!sorted.length)
-    return (
-      <p className="text-sm text-muted">No winner data available.</p>
-    );
+    return <p className="text-sm text-muted">No winner data available.</p>;
 
   const getGroupIcon = (group: WinnerGroup) => {
     switch (group.type) {
+      case "bracketRound":
+        return { icon: "lucide:banknote-arrow-up", colorClass: "text-success" };
       case "closestToPin":
         return { icon: "lucide:target", colorClass: "text-accent" };
       case "day":
@@ -52,6 +57,7 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
     <div className="space-y-5">
       {sorted.map((g) => {
         const groupIcon = getGroupIcon(g);
+        const showZeroPrize = isAutomatedBracketWinnerGroup(g);
         return (
           <div key={g.id} className="space-y-2">
             <h4 className="text-base font-semibold flex items-center gap-2">
@@ -71,6 +77,7 @@ export default function GroupedWinners({ groups }: { groups: WinnerGroup[] }) {
                       place={p}
                       displayPlace={p.place}
                       groupType={g.type}
+                      showZeroPrize={showZeroPrize}
                     />
                   ));
                 })()}

@@ -20,6 +20,10 @@ import {
   ListBox,
   Spinner,
   SearchField,
+  TextArea,
+  TextField,
+  Label,
+  FieldError,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import {
@@ -56,6 +60,16 @@ import {
 } from "@/utils/bracketGenerator";
 import { addToast } from "@/providers/toast";
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
+
+interface SendBracketMoneyMatrixEmailPayload {
+  tournamentId: string;
+  to: string[];
+}
+
+interface SendBracketMoneyMatrixEmailResult {
+  success: boolean;
+  count: number;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -155,6 +169,21 @@ function bracketTeamSearchText(team: BracketTeam | undefined): string {
   return [team.name, ...(team.memberNames ?? []), ...team.memberIds]
     .join(" ")
     .toLowerCase();
+}
+
+function parseRecipientEmails(rawValue: string): string[] {
+  const seen = new Set<string>();
+
+  return rawValue
+    .split(/[\s,;]+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => {
+      if (!entry) return false;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) return false;
+      if (seen.has(entry)) return false;
+      seen.add(entry);
+      return true;
+    });
 }
 
 // ── SortableTeamRow ───────────────────────────────────────────────────────────
@@ -349,6 +378,10 @@ export function BracketEditor({
   );
   const [resultsSearch, setResultsSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showEmailMatrixModal, setShowEmailMatrixModal] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState("");
+  const [emailMatrixError, setEmailMatrixError] = useState("");
+  const [sendingEmailMatrix, setSendingEmailMatrix] = useState(false);
 
   // Reset pending selections whenever the saved bracket changes
   useEffect(() => {
@@ -648,6 +681,49 @@ export function BracketEditor({
       setSaving(false);
     }
   }, [tournamentId, bracket, pendingWinners]);
+
+  const handleSendMoneyMatrixEmail = useCallback(async () => {
+    const recipients = parseRecipientEmails(emailRecipients);
+    if (recipients.length === 0) {
+      setEmailMatrixError("Enter at least one valid email address.");
+      return;
+    }
+
+    setSendingEmailMatrix(true);
+    setEmailMatrixError("");
+    try {
+      const [{ httpsCallable }, { functions }] = await Promise.all([
+        import("firebase/functions"),
+        import("@/config/firebase"),
+      ]);
+
+      const sendEmail = httpsCallable<
+        SendBracketMoneyMatrixEmailPayload,
+        SendBracketMoneyMatrixEmailResult
+      >(functions, "send_bracket_money_matrix_email");
+
+      const result = await sendEmail({ tournamentId, to: recipients });
+
+      addToast({
+        title: "Payout matrix emailed",
+        description:
+          result.data.count === 1
+            ? "HTML winners matrix sent to 1 recipient."
+            : `HTML winners matrix sent to ${result.data.count} recipients.`,
+        color: "success",
+      });
+      setShowEmailMatrixModal(false);
+      setEmailRecipients("");
+    } catch (err: unknown) {
+      setEmailMatrixError(
+        err instanceof Error
+          ? err.message
+          : "Failed to send payout matrix email.",
+      );
+    } finally {
+      setSendingEmailMatrix(false);
+    }
+  }, [emailRecipients, tournamentId]);
 
   // ── Delete / regenerate ───────────────────────────────────────────────────────
 
@@ -1138,14 +1214,32 @@ export function BracketEditor({
                   </SearchField.Group>
                 </SearchField>
               </div>
-              <Button
-                size="sm"
-                onPress={handleSaveResults}
-                isDisabled={Object.keys(pendingWinners).length === 0}
-              >
-                {!saving && <Icon icon="lucide:save" className="w-4 h-4" />}
-                Save Results
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  onPress={() => {
+                    setShowEmailMatrixModal(true);
+                    setEmailMatrixError("");
+                  }}
+                  isDisabled={
+                    !bracket.matches.some((match) => Boolean(match.winnerId))
+                  }
+                >
+                  <Icon icon="lucide:mail" className="w-4 h-4" />
+                  Email Payout Matrix
+                </Button>
+                <Button
+                  size="sm"
+                  onPress={handleSaveResults}
+                  isDisabled={
+                    Object.keys(pendingWinners).length === 0 || saving
+                  }
+                >
+                  {!saving && <Icon icon="lucide:save" className="w-4 h-4" />}
+                  Save Results
+                </Button>
+              </div>
             </Card.Header>
             <Card.Content className="space-y-5 pb-4">
               {(() => {
@@ -1753,6 +1847,57 @@ export function BracketEditor({
               </Button>
               <Button variant="danger" onPress={handleDelete}>
                 Delete Bracket
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <Modal.Backdrop
+        isOpen={showEmailMatrixModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowEmailMatrixModal(false);
+            setEmailMatrixError("");
+          }
+        }}
+      >
+        <Modal.Container size="md">
+          <Modal.Dialog>
+            <Modal.Header>Email Winners Matrix</Modal.Header>
+            <Modal.Body>
+              <div className="space-y-4">
+                <p className="text-sm text-muted">
+                  Sends the current winners and payout matrix as an HTML table.
+                </p>
+                <TextField isInvalid={Boolean(emailMatrixError)}>
+                  <Label>Recipient Emails</Label>
+                  <TextArea
+                    value={emailRecipients}
+                    onChange={(e) => setEmailRecipients(e.target.value)}
+                    placeholder="chair@example.com, treasurer@example.com"
+                    rows={4}
+                  />
+                  <FieldError>{emailMatrixError}</FieldError>
+                </TextField>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="tertiary"
+                onPress={() => setShowEmailMatrixModal(false)}
+                isDisabled={sendingEmailMatrix}
+              >
+                Cancel
+              </Button>
+              <Button
+                onPress={handleSendMoneyMatrixEmail}
+                isDisabled={sendingEmailMatrix}
+              >
+                {!sendingEmailMatrix && (
+                  <Icon icon="lucide:send" className="w-4 h-4" />
+                )}
+                Send Email
               </Button>
             </Modal.Footer>
           </Modal.Dialog>
