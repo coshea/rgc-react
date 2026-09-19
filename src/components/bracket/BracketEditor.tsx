@@ -715,9 +715,14 @@ export function BracketEditor({
       setShowEmailMatrixModal(false);
       setEmailRecipients("");
     } catch (err: unknown) {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code?: unknown }).code)
+          : undefined;
+
       setEmailMatrixError(
-        err instanceof Error
-          ? err.message
+        code?.includes("permission-denied")
+          ? "You do not have permission to perform this action."
           : "Failed to send payout matrix email.",
       );
     } finally {
