@@ -420,13 +420,26 @@ export function NotificationsTab() {
           : "A preview email was sent to your account.",
         color: "success",
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      addToast({
-        title: "Failed to send test email",
-        description: message,
-        color: "danger",
-      });
+    } catch (err: unknown) {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code?: unknown }).code)
+          : undefined;
+
+      if (code === "permission-denied") {
+        addToast({
+          title: "Access Denied",
+          description: "You do not have permission to perform this action.",
+          color: "danger",
+        });
+      } else {
+        addToast({
+          title: "Failed to send test email",
+          description: "Please try again.",
+          color: "danger",
+        });
+      }
+    }
     } finally {
       setSending(false);
     }
