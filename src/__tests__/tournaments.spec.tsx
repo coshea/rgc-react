@@ -1,3 +1,4 @@
+import * as React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -93,7 +94,11 @@ vi.mock("@heroui/react", async (orig) => {
     onChange?: (value: string) => void;
   } | null>(null);
 
-  function MockButton({ children, onPress, ...props }: any) {
+  type MockButtonProps = React.ComponentPropsWithoutRef<"button"> & {
+    onPress?: () => void;
+  };
+
+  function MockButton({ children, onPress, ...props }: MockButtonProps) {
     return (
       <button type="button" onClick={() => onPress?.()} {...props}>
         {children}
@@ -101,13 +106,30 @@ vi.mock("@heroui/react", async (orig) => {
     );
   }
 
-  function MockModalBackdrop({ children, isOpen }: any) {
+  type MockModalBackdropProps = {
+    children?: React.ReactNode;
+    isOpen?: boolean;
+  };
+
+  function MockModalBackdrop({ children, isOpen }: MockModalBackdropProps) {
     if (!isOpen) return null;
     return <div>{children}</div>;
   }
 
-  function MockSelect({ children, onChange }: any) {
-    const [isOpen, setIsOpen] = ReactModule.useState(false);
+  type MockSelectProps = {
+    children?: React.ReactNode;
+    onChange?: (value: string | null) => void;
+  };
+
+  type MockSelectComponent = ((props: MockSelectProps) => React.JSX.Element) & {
+    Trigger: typeof MockSelectTrigger;
+    Value: typeof MockSelectValue;
+    Indicator: typeof MockSelectIndicator;
+    Popover: typeof MockSelectPopover;
+  };
+
+  function MockSelect({ children, onChange }: MockSelectProps) {
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
       <SelectContext.Provider value={{ onChange, isOpen, setIsOpen }}>
         <div>{children}</div>
@@ -115,8 +137,8 @@ vi.mock("@heroui/react", async (orig) => {
     );
   }
 
-  function MockSelectTrigger({ children }: any) {
-    const ctx = ReactModule.useContext(SelectContext);
+  function MockSelectTrigger({ children }: { children?: React.ReactNode }) {
+    const ctx = React.useContext(SelectContext);
     return (
       <button
         type="button"
@@ -136,23 +158,42 @@ vi.mock("@heroui/react", async (orig) => {
     return null;
   }
 
-  function MockSelectPopover({ children }: any) {
-    const ctx = ReactModule.useContext(SelectContext);
+  function MockSelectPopover({ children }: { children?: React.ReactNode }) {
+    const ctx = React.useContext(SelectContext);
     if (!ctx?.isOpen) return null;
     return <div role="listbox">{children}</div>;
   }
 
-  (MockSelect as any).Trigger = MockSelectTrigger;
-  (MockSelect as any).Value = MockSelectValue;
-  (MockSelect as any).Indicator = MockSelectIndicator;
-  (MockSelect as any).Popover = MockSelectPopover;
+  const MockSelectWithStatics = Object.assign(MockSelect, {
+    Trigger: MockSelectTrigger,
+    Value: MockSelectValue,
+    Indicator: MockSelectIndicator,
+    Popover: MockSelectPopover,
+  }) as MockSelectComponent;
 
-  function MockListBox({ children }: any) {
+  type MockListBoxProps = {
+    children?: React.ReactNode;
+  };
+
+  type MockListBoxComponent = ((
+    props: MockListBoxProps,
+  ) => React.JSX.Element) & {
+    Item: typeof MockListBoxItem;
+    ItemIndicator: typeof MockListBoxItemIndicator;
+  };
+
+  function MockListBox({ children }: MockListBoxProps) {
     return <div>{children}</div>;
   }
 
-  function MockListBoxItem({ children, id }: any) {
-    const ctx = ReactModule.useContext(SelectContext);
+  function MockListBoxItem({
+    children,
+    id,
+  }: {
+    children?: React.ReactNode;
+    id?: string | number;
+  }) {
+    const ctx = React.useContext(SelectContext);
     return (
       <button
         type="button"
@@ -171,10 +212,27 @@ vi.mock("@heroui/react", async (orig) => {
     return null;
   }
 
-  (MockListBox as any).Item = MockListBoxItem;
-  (MockListBox as any).ItemIndicator = MockListBoxItemIndicator;
+  const MockListBoxWithStatics = Object.assign(MockListBox, {
+    Item: MockListBoxItem,
+    ItemIndicator: MockListBoxItemIndicator,
+  }) as MockListBoxComponent;
 
-  function MockRadioGroup({ children, value, onChange }: any) {
+  type MockRadioGroupProps = {
+    children?: React.ReactNode;
+    value?: string;
+    onChange?: (value: string) => void;
+  };
+
+  type MockRadioComponent = ((props: {
+    children?: React.ReactNode;
+    value?: string;
+  }) => React.JSX.Element) & {
+    Control: typeof MockRadioControl;
+    Indicator: typeof MockRadioIndicator;
+    Content: typeof MockRadioContent;
+  };
+
+  function MockRadioGroup({ children, value, onChange }: MockRadioGroupProps) {
     return (
       <RadioGroupContext.Provider value={{ value, onChange }}>
         <div>{children}</div>
@@ -182,21 +240,27 @@ vi.mock("@heroui/react", async (orig) => {
     );
   }
 
-  function MockRadio({ children, value }: any) {
-    const ctx = ReactModule.useContext(RadioGroupContext);
+  function MockRadio({
+    children,
+    value,
+  }: {
+    children?: React.ReactNode;
+    value?: string;
+  }) {
+    const ctx = React.useContext(RadioGroupContext);
     return (
       <label>
         <input
           type="radio"
           checked={ctx?.value === value}
-          onChange={() => ctx?.onChange?.(value)}
+          onChange={() => ctx?.onChange?.(value ?? "")}
         />
         {children}
       </label>
     );
   }
 
-  function MockRadioControl({ children }: any) {
+  function MockRadioControl({ children }: { children?: React.ReactNode }) {
     return <>{children}</>;
   }
 
@@ -204,36 +268,48 @@ vi.mock("@heroui/react", async (orig) => {
     return null;
   }
 
-  function MockRadioContent({ children }: any) {
+  function MockRadioContent({ children }: { children?: React.ReactNode }) {
     return <span>{children}</span>;
   }
 
-  (MockRadio as any).Control = MockRadioControl;
-  (MockRadio as any).Indicator = MockRadioIndicator;
-  (MockRadio as any).Content = MockRadioContent;
+  const MockRadioWithStatics = Object.assign(MockRadio, {
+    Control: MockRadioControl,
+    Indicator: MockRadioIndicator,
+    Content: MockRadioContent,
+  }) as MockRadioComponent;
 
-  function MockLabel({ children }: any) {
+  function MockLabel({ children }: { children?: React.ReactNode }) {
     return <span>{children}</span>;
   }
 
   const MockModal = {
     Backdrop: MockModalBackdrop,
-    Container: ({ children }: any) => <div>{children}</div>,
-    Dialog: ({ children }: any) => <div>{children}</div>,
-    Header: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    Body: ({ children }: any) => <div>{children}</div>,
-    Footer: ({ children }: any) => <div>{children}</div>,
+    Container: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
+    Dialog: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
+    Header: ({ children, ...props }: React.ComponentPropsWithoutRef<"div">) => (
+      <div {...props}>{children}</div>
+    ),
+    Body: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
+    Footer: ({ children }: { children?: React.ReactNode }) => (
+      <div>{children}</div>
+    ),
   };
 
   return {
     ...mod,
     Button: MockButton,
     Label: MockLabel,
-    ListBox: MockListBox,
+    ListBox: MockListBoxWithStatics,
     Modal: MockModal,
-    Radio: MockRadio,
+    Radio: MockRadioWithStatics,
     RadioGroup: MockRadioGroup,
-    Select: MockSelect,
+    Select: MockSelectWithStatics,
   };
 });
 

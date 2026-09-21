@@ -132,7 +132,7 @@ export function buildBracketWinnerGroups(
     });
   }
 
-  normalizedPayouts.forEach((payout) => {
+  for (const payout of normalizedPayouts) {
     const roundMatches = bracket.matches.filter(
       (match) => match.round === payout.round,
     );
@@ -156,11 +156,29 @@ export function buildBracketWinnerGroups(
         const loserStanding = standings.get(loserId);
         if (loserStanding) {
           loserStanding.alive = false;
-          loserStanding.eliminatedRound = match.round;
+          loserStanding.eliminatedRound = Math.min(
+            loserStanding.eliminatedRound ?? match.round,
+            match.round,
+          );
         }
       }
     });
-  });
+  }
+
+  for (const match of bracket.matches) {
+    if (!match.winnerId || !match.team1Id || !match.team2Id) continue;
+
+    const loserId =
+      match.team1Id !== match.winnerId ? match.team1Id : match.team2Id;
+    const loserStanding = standings.get(loserId);
+    if (!loserStanding) continue;
+
+    loserStanding.alive = false;
+    loserStanding.eliminatedRound = Math.min(
+      loserStanding.eliminatedRound ?? match.round,
+      match.round,
+    );
+  }
 
   const finalMatch = bracket.matches.find(
     (match) => match.nextMatchId === null,

@@ -209,6 +209,104 @@ describe("buildBracketWinnerGroups", () => {
     expect(group.winners.map((winner) => winner.place)).toEqual([1, 2, 3, 3]);
   });
 
+  it("marks a team eliminated even when the loss happens in a round with no payout entry", () => {
+    const expandedBracket: TournamentBracket = {
+      tournamentId: "t3",
+      format: "single_elimination",
+      size: 8,
+      teams: [
+        { id: "t1", name: "T1", memberIds: ["u1"] },
+        { id: "t2", name: "T2", memberIds: ["u2"] },
+        { id: "t3", name: "T3", memberIds: ["u3"] },
+        { id: "t4", name: "T4", memberIds: ["u4"] },
+        { id: "t5", name: "T5", memberIds: ["u5"] },
+        { id: "t6", name: "T6", memberIds: ["u6"] },
+        { id: "t7", name: "T7", memberIds: ["u7"] },
+        { id: "t8", name: "T8", memberIds: ["u8"] },
+      ],
+      matches: [
+        {
+          id: "m1",
+          round: 1,
+          position: 0,
+          nextMatchId: "m5",
+          team1Id: "t1",
+          team2Id: "t2",
+          winnerId: "t1",
+        },
+        {
+          id: "m2",
+          round: 1,
+          position: 1,
+          nextMatchId: "m5",
+          team1Id: "t3",
+          team2Id: "t4",
+          winnerId: "t3",
+        },
+        {
+          id: "m3",
+          round: 1,
+          position: 2,
+          nextMatchId: "m6",
+          team1Id: "t5",
+          team2Id: "t6",
+          winnerId: "t5",
+        },
+        {
+          id: "m4",
+          round: 1,
+          position: 3,
+          nextMatchId: "m6",
+          team1Id: "t7",
+          team2Id: "t8",
+          winnerId: "t7",
+        },
+        {
+          id: "m5",
+          round: 2,
+          position: 0,
+          nextMatchId: "m7",
+          team1Id: "t1",
+          team2Id: "t3",
+          winnerId: "t3",
+        },
+        {
+          id: "m6",
+          round: 2,
+          position: 1,
+          nextMatchId: "m7",
+          team1Id: "t5",
+          team2Id: "t7",
+          winnerId: "t7",
+        },
+        {
+          id: "m7",
+          round: 3,
+          position: 0,
+          nextMatchId: null,
+          team1Id: "t3",
+          team2Id: "t7",
+          winnerId: "t7",
+        },
+      ],
+    };
+
+    const groups = buildBracketWinnerGroups(expandedBracket, [
+      { round: 1, amount: 25 },
+      { round: 3, amount: 100, runnerUpAmount: 40 },
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.winners.map((winner) => winner.place)).toEqual([
+      1, 2, 3, 3,
+    ]);
+    expect(
+      groups[0]?.winners.find(
+        (winner) => winner.competitors[0]?.userId === "u1",
+      )?.place,
+    ).toBe(3);
+  });
+
   it("returns no automated winners when no paid result has been recorded yet", () => {
     const pendingBracket: TournamentBracket = {
       ...BRACKET,

@@ -4,6 +4,7 @@ import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
 import { useAuth } from "@/providers/AuthProvider";
 import { Icon } from "@iconify/react";
 import { SearchInput } from "@/components/search-input";
+import type { WinnerGroup, WinnerPlace } from "@/types/winner";
 import { isBracketRoundGroup } from "@/utils/bracketPayouts";
 
 interface Props {
@@ -40,11 +41,11 @@ export function YearlyTeamWinners({ year }: Props) {
     tournaments.forEach((t) => {
       if (t.winnerGroups && t.winnerGroups.length > 0) {
         // Prefer grouped winners model. Treat any place results with team size > 1 as a team entry
-        t.winnerGroups.forEach((g: any) => {
-          (g.winners || []).forEach((w: any) => {
+        t.winnerGroups.forEach((g: WinnerGroup) => {
+          (g.winners || []).forEach((w: WinnerPlace) => {
             const competitors = w.competitors || [];
             if (competitors.length <= 1) return;
-            const prizePerPlayer = Number(w.prizeAmount || 0);
+            const prizePerPlayer = Number(w.prizeAmount ?? 0);
             if (prizePerPlayer <= 0) return;
             const countsAsPlacement = !isBracketRoundGroup(g);
             const sorted = [...competitors].sort((a, b) =>
@@ -53,7 +54,7 @@ export function YearlyTeamWinners({ year }: Props) {
             const userIds = sorted.map((c) => c.userId);
             const key = userIds.join("|");
             const existing = map.get(key);
-            const groupKey = g?.id || g?.label || String(g?.order ?? "group");
+            const groupKey = g.id || g.label || String(g.order ?? "group");
             const entryKey = [
               t.firestoreId || "unknown",
               groupKey,
@@ -65,14 +66,14 @@ export function YearlyTeamWinners({ year }: Props) {
               entryKey,
               title: t.title,
               date: t.date instanceof Date ? t.date : new Date(t.date),
-              place: w.place as number,
+              place: w.place,
               prizePerPlayer,
-              score: w.score as string | undefined,
+              score: w.score,
             };
             if (existing) {
               existing.tournaments.push(entry);
               if (countsAsPlacement && w.place === 1) existing.wins += 1;
-              if (countsAsPlacement && (w.place as number) <= 3) {
+              if (countsAsPlacement && w.place <= 3) {
                 existing.podiums += 1;
               }
               existing.totalPerPlayer += prizePerPlayer;
@@ -84,7 +85,7 @@ export function YearlyTeamWinners({ year }: Props) {
                 displayNames: names,
                 tournaments: [entry],
                 wins: countsAsPlacement && w.place === 1 ? 1 : 0,
-                podiums: countsAsPlacement && (w.place as number) <= 3 ? 1 : 0,
+                podiums: countsAsPlacement && w.place <= 3 ? 1 : 0,
                 totalPerPlayer: prizePerPlayer,
               });
             }
@@ -197,7 +198,7 @@ export function YearlyTeamWinners({ year }: Props) {
               </div>
               <div className="flex flex-wrap gap-1">
                 {team.tournaments.map((t) => {
-                  const color: any =
+                  const color: "success" | "warning" | "danger" | "default" =
                     t.place === 1
                       ? "success"
                       : t.place === 2
