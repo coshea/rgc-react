@@ -181,8 +181,7 @@ async function callResendApi(
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Resend API error ${response.status}: ${text}`);
+    throw new Error(`Resend API error ${response.status}`);
   }
 }
 
