@@ -319,20 +319,11 @@ export const send_registration_opening_preview_email = onCall(
       throw new HttpsError("invalid-argument", "tournamentId is required.");
     }
 
-    const isClaimAdmin = request.auth.token.admin === true;
-    let isDocAdmin = false;
-    if (!isClaimAdmin) {
-      const adminDoc = await admin.firestore().doc(`admin/${callerUid}`).get();
-      if (adminDoc.exists) {
-        const data = adminDoc.data() as AdminFlags | undefined;
-        isDocAdmin =
-          data?.isAdmin === true ||
-          data?.admin === true ||
-          data?.admin === "true";
-      }
-    }
+    const adminDoc = await admin.firestore().doc(`admin/${callerUid}`).get();
+    const isDocAdmin =
+      adminDoc.exists && isAdminFlags(adminDoc.data() as AdminFlags | undefined);
 
-    if (!isClaimAdmin && !isDocAdmin) {
+    if (!isDocAdmin) {
       throw new HttpsError("permission-denied", "Admin access required.");
     }
 
