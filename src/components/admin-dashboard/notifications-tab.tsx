@@ -439,7 +439,6 @@ export function NotificationsTab() {
           color: "danger",
         });
       }
-    }
     } finally {
       setSending(false);
     }
