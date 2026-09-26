@@ -17,6 +17,7 @@ import { BlogImagePicker } from "@/components/blog-image-picker";
 import { useAuth } from "@/providers/AuthProvider";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { resolveCurrentUserImageURL } from "@/utils/currentUserProfile";
 import {
   BlogPost,
   BlogPostStatus,
@@ -167,7 +168,8 @@ export const BlogEditorPage: React.FC = () => {
           user.displayName ||
           user.email ||
           "Anonymous",
-        authorPhotoURL: userProfile?.photoURL ?? user.photoURL ?? undefined,
+        authorPhotoURL:
+          resolveCurrentUserImageURL(user, userProfile) ?? undefined,
         status: publish ? BlogPostStatus.Published : formData.status,
         publishedAt: publish ? new Date() : formData.publishedAt,
         ...(selectedTournamentId && { tournamentId: selectedTournamentId }),

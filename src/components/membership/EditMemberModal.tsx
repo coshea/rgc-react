@@ -34,7 +34,6 @@ export function EditMemberModal({
   const currentYear = new Date().getFullYear();
   const qc = useQueryClient();
   const [fieldErrors, setFieldErrors] = useState<{
-    birthYear?: string;
     tShirtSize?: string;
   }>({});
   const [loadingPayment, setLoadingPayment] = useState(false);
@@ -113,33 +112,18 @@ export function EditMemberModal({
 
   async function handleSave() {
     if (saving) return; // guard double submit
-    const birthYearRaw = String(form.birthYear ?? "").trim();
     const tShirtSize = String(form.tShirtSize ?? "").trim();
-    const nextFieldErrors: { birthYear?: string; tShirtSize?: string } = {};
+    const nextFieldErrors: { tShirtSize?: string } = {};
 
-    if (!birthYearRaw) {
-      nextFieldErrors.birthYear = "Birth year is required.";
-    } else {
-      const birthYear = Number(birthYearRaw);
-      if (!/^\d{4}$/.test(birthYearRaw) || Number.isNaN(birthYear)) {
-        nextFieldErrors.birthYear = "Birth year must be a 4-digit year.";
-      } else if (birthYear < 1900 || birthYear > currentYear) {
-        nextFieldErrors.birthYear = `Birth year must be between 1900 and ${currentYear}.`;
-      }
-    }
-
-    if (!tShirtSize) {
-      nextFieldErrors.tShirtSize = "T-shirt size is required.";
-    } else if (!T_SHIRT_SIZES.includes(tShirtSize as TShirtSize)) {
+    if (tShirtSize && !T_SHIRT_SIZES.includes(tShirtSize as TShirtSize)) {
       nextFieldErrors.tShirtSize = "Please select a valid T-shirt size.";
     }
 
-    if (nextFieldErrors.birthYear || nextFieldErrors.tShirtSize) {
+    if (nextFieldErrors.tShirtSize) {
       setFieldErrors(nextFieldErrors);
       addToast({
-        title: "Missing profile details",
-        description:
-          "Birth year and T-shirt size are required before saving a member.",
+        title: "Invalid profile details",
+        description: "Please select a valid T-shirt size.",
         color: "warning",
       });
       return;
@@ -309,73 +293,44 @@ export function EditMemberModal({
               }
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 items-start">
-            <div className="w-full space-y-1">
-              <Input
-                placeholder="Birth Year"
-                value={String(form.birthYear ?? "")}
-                disabled={saving}
-                type="text"
-                inputMode="numeric"
-                maxLength={4}
-                onChange={(e: any) => {
-                  const value = String(e.target.value)
-                    .replace(/\D/g, "")
-                    .slice(0, 4);
-                  onChange({ ...form, birthYear: value });
-                  if (fieldErrors.birthYear) {
-                    setFieldErrors((prev) => ({
-                      ...prev,
-                      birthYear: undefined,
-                    }));
-                  }
-                }}
-              />
-              {fieldErrors.birthYear && (
-                <p className="text-[11px] text-danger">
-                  {fieldErrors.birthYear}
-                </p>
-              )}
-            </div>
-            <div className="w-full space-y-1">
-              <Select
-                aria-label="T-Shirt Size"
-                placeholder="T-Shirt Size"
-                value={String(form.tShirtSize ?? "") || undefined}
-                isDisabled={saving}
-                isInvalid={!!fieldErrors.tShirtSize}
-                onChange={(key) => {
-                  onChange({ ...form, tShirtSize: key ? String(key) : "" });
-                  if (fieldErrors.tShirtSize) {
-                    setFieldErrors((prev) => ({
-                      ...prev,
-                      tShirtSize: undefined,
-                    }));
-                  }
-                }}
-                className="w-full"
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {T_SHIRT_SIZES.map((size) => (
-                      <ListBox.Item key={size} id={size} textValue={size}>
-                        {size}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              {fieldErrors.tShirtSize && (
-                <p className="text-[11px] text-danger">
-                  {fieldErrors.tShirtSize}
-                </p>
-              )}
-            </div>
+          <div className="space-y-1">
+            <Select
+              aria-label="T-Shirt Size"
+              placeholder="T-Shirt Size"
+              value={String(form.tShirtSize ?? "") || undefined}
+              isDisabled={saving}
+              isInvalid={!!fieldErrors.tShirtSize}
+              onChange={(key) => {
+                onChange({ ...form, tShirtSize: key ? String(key) : "" });
+                if (fieldErrors.tShirtSize) {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    tShirtSize: undefined,
+                  }));
+                }
+              }}
+              className="w-full"
+            >
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {T_SHIRT_SIZES.map((size) => (
+                    <ListBox.Item key={size} id={size} textValue={size}>
+                      {size}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            {fieldErrors.tShirtSize && (
+              <p className="text-[11px] text-danger">
+                {fieldErrors.tShirtSize}
+              </p>
+            )}
           </div>
           <div className="pt-2 border-t space-y-3">
             <label className="flex items-center gap-2 text-sm">

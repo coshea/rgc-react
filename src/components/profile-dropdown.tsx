@@ -7,15 +7,19 @@ import {
   useAdminFlag,
   useBoardMemberFlag,
 } from "@/components/membership/hooks";
+import { buildCurrentUserAvatar } from "@/utils/currentUserProfile";
 import { ThemeSwitch } from "./theme-switch";
 import { NotificationBell } from "./notification-bell";
 import { siteConfig } from "@/config/site";
 
 export const ProfileDropdown = () => {
   const { user, logout } = useAuth();
-  const { userProfile } = useUserProfile();
+  const { userProfile, isPending } = useUserProfile();
   const { isAdmin } = useAdminFlag(user);
   const { isBoardMember } = useBoardMemberFlag(user);
+  const avatarUser = buildCurrentUserAvatar(user, userProfile, {
+    allowAuthPhotoFallback: !isPending,
+  });
 
   return (
     <>
@@ -32,17 +36,7 @@ export const ProfileDropdown = () => {
             color={isAdmin ? "accent" : "default"}
             className="transition-transform"
             size="sm"
-            user={
-              userProfile ??
-              (user
-                ? {
-                    id: user.uid,
-                    displayName: user.displayName ?? undefined,
-                    email: user.email ?? undefined,
-                    photoURL: user.photoURL ?? undefined,
-                  }
-                : undefined)
-            }
+            user={avatarUser}
           />
           {isAdmin && (
             <span
@@ -62,20 +56,7 @@ export const ProfileDropdown = () => {
               textValue={`Signed in as ${user?.email ?? "user@example.com"}`}
             >
               <div className="flex items-center gap-3">
-                <UserAvatar
-                  size="sm"
-                  user={
-                    userProfile ??
-                    (user
-                      ? {
-                          id: user.uid,
-                          displayName: user.displayName ?? undefined,
-                          email: user.email ?? undefined,
-                          photoURL: user.photoURL ?? undefined,
-                        }
-                      : undefined)
-                  }
-                />
+                <UserAvatar size="sm" user={avatarUser} />
                 <div className="flex flex-col min-w-0">
                   {(userProfile?.displayName || user?.displayName) && (
                     <span className="block text-sm font-medium truncate max-w-[180px]">
