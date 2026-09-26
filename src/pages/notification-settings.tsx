@@ -45,7 +45,9 @@ export default function NotificationSettingsPage() {
   usePageTracking("Notification Settings");
   const { user } = useAuth();
   const { userProfile, isLoading } = useUserProfile();
-  const { requestPermission } = useFCMToken(user?.uid ?? null);
+  const { requestPermission, isPushEnabledOnDevice } = useFCMToken(
+    user?.uid ?? null,
+  );
   const showIosNotificationHelp = isIosDevice();
   const iosStandalone = isStandaloneApp();
 
@@ -120,6 +122,15 @@ export default function NotificationSettingsPage() {
     setPrefs(DEFAULT_NOTIFICATION_PREFERENCES);
   }
 
+  const pushStatus =
+    pushPermission === "denied"
+      ? "blocked"
+      : pushPermission === "granted" && isPushEnabledOnDevice
+        ? "enabled"
+        : pushPermission === "granted"
+          ? "off-device"
+          : "off";
+
   return (
     <div className="py-6 flex flex-col items-center px-3 sm:px-4">
       <div className="w-full max-w-lg mb-3">
@@ -184,25 +195,25 @@ export default function NotificationSettingsPage() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      pushPermission === "granted"
+                      pushStatus === "enabled"
                         ? "bg-success/10"
-                        : pushPermission === "denied"
+                        : pushStatus === "blocked"
                           ? "bg-danger/10"
                           : "bg-default/60"
                     }`}
                   >
                     <Icon
                       icon={
-                        pushPermission === "granted"
+                        pushStatus === "enabled"
                           ? "lucide:bell-ring"
-                          : pushPermission === "denied"
+                          : pushStatus === "blocked"
                             ? "lucide:bell-off"
                             : "lucide:bell"
                       }
                       className={`text-xl ${
-                        pushPermission === "granted"
+                        pushStatus === "enabled"
                           ? "text-success"
-                          : pushPermission === "denied"
+                          : pushStatus === "blocked"
                             ? "text-danger"
                             : "text-muted"
                       }`}
@@ -210,18 +221,22 @@ export default function NotificationSettingsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {pushPermission === "granted"
-                        ? "Push notifications enabled"
-                        : pushPermission === "denied"
+                      {pushStatus === "enabled"
+                        ? "Push notifications enabled on this device"
+                        : pushStatus === "blocked"
                           ? "Push notifications blocked"
-                          : "Push notifications off"}
+                          : pushStatus === "off-device"
+                            ? "Push notifications off on this device"
+                            : "Push notifications off"}
                     </p>
                     <p className="text-xs text-muted">
-                      {pushPermission === "granted"
-                        ? "You'll receive alerts even when the app is in the background."
-                        : pushPermission === "denied"
+                      {pushStatus === "enabled"
+                        ? "You'll receive alerts in this browser even when the app is in the background."
+                        : pushStatus === "blocked"
                           ? "Unblock in your browser's site settings to enable."
-                          : "Enable to receive alerts when the app is in the background."}
+                          : pushStatus === "off-device"
+                            ? "Notifications may still be enabled on another device, but this browser is not registered for push alerts."
+                            : "Enable to receive alerts when the app is in the background."}
                     </p>
                   </div>
                 </div>

@@ -14,6 +14,8 @@ const TOKEN_REFRESH_INTERVAL_MS = 1000 * 60 * 60 * 12;
 export interface UseFCMTokenReturn {
   /** True when permission is 'default' and the user hasn't dismissed the prompt. */
   shouldPrompt: boolean;
+  /** True when this specific browser/device has a registered FCM token. */
+  isPushEnabledOnDevice: boolean;
   /** Call this when the user clicks "Allow" in your custom prompt. */
   requestPermission: () => Promise<void>;
   /** Call this when the user clicks "Not now" — hides the prompt permanently. */
@@ -30,11 +32,18 @@ export interface UseFCMTokenReturn {
  */
 export function useFCMToken(uid: string | null): UseFCMTokenReturn {
   const [shouldPrompt, setShouldPrompt] = useState(false);
+  const [isPushEnabledOnDevice, setIsPushEnabledOnDevice] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!uid || !VAPID_KEY) return;
-    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (!uid || !VAPID_KEY) {
+      setIsPushEnabledOnDevice(false);
+      return;
+    }
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setIsPushEnabledOnDevice(false);
+      return;
+    }
 
     let cancelled = false;
     const browserWindow = window;
@@ -43,8 +52,17 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 
     const refreshTokenRegistration = (force = false) => {
       if (Notification.permission !== "granted") return;
-      void registerToken(uid, { force });
+      void registerToken(uid, { force }).then((tokenId) => {
+        if (!cancelled && tokenId) {
+          setIsPushEnabledOnDevice(true);
+        }
+      });
     };
+
+    setIsPushEnabledOnDevice(
+      Notification.permission === "granted" &&
+        !!localStorage.getItem(FCM_TOKEN_ID_KEY),
+    );
 
     const handleVisibilityChange = () => {
       if (browserDocument.visibilityState === "visible") {
@@ -93,12 +111,18 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
             showForegroundNotification(payload);
           });
         } else if (permission === "default" && !dismissed) {
+          setIsPushEnabledOnDevice(false);
           setShouldPrompt(true);
+        } else {
+          setIsPushEnabledOnDevice(false);
         }
         // If "denied", nothing we can do — don't bother the user
       })
       .catch(() => {
         // Browser does not support FCM — silently skip
+        if (!cancelled) {
+          setIsPushEnabledOnDevice(false);
+        }
       });
 
     return () => {
@@ -130,12 +154,15 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
 
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
-        await registerToken(uid);
+        const tokenId = await registerToken(uid);
+        setIsPushEnabledOnDevice(!!tokenId);
         // Set up foreground listener for this session immediately after grant
         unsubscribeRef.current?.();
         unsubscribeRef.current = onMessage(messaging, (payload) => {
           showForegroundNotification(payload);
         });
+      } else {
+        setIsPushEnabledOnDevice(false);
       }
     } catch (err) {
       Sentry.captureException(err);
@@ -148,7 +175,12 @@ export function useFCMToken(uid: string | null): UseFCMTokenReturn {
     setShouldPrompt(false);
   }, []);
 
-  return { shouldPrompt, requestPermission, dismissPrompt };
+  return {
+    shouldPrompt,
+    isPushEnabledOnDevice,
+    requestPermission,
+    dismissPrompt,
+  };
 }
 
 import type { MessagePayload } from "firebase/messaging";
@@ -185,11 +217,11 @@ function showForegroundNotification(payload: MessagePayload): void {
 async function registerToken(
   uid: string,
   options: { force?: boolean } = {},
-): Promise<void> {
-  if (!VAPID_KEY) return;
+): Promise<string | null> {
+  if (!VAPID_KEY) return null;
   try {
     const messaging = await messagingReady;
-    if (!messaging) return;
+    if (!messaging) return null;
     const browserNavigator =
       typeof navigator === "undefined" ? undefined : navigator;
     const browserWindow = typeof window === "undefined" ? undefined : window;
@@ -223,7 +255,7 @@ async function registerToken(
       ...(swReg ? { serviceWorkerRegistration: swReg } : {}),
     });
 
-    if (!token) return;
+    if (!token) return null;
 
     // Truncated base64 of the token → stable doc ID; idempotent on repeat calls.
     const tokenId = btoa(token)
@@ -238,7 +270,7 @@ async function registerToken(
       Date.now() - lastRefreshedAt >= TOKEN_REFRESH_INTERVAL_MS;
 
     if (!options.force && previousTokenId === tokenId && !refreshExpired) {
-      return;
+      return tokenId;
     }
 
     await setDoc(doc(db, "users", uid, "fcmTokens", tokenId), {
@@ -251,8 +283,10 @@ async function registerToken(
     // Track the current device's tokenId so logout can remove only this doc.
     localStorage.setItem(FCM_TOKEN_ID_KEY, tokenId);
     localStorage.setItem(FCM_TOKEN_REFRESHED_AT_KEY, String(Date.now()));
+    return tokenId;
   } catch (err) {
     Sentry.captureException(err);
     console.warn("[FCM] Token registration failed:", err);
+    return null;
   }
 }

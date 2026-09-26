@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { isSupported as messagingIsSupported } from "firebase/messaging";
 
 const authMock = vi.hoisted(() => ({ user: { uid: "user-1" } }));
 const userProfileMock = vi.hoisted(() => ({
@@ -9,6 +10,7 @@ const userProfileMock = vi.hoisted(() => ({
 }));
 const fcmTokenMock = vi.hoisted(() => ({
   requestPermission: vi.fn(),
+  isPushEnabledOnDevice: false,
 }));
 
 vi.mock("@/providers/AuthProvider", () => ({
@@ -70,6 +72,7 @@ function setNavigatorValues({
 describe("NotificationSettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fcmTokenMock.isPushEnabledOnDevice = false;
   });
 
   it("shows iPhone notification setup instructions on iPhone devices", async () => {
@@ -106,5 +109,36 @@ describe("NotificationSettingsPage", () => {
     render(<NotificationSettingsPage />);
 
     expect(screen.queryByText(/iPhone setup required/i)).toBeNull();
+  });
+
+  it("shows push status per device instead of account-wide permission", async () => {
+    setNavigatorValues({
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      platform: "MacIntel",
+      maxTouchPoints: 0,
+    });
+
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: {
+        permission: "granted",
+        requestPermission: vi.fn(),
+      },
+    });
+
+    vi.mocked(messagingIsSupported).mockResolvedValue(true);
+
+    const { default: NotificationSettingsPage } =
+      await import("@/pages/notification-settings");
+
+    render(<NotificationSettingsPage />);
+
+    expect(
+      await screen.findByText(/Push notifications off on this device/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/may still be enabled on another device/i),
+    ).toBeInTheDocument();
   });
 });
