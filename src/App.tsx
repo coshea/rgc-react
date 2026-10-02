@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Spinner } from "@heroui/react";
 import SiteFooter from "@/components/footer";
 import { siteConfig } from "@/config/site";
@@ -77,6 +78,8 @@ const PageLoader = () => (
 );
 
 function App() {
+  useAnalytics();
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1">

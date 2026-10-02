@@ -9,7 +9,7 @@ import {
   setPersistence,
 } from "firebase/auth";
 import {
-  getAnalytics,
+  initializeAnalytics,
   isSupported as analyticsIsSupported,
   type Analytics,
 } from "firebase/analytics";
@@ -114,7 +114,9 @@ export async function enableAnalytics(): Promise<Analytics | undefined> {
   try {
     const supported = await analyticsIsSupported();
     if (supported && !analytics) {
-      analytics = getAnalytics(app);
+      analytics = initializeAnalytics(app, {
+        config: { send_page_view: false },
+      });
     }
   } catch {
     // ignore analytics initialization failures in non-browser environments
