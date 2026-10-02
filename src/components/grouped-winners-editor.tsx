@@ -423,6 +423,54 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
   const totalAllocated = computeTotalPayout(groups);
   const remaining = prizePool - totalAllocated;
 
+  const getSelectedRegistrationIdsForCompetitors = React.useCallback(
+    (competitors: Competitor[]) => {
+      const competitorIds = new Set(competitors.map((c) => c.userId));
+
+      return registrations
+        .filter(
+          (registration) =>
+            registration.team.length > 0 &&
+            registration.team.every((member) => competitorIds.has(member.id)),
+        )
+        .map((registration) => registration.id);
+    },
+    [registrations],
+  );
+
+  const selectedWinnerCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const group of groups) {
+      for (const winner of group.winners || []) {
+        for (const competitor of winner.competitors || []) {
+          counts.set(
+            competitor.userId,
+            (counts.get(competitor.userId) ?? 0) + 1,
+          );
+        }
+      }
+    }
+
+    return counts;
+  }, [groups]);
+
+  const selectedRegistrationCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const group of groups) {
+      for (const winner of group.winners || []) {
+        for (const registrationId of getSelectedRegistrationIdsForCompetitors(
+          winner.competitors || [],
+        )) {
+          counts.set(registrationId, (counts.get(registrationId) ?? 0) + 1);
+        }
+      }
+    }
+
+    return counts;
+  }, [getSelectedRegistrationIdsForCompetitors, groups]);
+
   const sorted = sortGroups(groups);
 
   return (
@@ -776,238 +824,263 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       const teamLabel = (r: {
                         team: Array<{ id: string; displayName: string }>;
                       }) => r.team.map((m) => m.displayName).join(", ");
-                      return sortedPlaces.map((w, index) => (
-                        <div
-                          key={w.id || `${w.place}-${index}`}
-                          className="rounded-md bg-surface-secondary p-3"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Icon
-                                icon={
-                                  g.type === "closestToPin"
-                                    ? "lucide:target"
-                                    : w.place === 1
-                                      ? "lucide:trophy"
-                                      : "lucide:medal"
-                                }
-                                className={`text-xl ${
-                                  g.type === "closestToPin"
-                                    ? "text-accent"
-                                    : w.place === 1
-                                      ? "text-warning"
-                                      : "text-muted"
-                                }`}
-                              />
-                              <span className="font-medium">
-                                {g.type === "closestToPin"
-                                  ? `Hole ${w.holeNumber || w.place}`
-                                  : `Place ${display[index].displayPlace}`}
-                              </span>
-                            </div>
-                            <div className="ml-auto flex items-center gap-2">
-                              {g.type !== "closestToPin" && (
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  onPress={() =>
-                                    tiePlace(g.id, w.id || w.place)
-                                  }
-                                >
-                                  Tie
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                isIconOnly
-                                variant="ghost"
-                                aria-label="Delete place"
-                                onPress={() =>
-                                  removePlace(g.id, w.id || w.place)
-                                }
-                              >
-                                <Icon icon="lucide:trash-2" />
-                              </Button>
-                            </div>
-                          </div>
+                      return sortedPlaces.map((w, index) =>
+                        (() => {
+                          const currentCompetitorIds = new Set(
+                            (w.competitors || []).map((c) => c.userId),
+                          );
+                          const selectedRegistrationIds =
+                            getSelectedRegistrationIdsForCompetitors(
+                              w.competitors || [],
+                            );
+                          const currentRegistrationIds = new Set(
+                            selectedRegistrationIds,
+                          );
+                          const availableRegistrations = registrations.filter(
+                            (registration) =>
+                              currentRegistrationIds.has(registration.id) ||
+                              !selectedRegistrationCounts.has(registration.id),
+                          );
+                          const availableUsers = users.filter(
+                            (user) =>
+                              currentCompetitorIds.has(user.id) ||
+                              !selectedWinnerCounts.has(user.id),
+                          );
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {sourceMode === "teams" ? (
-                              <Select
-                                value={registrations
-                                  .filter((r) => {
-                                    const competitorIds = new Set(
-                                      (w.competitors || []).map(
-                                        (c) => c.userId,
-                                      ),
-                                    );
-                                    return (
-                                      r.team.length > 0 &&
-                                      r.team.every((m) =>
-                                        competitorIds.has(m.id),
-                                      )
-                                    );
-                                  })
-                                  .map((r) => r.id as Key)}
-                                onChange={(val) => {
-                                  const selectedIds = Array.isArray(val)
-                                    ? (val as string[])
-                                    : val
-                                      ? [val as string]
-                                      : [];
-                                  const competitors: Competitor[] =
-                                    selectedIds.flatMap((key) => {
-                                      const reg = registrations.find(
-                                        (r) => r.id === key,
-                                      );
-                                      if (!reg) return [];
-                                      const members = reg.team.map((m) => ({
-                                        userId: m.id,
-                                        displayName: m.displayName || m.id,
-                                      }));
-                                      return effectiveTeamSize > 0
-                                        ? members.slice(0, effectiveTeamSize)
-                                        : members;
-                                    });
-                                  updatePlace(g.id, w.id || w.place, {
-                                    competitors,
-                                  });
-                                }}
-                                selectionMode="multiple"
-                                placeholder={
-                                  registrations.length > 0
-                                    ? "Choose registration(s)"
-                                    : "No registrations"
-                                }
-                                className="w-full"
-                                isDisabled={registrations.length === 0}
-                                aria-label="Registered Team Selector"
-                              >
-                                <Label>
-                                  {effectiveTeamSize > 1
-                                    ? "Registered Teams"
-                                    : "Registered Player"}
-                                </Label>
-                                <Select.Trigger>
-                                  <Select.Value />
-                                  <Select.Indicator />
-                                </Select.Trigger>
-                                <Select.Popover>
-                                  <ListBox>
-                                    {[...registrations]
-                                      .sort((a, b) =>
-                                        teamLabel(a).localeCompare(
-                                          teamLabel(b),
-                                        ),
-                                      )
-                                      .map((r) => (
-                                        <ListBox.Item
-                                          key={r.id}
-                                          id={r.id}
-                                          textValue={teamLabel(r)}
-                                        >
-                                          {teamLabel(r)}
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                      ))}
-                                  </ListBox>
-                                </Select.Popover>
-                              </Select>
-                            ) : (
-                              <UserSelect
-                                users={users}
-                                label={
-                                  effectiveTeamSize > 1
-                                    ? "Team Members"
-                                    : "Winner"
-                                }
-                                placeholder={
-                                  effectiveTeamSize > 1
-                                    ? "Select team members"
-                                    : "Select winner"
-                                }
-                                multiple={effectiveTeamSize > 1}
-                                maxSelected={
-                                  effectiveTeamSize > 1
-                                    ? effectiveTeamSize
-                                    : undefined
-                                }
-                                value={
-                                  effectiveTeamSize > 1
-                                    ? (w.competitors || []).map((c) => c.userId)
-                                    : (w.competitors &&
-                                        w.competitors[0]?.userId) ||
-                                      ""
-                                }
-                                onChange={(val) =>
-                                  setPlaceCompetitors(
-                                    g.id,
-                                    w.id || w.place,
-                                    (Array.isArray(val) ? val : [val]).filter(
-                                      Boolean,
-                                    ) as string[],
-                                  )
-                                }
-                                disabled={usersLoading}
-                                required
-                                invalid={
-                                  !w.competitors || w.competitors.length === 0
-                                }
-                                errorMessage={
-                                  !w.competitors || w.competitors.length === 0
-                                    ? "Winner is required"
-                                    : ""
-                                }
-                              />
-                            )}
+                          return (
+                            <div
+                              key={w.id || `${w.place}-${index}`}
+                              className="rounded-md bg-surface-secondary p-3"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Icon
+                                    icon={
+                                      g.type === "closestToPin"
+                                        ? "lucide:target"
+                                        : w.place === 1
+                                          ? "lucide:trophy"
+                                          : "lucide:medal"
+                                    }
+                                    className={`text-xl ${
+                                      g.type === "closestToPin"
+                                        ? "text-accent"
+                                        : w.place === 1
+                                          ? "text-warning"
+                                          : "text-muted"
+                                    }`}
+                                  />
+                                  <span className="font-medium">
+                                    {g.type === "closestToPin"
+                                      ? `Hole ${w.holeNumber || w.place}`
+                                      : `Place ${display[index].displayPlace}`}
+                                  </span>
+                                </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                  {g.type !== "closestToPin" && (
+                                    <Button
+                                      size="sm"
+                                      variant="tertiary"
+                                      onPress={() =>
+                                        tiePlace(g.id, w.id || w.place)
+                                      }
+                                    >
+                                      Tie
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    isIconOnly
+                                    variant="ghost"
+                                    aria-label="Delete place"
+                                    onPress={() =>
+                                      removePlace(g.id, w.id || w.place)
+                                    }
+                                  >
+                                    <Icon icon="lucide:trash-2" />
+                                  </Button>
+                                </div>
+                              </div>
 
-                            <div className="flex flex-col gap-1">
-                              <Label className="text-sm">
-                                Prize Amount (per person)
-                              </Label>
-                              <InputGroup>
-                                <InputGroup.Prefix>
-                                  <div className="pointer-events-none flex items-center">
-                                    <span className="text-muted text-sm">
-                                      $
-                                    </span>
-                                  </div>
-                                </InputGroup.Prefix>
-                                <InputGroup.Input
-                                  type="number"
-                                  min={0}
-                                  value={String(w.prizeAmount ?? "")}
-                                  onChange={(
-                                    e: React.ChangeEvent<HTMLInputElement>,
-                                  ) =>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {sourceMode === "teams" ? (
+                                  <Select
+                                    value={selectedRegistrationIds.map(
+                                      (registrationId) => registrationId as Key,
+                                    )}
+                                    onChange={(val) => {
+                                      const selectedIds = Array.isArray(val)
+                                        ? (val as string[])
+                                        : val
+                                          ? [val as string]
+                                          : [];
+                                      const competitors: Competitor[] =
+                                        selectedIds.flatMap((key) => {
+                                          const reg = registrations.find(
+                                            (r) => r.id === key,
+                                          );
+                                          if (!reg) return [];
+                                          const members = reg.team.map((m) => ({
+                                            userId: m.id,
+                                            displayName: m.displayName || m.id,
+                                          }));
+                                          return effectiveTeamSize > 0
+                                            ? members.slice(
+                                                0,
+                                                effectiveTeamSize,
+                                              )
+                                            : members;
+                                        });
+                                      updatePlace(g.id, w.id || w.place, {
+                                        competitors,
+                                      });
+                                    }}
+                                    selectionMode="multiple"
+                                    placeholder={
+                                      registrations.length > 0
+                                        ? "Choose registration(s)"
+                                        : "No registrations"
+                                    }
+                                    className="w-full"
+                                    isDisabled={registrations.length === 0}
+                                    aria-label="Registered Team Selector"
+                                  >
+                                    <Label>
+                                      {effectiveTeamSize > 1
+                                        ? "Registered Teams"
+                                        : "Registered Player"}
+                                    </Label>
+                                    <Select.Trigger>
+                                      <Select.Value />
+                                      <Select.Indicator />
+                                    </Select.Trigger>
+                                    <Select.Popover>
+                                      <ListBox>
+                                        {[...availableRegistrations]
+                                          .sort((a, b) =>
+                                            teamLabel(a).localeCompare(
+                                              teamLabel(b),
+                                            ),
+                                          )
+                                          .map((r) => (
+                                            <ListBox.Item
+                                              key={r.id}
+                                              id={r.id}
+                                              textValue={teamLabel(r)}
+                                            >
+                                              {teamLabel(r)}
+                                              <ListBox.ItemIndicator />
+                                            </ListBox.Item>
+                                          ))}
+                                      </ListBox>
+                                    </Select.Popover>
+                                  </Select>
+                                ) : (
+                                  <UserSelect
+                                    users={availableUsers}
+                                    label={
+                                      effectiveTeamSize > 1
+                                        ? "Team Members"
+                                        : "Winner"
+                                    }
+                                    placeholder={
+                                      effectiveTeamSize > 1
+                                        ? "Select team members"
+                                        : "Select winner"
+                                    }
+                                    multiple={effectiveTeamSize > 1}
+                                    maxSelected={
+                                      effectiveTeamSize > 1
+                                        ? effectiveTeamSize
+                                        : undefined
+                                    }
+                                    value={
+                                      effectiveTeamSize > 1
+                                        ? (w.competitors || []).map(
+                                            (c) => c.userId,
+                                          )
+                                        : (w.competitors &&
+                                            w.competitors[0]?.userId) ||
+                                          ""
+                                    }
+                                    onChange={(val) =>
+                                      setPlaceCompetitors(
+                                        g.id,
+                                        w.id || w.place,
+                                        (Array.isArray(val)
+                                          ? val
+                                          : [val]
+                                        ).filter(Boolean) as string[],
+                                      )
+                                    }
+                                    disabled={usersLoading}
+                                    required
+                                    invalid={
+                                      !w.competitors ||
+                                      w.competitors.length === 0
+                                    }
+                                    errorMessage={
+                                      !w.competitors ||
+                                      w.competitors.length === 0
+                                        ? "Winner is required"
+                                        : ""
+                                    }
+                                  />
+                                )}
+
+                                <div className="flex flex-col gap-1">
+                                  <Label className="text-sm">
+                                    Prize Amount (per person)
+                                  </Label>
+                                  <InputGroup>
+                                    <InputGroup.Prefix>
+                                      <div className="pointer-events-none flex items-center">
+                                        <span className="text-muted text-sm">
+                                          $
+                                        </span>
+                                      </div>
+                                    </InputGroup.Prefix>
+                                    <InputGroup.Input
+                                      type="number"
+                                      min={0}
+                                      value={String(w.prizeAmount ?? "")}
+                                      onChange={(
+                                        e: React.ChangeEvent<HTMLInputElement>,
+                                      ) =>
+                                        updatePlace(g.id, w.id || w.place, {
+                                          prizeAmount:
+                                            parseFloat(e.target.value) || 0,
+                                        })
+                                      }
+                                      onFocus={(e) => {
+                                        if (
+                                          e.target instanceof HTMLInputElement
+                                        ) {
+                                          e.target.select();
+                                        }
+                                      }}
+                                    />
+                                  </InputGroup>
+                                </div>
+                              </div>
+
+                              <div className="mt-2">
+                                <TextField
+                                  value={w.score || ""}
+                                  onChange={(v) =>
                                     updatePlace(g.id, w.id || w.place, {
-                                      prizeAmount:
-                                        parseFloat(e.target.value) || 0,
+                                      score: v,
                                     })
                                   }
-                                  onFocus={(e) => {
-                                    if (e.target instanceof HTMLInputElement) {
-                                      e.target.select();
-                                    }
-                                  }}
-                                />
-                              </InputGroup>
+                                >
+                                  <Label>Score</Label>
+                                  <Input />
+                                </TextField>
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="mt-2">
-                            <TextField
-                              value={w.score || ""}
-                              onChange={(v) =>
-                                updatePlace(g.id, w.id || w.place, { score: v })
-                              }
-                            >
-                              <Label>Score</Label>
-                              <Input />
-                            </TextField>
-                          </div>
-                        </div>
-                      ));
+                          );
+                        })(),
+                      );
                     })()}
                   </div>
                 )}
