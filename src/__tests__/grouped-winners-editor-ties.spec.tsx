@@ -113,6 +113,41 @@ function HarnessWithRegs({
 }
 
 describe("GroupedWinnersEditor - ties and selection", () => {
+  it("hides users already picked in other winner rows", async () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <Harness />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Add Overall/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Place/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Place/i }));
+
+    const placeRows = screen
+      .getAllByText(/Place [12]/i)
+      .map(
+        (el) =>
+          el.closest("div.rounded-md.bg-surface-secondary.p-3") as HTMLElement,
+      );
+    const firstTrigger = findAutocompleteButton(/Winner/i, placeRows[0]);
+    const secondTrigger = findAutocompleteButton(/Winner/i, placeRows[1]);
+
+    await pickOptionForCombobox(firstTrigger, "Alpha");
+
+    fireEvent.click(secondTrigger);
+
+    expect(
+      screen.queryByRole("option", { name: /^Alpha$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /^Bravo$/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
+  });
+
   it("supports adding a tie for 2nd place and selecting different users independently", async () => {
     const qc = new QueryClient();
     render(
@@ -228,6 +263,43 @@ describe("GroupedWinnersEditor - registered team multi-select", () => {
     const competitorIds = place?.competitors?.map((c) => c.userId);
     expect(competitorIds).toContain("u1");
     expect(competitorIds).toContain("u2");
+  });
+
+  it("hides registrations already picked in other winner rows before save", async () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <HarnessWithRegs />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Add Overall/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Place/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Place/i }));
+
+    const selectTriggers = screen.getAllByRole("button", {
+      name: /Registered Team Selector/i,
+    });
+
+    await act(async () => {
+      fireEvent.click(selectTriggers[0]);
+    });
+
+    fireEvent.click(await screen.findByRole("option", { name: /Alpha/i }));
+    fireEvent.keyDown(document.body, { key: "Escape" });
+
+    await act(async () => {
+      fireEvent.click(selectTriggers[1]);
+    });
+
+    expect(
+      screen.queryByRole("option", { name: /^Alpha$/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /^Bravo$/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
   });
 
   it("deselecting a registration removes its members from competitors", async () => {

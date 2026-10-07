@@ -30,6 +30,8 @@ import {
 import type { DocumentData } from "firebase/firestore";
 import * as Sentry from "@sentry/react";
 
+import { TextField, Input, FieldError } from "@heroui/react";
+import { Label } from "react-aria-components";
 import { BasicInfoSection } from "@/components/tournament-editor/BasicInfoSection";
 import { RegistrationWindowSection } from "@/components/tournament-editor/RegistrationWindowSection";
 import {
@@ -158,9 +160,64 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [recalculatingBracketPayouts, setRecalculatingBracketPayouts] =
     React.useState(false);
 
+  // URL slug (new tournaments only)
+  const [urlSlug, setUrlSlugRaw] = React.useState("");
+  const [slugEdited, setSlugEdited] = React.useState(false);
+  const [slugChecking, setSlugChecking] = React.useState(false);
+  const [slugAvailable, setSlugAvailable] = React.useState<boolean | null>(
+    null,
+  );
+
   const incomingPreviousTournamentId =
     tournament?.previousTournamentId ?? undefined;
   const tournamentId = tournament?.firestoreId ?? null;
+
+  const toSlug = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/[\s-]+/g, "-");
+
+  const setUrlSlug = React.useCallback((raw: string, manual = false) => {
+    const sanitized = raw
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-+|-+$/g, "");
+    setUrlSlugRaw(sanitized);
+    setSlugAvailable(null);
+    if (manual) setSlugEdited(true);
+  }, []);
+
+  // Auto-generate slug from year + title when not manually edited
+  React.useEffect(() => {
+    if (isEditing || slugEdited) return;
+    const year = date ? new Date(date.toString()).getUTCFullYear() : "";
+    const base = year ? `${year}-${toSlug(title)}` : toSlug(title);
+    setUrlSlugRaw(base.replace(/-{2,}/g, "-").replace(/^-+|-+$/, ""));
+    setSlugAvailable(null);
+  }, [title, date, isEditing, slugEdited]);
+
+  // Debounced uniqueness check
+  React.useEffect(() => {
+    if (isEditing || !urlSlug) return;
+    setSlugChecking(true);
+    setSlugAvailable(null);
+    const timer = setTimeout(async () => {
+      try {
+        const { db } = await import("@/config/firebase");
+        const { doc, getDoc } = await import("firebase/firestore");
+        const snap = await getDoc(doc(db, "tournaments", urlSlug));
+        setSlugAvailable(!snap.exists());
+      } catch {
+        setSlugAvailable(null);
+      } finally {
+        setSlugChecking(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [urlSlug, isEditing]);
 
   // Sync previousTournamentId state with tournament prop updates
   React.useEffect(() => {
@@ -226,6 +283,21 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (!title.trim()) newErrors.title = "Title is required";
     if (!description.trim()) newErrors.description = "Description is required";
     if (!date) newErrors.date = "Date is required";
+    if (!isEditing) {
+      if (!urlSlug) {
+        newErrors.urlSlug = "URL slug is required";
+      } else if (
+        !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(urlSlug) &&
+        urlSlug.length > 1
+      ) {
+        newErrors.urlSlug =
+          "Slug must be lowercase letters, numbers, and hyphens";
+      } else if (slugChecking) {
+        newErrors.urlSlug = "Checking availability...";
+      } else if (slugAvailable === false) {
+        newErrors.urlSlug = "This URL is already taken";
+      }
+    }
     // markdown not required but if provided can be large; no validation now
     if (players < 1) newErrors.players = "Must have at least 1 player";
     if (maxTeams !== undefined && maxTeams < 1) {
@@ -401,7 +473,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         return;
       }
       const { db } = await import("@/config/firebase");
-      const { collection, addDoc, updateDoc, doc, deleteField } =
+      const { collection, updateDoc, doc, deleteField } =
         await import("firebase/firestore");
       const sanitizedBracketRoundPayouts =
         normalizeBracketRoundPayouts(bracketRoundPayouts);
@@ -499,7 +571,10 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         const docRef = doc(db, "tournaments", tournament.firestoreId);
         await updateDoc(docRef, tournamentData);
       } else {
-        createdDocRef = await addDoc(colRef, tournamentData);
+        const { setDoc } = await import("firebase/firestore");
+        const newDocRef = doc(colRef, urlSlug);
+        await setDoc(newDocRef, tournamentData);
+        createdDocRef = { id: urlSlug };
       }
       const savedTournament: Tournament = {
         title,
@@ -834,6 +909,37 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                 errors={errors}
                 onPopoutOpen={() => setDetailsPopoutOpen(true)}
               />
+              {!isEditing && (
+                <TextField
+                  isInvalid={!!errors.urlSlug}
+                  value={urlSlug}
+                  onChange={(v) => setUrlSlug(v, true)}
+                >
+                  <Label>URL Slug</Label>
+                  <div className="flex items-center gap-0 rounded-md border border-border overflow-hidden focus-within:ring-2 focus-within:ring-primary">
+                    <span className="px-3 py-2 text-sm text-muted bg-surface-2 select-none border-r border-border whitespace-nowrap">
+                      /tournaments/
+                    </span>
+                    <Input
+                      className="flex-1 border-none focus:outline-none px-3 py-2 text-sm bg-transparent"
+                      placeholder="2026-tournament-name"
+                      aria-label="URL slug"
+                    />
+                  </div>
+                  {slugChecking && (
+                    <p className="text-xs text-muted mt-1">
+                      Checking availability…
+                    </p>
+                  )}
+                  {!slugChecking && slugAvailable === true && urlSlug && (
+                    <p className="text-xs text-success mt-1">✓ Available</p>
+                  )}
+                  {!slugChecking && slugAvailable === false && (
+                    <p className="text-xs text-danger mt-1">✗ Already taken</p>
+                  )}
+                  <FieldError>{errors.urlSlug}</FieldError>
+                </TextField>
+              )}
               <RegistrationWindowSection
                 registrationStart={registrationStart}
                 setRegistrationStart={setRegistrationStart}

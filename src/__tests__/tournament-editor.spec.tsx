@@ -1,5 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import TournamentEditor from "@/components/tournament-editor";
@@ -306,6 +312,10 @@ vi.mock("@/api/tournaments", () => ({
 // Firestore mocks
 const addDocMock = vi.fn(async (..._args: any[]) => ({ id: "new123" }));
 const updateDocMock = vi.fn(async (..._args: any[]) => {});
+const setDocMock = vi.fn(async (..._args: any[]) => {});
+const getDocMock = vi.fn(async (..._args: any[]) => ({
+  exists: (): boolean => false,
+}));
 
 vi.mock("@/config/firebase", () => ({
   auth: { currentUser: { uid: "user1" } },
@@ -317,6 +327,8 @@ vi.mock("firebase/firestore", () => ({
   collection: vi.fn(() => ({})),
   addDoc: (...args: any[]) => addDocMock(...args),
   updateDoc: (...args: any[]) => updateDocMock(...args),
+  setDoc: (...args: any[]) => setDocMock(...args),
+  getDoc: (...args: any[]) => getDocMock(...args),
   doc: vi.fn(() => ({})),
   deleteField: vi.fn(() => ({ __type: "deleteField" })),
   parseDate: vi.fn(),
@@ -368,7 +380,11 @@ beforeEach(() => {
   addToastMock.mockClear();
   addDocMock.mockClear();
   updateDocMock.mockClear();
+  setDocMock.mockClear();
+  getDocMock.mockClear();
   setBracketPublishedMock.mockClear();
+  // Default: slug is available
+  getDocMock.mockResolvedValue({ exists: () => false });
 });
 
 describe("TournamentEditor - create mode", () => {
@@ -402,11 +418,13 @@ describe("TournamentEditor - create mode", () => {
     // Approach: Use testing hack - override Date.now and rely on component default if not set. We'll instead set the date state by finding DatePicker label if rendered.
     // If Date validation blocks, test can assert validation message rather than full submit.
 
+    // Wait for auto-generated slug availability check to resolve
+    await waitFor(() => screen.getByText(/✓ Available/i));
     // Try clicking submit
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
 
     await waitFor(() => {
-      expect(addDocMock).toHaveBeenCalled();
+      expect(setDocMock).toHaveBeenCalled();
       expect(onSave).toHaveBeenCalled();
     });
   });
@@ -620,10 +638,174 @@ describe("TournamentEditor - edge cases", () => {
     // choose Canceled from the menu
     const cancelOption = await screen.findByText(/Tournament Canceled/i);
     fireEvent.click(cancelOption);
+    // Wait for auto-generated slug availability check to resolve
+    await waitFor(() => screen.getByText(/✓ Available/i));
     fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
     await waitFor(() => {
-      expect(addDocMock).toHaveBeenCalled();
+      expect(setDocMock).toHaveBeenCalled();
       expect(onSave).toHaveBeenCalled();
+    });
+  });
+});
+
+describe("TournamentEditor - URL slug", () => {
+  function renderCreate(onSave = vi.fn()) {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={onSave} onCancel={vi.fn()} />
+      </QueryClientProvider>,
+    );
+  }
+
+  it("renders the URL slug field when creating", () => {
+    renderCreate();
+    expect(screen.getByLabelText(/URL slug/i)).toBeInTheDocument();
+  });
+
+  it("auto-generates slug from title when no date is set", async () => {
+    renderCreate();
+    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+      target: { value: "Summer Classic" },
+    });
+    const slugInput = screen.getByLabelText(/URL slug/i) as HTMLInputElement;
+    await waitFor(() => {
+      expect(slugInput.value).toBe("summer-classic");
+    });
+  });
+
+  it("stops auto-generating after user manually edits slug", async () => {
+    renderCreate();
+    const slugInput = screen.getByLabelText(/URL slug/i) as HTMLInputElement;
+    fireEvent.change(slugInput, { target: { value: "my-custom-slug" } });
+    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+      target: { value: "A Totally Different Title" },
+    });
+    await waitFor(() => {
+      expect(slugInput.value).toBe("my-custom-slug");
+    });
+  });
+
+  it("strips invalid characters from manual slug input", async () => {
+    renderCreate();
+    const slugInput = screen.getByLabelText(/URL slug/i) as HTMLInputElement;
+    fireEvent.change(slugInput, { target: { value: "Hello World! 2026" } });
+    await waitFor(() => {
+      expect(slugInput.value).toBe("helloworld2026");
+    });
+  });
+
+  it("does not render URL slug field when editing an existing tournament", () => {
+    const existing: Tournament = {
+      ...openRegistrationWindow(),
+      title: "Spring Open",
+      description: "Fun event",
+      players: 4,
+      status: TournamentStatus.Upcoming,
+      prizePool: 100,
+      winnerGroups: [],
+      date: new Date(),
+      tee: "Blue",
+      firestoreId: "spring-open-2025",
+    };
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={existing}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.queryByLabelText(/URL slug/i)).not.toBeInTheDocument();
+  });
+
+  describe("debounced uniqueness check", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("shows Available indicator when slug is free", async () => {
+      getDocMock.mockResolvedValue({ exists: () => false });
+      renderCreate();
+      fireEvent.change(screen.getByLabelText(/URL slug/i), {
+        target: { value: "2026-free-slug" },
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByText(/✓ Available/i)).toBeInTheDocument();
+    });
+
+    it("shows Already taken indicator when slug exists in Firestore", async () => {
+      getDocMock.mockResolvedValue({ exists: () => true });
+      renderCreate();
+      fireEvent.change(screen.getByLabelText(/URL slug/i), {
+        target: { value: "taken-slug" },
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByText(/✗ Already taken/i)).toBeInTheDocument();
+    });
+
+    it("blocks submit when slug is already taken", async () => {
+      getDocMock.mockResolvedValue({ exists: () => true });
+      renderCreate();
+      fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+        target: { value: "Taken Event" },
+      });
+      fireEvent.change(screen.getByLabelText(/Description/i), {
+        target: { value: "Desc" },
+      });
+      fireEvent.change(screen.getByLabelText(/URL slug/i), {
+        target: { value: "taken-slug" },
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Create Tournament/i }),
+      );
+      expect(setDocMock).not.toHaveBeenCalled();
+      expect(addDocMock).not.toHaveBeenCalled();
+    });
+
+    it("saves with setDoc using slug as document ID when slug is available", async () => {
+      getDocMock.mockResolvedValue({ exists: () => false });
+      const onSave = vi.fn();
+      renderCreate(onSave);
+      fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+        target: { value: "Open Event" },
+      });
+      fireEvent.change(screen.getByLabelText(/Description/i), {
+        target: { value: "Desc" },
+      });
+      fireEvent.change(screen.getByLabelText(/Tournament Date/i), {
+        target: { value: "2026-06-15" },
+      });
+      fireEvent.change(screen.getByLabelText(/URL slug/i), {
+        target: { value: "2026-open-event" },
+      });
+      // Fire the debounce and confirm availability before submitting
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByText(/✓ Available/i)).toBeInTheDocument();
+      // Restore real timers so waitFor can poll after the async submit
+      vi.useRealTimers();
+      fireEvent.click(
+        screen.getByRole("button", { name: /Create Tournament/i }),
+      );
+      await waitFor(() => {
+        expect(setDocMock).toHaveBeenCalled();
+        expect(addDocMock).not.toHaveBeenCalled();
+        expect(onSave).toHaveBeenCalled();
+      });
     });
   });
 });

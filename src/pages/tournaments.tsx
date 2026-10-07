@@ -183,13 +183,19 @@ const Tournaments: React.FC<TournamentsProps> = () => {
                   value={createMethod}
                   onChange={(v) => setCreateMethod(v as "scratch" | "copy")}
                 >
-                  <Radio value="scratch">
+                  <Radio
+                    value="scratch"
+                    className="flex flex-row items-center gap-2"
+                  >
                     <Radio.Control>
                       <Radio.Indicator />
                     </Radio.Control>
                     <Radio.Content>Create from scratch</Radio.Content>
                   </Radio>
-                  <Radio value="copy">
+                  <Radio
+                    value="copy"
+                    className="flex flex-row items-center gap-2"
+                  >
                     <Radio.Control>
                       <Radio.Indicator />
                     </Radio.Control>
