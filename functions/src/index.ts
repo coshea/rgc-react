@@ -50,6 +50,7 @@ export {
 } from "./notifyRegistrationOpening";
 export { createUserDocument, deleteUserDocument } from "./createUserDocument";
 export { generate_blog_writeup } from "./generateBlogWriteup";
+export { resize_user_avatar } from "./resizeUserAvatar";
 
 export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },

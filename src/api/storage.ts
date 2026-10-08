@@ -8,6 +8,58 @@ import {
 } from "firebase/storage";
 import { storage, auth } from "@/config/firebase";
 
+async function resizeProfileImage(file: File, maxDimension = 400): Promise<Blob> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return file;
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load image for resizing."));
+      img.src = objectUrl;
+    });
+
+    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return file;
+    }
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Failed to generate resized avatar."));
+            return;
+          }
+          resolve(blob);
+        },
+        outputType,
+        outputType === "image/jpeg" ? 0.82 : undefined,
+      );
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 /**
  * Uploads a File to storage under `avatars/{uid}/{filename}` and returns the download URL.
  */
@@ -53,6 +105,44 @@ export async function uploadProfilePicture(
   });
   const url = await getDownloadURL(snapshot.ref);
   return url;
+}
+
+export async function uploadResizedProfilePicture(
+  uid: string,
+  file: File,
+): Promise<{ photoURL: string; profileURL: string }> {
+  const photoURL = await uploadProfilePicture(uid, file);
+
+  if (!file.type.startsWith("image/")) {
+    return { photoURL, profileURL: photoURL };
+  }
+
+  try {
+    const resizedBlob = await resizeProfileImage(file);
+    const baseName = file.name.replace(/\.[^/.]+$/, "") || "avatar";
+    const extension = resizedBlob.type === "image/png" ? "png" : "jpg";
+    const path = `avatars/${uid}/resized/${Date.now()}_${baseName}.${extension}`;
+
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, resizedBlob, {
+      contentType: resizedBlob.type || "image/jpeg",
+      customMetadata: {
+        uploadedAt: Date.now().toString(),
+        resized: "true",
+        sourceFile: file.name,
+      },
+    });
+
+    const profileURL = await getDownloadURL(snapshot.ref);
+    return { photoURL, profileURL };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "uploadResizedProfilePicture: failed to generate resized avatar; falling back to original file",
+      error,
+    );
+    return { photoURL, profileURL: photoURL };
+  }
 }
 
 /**

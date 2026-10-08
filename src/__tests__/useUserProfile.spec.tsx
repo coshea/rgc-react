@@ -10,9 +10,10 @@ vi.mock("@/api/users", () => ({
   saveUserProfile: vi.fn(async (_uid: string, data: any) => data),
 }));
 vi.mock("@/api/storage", () => ({
-  uploadProfilePicture: vi.fn(
-    async (_uid: string, _file: File) => "https://storage.test/avatar.png",
-  ),
+  uploadResizedProfilePicture: vi.fn(async (_uid: string, _file: File) => ({
+    photoURL: "https://storage.test/avatar.png",
+    profileURL: "https://storage.test/profile-avatar.png",
+  })),
 }));
 
 // Mock AuthProvider's useAuth to avoid needing the real provider in tests
