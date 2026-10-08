@@ -23,7 +23,7 @@ import { addToast } from "@/providers/toast";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
-import { saveUserProfile } from "@/api/users";
+import { hydrateUserProfileFromAuth } from "@/api/users";
 import { auth } from "@/config/firebase";
 import { parseDisplayName } from "@/utils/profileCompletion";
 import {
@@ -167,7 +167,7 @@ export default function SignUpPage() {
           const uid = auth.currentUser?.uid;
           if (uid) {
             try {
-              await saveUserProfile(uid, {
+              await hydrateUserProfileFromAuth(uid, {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
                 email: email.trim(),
@@ -222,10 +222,12 @@ export default function SignUpPage() {
             result.user.displayName,
           );
           try {
-            await saveUserProfile(result.user.uid, {
+            await hydrateUserProfileFromAuth(result.user.uid, {
               firstName: first,
               lastName: lastName,
               email: result.user.email || undefined,
+              displayName: result.user.displayName || undefined,
+              photoURL: result.user.photoURL || undefined,
             });
           } catch (profileError: unknown) {
             console.error(

@@ -178,6 +178,92 @@ export function computeDisplayName(
 /**
  * Save or merge a user profile to users/{uid}
  */
+export async function hydrateUserProfileFromAuth(
+  uid: string,
+  authUser: {
+    email?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  },
+) {
+  const ref = doc(db, "users", uid);
+
+  const currentUid = auth.currentUser?.uid ?? null;
+  if (!currentUid) {
+    throw new Error(
+      "Cannot hydrate user profile: no authenticated user found (auth.currentUser is null).",
+    );
+  }
+  if (currentUid !== uid) {
+    throw new Error(
+      `Cannot hydrate user profile: authenticated UID (${currentUid}) does not match requested UID (${uid}).`,
+    );
+  }
+
+  const safeEmail = (authUser.email ?? "").trim();
+  const safeDisplayName = (authUser.displayName ?? "").trim();
+  const safePhotoUrl = authUser.photoURL ?? null;
+  const safeFirstName = (authUser.firstName ?? "").trim();
+  const safeLastName = (authUser.lastName ?? "").trim();
+
+  const profileSnap = await getDoc(ref).catch(() => null);
+  const existing = profileSnap?.exists() ? (profileSnap.data() as Partial<UserProfilePayload>) : {};
+
+  const payload: Partial<FirestoreUserPayload> = {
+    updatedAt: serverTimestamp(),
+  };
+
+  if (!profileSnap || !profileSnap.exists()) {
+    if (!safeEmail) {
+      throw new Error(
+        "Cannot create profile record: no email available for users/" +
+          uid +
+          ". Please re-authenticate and ensure your account has an email address.",
+      );
+    }
+
+    const defaultDisplayName =
+      safeDisplayName ||
+      [safeFirstName, safeLastName].filter(Boolean).join(" ").trim();
+
+    Object.assign(payload, {
+      email: safeEmail,
+      firstName: safeFirstName || undefined,
+      lastName: safeLastName || undefined,
+      displayName: defaultDisplayName || undefined,
+      photoURL: safePhotoUrl,
+      boardMember: false,
+      role: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await setDoc(ref, payload as FirestoreUserPayload, { merge: false });
+    return;
+  }
+
+  const existingEmail = typeof existing.email === "string" ? existing.email.trim() : "";
+  const existingDisplayName = typeof existing.displayName === "string" ? existing.displayName.trim() : "";
+  const existingFirstName = typeof existing.firstName === "string" ? existing.firstName.trim() : "";
+  const existingLastName = typeof existing.lastName === "string" ? existing.lastName.trim() : "";
+  const existingPhotoUrl = existing.photoURL ?? null;
+
+  const nextDisplayName =
+    safeDisplayName ||
+    [safeFirstName, safeLastName].filter(Boolean).join(" ").trim() ||
+    existingDisplayName;
+
+  if (!existingEmail && safeEmail) payload.email = safeEmail;
+  if (!existingFirstName && safeFirstName) payload.firstName = safeFirstName;
+  if (!existingLastName && safeLastName) payload.lastName = safeLastName;
+  if (!existingDisplayName && nextDisplayName) payload.displayName = nextDisplayName;
+  if (!existingPhotoUrl && safePhotoUrl) payload.photoURL = safePhotoUrl;
+
+  await setDoc(ref, payload, { merge: true });
+}
+
 export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   // Derive displayName from first + last if provided (trim + collapse spaces)
   const computedDisplay = computeDisplayName(data);

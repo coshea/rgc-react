@@ -48,6 +48,7 @@ export {
   notify_registration_opening,
   send_registration_opening_preview_email,
 } from "./notifyRegistrationOpening";
+export { createUserDocument, deleteUserDocument } from "./createUserDocument";
 export { generate_blog_writeup } from "./generateBlogWriteup";
 
 export const verify_and_record_membership_payment = onRequest(
