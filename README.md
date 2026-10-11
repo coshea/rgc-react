@@ -48,10 +48,10 @@ This is a full-featured club management system that serves both public visitors 
 
 ### Frontend
 
-- **React 18** with TypeScript for type-safe component development
+- **React 19** with TypeScript for type-safe component development
 - **Vite** for fast builds and HMR in development
 - **HeroUI v3** (modern React component library) + **Tailwind CSS v4** for styling
-- **React Router v6** for client-side routing with protected routes
+- **React Router v7** for client-side routing with protected routes
 - **TanStack Query** (React Query) for server state management, caching, and optimistic updates
 - **PayPal SDK** for payment processing
 - **EmailJS** for contact form submissions
@@ -178,18 +178,9 @@ For GitHub Actions deployments to Firebase Hosting, configure these repository s
 - `VITE_FIREBASE_FUNCTIONS_BASE_URL` (if your deployment uses a non-default functions base URL)
 - `SENTRY_AUTH_TOKEN` (optional; enables sourcemap upload)
 
-## Routing & Providers
+## Architecture & Coding Conventions
 
-- App routes are defined in `src/App.tsx` and use `siteConfig.pages` for stable paths.
-- Global providers in `src/provider.tsx`: `AuthProvider` → `HeroUIProvider` → Toasts. Navigation is passed into HeroUI.
-- Protected routes: use `RequireAuth` (`src/components/require-auth.tsx`). Example usage in App routes wraps Find a Game so only signed-in members can access it.
-- Admin gating: use `RequireAdmin` (`src/components/require-admin.tsx`). Admin capability is determined client-side by the existence of a Firestore doc at `admin/{uid}` with truthy `isAdmin`.
-
-## Data & Domain Models
-
-- Tournament model in `src/types/tournament.ts` (fields include `winners`, `tee`, `registrationOpen`, `detailsMarkdown`).
-- Board roles in `src/types/roles.ts` with helpers to validate and normalize roles.
-- Current user profile logic is encapsulated by `useUserProfile()` and user helpers in `src/api/users.ts`.
+See [`AGENTS.md`](AGENTS.md). It is the single source of truth for architecture, conventions, and rules, for both people and AI agents (Claude Code, Copilot, Codex, Cursor, Gemini).
 
 ## Find a Game
 
@@ -208,30 +199,6 @@ Feature for members to post they need players or need a group for a given date.
   - Owner identity shows avatar and quick actions to email/phone when available.
 
 - Firestore rules: owner or admin can update/delete; reading is public or member-gated depending on your rules. A composite index is required for the future-posts query (date asc, createdAt desc). The Firebase console will provide the exact index link if missing.
-
-## Admin Detection
-
-- UI considers users as admin when a Firestore doc exists at `admin/{uid}` with `isAdmin: true` (or legacy `admin`).
-- For a one-off check, use utilities in `src/utils/admin.ts` (e.g., `isAdminUser`, `requireAdmin`). For real-time checks in components, use `useDocAdminFlag(user)`.
-
-## UI Conventions
-
-- Use HeroUI components with `onPress` (not `onClick`).
-- `UserAvatar` fallback chain: explicit `src` > `user.profileURL` > `user.photoURL` > initials. Pass the full `user` when possible.
-- Use toast helper `addToast({ title, description, color })` for feedback.
-- Tailwind v4 classes are used across the codebase.
-
-## Tests
-
-- Tests live in `src/__tests__/` and use Vitest + RTL (`jsdom`).
-- Common patterns: React Query query keys, admin gating, storage behaviors, and tournament detail logic.
-
-## Contributing & Local Notes
-
-- Keep types strict—avoid `(x as any)` on user fields. Prefer the `User` type from `src/api/users.ts` and optional chaining.
-- Do not duplicate Firebase init; import from `src/config/firebase.ts`.
-- For new Firestore interactions, guard for auth and clean up subscriptions on unmount.
-- Prefer dynamic Firestore imports in heavy admin-only features for performance.
 
 ## Production Deployment
 
