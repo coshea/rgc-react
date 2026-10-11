@@ -1,0 +1,48 @@
+name: Deploy Firebase Rules
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - "storage.rules"
+      - "firebase.json"
+      - ".firebaserc"
+      - ".github/workflows/firebase-deploy-rules.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Authenticate to Google Cloud
+        # The service account in FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB needs,
+        # on the ridgefield-golf-club project:
+        #   - roles/firebaserules.admin   (deploy Firestore and Storage rules)
+        #   - roles/datastore.indexAdmin  (deploy Firestore indexes)
+        #   - roles/firebase.viewer       (storage rules: look up the default bucket)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}"
+
+      - name: Deploy Firestore rules, indexes and Storage rules
+        run: |
+          firebase deploy --only firestore:rules,firestore:indexes,storage --project ridgefield-golf-club --non-interactive
