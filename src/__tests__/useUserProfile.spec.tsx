@@ -73,4 +73,23 @@ describe("useUserProfile", () => {
       }),
     );
   });
+
+  it("uploads only the original and never sends profileURL", async () => {
+    const { uploadProfilePicture: upload } = await import("@/api/storage");
+    vi.mocked(upload).mockClear();
+    const { result } = renderHook(() => useUserProfile(), { wrapper });
+    await act(async () => {
+      await result.current.save({
+        data: { firstName: "A", profileURL: "https://stale/resized.jpg" },
+        file: new File(["1"], "f.png"),
+      });
+    });
+
+    const { uploadProfilePicture } = await import("@/api/storage");
+    const { saveUserProfile } = await import("@/api/users");
+    expect(uploadProfilePicture).toHaveBeenCalledTimes(1);
+    const saved = vi.mocked(saveUserProfile).mock.calls.at(-1)?.[1];
+    expect(saved?.photoURL).toBe("https://storage.test/avatar.png");
+    expect(saved).not.toHaveProperty("profileURL");
+  });
 });

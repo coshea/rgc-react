@@ -1,11 +1,12 @@
 {
   "name": "vite-template",
   "private": true,
-  "version": "0.0.0",
+  "version": "9.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build-full": "tsc && vite build && npm run test && npm run lint",
     "prepare": "husky install",
     "test": "vitest run",
     "test:watch": "vitest --watch",
@@ -17,8 +18,7 @@
     "firestore": "firebase deploy --only firestore:rules",
     "emulators": "firebase emulators:start --only auth,firestore,functions",
     "emulators:functions": "firebase emulators:start --only functions",
-    "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs",
-    "build-full": "npm run build && npm run test && npm run lint"
+    "test:membership:emulator": "node scripts/test-membership-payment-emulator.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -42,26 +42,25 @@
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/react-query": "^5.87.1",
     "@tanstack/react-query-devtools": "^5.87.1",
-    "@tiptap/core": "^3.28.0",
-    "@tiptap/extension-link": "^3.28.0",
-    "@tiptap/extension-underline": "^3.28.0",
-    "@tiptap/extensions": "^3.28.0",
-    "@tiptap/pm": "^3.28.0",
-    "@tiptap/react": "^3.28.0",
-    "@tiptap/starter-kit": "^3.28.0",
-    "@tiptap/suggestion": "^3.28.0",
+    "@tiptap/core": "^3.31.4",
+    "@tiptap/extension-link": "^3.31.4",
+    "@tiptap/extension-underline": "^3.31.4",
+    "@tiptap/extensions": "^3.31.4",
+    "@tiptap/pm": "^3.31.4",
+    "@tiptap/react": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
+    "@tiptap/suggestion": "^3.31.4",
     "clsx": "2.1.1",
     "embla-carousel": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^12.10.0",
     "framer-motion": "11.15.0",
     "html-to-image": "^1.11.13",
-    "maplibre-gl": "^5.24.0",
     "marked": "^18.0.7",
     "motion": "^12.40.0",
     "react": "^19.2.6",
     "react-aria": "^3.51.0",
-    "react-aria-components": "^1.20.0",
+    "react-aria-components": "^1.22.0",
     "react-dom": "^19.2.6",
     "react-icons": "^5.5.0",
     "react-is": "^19.2.6",
@@ -109,10 +108,15 @@
     "vitest": "^4.1.3"
   },
   "overrides": {
-    "tar": "^7.5.21"
+    "tar": "^7.5.21",
+    "@grpc/grpc-js": "^1.14.6",
+    "figlet": "^1.11.3"
   },
   "vitest": {
     "environment": "jsdom",
     "globals": true
+  },
+  "allowScripts": {
+    "@heroui-pro/react@1.0.0-beta.10": true
   }
 }

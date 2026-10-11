@@ -22,7 +22,7 @@ import { auth } from "@/config/firebase";
 import { extractFirebaseAuthError } from "@/utils/firebaseErrors";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { executeRecaptcha } from "@/utils/recaptcha";
-import { saveUserProfile } from "@/api/users";
+import { hydrateUserProfileFromAuth } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 import { parseDisplayName } from "@/utils/profileCompletion";
 import { RGCLogo } from "@/components/icons";
@@ -149,7 +149,7 @@ export default function LoginPage() {
           const pendingProfile = consumePendingSignupProfile(emailAddress);
           if (pendingProfile) {
             try {
-              await saveUserProfile(result.user.uid, {
+              await hydrateUserProfileFromAuth(result.user.uid, {
                 firstName: pendingProfile.firstName,
                 lastName: pendingProfile.lastName,
                 email: pendingProfile.email,
@@ -363,10 +363,12 @@ export default function LoginPage() {
           result.user.displayName,
         );
         try {
-          await saveUserProfile(result.user.uid, {
+          await hydrateUserProfileFromAuth(result.user.uid, {
             firstName: first,
             lastName: lastName,
             email: result.user.email || undefined,
+            displayName: result.user.displayName || undefined,
+            photoURL: result.user.photoURL || undefined,
           });
         } catch (profileError: unknown) {
           console.error(

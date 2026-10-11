@@ -148,17 +148,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { getAdditionalUserInfo } = await import("firebase/auth");
             const additionalUserInfo = getAdditionalUserInfo(result);
             if (additionalUserInfo?.isNewUser) {
-              const { saveUserProfile } = await import("@/api/users");
+              const { hydrateUserProfileFromAuth } = await import(
+                "@/api/users"
+              );
               const { parseDisplayName } =
                 await import("@/utils/profileCompletion");
               const { firstName: first, lastName } = parseDisplayName(
                 result.user.displayName,
               );
               try {
-                await saveUserProfile(result.user.uid, {
+                await hydrateUserProfileFromAuth(result.user.uid, {
                   firstName: first,
                   lastName: lastName,
                   email: result.user.email || undefined,
+                  displayName: result.user.displayName || undefined,
+                  photoURL: result.user.photoURL || undefined,
                 });
               } catch (profileError: unknown) {
                 console.error(

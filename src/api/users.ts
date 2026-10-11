@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { db, auth } from "@/config/firebase";
 import {
   doc,
@@ -173,6 +174,90 @@ export function computeDisplayName(
     return [first, last].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
   }
   return (data.displayName || "").trim();
+}
+
+/**
+ * Fill in `users/{uid}` from the signed-in auth user without clobbering data.
+ * Never overwrites existing values and never replaces the document (always
+ * `merge: true`). Read failures propagate rather than being treated as "missing".
+ */
+export async function hydrateUserProfileFromAuth(
+  uid: string,
+  authUser: {
+    email?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  },
+) {
+  const currentUid = auth.currentUser?.uid ?? null;
+  if (!currentUid) {
+    throw new Error(
+      "Cannot hydrate user profile: no authenticated user found (auth.currentUser is null).",
+    );
+  }
+  if (currentUid !== uid) {
+    throw new Error(
+      `Cannot hydrate user profile: authenticated UID (${currentUid}) does not match requested UID (${uid}).`,
+    );
+  }
+
+  const ref = doc(db, "users", uid);
+  const safeEmail = (authUser.email ?? "").trim();
+  const safeFirstName = (authUser.firstName ?? "").trim();
+  const safeLastName = (authUser.lastName ?? "").trim();
+  const safeDisplayName =
+    (authUser.displayName ?? "").trim() ||
+    [safeFirstName, safeLastName].filter(Boolean).join(" ").trim();
+  const safePhotoUrl = authUser.photoURL || null;
+
+  try {
+    await Sentry.startSpan(
+      { op: "db.write", name: "hydrateUserProfileFromAuth" },
+      async () => {
+        const profileSnap = await getDoc(ref);
+        const exists = profileSnap.exists();
+        const existing = exists
+          ? (profileSnap.data() as Partial<UserProfilePayload>)
+          : {};
+
+        const isBlank = (v: unknown) =>
+          typeof v !== "string" || v.trim() === "";
+
+        // Only include keys that have a value: Firestore rejects `undefined`.
+        const payload: Record<string, unknown> = {
+          updatedAt: serverTimestamp(),
+        };
+        if (isBlank(existing.email) && safeEmail) payload.email = safeEmail;
+        if (isBlank(existing.firstName) && safeFirstName)
+          payload.firstName = safeFirstName;
+        if (isBlank(existing.lastName) && safeLastName)
+          payload.lastName = safeLastName;
+        if (isBlank(existing.displayName) && safeDisplayName)
+          payload.displayName = safeDisplayName;
+        if (!existing.photoURL && safePhotoUrl) payload.photoURL = safePhotoUrl;
+
+        if (!exists) {
+          if (!safeEmail) {
+            throw new Error(
+              "Cannot create profile record: no email available for users/" +
+                uid +
+                ". Please re-authenticate and ensure your account has an email address.",
+            );
+          }
+          payload.boardMember = false;
+          payload.role = null;
+          payload.createdAt = serverTimestamp();
+        }
+
+        await setDoc(ref, payload, { merge: true });
+      },
+    );
+  } catch (error) {
+    Sentry.captureException(error);
+    throw error;
+  }
 }
 
 /**

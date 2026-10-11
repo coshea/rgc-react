@@ -31,6 +31,8 @@ export function useUserProfile() {
     mutationFn: async (payload: SaveVars) => {
       if (!uid) throw new Error("Not authenticated");
 
+      // Only the original is uploaded; the `resize_user_avatar` Cloud Function
+      // generates the resized copy and writes `profileURL` server-side.
       let photoURL = payload.data.photoURL || null;
       if (payload.file) {
         photoURL = await uploadProfilePicture(uid, payload.file);
@@ -42,7 +44,10 @@ export function useUserProfile() {
       let displayName = payload.data.displayName?.trim();
       if (first || last)
         displayName = [first, last].filter(Boolean).join(" ").trim();
-      const toSave = { ...payload.data, displayName, photoURL };
+      // Don't send profileURL: the function owns it and a stale client value
+      // would overwrite the resized URL.
+      const { profileURL: _profileURL, ...rest } = payload.data;
+      const toSave = { ...rest, displayName, photoURL };
       await saveUserProfile(uid, toSave);
       return toSave as UserProfilePayload;
     },
