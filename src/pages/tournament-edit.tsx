@@ -91,7 +91,8 @@ const TournamentEditPage: React.FC = () => {
                   color: "danger",
                 },
           );
-          setLoading(false);
+          // Without a tournament the editor can't render; don't spin forever.
+          navigate("/tournaments", { replace: true });
         },
       );
     })();
