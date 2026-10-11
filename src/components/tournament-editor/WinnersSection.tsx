@@ -1,5 +1,4 @@
 import React from "react";
-import { Separator } from "@heroui/react";
 import { BracketRoundPayout, TournamentStatus } from "@/types/tournament";
 import type { WinnerGroup } from "@/types/winner";
 import GroupedWinnersEditor from "@/components/grouped-winners-editor";
@@ -22,6 +21,24 @@ interface WinnersSectionProps {
   errors: Record<string, string>;
 }
 
+/** Whether the Results section has anything to show for this tournament. */
+export function shouldShowWinnersSection({
+  isEditing,
+  status,
+  bracketRoundPayoutsCount,
+}: {
+  isEditing: boolean;
+  status: TournamentStatus;
+  bracketRoundPayoutsCount: number;
+}): boolean {
+  return (
+    isEditing ||
+    status === TournamentStatus.Completed ||
+    status === TournamentStatus.InProgress ||
+    bracketRoundPayoutsCount > 0
+  );
+}
+
 export const WinnersSection: React.FC<WinnersSectionProps> = ({
   isEditing,
   status,
@@ -38,47 +55,45 @@ export const WinnersSection: React.FC<WinnersSectionProps> = ({
   automatedBracketWinnerGroupsCount = 0,
   errors,
 }) => {
-  const show =
-    isEditing ||
-    status === TournamentStatus.Completed ||
-    status === TournamentStatus.InProgress;
-
-  if (!show && bracketRoundPayouts.length === 0) return null;
+  if (
+    !shouldShowWinnersSection({
+      isEditing,
+      status,
+      bracketRoundPayoutsCount: bracketRoundPayouts.length,
+    })
+  ) {
+    return null;
+  }
 
   return (
-    <div className="pt-4">
-      <Separator className="my-4" />
-      <div className="grid grid-cols-1 gap-6">
-        <div>
-          <GroupedWinnersEditor
-            groups={winnerGroups}
-            onChange={setWinnerGroups}
-            teamSize={players}
-            prizePool={prizePool}
-            isCompleted={completed}
-            bracketRoundPayouts={bracketRoundPayouts}
-            setBracketRoundPayouts={setBracketRoundPayouts}
-            onRecalculateBracketPayouts={onRecalculateBracketPayouts}
-            recalculatingBracketPayouts={recalculatingBracketPayouts}
-            automatedBracketWinnerGroupsCount={
-              automatedBracketWinnerGroupsCount
-            }
-            errors={errors}
-            registrations={registrations
-              .filter((r) => r.team != null)
-              .map((r) => ({
-                id: r.id,
-                team: (r.team ?? []).map((m) => ({
-                  id: m.id,
-                  displayName: m.displayName ?? "",
-                })),
-                ownerId: r.ownerId,
-              }))}
-          />
-          {completed && errors.winners && (
-            <p className="text-danger text-sm mt-2">{errors.winners}</p>
-          )}
-        </div>
+    <div className="min-w-0">
+      <div>
+        <GroupedWinnersEditor
+          groups={winnerGroups}
+          onChange={setWinnerGroups}
+          teamSize={players}
+          prizePool={prizePool}
+          isCompleted={completed}
+          bracketRoundPayouts={bracketRoundPayouts}
+          setBracketRoundPayouts={setBracketRoundPayouts}
+          onRecalculateBracketPayouts={onRecalculateBracketPayouts}
+          recalculatingBracketPayouts={recalculatingBracketPayouts}
+          automatedBracketWinnerGroupsCount={automatedBracketWinnerGroupsCount}
+          errors={errors}
+          registrations={registrations
+            .filter((r) => r.team != null)
+            .map((r) => ({
+              id: r.id,
+              team: (r.team ?? []).map((m) => ({
+                id: m.id,
+                displayName: m.displayName ?? "",
+              })),
+              ownerId: r.ownerId,
+            }))}
+        />
+        {completed && errors.winners && (
+          <p className="text-danger text-sm mt-2">{errors.winners}</p>
+        )}
       </div>
     </div>
   );

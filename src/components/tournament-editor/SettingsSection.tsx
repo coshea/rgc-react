@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Card,
   Input,
   InputGroup,
   Select,
@@ -9,15 +8,8 @@ import {
   TextField,
   Label,
   FieldError,
-  Button,
 } from "@heroui/react";
-import { Icon } from "@iconify/react";
-import {
-  Tournament,
-  TournamentStatus,
-  TournamentWeather,
-} from "@/types/tournament";
-import type { DateValue } from "@internationalized/date";
+import { Tournament, TournamentStatus } from "@/types/tournament";
 
 export type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
 export const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
@@ -47,10 +39,6 @@ interface SettingsSectionProps {
   status: TournamentStatus;
   setStatus: (v: TournamentStatus) => void;
   setCompleted: (v: boolean) => void;
-  weather: TournamentWeather | null;
-  date: DateValue | null;
-  fetchingWeather: boolean;
-  onFetchWeather: () => void;
   errors: Record<string, string>;
 }
 
@@ -76,14 +64,10 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   status,
   setStatus,
   setCompleted,
-  weather,
-  date,
-  fetchingWeather,
-  onFetchWeather,
   errors,
 }) => {
   return (
-    <div className="space-y-6 min-w-0">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 min-w-0">
       <TextField
         isInvalid={!!errors.players}
         value={String(players)}
@@ -184,48 +168,53 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
           </ListBox>
         </Select.Popover>
       </Select>
-      <Checkbox
-        isSelected={assignedTeeTimes}
-        onChange={setAssignedTeeTimes}
-        id="assigned-tee-times"
-      >
-        <Checkbox.Content>
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
-          <Label htmlFor="assigned-tee-times" className="text-sm">
-            Assigned tee times
-          </Label>
-        </Checkbox.Content>
-      </Checkbox>
-      <Checkbox
-        isSelected={goldTeesEnabled}
-        onChange={setGoldTeesEnabled}
-        id="gold-tees-enabled"
-      >
-        <Checkbox.Content>
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
-          <Label htmlFor="gold-tees-enabled" className="text-sm">
-            Allow gold tee selection during registration
-          </Label>
-        </Checkbox.Content>
-      </Checkbox>
-      <Checkbox
-        isSelected={bracketNotificationsDisabled}
-        onChange={setBracketNotificationsDisabled}
-        id="bracket-notifications-disabled"
-      >
-        <Checkbox.Content>
-          <Checkbox.Control>
-            <Checkbox.Indicator />
-          </Checkbox.Control>
-          <Label htmlFor="bracket-notifications-disabled" className="text-sm">
-            Disable bracket matchup email notifications
-          </Label>
-        </Checkbox.Content>
-      </Checkbox>
+      <div className="flex flex-col sm:col-span-2">
+        <Checkbox
+          isSelected={assignedTeeTimes}
+          className="min-h-11 md:min-h-8"
+          onChange={setAssignedTeeTimes}
+          id="assigned-tee-times"
+        >
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Label htmlFor="assigned-tee-times" className="text-sm">
+              Assigned tee times
+            </Label>
+          </Checkbox.Content>
+        </Checkbox>
+        <Checkbox
+          isSelected={goldTeesEnabled}
+          className="min-h-11 md:min-h-8"
+          onChange={setGoldTeesEnabled}
+          id="gold-tees-enabled"
+        >
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Label htmlFor="gold-tees-enabled" className="text-sm">
+              Allow gold tee selection during registration
+            </Label>
+          </Checkbox.Content>
+        </Checkbox>
+        <Checkbox
+          isSelected={bracketNotificationsDisabled}
+          className="min-h-11 md:min-h-8"
+          onChange={setBracketNotificationsDisabled}
+          id="bracket-notifications-disabled"
+        >
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Label htmlFor="bracket-notifications-disabled" className="text-sm">
+              Disable bracket matchup email notifications
+            </Label>
+          </Checkbox.Content>
+        </Checkbox>
+      </div>
       <Select
         value={
           previousTournamentId &&
@@ -274,54 +263,8 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
         </Select.Popover>
       </Select>
 
-      {/* Weather Section */}
-      <Card>
-        <Card.Content className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Tournament Weather</h3>
-            <Button
-              size="sm"
-              variant="tertiary"
-              onPress={onFetchWeather}
-              isDisabled={!date || fetchingWeather}
-            >
-              {!fetchingWeather && (
-                <Icon icon="lucide:cloud" className="w-4 h-4" />
-              )}
-              {weather ? "Refresh" : "Fetch"} Weather
-            </Button>
-          </div>
-          {weather ? (
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-muted text-xs">Condition</p>
-                <p className="font-medium">{weather.condition}</p>
-              </div>
-              <div>
-                <p className="text-muted text-xs">Temperature</p>
-                <p className="font-medium">{weather.temperature}°F</p>
-              </div>
-              <div>
-                <p className="text-muted text-xs">Wind Speed</p>
-                <p className="font-medium">{weather.windSpeed} mph</p>
-              </div>
-              <div>
-                <p className="text-muted text-xs">Precipitation</p>
-                <p className="font-medium">{weather.precipitation}"</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted">
-              {date
-                ? "Click 'Fetch Weather' to load historical weather data"
-                : "Set a tournament date to fetch weather"}
-            </p>
-          )}
-        </Card.Content>
-      </Card>
-
       {/* Status */}
-      <div className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-col gap-4">
         <Select
           value={status}
           onChange={(val) => {

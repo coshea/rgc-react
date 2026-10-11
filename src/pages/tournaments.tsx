@@ -3,11 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useAuth } from "@/providers/AuthProvider";
 import { useAdminFlag } from "@/components/membership/hooks";
-const TournamentEditor = React.lazy(() =>
-  import("@/components/tournament-editor").then((m) => ({
-    default: m.TournamentEditor,
-  })),
-);
 import { TournamentList } from "@/components/tournament-list";
 import { Tournament } from "@/types/tournament";
 import {
@@ -31,9 +26,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   const googleCalendarSubscribeUrl =
     "https://calendar.google.com/calendar/u/0?cid=ZTdpOG43OGdrdWRqMzU3YjlmNnJoaWJwcTRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ";
   const [tournaments, setTournaments] = React.useState<Tournament[]>([]);
-  const [editingTournament, setEditingTournament] =
-    React.useState<Tournament | null>(null);
-  const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
   // Create flow state
@@ -42,9 +34,6 @@ const Tournaments: React.FC<TournamentsProps> = () => {
     "scratch",
   );
   const [templateId, setTemplateId] = React.useState<string | null>(null);
-  const [initialValues, setInitialValues] = React.useState<
-    Partial<Tournament> | undefined
-  >(undefined);
 
   const { user } = useAuth();
   const { isAdmin } = useAdminFlag(user);
@@ -92,75 +81,18 @@ const Tournaments: React.FC<TournamentsProps> = () => {
   }, []);
 
   const handleCreateTournament = () => {
-    setEditingTournament(null);
     setCreateMethod("scratch");
     setTemplateId(null);
-    setInitialValues(undefined);
     setCreateModeOpen(true);
   };
 
-  const handleSaveTournament = async (tournament: Tournament) => {
-    setIsLoading(true);
-    try {
-      // Don't manually update state - let the real-time listener handle it
-      // This prevents duplicates when creating or updating tournaments
-      if (editingTournament) {
-        addToast({
-          title: "Tournament Updated",
-          description: `${tournament.title} has been successfully updated.`,
-          color: "success",
-        });
-      } else {
-        addToast({
-          title: "Tournament Created",
-          description: `${tournament.title} has been successfully created.`,
-          color: "success",
-        });
-      }
-    } catch (error) {
-      console.error("Error saving tournament:", error);
-      addToast({
-        title: "Error",
-        description: "Failed to save tournament",
-        color: "danger",
-      });
-    } finally {
-      setIsLoading(false);
-      setEditingTournament(null);
-      setIsCreating(false);
-      setInitialValues(undefined);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingTournament(null);
-    setIsCreating(false);
-    setInitialValues(undefined);
-  };
-
   const onContinueCreate = () => {
-    let init: Partial<Tournament> | undefined = undefined;
-    if (createMethod === "copy" && templateId) {
-      const tpl = tournaments.find((t) => t.firestoreId === templateId);
-      if (tpl) {
-        init = {
-          title: tpl.title,
-          description: tpl.description,
-          detailsMarkdown: tpl.detailsMarkdown,
-          players: tpl.players,
-          prizePool: tpl.prizePool,
-          bracketRoundPayouts: tpl.bracketRoundPayouts?.map((payout) => ({
-            ...payout,
-          })),
-          tee: tpl.tee,
-          assignedTeeTimes: tpl.assignedTeeTimes,
-        };
-      }
-    }
-    setInitialValues(init);
     setCreateModeOpen(false);
-    setEditingTournament(null);
-    setIsCreating(true);
+    if (createMethod === "copy" && templateId) {
+      navigate(`/tournaments/new?from=${encodeURIComponent(templateId)}`);
+    } else {
+      navigate("/tournaments/new");
+    }
   };
 
   return (
@@ -258,102 +190,70 @@ const Tournaments: React.FC<TournamentsProps> = () => {
         </Modal.Container>
       </Modal.Backdrop>
 
-      {isCreating || editingTournament ? (
-        isAdmin ? (
-          <React.Suspense
-            fallback={
-              <div className="p-8 flex flex-col items-center gap-3">
-                <Icon
-                  icon="lucide:loader"
-                  className="animate-spin text-2xl text-accent"
-                />
-                <p className="text-sm text-muted">Loading editor...</p>
-              </div>
-            }
-          >
-            <TournamentEditor
-              tournament={editingTournament}
-              initialValues={initialValues}
-              onSave={handleSaveTournament}
-              onCancel={handleCancelEdit}
-            />
-          </React.Suspense>
-        ) : (
-          <div className="p-6 bg-surface rounded-lg border">
-            <p className="text-muted">
-              You do not have permission to create or edit tournaments.
-            </p>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <h2 className="text-xl font-medium text-foreground">
+            Scheduled Tournaments
+          </h2>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              variant="tertiary"
+              aria-label="Subscribe to Google Calendar"
+              onPress={() =>
+                window.open(
+                  googleCalendarSubscribeUrl,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+            >
+              <Icon icon="lucide:calendar" className="w-4 h-4" />
+              Subscribe
+            </Button>
+            {isAdmin && (
+              <>
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  onPress={() => navigate("/season-awards")}
+                  aria-label="Go to season awards"
+                >
+                  <Icon icon="lucide:medal" className="w-4 h-4" />
+                  Awards
+                </Button>
+                <Button
+                  size="sm"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
+                  onPress={handleCreateTournament}
+                  isDisabled={isLoading}
+                  aria-label="Create new tournament"
+                >
+                  <Icon icon="lucide:plus" className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden xs:inline sm:inline">
+                    New Tournament
+                  </span>
+                  <span className="sm:hidden sr-only">New Tournament</span>
+                </Button>
+              </>
+            )}
           </div>
-        )
-      ) : (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <h2 className="text-xl font-medium text-foreground">
-              Scheduled Tournaments
-            </h2>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              <Button
-                size="sm"
-                variant="tertiary"
-                aria-label="Subscribe to Google Calendar"
-                onPress={() =>
-                  window.open(
-                    googleCalendarSubscribeUrl,
-                    "_blank",
-                    "noopener,noreferrer",
-                  )
-                }
-              >
-                <Icon icon="lucide:calendar" className="w-4 h-4" />
-                Subscribe
-              </Button>
-              {isAdmin && (
-                <>
-                  <Button
-                    variant="tertiary"
-                    size="sm"
-                    onPress={() => navigate("/season-awards")}
-                    aria-label="Go to season awards"
-                  >
-                    <Icon icon="lucide:medal" className="w-4 h-4" />
-                    Awards
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base font-medium gap-1 sm:gap-2 shadow-sm active:scale-[0.98]"
-                    onPress={handleCreateTournament}
-                    isDisabled={isLoading}
-                    aria-label="Create new tournament"
-                  >
-                    <Icon
-                      icon="lucide:plus"
-                      className="w-4 h-4 sm:w-5 sm:h-5"
-                    />
-                    <span className="hidden xs:inline sm:inline">
-                      New Tournament
-                    </span>
-                    <span className="sm:hidden sr-only">New Tournament</span>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="flex flex-col items-center gap-2">
-                <Icon
-                  icon="lucide:loader"
-                  className="text-3xl text-accent animate-spin"
-                />
-                <p className="text-muted">Loading tournaments...</p>
-              </div>
-            </div>
-          ) : (
-            <TournamentList tournaments={tournaments} />
-          )}
         </div>
-      )}
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="flex flex-col items-center gap-2">
+              <Icon
+                icon="lucide:loader"
+                className="text-3xl text-accent animate-spin"
+              />
+              <p className="text-muted">Loading tournaments...</p>
+            </div>
+          </div>
+        ) : (
+          <TournamentList tournaments={tournaments} />
+        )}
+      </div>
     </div>
   );
 };

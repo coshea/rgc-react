@@ -27,6 +27,7 @@ const TournamentsPage = lazy(() => import("@/pages/tournaments"));
 const SeasonAwardsPage = lazy(() => import("@/pages/season-awards"));
 const TournamentRegister = lazy(() => import("@/pages/tournament-register"));
 const TournamentDetailPage = lazy(() => import("@/pages/tournament-detail"));
+const TournamentEditPage = lazy(() => import("@/pages/tournament-edit"));
 const MembershipDirectoryPage = lazy(
   () => import("@/pages/membership-directory"),
 );
@@ -142,8 +143,24 @@ function App() {
                 path="/season-awards"
               />
               <Route
+                element={
+                  <RequireAdmin>
+                    <TournamentEditPage />
+                  </RequireAdmin>
+                }
+                path="/tournaments/new"
+              />
+              <Route
                 element={<TournamentDetailPage />}
                 path="/tournaments/:firestoreId"
+              />
+              <Route
+                element={
+                  <RequireAdmin>
+                    <TournamentEditPage />
+                  </RequireAdmin>
+                }
+                path="/tournaments/:firestoreId/edit"
               />
               <Route
                 element={<MoneyListPage />}

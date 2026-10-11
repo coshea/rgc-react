@@ -61,14 +61,6 @@ vi.mock("@/components/tournament-list", () => ({
   ),
 }));
 
-vi.mock("@/components/tournament-editor", () => ({
-  TournamentEditor: ({ initialValues }: { initialValues?: unknown }) => (
-    <div data-testid="tournament-editor">
-      {JSON.stringify(initialValues ?? null)}
-    </div>
-  ),
-}));
-
 vi.mock("@/api/tournaments", () => ({
   onAllTournaments: (
     onNext: (snap: {
@@ -319,7 +311,21 @@ describe("Tournaments copy flow", () => {
     addToastMock.mockReset();
   });
 
-  it("copies bracket round payouts from the selected template", async () => {
+  it("opens a blank new tournament page when starting from scratch", async () => {
+    render(<Tournaments />);
+    await waitFor(() => {
+      expect(screen.getByTestId("tournament-list")).toHaveTextContent(
+        /fall classic/i,
+      );
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /create new tournament/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    expect(navigateMock).toHaveBeenCalledWith("/tournaments/new");
+  });
+
+  it("opens the new tournament page prefilled from the selected template", async () => {
     render(<Tournaments />);
 
     await waitFor(() => {
@@ -338,10 +344,8 @@ describe("Tournaments copy flow", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("tournament-editor")).toHaveTextContent(
-        '"bracketRoundPayouts":[{"round":1,"amount":25},{"round":2,"amount":60,"runnerUpAmount":15}]',
-      );
-    });
+    expect(navigateMock).toHaveBeenCalledWith(
+      "/tournaments/new?from=template-1",
+    );
   });
 });

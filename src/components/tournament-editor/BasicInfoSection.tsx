@@ -39,16 +39,66 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
 }) => {
   return (
     <div className="space-y-6 min-w-0">
-      <TextField
-        isRequired
-        isInvalid={!!errors.title}
-        value={title}
-        onChange={setTitle}
-      >
-        <Label>Tournament Title</Label>
-        <Input placeholder="Enter tournament title" />
-        <FieldError>{errors.title}</FieldError>
-      </TextField>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <TextField
+          isRequired
+          isInvalid={!!errors.title}
+          value={title}
+          onChange={setTitle}
+        >
+          <Label>Tournament Title</Label>
+          <Input placeholder="Enter tournament title" />
+          <FieldError>{errors.title}</FieldError>
+        </TextField>
+        <DatePicker
+          value={date}
+          onChange={setDate}
+          isRequired
+          isInvalid={!!errors.date}
+          className="w-full"
+        >
+          <Label>Tournament Date</Label>
+          <DateField.Group fullWidth>
+            <DateField.Input>
+              {(segment) => <DateField.Segment segment={segment} />}
+            </DateField.Input>
+            <DateField.Suffix>
+              <DatePicker.Trigger>
+                <DatePicker.TriggerIndicator />
+              </DatePicker.Trigger>
+            </DateField.Suffix>
+          </DateField.Group>
+          {errors.date && <FieldError>{errors.date}</FieldError>}
+          <DatePicker.Popover>
+            <Calendar aria-label="Tournament date">
+              <Calendar.Header>
+                <Calendar.YearPickerTrigger>
+                  <Calendar.YearPickerTriggerHeading />
+                  <Calendar.YearPickerTriggerIndicator />
+                </Calendar.YearPickerTrigger>
+                <Calendar.NavButton
+                  slot="previous"
+                  aria-label="Previous month"
+                />
+                <Calendar.NavButton slot="next" aria-label="Next month" />
+              </Calendar.Header>
+              <Calendar.Grid>
+                <Calendar.GridHeader>
+                  {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                </Calendar.GridHeader>
+                <Calendar.GridBody>
+                  {(d) => <Calendar.Cell date={d} />}
+                </Calendar.GridBody>
+              </Calendar.Grid>
+              <Calendar.YearPickerGrid>
+                <Calendar.YearPickerGridBody>
+                  {({ year }) => <Calendar.YearPickerCell year={year} />}
+                </Calendar.YearPickerGridBody>
+              </Calendar.YearPickerGrid>
+            </Calendar>
+          </DatePicker.Popover>
+        </DatePicker>
+      </div>
       <TextField
         isRequired
         isInvalid={!!errors.description}
@@ -68,51 +118,6 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           onPopout={onPopoutOpen}
         />
       </div>
-      <DatePicker
-        value={date}
-        onChange={setDate}
-        isRequired
-        isInvalid={!!errors.date}
-        className="w-full"
-      >
-        <Label>Tournament Date</Label>
-        <DateField.Group fullWidth>
-          <DateField.Input>
-            {(segment) => <DateField.Segment segment={segment} />}
-          </DateField.Input>
-          <DateField.Suffix>
-            <DatePicker.Trigger>
-              <DatePicker.TriggerIndicator />
-            </DatePicker.Trigger>
-          </DateField.Suffix>
-        </DateField.Group>
-        {errors.date && <FieldError>{errors.date}</FieldError>}
-        <DatePicker.Popover>
-          <Calendar aria-label="Tournament date">
-            <Calendar.Header>
-              <Calendar.YearPickerTrigger>
-                <Calendar.YearPickerTriggerHeading />
-                <Calendar.YearPickerTriggerIndicator />
-              </Calendar.YearPickerTrigger>
-              <Calendar.NavButton slot="previous" aria-label="Previous month" />
-              <Calendar.NavButton slot="next" aria-label="Next month" />
-            </Calendar.Header>
-            <Calendar.Grid>
-              <Calendar.GridHeader>
-                {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
-              </Calendar.GridHeader>
-              <Calendar.GridBody>
-                {(d) => <Calendar.Cell date={d} />}
-              </Calendar.GridBody>
-            </Calendar.Grid>
-            <Calendar.YearPickerGrid>
-              <Calendar.YearPickerGridBody>
-                {({ year }) => <Calendar.YearPickerCell year={year} />}
-              </Calendar.YearPickerGridBody>
-            </Calendar.YearPickerGrid>
-          </Calendar>
-        </DatePicker.Popover>
-      </DatePicker>
     </div>
   );
 };

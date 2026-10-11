@@ -72,6 +72,13 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 
 ## UI Conventions (HeroUI v3)
 
+- **Mobile first:** most members use the site on their phones, so every new page, component, redesign and mockup must work at 375px wide before it is considered done.
+  - Write Tailwind mobile-first: base classes are the phone layout, and `sm:`/`md:`/`lg:` add the larger layouts.
+  - The page body must never scroll sideways. Wide tables either scroll inside their own `overflow-x-auto` container or turn into a card list on phones.
+  - Tap targets are at least 44px tall. Primary actions on long forms go in a sticky bottom bar that respects `env(safe-area-inset-bottom)`.
+  - Desktop sidebars and multi-column layouts collapse to a single column on phones, with a sticky, horizontally scrolling chip bar or a dropdown for navigation.
+  - Don't override the 16px input font size in `src/styles/globals.css`; it stops iOS Safari from zooming in when a field gets focus.
+  - When proposing a design, show the phone layout alongside the desktop one.
 - **Compound APIs:** HeroUI v3 uses compound APIs, e.g. `<Dropdown><Button/><Dropdown.Popover><Dropdown.Menu><Dropdown.Item textValue="…"/></Dropdown.Menu></Dropdown.Popover></Dropdown>`. Never use v2 names (`DropdownTrigger`, `DropdownItem`, `ModalContent`, `HeroUIProvider`). To look up v3 docs, use the scripts in `.github/skills/heroui-react/`.
 - **Events:** use `onPress` on HeroUI components and `onClick` only on native elements. Never put `onPress` on native DOM nodes; wrap them in a HeroUI `Button`/`Link` instead (this includes a clickable `UserAvatar`, which deliberately doesn't forward `onPress`). Filter out non-DOM props before spreading them onto native elements.
 - **Prefer HeroUI controls** over raw `<button>`/`<input>`/`<select>`/`<img>` in new code and on lines you change. Don't proactively upgrade legacy controls elsewhere in a file you touch. If raw HTML is unavoidable, keep it accessible and say why in a comment.

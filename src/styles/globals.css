@@ -11,6 +11,16 @@ body {
   color: var(--foreground);
 }
 
+/* `hidden` on both html and body turns body into its own scroll container,
+   which breaks every `position: sticky` element (navbar, editor sidebar, save
+   bars). `clip` blocks horizontal scroll without creating a scroll container. */
+@supports (overflow-x: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*

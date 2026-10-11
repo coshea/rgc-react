@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Button } from "@heroui/react";
+import { Button, Modal } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import { recalculateTournamentBracketPayouts } from "@/api/brackets";
@@ -39,7 +39,20 @@ import {
   TeeColor,
   isTeeColor,
 } from "@/components/tournament-editor/SettingsSection";
-import { WinnersSection } from "@/components/tournament-editor/WinnersSection";
+import {
+  WinnersSection,
+  shouldShowWinnersSection,
+} from "@/components/tournament-editor/WinnersSection";
+import { WeatherSection } from "@/components/tournament-editor/WeatherSection";
+import {
+  EditorChipBar,
+  EditorSectionCard,
+  EditorSidebar,
+  scrollToSection,
+  sectionDomId,
+  useActiveSection,
+  type EditorNavItem,
+} from "@/components/tournament-editor/EditorNav";
 import { RegistrationsSection } from "@/components/tournament-editor/RegistrationsSection";
 import { BracketSection } from "@/components/tournament-editor/BracketSection";
 import { DetailsPopoutModal } from "@/components/tournament-editor/DetailsPopoutModal";
@@ -51,6 +64,32 @@ interface TournamentEditorProps {
   onSave: (tournament: Tournament) => void;
   onCancel: () => void;
 }
+
+// Which validation error keys belong to which editor section, so the nav can
+// flag a section and Save can jump to the first one with a problem.
+const SECTION_ERROR_KEYS: Record<string, string[]> = {
+  details: ["title", "description", "date", "urlSlug"],
+  registration: ["registrationWindow"],
+  format: ["players", "maxTeams", "prizePool"],
+  results: ["winners", "bracketRoundPayouts"],
+};
+
+// Slugs that would collide with static routes under /tournaments.
+const RESERVED_SLUGS = new Set(["new"]);
+
+const formatTournamentDate = (date: DateValue | null): string | null => {
+  if (!date) return null;
+  // Tournament dates are date-only (midnight UTC); always format in UTC.
+  return new Date(
+    Date.UTC(date.year, date.month - 1, date.day),
+  ).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 const formatForDateTimeInput = (value: unknown) => {
   const date = parseToDate(value);
@@ -150,8 +189,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const [newOpenSpotsOptIn, setNewOpenSpotsOptIn] = React.useState(false);
   const [adding, setAdding] = React.useState(false);
   const [detailsPopoutOpen, setDetailsPopoutOpen] = React.useState(false);
-  const [regsOpen, setRegsOpen] = React.useState(false);
-  const [bracketOpen, setBracketOpen] = React.useState(false);
+  const [discardOpen, setDiscardOpen] = React.useState(false);
   const [publishingBracket, setPublishingBracket] = React.useState(false);
   const [weather, setWeather] = React.useState<TournamentWeather | null>(
     seed.weather || null,
@@ -171,6 +209,115 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   const incomingPreviousTournamentId =
     tournament?.previousTournamentId ?? undefined;
   const tournamentId = tournament?.firestoreId ?? null;
+
+  // Unsaved-change tracking: each form field serialized, compared with the
+  // values as of the last load or save. Live tools (entries, bracket) save on
+  // their own and are not part of this.
+  const formValues = React.useMemo<Record<string, string>>(
+    () => ({
+      title: JSON.stringify(title),
+      description: JSON.stringify(description),
+      detailsMarkdown: JSON.stringify(detailsMarkdown),
+      date: JSON.stringify(date?.toString() ?? null),
+      registrationStart: JSON.stringify(registrationStart?.toString() ?? null),
+      registrationEnd: JSON.stringify(registrationEnd?.toString() ?? null),
+      registrationOpeningNotificationEnabled: JSON.stringify(
+        registrationOpeningNotificationEnabled,
+      ),
+      players: JSON.stringify(players),
+      maxTeams: JSON.stringify(maxTeams ?? null),
+      prizePool: JSON.stringify(prizePool),
+      tee: JSON.stringify(tee),
+      assignedTeeTimes: JSON.stringify(assignedTeeTimes),
+      goldTeesEnabled: JSON.stringify(goldTeesEnabled),
+      bracketNotificationsDisabled: JSON.stringify(
+        bracketNotificationsDisabled,
+      ),
+      previousTournamentId: JSON.stringify(previousTournamentId ?? null),
+      status: JSON.stringify(status),
+      weather: JSON.stringify(weather),
+      winnerGroups: JSON.stringify(winnerGroups),
+      bracketRoundPayouts: JSON.stringify(bracketRoundPayouts),
+    }),
+    [
+      title,
+      description,
+      detailsMarkdown,
+      date,
+      registrationStart,
+      registrationEnd,
+      registrationOpeningNotificationEnabled,
+      players,
+      maxTeams,
+      prizePool,
+      tee,
+      assignedTeeTimes,
+      goldTeesEnabled,
+      bracketNotificationsDisabled,
+      previousTournamentId,
+      status,
+      weather,
+      winnerGroups,
+      bracketRoundPayouts,
+    ],
+  );
+  const [savedValues, setSavedValues] =
+    React.useState<Record<string, string>>(formValues);
+  const unsavedCount = Object.keys(formValues).filter(
+    (key) => formValues[key] !== savedValues[key],
+  ).length;
+  const hasUnsavedChanges = unsavedCount > 0;
+
+  // Warn before closing or reloading the tab with unsaved changes.
+  React.useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const requestCancel = () => {
+    if (hasUnsavedChanges) setDiscardOpen(true);
+    else onCancel();
+  };
+
+  const sectionHasError = (
+    sectionId: string,
+    errs: Record<string, string>,
+  ): boolean => (SECTION_ERROR_KEYS[sectionId] ?? []).some((k) => !!errs[k]);
+
+  const showResults = shouldShowWinnersSection({
+    isEditing,
+    status,
+    bracketRoundPayoutsCount: bracketRoundPayouts.length,
+  });
+  const navItems: EditorNavItem[] = [
+    { id: "details", label: "Details", group: "Setup" },
+    { id: "registration", label: "Registration" },
+    { id: "format", label: "Format" },
+    ...(showResults
+      ? [{ id: "results", label: "Results", group: "After the event" }]
+      : []),
+    {
+      id: "weather",
+      label: "Weather",
+      ...(showResults ? {} : { group: "After the event" }),
+    },
+    ...(isEditing && tournamentId
+      ? [
+          {
+            id: "entries",
+            label: "Entries",
+            group: "Live tools",
+            badge: registrations.length,
+          },
+          { id: "bracket", label: "Bracket" },
+        ]
+      : []),
+  ].map((item) => ({ ...item, hasError: sectionHasError(item.id, errors) }));
+  const activeSection = useActiveSection(navItems.map((item) => item.id));
 
   const toSlug = (text: string) =>
     text
@@ -277,7 +424,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     [],
   );
 
-  const validateForm = (): boolean => {
+  const validateForm = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
     if (!title.trim()) newErrors.title = "Title is required";
@@ -286,6 +433,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     if (!isEditing) {
       if (!urlSlug) {
         newErrors.urlSlug = "URL slug is required";
+      } else if (RESERVED_SLUGS.has(urlSlug)) {
+        newErrors.urlSlug = "This URL is reserved. Choose a different one.";
       } else if (
         !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(urlSlug) &&
         urlSlug.length > 1
@@ -341,7 +490,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleRecalculateBracketPayouts = React.useCallback(async () => {
@@ -370,6 +519,11 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
       setWinnerGroups(result.winnerGroups);
       setBracketRoundPayouts(result.bracketRoundPayouts);
+      setSavedValues((prev) => ({
+        ...prev,
+        winnerGroups: JSON.stringify(result.winnerGroups),
+        bracketRoundPayouts: JSON.stringify(result.bracketRoundPayouts),
+      }));
 
       if (result.bracket) {
         addToast({
@@ -460,7 +614,21 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    const validationErrors = validateForm();
+    const firstInvalid = navItems.find((item) =>
+      sectionHasError(item.id, validationErrors),
+    );
+    if (Object.keys(validationErrors).length > 0) {
+      if (firstInvalid) scrollToSection(firstInvalid.id);
+      addToast({
+        title: "Check the highlighted fields",
+        description: firstInvalid
+          ? `Fix the errors in ${firstInvalid.label} before saving.`
+          : "Fix the errors before saving.",
+        color: "danger",
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (!auth || !auth.currentUser) {
@@ -610,6 +778,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       } else if (tournament && tournament.firestoreId) {
         savedTournament.firestoreId = tournament.firestoreId;
       }
+      setSavedValues(formValues);
       onSave(savedTournament);
       addToast({
         title: isEditing ? "Tournament Updated" : "Tournament Created",
@@ -874,29 +1043,64 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
     }
   };
 
+  // Honor a deep link like #editor-section-entries once the editor has mounted.
+  React.useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash.startsWith(sectionDomId(""))) {
+      document.getElementById(hash)?.scrollIntoView?.({ block: "start" });
+    }
+  }, []);
+
+  const dateLabel = formatTournamentDate(date);
+  const subtitle = [
+    dateLabel,
+    isEditing && tournamentId
+      ? `${registrations.length} ${registrations.length === 1 ? "team" : "teams"} registered`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <Card className="w-full flex flex-col">
-      <Card.Content className="p-6 flex-1">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-medium">
-            {isEditing ? "Edit Tournament" : "Create New Tournament"}
-          </h2>
+    <div className="flex flex-col">
+      <header className="flex flex-col gap-1 pb-2 pt-1">
+        <div>
           <Button
             variant="ghost"
-            isIconOnly
-            onPress={onCancel}
-            aria-label="Cancel"
+            size="sm"
+            onPress={requestCancel}
+            className="-ml-2 min-h-11 md:min-h-0 text-muted"
           >
-            <Icon icon="lucide:x" className="text-lg" />
+            <Icon icon="lucide:chevron-left" className="w-4 h-4" />
+            {isEditing ? tournament?.title || "Tournament" : "Tournaments"}
           </Button>
         </div>
+        <h1 className="text-xl font-medium sm:text-2xl">
+          {isEditing ? "Edit Tournament" : "New Tournament"}
+        </h1>
+        {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
+      </header>
+
+      <EditorChipBar
+        items={navItems}
+        active={activeSection}
+        className="sticky top-[46px] z-30 -mx-3 border-b border-border bg-background px-3 sm:-mx-4 sm:px-4 md:hidden"
+      />
+
+      <div className="mt-4 md:grid md:grid-cols-[180px_minmax(0,1fr)] md:gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
+        <EditorSidebar
+          items={navItems}
+          active={activeSection}
+          className="hidden md:block sticky top-[62px] self-start"
+        />
+
         <form
           id="tournament-editor-form"
           onSubmit={handleSubmit}
-          className="space-y-6"
+          className="min-w-0 space-y-4"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-6 min-w-0">
+          <EditorSectionCard id="details" title="Details">
+            <div className="space-y-6">
               <BasicInfoSection
                 title={title}
                 setTitle={setTitle}
@@ -921,7 +1125,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                       /tournaments/
                     </span>
                     <Input
-                      className="flex-1 border-none focus:outline-none px-3 py-2 text-sm bg-transparent"
+                      className="flex-1 min-w-0 border-none focus:outline-none px-3 py-2 text-sm bg-transparent"
                       placeholder="2026-tournament-name"
                       aria-label="URL slug"
                     />
@@ -940,21 +1144,27 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
                   <FieldError>{errors.urlSlug}</FieldError>
                 </TextField>
               )}
-              <RegistrationWindowSection
-                registrationStart={registrationStart}
-                setRegistrationStart={setRegistrationStart}
-                registrationEnd={registrationEnd}
-                setRegistrationEnd={setRegistrationEnd}
-                registrationOpeningNotificationEnabled={
-                  registrationOpeningNotificationEnabled
-                }
-                setRegistrationOpeningNotificationEnabled={
-                  setRegistrationOpeningNotificationEnabled
-                }
-                tournamentDate={date}
-                errors={errors}
-              />
             </div>
+          </EditorSectionCard>
+
+          <EditorSectionCard id="registration" title="Registration">
+            <RegistrationWindowSection
+              registrationStart={registrationStart}
+              setRegistrationStart={setRegistrationStart}
+              registrationEnd={registrationEnd}
+              setRegistrationEnd={setRegistrationEnd}
+              registrationOpeningNotificationEnabled={
+                registrationOpeningNotificationEnabled
+              }
+              setRegistrationOpeningNotificationEnabled={
+                setRegistrationOpeningNotificationEnabled
+              }
+              tournamentDate={date}
+              errors={errors}
+            />
+          </EditorSectionCard>
+
+          <EditorSectionCard id="format" title="Format & Settings">
             <SettingsSection
               players={players}
               setPlayers={setPlayers}
@@ -977,88 +1187,115 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
               status={status}
               setStatus={setStatus}
               setCompleted={setCompleted}
+              errors={errors}
+            />
+          </EditorSectionCard>
+
+          {showResults && (
+            <EditorSectionCard id="results" title="Results">
+              <WinnersSection
+                isEditing={isEditing}
+                status={status}
+                winnerGroups={manualWinnerGroups}
+                setWinnerGroups={handleManualWinnerGroupsChange}
+                players={players}
+                prizePool={prizePool}
+                completed={completed}
+                bracketRoundPayouts={bracketRoundPayouts}
+                setBracketRoundPayouts={setBracketRoundPayouts}
+                onRecalculateBracketPayouts={
+                  tournamentId ? handleRecalculateBracketPayouts : undefined
+                }
+                recalculatingBracketPayouts={recalculatingBracketPayouts}
+                registrations={registrations}
+                automatedBracketWinnerGroupsCount={
+                  automatedBracketWinnerGroups.length
+                }
+                errors={errors}
+              />
+            </EditorSectionCard>
+          )}
+
+          <EditorSectionCard id="weather" title="Weather">
+            <WeatherSection
               weather={weather}
               date={date}
               fetchingWeather={fetchingWeather}
               onFetchWeather={handleFetchWeather}
-              errors={errors}
             />
-          </div>
-
-          <WinnersSection
-            isEditing={isEditing}
-            status={status}
-            winnerGroups={manualWinnerGroups}
-            setWinnerGroups={handleManualWinnerGroupsChange}
-            players={players}
-            prizePool={prizePool}
-            completed={completed}
-            bracketRoundPayouts={bracketRoundPayouts}
-            setBracketRoundPayouts={setBracketRoundPayouts}
-            onRecalculateBracketPayouts={
-              tournamentId ? handleRecalculateBracketPayouts : undefined
-            }
-            recalculatingBracketPayouts={recalculatingBracketPayouts}
-            registrations={registrations}
-            automatedBracketWinnerGroupsCount={
-              automatedBracketWinnerGroups.length
-            }
-            errors={errors}
-          />
-
-          {isEditing && (
-            <RegistrationsSection
-              regsOpen={regsOpen}
-              setRegsOpen={setRegsOpen}
-              addOpen={addOpen}
-              setAddOpen={setAddOpen}
-              regsLoading={regsLoading}
-              registrations={registrations}
-              allUsers={allUsers}
-              activeUsers={activeUsers}
-              players={players}
-              editingRegId={editingRegId}
-              onStartEdit={startEdit}
-              onCancelEdit={cancelEdit}
-              onSaveEdit={handleSaveEdit}
-              onDelete={deleteRegistration}
-              newMembers={newMembers}
-              setNewMembers={setNewMembers}
-              newOpenSpotsOptIn={newOpenSpotsOptIn}
-              setNewOpenSpotsOptIn={setNewOpenSpotsOptIn}
-              adding={adding}
-              onSubmitNewRegistration={submitNewRegistration}
-            />
-          )}
+          </EditorSectionCard>
 
           {isEditing && tournament?.firestoreId && (
-            <BracketSection
-              bracketOpen={bracketOpen}
-              setBracketOpen={setBracketOpen}
-              publishingBracket={publishingBracket}
-              setPublishingBracket={setPublishingBracket}
-              tournament={tournament}
-              registrations={registrations}
-              allUsers={allUsers}
-            />
-          )}
+            <>
+              <EditorSectionCard id="entries" title="Entries" live>
+                <RegistrationsSection
+                  addOpen={addOpen}
+                  setAddOpen={setAddOpen}
+                  regsLoading={regsLoading}
+                  registrations={registrations}
+                  allUsers={allUsers}
+                  activeUsers={activeUsers}
+                  players={players}
+                  editingRegId={editingRegId}
+                  onStartEdit={startEdit}
+                  onCancelEdit={cancelEdit}
+                  onSaveEdit={handleSaveEdit}
+                  onDelete={deleteRegistration}
+                  newMembers={newMembers}
+                  setNewMembers={setNewMembers}
+                  newOpenSpotsOptIn={newOpenSpotsOptIn}
+                  setNewOpenSpotsOptIn={setNewOpenSpotsOptIn}
+                  adding={adding}
+                  onSubmitNewRegistration={submitNewRegistration}
+                />
+              </EditorSectionCard>
 
-          <div className="pt-4" />
+              <EditorSectionCard id="bracket" title="Bracket" live>
+                <BracketSection
+                  publishingBracket={publishingBracket}
+                  setPublishingBracket={setPublishingBracket}
+                  tournament={tournament}
+                  registrations={registrations}
+                  allUsers={allUsers}
+                />
+              </EditorSectionCard>
+            </>
+          )}
         </form>
-      </Card.Content>
-      <Card.Footer className="flex justify-end gap-3 px-6 py-4 border-t border-divider bg-background shrink-0 sticky bottom-0 z-10">
-        <Button variant="tertiary" onPress={onCancel}>
+      </div>
+
+      {/* Sticky save bar: sits at the bottom of the screen, clear of the home indicator. */}
+      <div className="sticky bottom-0 z-30 -mx-3 mt-6 flex items-center gap-3 border-t border-border bg-background px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:-mx-4 sm:px-4">
+        <p
+          className="mr-auto flex min-w-0 items-center gap-2 text-sm text-muted"
+          aria-live="polite"
+        >
+          {hasUnsavedChanges && (
+            <span className="h-2 w-2 shrink-0 rounded-full bg-warning" />
+          )}
+          {hasUnsavedChanges
+            ? `${unsavedCount} unsaved ${unsavedCount === 1 ? "change" : "changes"}`
+            : isEditing
+              ? "All changes saved"
+              : "Not created yet"}
+        </p>
+        <Button
+          variant="tertiary"
+          onPress={requestCancel}
+          className="hidden md:inline-flex"
+        >
           Cancel
         </Button>
         <Button
           type="submit"
           form="tournament-editor-form"
           isDisabled={isSubmitting}
+          className="min-h-11 md:min-h-0"
         >
           {!isSubmitting && <Icon icon="lucide:save" />}
-          {isEditing ? "Update Tournament" : "Create Tournament"}
+          {isEditing ? "Save Changes" : "Create Tournament"}
         </Button>
-      </Card.Footer>
+      </div>
 
       <DetailsPopoutModal
         isOpen={detailsPopoutOpen}
@@ -1066,7 +1303,36 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         value={detailsMarkdown}
         onChange={setDetailsMarkdown}
       />
-    </Card>
+
+      <Modal.Backdrop isOpen={discardOpen} onOpenChange={setDiscardOpen}>
+        <Modal.Container size="sm">
+          <Modal.Dialog>
+            <Modal.Header>Discard unsaved changes?</Modal.Header>
+            <Modal.Body>
+              <p className="text-sm text-muted">
+                You have {unsavedCount} unsaved{" "}
+                {unsavedCount === 1 ? "change" : "changes"}. If you leave now,
+                they will be lost.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="tertiary" onPress={() => setDiscardOpen(false)}>
+                Keep Editing
+              </Button>
+              <Button
+                variant="danger"
+                onPress={() => {
+                  setDiscardOpen(false);
+                  onCancel();
+                }}
+              >
+                Discard Changes
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </div>
   );
 };
 
