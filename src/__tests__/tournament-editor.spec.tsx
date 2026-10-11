@@ -460,7 +460,7 @@ describe("TournamentEditor - edit mode", () => {
     fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
       target: { value: "Spring Open Updated" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {
       expect(updateDocMock).toHaveBeenCalled();
@@ -497,7 +497,7 @@ describe("TournamentEditor - edit mode", () => {
     fireEvent.click(
       screen.getByLabelText(/Send push notification when registration opens/i),
     );
-    fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {
       expect(updateDocMock).toHaveBeenCalledWith(
@@ -552,7 +552,7 @@ describe("TournamentEditor - winners validation", () => {
       </QueryClientProvider>,
     );
     // Click update should trigger validation
-    fireEvent.click(screen.getByRole("button", { name: /Update Tournament/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
     await waitFor(() => {
       expect(screen.getByText(/exceeds prize pool/i)).toBeTruthy();
       expect(updateDocMock).not.toHaveBeenCalled();
@@ -920,5 +920,111 @@ describe("TournamentEditor - bracket publish/unpublish", () => {
         }),
       );
     });
+  });
+});
+
+describe("TournamentEditor - page layout", () => {
+  const existing: Tournament = {
+    ...openRegistrationWindow(),
+    title: "Spring Open",
+    description: "Fun event",
+    players: 2,
+    status: TournamentStatus.Upcoming,
+    prizePool: 100,
+    winnerGroups: [],
+    date: new Date("2026-05-16T00:00:00.000Z"),
+    tee: "Blue",
+    firestoreId: "abc123",
+  };
+
+  const renderEditor = (
+    props: Partial<React.ComponentProps<typeof TournamentEditor>> = {},
+  ) => {
+    const onCancel = vi.fn();
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <TournamentEditor onSave={vi.fn()} onCancel={onCancel} {...props} />
+      </QueryClientProvider>,
+    );
+    return { onCancel };
+  };
+
+  it("links to every section, including live tools when editing", () => {
+    renderEditor({ tournament: existing });
+    for (const name of [
+      /^Details$/,
+      /^Registration$/,
+      /^Format$/,
+      /^Results$/,
+      /^Weather$/,
+      /^Entries/,
+      /^Bracket$/,
+    ]) {
+      // One link in the desktop sidebar, one in the phone chip bar.
+      expect(screen.getAllByRole("link", { name })).toHaveLength(2);
+    }
+  });
+
+  it("hides entries and bracket while creating", () => {
+    renderEditor();
+    expect(screen.queryByRole("link", { name: /^Entries/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^Bracket$/ })).toBeNull();
+  });
+
+  it("formats the tournament date in UTC in the header", () => {
+    renderEditor({ tournament: existing });
+    expect(screen.getByText(/Sat, May 16, 2026/)).toBeInTheDocument();
+  });
+
+  it("counts unsaved changes", () => {
+    renderEditor({ tournament: existing });
+    expect(screen.getByText("All changes saved")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+      target: { value: "Spring Open 2026" },
+    });
+    expect(screen.getByText("1 unsaved change")).toBeInTheDocument();
+  });
+
+  it("leaves straight away when there is nothing to lose", () => {
+    const { onCancel } = renderEditor({ tournament: existing });
+    fireEvent.click(screen.getByRole("button", { name: /^Cancel$/ }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks before discarding unsaved changes", async () => {
+    const { onCancel } = renderEditor({ tournament: existing });
+    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+      target: { value: "Spring Open 2026" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^Cancel$/ }));
+    expect(
+      await screen.findByText("Discard unsaved changes?"),
+    ).toBeInTheDocument();
+    expect(onCancel).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Discard Changes/i }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("flags the section with errors when saving fails validation", async () => {
+    renderEditor({ tournament: existing });
+    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
+
+    await waitFor(() =>
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Check the highlighted fields",
+          description: "Fix the errors in Details before saving.",
+        }),
+      ),
+    );
+    expect(screen.getAllByRole("img", { name: "Has errors" })).toHaveLength(2);
+    expect(updateDocMock).not.toHaveBeenCalled();
   });
 });

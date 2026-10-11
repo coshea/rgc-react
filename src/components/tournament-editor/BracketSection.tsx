@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Separator } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { Tournament } from "@/types/tournament";
 import { User } from "@/api/users";
@@ -12,8 +12,6 @@ import { addToast } from "@/providers/toast";
 import type { Registration } from "@/components/registrations-list";
 
 interface BracketSectionProps {
-  bracketOpen: boolean;
-  setBracketOpen: React.Dispatch<React.SetStateAction<boolean>>;
   publishingBracket: boolean;
   setPublishingBracket: (v: boolean) => void;
   tournament: Tournament;
@@ -22,8 +20,6 @@ interface BracketSectionProps {
 }
 
 export const BracketSection: React.FC<BracketSectionProps> = ({
-  bracketOpen,
-  setBracketOpen,
   publishingBracket,
   setPublishingBracket,
   tournament,
@@ -57,26 +53,19 @@ export const BracketSection: React.FC<BracketSectionProps> = ({
   };
 
   return (
-    <div className="pt-6">
-      <Separator className="my-4" />
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setBracketOpen((o) => !o)}
-          aria-expanded={bracketOpen}
-          className="flex-1 flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          <h3 className="text-lg font-medium">Tournament Bracket</h3>
-          <Icon
-            icon="lucide:chevron-down"
-            className={`w-5 h-5 text-muted transition-transform duration-200 ${bracketOpen ? "rotate-180" : ""}`}
-          />
-        </button>
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted">
+          {tournament.bracketPublished
+            ? "Members can see this bracket."
+            : "Only admins can see this bracket until you publish it."}
+        </p>
         <Button
           size="sm"
           variant={tournament.bracketPublished ? "primary" : "tertiary"}
           onPress={handleTogglePublish}
           isDisabled={publishingBracket}
+          className="min-h-11 md:min-h-0"
         >
           {!publishingBracket && (
             <Icon
@@ -89,25 +78,23 @@ export const BracketSection: React.FC<BracketSectionProps> = ({
           {tournament.bracketPublished ? "Published" : "Publish"}
         </Button>
       </div>
-      {bracketOpen && (
-        <div className="pt-2">
-          <BracketEditor
-            tournamentId={tournament.firestoreId}
-            registrations={
-              registrations.filter(
-                (
-                  r,
-                ): r is Registration & {
-                  team: NonNullable<Registration["team"]>;
-                  ownerId: string;
-                } => r.team != null && r.ownerId != null,
-              ) as unknown as RegistrationDoc[]
-            }
-            allUsers={allUsers}
-            bracketPublished={tournament.bracketPublished}
-          />
-        </div>
-      )}
+      <div className="overflow-x-auto">
+        <BracketEditor
+          tournamentId={tournament.firestoreId}
+          registrations={
+            registrations.filter(
+              (
+                r,
+              ): r is Registration & {
+                team: NonNullable<Registration["team"]>;
+                ownerId: string;
+              } => r.team != null && r.ownerId != null,
+            ) as unknown as RegistrationDoc[]
+          }
+          allUsers={allUsers}
+          bracketPublished={tournament.bracketPublished}
+        />
+      </div>
     </div>
   );
 };

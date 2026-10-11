@@ -39,11 +39,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeeBadge } from "@/components/tee-badge";
 import { TeamRegistrationCard } from "@/components/team-registration-card";
-const TournamentEditor = React.lazy(() =>
-  import("@/components/tournament-editor").then((m) => ({
-    default: m.TournamentEditor,
-  })),
-);
 import GroupedWinners from "@/components/grouped-winners";
 import { getUsersByIds } from "@/api/users";
 import type { User } from "@/api/users";
@@ -185,7 +180,6 @@ const TournamentDetailPage: React.FC = () => {
       cancelled = true;
     };
   }, [bracketTeamModal]);
-  const [editOpen, setEditOpen] = React.useState(false);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [bracket, setBracket] = React.useState<TournamentBracket | null>(null);
@@ -806,11 +800,6 @@ img { display: block; max-width: 100%; }
     URL.revokeObjectURL(url);
   };
 
-  const handleEditSave = (_updated: Tournament) => {
-    // We rely on Firestore listener to update UI. Just close modal.
-    setEditOpen(false);
-  };
-
   const handleDelete = async () => {
     if (!isAdmin || !tournament?.firestoreId) return;
     setDeleting(true);
@@ -966,7 +955,9 @@ img { display: block; max-width: 100%; }
                         <Button
                           size="sm"
                           variant="danger-soft"
-                          onPress={() => setEditOpen(true)}
+                          onPress={() =>
+                            navigate(`/tournaments/${firestoreId}/edit`)
+                          }
                           aria-label="Edit tournament (Admin only)"
                           className="w-full"
                         >
@@ -1119,7 +1110,9 @@ img { display: block; max-width: 100%; }
                             <Button
                               size="sm"
                               variant="danger-soft"
-                              onPress={() => setEditOpen(true)}
+                              onPress={() =>
+                                navigate(`/tournaments/${firestoreId}/edit`)
+                              }
                               aria-label="Edit tournament (Admin only)"
                               className="whitespace-nowrap"
                             >
@@ -2008,47 +2001,6 @@ img { display: block; max-width: 100%; }
           </div>
         )}
 
-        {isAdmin && (
-          <Modal>
-            <Modal.Backdrop
-              isOpen={editOpen}
-              onOpenChange={(open) => {
-                if (!open) setEditOpen(false);
-              }}
-              isDismissable={false}
-            >
-              <Modal.Container
-                scroll="inside"
-                size="full"
-                className="md:max-w-5xl md:max-h-[90vh] md:rounded-xl"
-              >
-                <Modal.Dialog aria-label="Edit tournament">
-                  <Modal.Body className="p-0">
-                    <React.Suspense
-                      fallback={
-                        <div className="p-8 flex flex-col items-center gap-3">
-                          <Icon
-                            icon="lucide:loader"
-                            className="animate-spin text-2xl text-accent"
-                          />
-                          <p className="text-sm text-muted">
-                            Loading editor...
-                          </p>
-                        </div>
-                      }
-                    >
-                      <TournamentEditor
-                        tournament={tournament}
-                        onSave={handleEditSave}
-                        onCancel={() => setEditOpen(false)}
-                      />
-                    </React.Suspense>
-                  </Modal.Body>
-                </Modal.Dialog>
-              </Modal.Container>
-            </Modal.Backdrop>
-          </Modal>
-        )}
         {isAdmin && deleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div

@@ -1,6 +1,5 @@
 import React from "react";
-import { Button, Separator, Checkbox, Label } from "@heroui/react";
-import { Icon } from "@iconify/react";
+import { Button, Checkbox, Label } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
@@ -9,8 +8,6 @@ import RegistrationsList, {
 } from "@/components/registrations-list";
 
 interface RegistrationsSectionProps {
-  regsOpen: boolean;
-  setRegsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   addOpen: boolean;
   setAddOpen: (v: boolean) => void;
   regsLoading: boolean;
@@ -37,8 +34,6 @@ interface RegistrationsSectionProps {
 }
 
 export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
-  regsOpen,
-  setRegsOpen,
   addOpen,
   setAddOpen,
   regsLoading,
@@ -59,47 +54,36 @@ export const RegistrationsSection: React.FC<RegistrationsSectionProps> = ({
   onSubmitNewRegistration,
 }) => {
   return (
-    <div className="pt-6">
-      <Separator className="my-4" />
-      <button
-        type="button"
-        onClick={() => setRegsOpen((o) => !o)}
-        aria-expanded={regsOpen}
-        className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      >
-        <h3 className="text-lg font-medium">Registrations</h3>
-        <Icon
-          icon="lucide:chevron-down"
-          className={`w-5 h-5 text-muted transition-transform duration-200 ${regsOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-      {regsOpen && (
-        <div className="pt-2">
-          <div className="mb-4 flex items-center gap-3">
-            <Button size="sm" onPress={() => setAddOpen(true)}>
-              <PlusIcon className="w-4 h-4" />
-              Add Registration
-            </Button>
-            <div className="text-xs text-muted">Team size: {players}</div>
-          </div>
-          {regsLoading ? (
-            <div>Loading registrations...</div>
-          ) : registrations.length === 0 ? (
-            <div className="text-sm text-muted">No registrations yet.</div>
-          ) : (
-            <RegistrationsList
-              registrations={registrations}
-              users={allUsers.filter((u) => !u.isMigrated)}
-              players={players}
-              editingId={editingRegId}
-              onStartEdit={(reg) => onStartEdit(reg)}
-              onCancelEdit={() => onCancelEdit()}
-              onSave={onSaveEdit}
-              onDelete={onDelete}
-            />
-          )}
+    <div className="min-w-0">
+      <div>
+        <div className="mb-4 flex items-center gap-3">
+          <Button
+            size="sm"
+            onPress={() => setAddOpen(true)}
+            className="min-h-11 md:min-h-0"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add Registration
+          </Button>
+          <div className="text-xs text-muted">Team size: {players}</div>
         </div>
-      )}
+        {regsLoading ? (
+          <div>Loading registrations...</div>
+        ) : registrations.length === 0 ? (
+          <div className="text-sm text-muted">No registrations yet.</div>
+        ) : (
+          <RegistrationsList
+            registrations={registrations}
+            users={allUsers.filter((u) => !u.isMigrated)}
+            players={players}
+            editingId={editingRegId}
+            onStartEdit={(reg) => onStartEdit(reg)}
+            onCancelEdit={() => onCancelEdit()}
+            onSave={onSaveEdit}
+            onDelete={onDelete}
+          />
+        )}
+      </div>
 
       {/* Add Registration Dialog */}
       {addOpen && (
