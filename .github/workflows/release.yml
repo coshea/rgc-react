@@ -1,0 +1,36 @@
+name: Tag and Release
+
+# When a merge to main contains a version in package.json that has no tag yet,
+# tag the merge commit and publish a GitHub release with generated notes.
+# To cut a release: bump "version" in package.json in the release PR and merge.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag_and_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create tag and release if the version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v${VERSION}"
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; nothing to do."
+            exit 0
+          fi
+          gh release create "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "Release ${VERSION}" \
+            --generate-notes

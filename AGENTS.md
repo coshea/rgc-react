@@ -123,4 +123,5 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **When unsure:** find an analogous file, copy its local pattern, and keep the diff minimal.
 - **Before finishing:** check that you reused existing helpers, didn't duplicate admin or auth logic, guarded Firestore access by auth with cleanup, imported types from `src/types/*`, and that `npm run build-full` passes.
 - **Commits:** use conventional commits (`feat`/`fix`/`refactor`/`chore`/`test`), with a subject of 72 characters or fewer and no trailing period.
+- **Releases:** to cut a release, bump `version` in `package.json` in the release PR (semver). `.github/workflows/release.yml` tags the merge commit on `main` as `v<version>` and publishes a release with generated notes. Never create release tags by hand or move a tag after it's published.
 - **Keeping this file current:** when a convention changes, update this file in the same PR. Keep the rules short, specific and checked against the code: name real files and functions, and delete rules that no longer match the codebase.
