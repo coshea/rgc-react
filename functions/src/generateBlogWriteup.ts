@@ -21,13 +21,13 @@ function ensureFirebaseTelemetry() {
 
   telemetryAttempted = true;
 
-  try {
-    enableFirebaseTelemetry();
-  } catch (error) {
+  // enableFirebaseTelemetry is async: a sync try/catch would miss its
+  // rejection and surface it as an unhandled rejection.
+  void enableFirebaseTelemetry().catch((error: unknown) => {
     logger.warn("generate_blog_writeup: firebase telemetry disabled", {
       error: error instanceof Error ? error.message : String(error),
     });
-  }
+  });
 }
 
 function getAi() {

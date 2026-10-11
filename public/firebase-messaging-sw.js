@@ -1,19 +1,28 @@
-// Firebase Cloud Messaging service worker
-// Handles background push notifications when the app is not in focus.
-// Uses the Firebase compat SDK because service workers cannot use ES module imports.
-// The version should broadly match the firebase npm package installed in the app.
+// App service worker: offline app shell, static asset cache and push notifications.
+//
+// The filename is kept for continuity: existing installs are registered at
+// /firebase-messaging-sw.js, and renaming it would orphan those registrations.
+// It no longer loads the Firebase SDK. Push payloads are handled directly so
+// that every push displays exactly one notification. iOS revokes push
+// subscriptions that receive pushes without a visible notification.
+//
+// Payload formats handled:
+//   1. Declarative Web Push ({ web_push: 8030, notification: {...} }), sent
+//      directly by the dispatch_push_notification Cloud Function. Safari 18.4+
+//      displays these itself; other browsers render them here.
+//   2. Legacy FCM data messages ({ data: { title, body, link, ... } }) for
+//      devices that have not yet migrated off their FCM token.
 const APP_SHELL_CACHE = "rgc-app-shell-v2";
 const STATIC_ASSET_CACHE = "rgc-static-v2";
-const BADGE_CACHE = "rgc-badge-v1";
-const BADGE_COUNT_URL = "/__badge_count__";
 const APP_SHELL_URLS = [
   "/",
-  "/manifest.webmanifest",
   "/apple-touch-icon.png",
   "/pwa-192.png",
   "/pwa-512.png",
   "/rgc_fav.png",
 ];
+const DEFAULT_TITLE = "Ridgefield Golf Club";
+const DEFAULT_ICON = "/rgc_fav.png";
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -23,58 +32,22 @@ function isCacheableAssetRequest(request) {
   return ["font", "image", "manifest"].includes(request.destination);
 }
 
-function getBadgeCountRequest() {
-  return new Request(new URL(BADGE_COUNT_URL, self.location.origin).href);
-}
-
-async function readBadgeCount() {
-  const cache = await caches.open(BADGE_CACHE);
-  const response = await cache.match(getBadgeCountRequest());
-  if (!response) return 0;
-
-  const raw = await response.text();
-  const count = Number.parseInt(raw, 10);
-  return Number.isFinite(count) && count > 0 ? count : 0;
-}
-
-async function persistBadgeCount(count) {
+async function applyBadgeCount(count) {
+  if (typeof navigator.setAppBadge !== "function") return;
   const normalized =
     Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
-  const cache = await caches.open(BADGE_CACHE);
-  const request = getBadgeCountRequest();
-
-  if (normalized === 0) {
-    await cache.delete(request);
-    return 0;
-  }
-
-  await cache.put(
-    request,
-    new Response(String(normalized), {
-      headers: { "content-type": "text/plain" },
-    }),
-  );
-  return normalized;
-}
-
-async function applyBadgeCount(count) {
-  const normalized = await persistBadgeCount(count);
 
   try {
-    if (typeof navigator.setAppBadge === "function") {
-      if (normalized > 0) {
-        await navigator.setAppBadge(normalized);
-      } else if (typeof navigator.clearAppBadge === "function") {
-        await navigator.clearAppBadge();
-      } else {
-        await navigator.setAppBadge(0);
-      }
+    if (normalized > 0) {
+      await navigator.setAppBadge(normalized);
+    } else if (typeof navigator.clearAppBadge === "function") {
+      await navigator.clearAppBadge();
+    } else {
+      await navigator.setAppBadge(0);
     }
   } catch {
     // Unsupported or permission-restricted badging should not break push.
   }
-
-  return normalized;
 }
 
 async function handleNavigationRequest(request) {
@@ -109,6 +82,141 @@ async function handleStaticAssetRequest(request) {
   }
   return response;
 }
+
+// ---------------------------------------------------------------------------
+// Push subscription helpers
+// ---------------------------------------------------------------------------
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
+  return output;
+}
+
+function keysEqual(buffer, expected) {
+  if (!buffer) return false;
+  const actual = new Uint8Array(buffer);
+  if (actual.length !== expected.length) return false;
+  for (let i = 0; i < actual.length; i += 1) {
+    if (actual[i] !== expected[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Returns a push subscription for the given VAPID public key, replacing any
+ * subscription made with a different key (e.g. the legacy FCM key).
+ *
+ * Subscribing from the worker does not need a user gesture once permission is
+ * granted, which lets existing iOS installs migrate without any taps.
+ */
+async function ensurePushSubscription(applicationServerKey) {
+  const key = urlBase64ToUint8Array(applicationServerKey);
+  const pushManager = self.registration.pushManager;
+  const existing = await pushManager.getSubscription();
+
+  if (existing && keysEqual(existing.options?.applicationServerKey, key)) {
+    return existing;
+  }
+  if (existing) {
+    await existing.unsubscribe();
+  }
+  return pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: key,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Push rendering
+// ---------------------------------------------------------------------------
+
+function parseBadge(value) {
+  const count = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(count) ? count : undefined;
+}
+
+/** Normalizes declarative and legacy FCM payloads into one shape. */
+function parsePushPayload(eventData) {
+  let payload = null;
+  try {
+    payload = eventData ? eventData.json() : null;
+  } catch {
+    payload = null;
+  }
+
+  if (payload && payload.web_push === 8030 && payload.notification) {
+    const n = payload.notification;
+    return {
+      declarative: true,
+      title: n.title || DEFAULT_TITLE,
+      body: n.body || "",
+      tag: n.tag,
+      link: n.navigate,
+      badge: parseBadge(n.app_badge),
+      data: { ...(n.data || {}), link: n.data?.link || n.navigate },
+    };
+  }
+
+  const data = (payload && payload.data) || {};
+  const fcmNotification = (payload && payload.notification) || {};
+  return {
+    declarative: false,
+    title: fcmNotification.title || data.title || DEFAULT_TITLE,
+    body: fcmNotification.body || data.body || "",
+    tag: data.notificationId,
+    link: data.link,
+    badge: parseBadge(data.badge),
+    data,
+  };
+}
+
+/**
+ * Chromium does not penalize a push without a notification while one of the
+ * site's windows is focused, so skip the banner there (the in-app bell already
+ * updates live). Safari and Firefox always get a notification.
+ */
+async function isChromiumWithFocusedClient() {
+  const ua = self.navigator.userAgent || "";
+  const isChromium =
+    /\b(Chrome|Chromium|Edg)\//.test(ua) && !/\b(iPhone|iPad|iPod)\b/.test(ua);
+  if (!isChromium) return false;
+
+  const windowClients = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+  return windowClients.some((client) => client.focused);
+}
+
+async function handlePush(event) {
+  const message = parsePushPayload(event.data);
+
+  // Browsers with Declarative Web Push expose the proposed notification on
+  // the event and display it themselves if the worker shows nothing.
+  if (message.declarative && event.notification) return;
+
+  if (await isChromiumWithFocusedClient()) return;
+
+  // Show the notification before any other work so nothing can prevent it.
+  await self.registration.showNotification(message.title, {
+    body: message.body,
+    icon: DEFAULT_ICON,
+    tag: message.tag,
+    data: message.data,
+  });
+
+  if (message.badge !== undefined) {
+    await applyBadgeCount(message.badge);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lifecycle and event listeners
+// ---------------------------------------------------------------------------
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -158,56 +266,47 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("message", (event) => {
   const payload = event.data;
-  if (payload?.type !== "BADGE_SYNC") return;
 
-  const count = Number(payload.count);
-  if (!Number.isFinite(count)) return;
+  if (payload?.type === "BADGE_SYNC") {
+    const count = Number(payload.count);
+    if (!Number.isFinite(count)) return;
+    event.waitUntil(applyBadgeCount(count));
+    return;
+  }
 
-  event.waitUntil(applyBadgeCount(count));
+  // Page asks the worker to (re)subscribe; replies on the transferred port.
+  if (payload?.type === "PUSH_SUBSCRIBE") {
+    const port = event.ports?.[0];
+    if (!port || typeof payload.applicationServerKey !== "string") return;
+    event.waitUntil(
+      ensurePushSubscription(payload.applicationServerKey).then(
+        (subscription) =>
+          port.postMessage({ ok: true, subscription: subscription.toJSON() }),
+        (error) =>
+          port.postMessage({
+            ok: false,
+            error: String(error?.message || error),
+          }),
+      ),
+    );
+  }
 });
 
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.10.0/firebase-app-compat.js",
-);
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.10.0/firebase-messaging-compat.js",
-);
-
-firebase.initializeApp({
-  apiKey: "AIzaSyCdj-5oF0d92kfoseQFENIdw7E4Ft7A_7w",
-  authDomain: "ridgefieldgolfclub.org",
-  projectId: "ridgefield-golf-club",
-  storageBucket: "ridgefield-golf-club.firebasestorage.app",
-  messagingSenderId: "210348651103",
-  appId: "1:210348651103:web:b2102bd7200cc7be1121ea",
+self.addEventListener("push", (event) => {
+  event.waitUntil(handlePush(event));
 });
 
-const messaging = firebase.messaging();
-
-// Handle background messages - displayed as OS-level notifications when the app is not focused.
-// We always call showNotification manually to ensure payload.data is attached,
-// which is required for our notificationclick deep-linking logic. By using a
-// consistent 'tag', we handle potential duplicates on browsers that also
-// auto-show notifications when the 'notification' property is present.
-messaging.onBackgroundMessage(async (payload) => {
-  const title =
-    payload.notification?.title ||
-    payload.data?.title ||
-    "Ridgefield Golf Club";
-  const body = payload.notification?.body || payload.data?.body || "";
-  const icon = payload.notification?.icon || "/rgc_fav.png";
-
-  const currentBadgeCount = await readBadgeCount();
-  await applyBadgeCount(currentBadgeCount + 1);
-
-  return self.registration.showNotification(title, {
-    body,
-    icon,
-    tag: payload.notification?.tag || payload.data?.notificationId,
-    // Critical for deep-linking in the notificationclick handler
-    data: payload.data ?? {},
-    ...payload.notification,
-  });
+// Keep the device subscribed if the push service rotates the subscription.
+// The page records the new endpoint in Firestore on its next launch.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const applicationServerKey =
+    event.oldSubscription?.options?.applicationServerKey;
+  if (!applicationServerKey) return;
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe({ userVisibleOnly: true, applicationServerKey })
+      .catch(() => undefined),
+  );
 });
 
 // Opens or focuses the correct page when the user taps an OS-level notification.
@@ -216,18 +315,34 @@ self.addEventListener("notificationclick", (event) => {
   const link = event.notification.data?.link;
   const url = link
     ? new URL(link, self.location.origin).href
-    : self.location.origin;
+    : self.location.origin + "/";
 
   event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === url && "focus" in client) {
-            return client.focus();
-          }
+    (async () => {
+      const windowClients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+
+      const exactMatch = windowClients.find((client) => client.url === url);
+      if (exactMatch && "focus" in exactMatch) {
+        return exactMatch.focus();
+      }
+
+      // Reuse an open app window rather than spawning a second one.
+      const appWindow = windowClients.find((client) =>
+        client.url.startsWith(self.location.origin),
+      );
+      if (appWindow && "navigate" in appWindow) {
+        try {
+          const focused = await appWindow.focus();
+          return await (focused || appWindow).navigate(url);
+        } catch {
+          // Uncontrolled clients cannot be navigated; open a window instead.
         }
-        return clients.openWindow(url);
-      }),
+      }
+
+      return self.clients.openWindow(url);
+    })(),
   );
 });

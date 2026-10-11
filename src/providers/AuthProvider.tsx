@@ -1,5 +1,9 @@
 import { auth, withAuthPersistenceRetry } from "@/config/firebase";
-import { useFCMToken, FCM_TOKEN_ID_KEY } from "@/hooks/useFCMToken";
+import {
+  usePushSubscription,
+  PUSH_SUBSCRIPTION_ID_KEY,
+  LEGACY_FCM_TOKEN_ID_KEY,
+} from "@/hooks/usePushSubscription";
 import { NotificationPermissionPrompt } from "@/components/notification-permission-prompt";
 import { getUserProfile } from "@/api/users";
 import { getAnalyticsInstance } from "@/config/firebase";
@@ -409,23 +413,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      // Remove only the current device's FCM token (best-effort, non-blocking).
-      // Deleting the whole subcollection would silently stop push notifications
-      // on other still-active devices; stale tokens on other devices are pruned
-      // by the Cloud Function's send failure handling.
+      // Remove only the current device's push registration (best-effort,
+      // non-blocking). Deleting the whole subcollection would silently stop
+      // push notifications on other still-active devices; stale entries on
+      // other devices are pruned by the Cloud Function's send failure handling.
       if (user) {
-        const tokenId = localStorage.getItem(FCM_TOKEN_ID_KEY);
-        if (tokenId) {
+        const registrations = [
+          { key: PUSH_SUBSCRIPTION_ID_KEY, collection: "pushSubscriptions" },
+          { key: LEGACY_FCM_TOKEN_ID_KEY, collection: "fcmTokens" },
+        ];
+        for (const { key, collection } of registrations) {
+          const id = localStorage.getItem(key);
+          if (!id) continue;
           try {
             const [{ db }, { deleteDoc, doc }] = await Promise.all([
               import("@/config/firebase"),
               import("firebase/firestore"),
             ]);
-            await deleteDoc(doc(db, "users", user.uid, "fcmTokens", tokenId));
+            await deleteDoc(doc(db, "users", user.uid, collection, id));
           } catch {
-            // Non-fatal — proceed with logout even if token cleanup fails
+            // Non-fatal — proceed with logout even if cleanup fails
           } finally {
-            localStorage.removeItem(FCM_TOKEN_ID_KEY);
+            localStorage.removeItem(key);
           }
         }
       }
@@ -455,7 +464,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {user && <FCMTokenRegistrar uid={user.uid} />}
+      {user && <PushSubscriptionRegistrar uid={user.uid} />}
       {user && <AnalyticsUserTagger uid={user.uid} />}
       {children}
     </AuthContext.Provider>
@@ -548,9 +557,21 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
   return null;
 }
 
-/** Thin component so useFCMToken is only called when a user is present. */
-function FCMTokenRegistrar({ uid }: { uid: string }) {
-  const { shouldPrompt, requestPermission, dismissPrompt } = useFCMToken(uid);
+/** Thin component so usePushSubscription is only called when a user is present. */
+function PushSubscriptionRegistrar({ uid }: { uid: string }) {
+  const { shouldPrompt, needsResubscribe, requestPermission, dismissPrompt } =
+    usePushSubscription(uid);
+  if (needsResubscribe) {
+    return (
+      <NotificationPermissionPrompt
+        title="Keep notifications on"
+        description="Tap below to finish turning on notifications for this device."
+        allowLabel="Turn on"
+        onAllow={requestPermission}
+        onDismiss={dismissPrompt}
+      />
+    );
+  }
   if (!shouldPrompt) return null;
   return (
     <NotificationPermissionPrompt

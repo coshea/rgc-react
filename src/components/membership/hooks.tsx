@@ -4,6 +4,7 @@ import {
   onUserDoc,
   onUsersCollection,
   onAllFCMTokens,
+  onAllPushSubscriptions,
 } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
 import type {
@@ -40,7 +41,8 @@ export function useAdminFlag(user: { uid?: string } | null) {
 }
 
 /**
- * Hook to track which users have at least one registered FCM token.
+ * Hook to track which users have at least one registered push device, counting
+ * both Web Push subscriptions and not-yet-migrated legacy FCM tokens.
  * Only intended for admin use; returns a Set of UIDs.
  */
 export function useMembersPushStatus(enabled: boolean) {
@@ -57,27 +59,43 @@ export function useMembersPushStatus(enabled: boolean) {
     }
 
     setLoading(true);
-    // Subscribe to all FCM tokens (collection group)
-    const unsub = onAllFCMTokens(
-      (snap) => {
-        const uids = new Set<string>();
-        snap.forEach((doc) => {
-          // Path is users/{uid}/fcmTokens/{tokenId}
-          const pathSegments = doc.ref.path.split("/");
-          const uid = pathSegments[1];
-          if (uid) uids.add(uid);
-        });
-        setPushEnabledUids(uids);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("[useMembersPushStatus] snapshot error", err);
-        setPushEnabledUids(new Set());
-        setLoading(false);
-      },
-    );
+    // Docs live at users/{uid}/<collection>/{id}; collect the owning UIDs.
+    const ownerUids = (snap: QuerySnapshot<DocumentData>) => {
+      const uids = new Set<string>();
+      snap.forEach((doc) => {
+        const uid = doc.ref.path.split("/")[1];
+        if (uid) uids.add(uid);
+      });
+      return uids;
+    };
 
-    return () => unsub();
+    let subscriptionUids: Set<string> | null = null;
+    let legacyUids: Set<string> | null = null;
+    const publish = () => {
+      if (!subscriptionUids || !legacyUids) return;
+      setPushEnabledUids(new Set([...subscriptionUids, ...legacyUids]));
+      setLoading(false);
+    };
+    const handleError = (label: string) => (err: FirestoreError) => {
+      console.error(`[useMembersPushStatus] ${label} snapshot error`, err);
+      if (label === "pushSubscriptions") subscriptionUids = new Set();
+      else legacyUids = new Set();
+      publish();
+    };
+
+    const unsubSubscriptions = onAllPushSubscriptions((snap) => {
+      subscriptionUids = ownerUids(snap);
+      publish();
+    }, handleError("pushSubscriptions"));
+    const unsubLegacy = onAllFCMTokens((snap) => {
+      legacyUids = ownerUids(snap);
+      publish();
+    }, handleError("fcmTokens"));
+
+    return () => {
+      unsubSubscriptions();
+      unsubLegacy();
+    };
   }, [enabled]);
 
   return { pushEnabledUids, loading };

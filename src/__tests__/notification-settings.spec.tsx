@@ -1,16 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isSupported as messagingIsSupported } from "firebase/messaging";
 
 const authMock = vi.hoisted(() => ({ user: { uid: "user-1" } }));
 const userProfileMock = vi.hoisted(() => ({
   userProfile: { notificationPreferences: {} },
   isLoading: false,
 }));
-const fcmTokenMock = vi.hoisted(() => ({
+const pushMock = vi.hoisted(() => ({
   requestPermission: vi.fn(),
   isPushEnabledOnDevice: false,
+  isPushSupported: vi.fn(() => false),
 }));
 
 vi.mock("@/providers/AuthProvider", () => ({
@@ -21,8 +21,9 @@ vi.mock("@/hooks/useUserProfile", () => ({
   useUserProfile: () => userProfileMock,
 }));
 
-vi.mock("@/hooks/useFCMToken", () => ({
-  useFCMToken: () => fcmTokenMock,
+vi.mock("@/hooks/usePushSubscription", () => ({
+  usePushSubscription: () => pushMock,
+  isPushSupported: () => pushMock.isPushSupported(),
 }));
 
 vi.mock("@/api/users", () => ({
@@ -40,10 +41,6 @@ vi.mock("@/components/back-button", () => ({
 
 vi.mock("@/hooks/usePageTracking", () => ({
   usePageTracking: vi.fn(),
-}));
-
-vi.mock("firebase/messaging", () => ({
-  isSupported: vi.fn(async () => false),
 }));
 
 function setNavigatorValues({
@@ -72,7 +69,8 @@ function setNavigatorValues({
 describe("NotificationSettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fcmTokenMock.isPushEnabledOnDevice = false;
+    pushMock.isPushEnabledOnDevice = false;
+    pushMock.isPushSupported.mockReturnValue(false);
   });
 
   it("shows iPhone notification setup instructions on iPhone devices", async () => {
@@ -127,7 +125,7 @@ describe("NotificationSettingsPage", () => {
       },
     });
 
-    vi.mocked(messagingIsSupported).mockResolvedValue(true);
+    pushMock.isPushSupported.mockReturnValue(true);
 
     const { default: NotificationSettingsPage } =
       await import("@/pages/notification-settings");
@@ -140,5 +138,7 @@ describe("NotificationSettingsPage", () => {
     expect(
       screen.getByText(/may still be enabled on another device/i),
     ).toBeInTheDocument();
+    // Permission is granted but this device isn't registered: offer the fix.
+    expect(screen.getByRole("button", { name: "Enable" })).toBeInTheDocument();
   });
 });

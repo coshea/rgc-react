@@ -41,7 +41,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
   - Domain types are in `src/types/*`, plus `User` in `src/api/users.ts`.
 - **Cloud Functions (`functions/src/index.ts`):**
   - PayPal membership and donation verification, done server-side.
-  - Firestore-triggered notifications, sent by email (Resend) and push (FCM).
+  - Firestore-triggered notifications, sent by email (Resend) and push. Push goes out as Declarative Web Push via `web-push` to `users/{uid}/pushSubscriptions` (VAPID secrets `WEB_PUSH_VAPID_PUBLIC_KEY`/`WEB_PUSH_VAPID_PRIVATE_KEY`), plus legacy FCM to `fcmTokens` until devices migrate.
   - Avatar resize with `sharp`.
   - Genkit blog writeups.
   - The functions codebase name is `rgc-react`.

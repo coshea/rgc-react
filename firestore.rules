@@ -125,6 +125,37 @@ service cloud.firestore {
         // Delete: the owning user (any of their sessions) may remove a token.
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Web Push subscriptions stored per-device for the user. The Cloud
+      // Function sends to these directly with the VAPID key pair. Same split
+      // as fcmTokens: the endpoint and keys are immutable once created.
+      match /pushSubscriptions/{subscriptionId} {
+        allow read:   if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.endpoint is string
+          && request.resource.data.endpoint.matches('^https://.+')
+          && request.resource.data.keys.p256dh is string
+          && request.resource.data.keys.auth is string;
+
+        // Update: endpoint and keys are immutable; only metadata may change.
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.endpoint == resource.data.endpoint
+          && request.resource.data.keys == resource.data.keys;
+
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Collection-group reads (admin dashboard "push enabled" column). Rules on
+    // the nested match above do not apply to collectionGroup() queries.
+    match /{path=**}/pushSubscriptions/{subscriptionId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/fcmTokens/{tokenId} {
+      allow read: if isAdmin();
     }
 
     // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
