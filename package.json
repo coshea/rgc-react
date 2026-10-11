@@ -117,6 +117,12 @@
     "globals": true
   },
   "allowScripts": {
-    "@heroui-pro/react@1.0.0-beta.10": true
+    "@heroui-pro/react@1.0.0-beta.10": true,
+    "@firebase/util": false,
+    "fsevents": false,
+    "protobufjs": false,
+    "msw": false,
+    "@zowe/secrets-for-zowe-sdk": false,
+    "@sentry/cli@2.58.5": true
   }
 }

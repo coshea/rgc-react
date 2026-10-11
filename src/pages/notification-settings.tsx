@@ -1,5 +1,4 @@
 import { useState, useEffect, type SubmitEvent } from "react";
-import { isSupported as messagingIsSupported } from "firebase/messaging";
 import { Card, Button, Separator, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/providers/AuthProvider";
@@ -10,7 +9,10 @@ import {
   resolvePreferences,
   DEFAULT_NOTIFICATION_PREFERENCES,
 } from "@/utils/notificationPreferences";
-import { useFCMToken } from "@/hooks/useFCMToken";
+import {
+  usePushSubscription,
+  isPushSupported,
+} from "@/hooks/usePushSubscription";
 import { addToast } from "@/providers/toast";
 import BackButton from "@/components/back-button";
 import { usePageTracking } from "@/hooks/usePageTracking";
@@ -45,7 +47,7 @@ export default function NotificationSettingsPage() {
   usePageTracking("Notification Settings");
   const { user } = useAuth();
   const { userProfile, isLoading } = useUserProfile();
-  const { requestPermission, isPushEnabledOnDevice } = useFCMToken(
+  const { requestPermission, isPushEnabledOnDevice } = usePushSubscription(
     user?.uid ?? null,
   );
   const showIosNotificationHelp = isIosDevice();
@@ -57,25 +59,9 @@ export default function NotificationSettingsPage() {
   const [requestingPush, setRequestingPush] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-
-    let cancelled = false;
-
-    messagingIsSupported()
-      .then((supported) => {
-        if (supported && !cancelled) {
-          setPushPermission(Notification.permission);
-        }
-      })
-      .catch((error) => {
-        // Firebase messaging support detection failed. Push notifications are optional,
-        // so we ignore this for the user experience but log it for debugging.
-        console.error("Failed to detect Firebase messaging support", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    if (isPushSupported()) {
+      setPushPermission(Notification.permission);
+    }
   }, []);
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(
@@ -240,7 +226,7 @@ export default function NotificationSettingsPage() {
                     </p>
                   </div>
                 </div>
-                {pushPermission === "default" && (
+                {(pushStatus === "off" || pushStatus === "off-device") && (
                   <Button
                     size="sm"
                     variant="tertiary"

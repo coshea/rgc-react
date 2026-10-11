@@ -32,8 +32,6 @@ export default defineConfig({
             return "vendor-firebase-firestore";
           if (/node_modules\/firebase\/storage/.test(id))
             return "vendor-firebase-storage";
-          if (/node_modules\/firebase\/messaging/.test(id))
-            return "vendor-firebase-messaging";
           if (/node_modules\/(react-markdown|remark-gfm)/.test(id))
             return "vendor-markdown";
           if (/node_modules\/@tanstack\/react-query/.test(id))

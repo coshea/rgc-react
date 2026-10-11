@@ -33,10 +33,12 @@ vi.mock("@/config/firebase", () => ({
   getAnalyticsInstance: () => undefined,
 }));
 
-vi.mock("@/hooks/useFCMToken", () => ({
-  FCM_TOKEN_ID_KEY: "rgc_fcm_token_id",
-  useFCMToken: () => ({
+vi.mock("@/hooks/usePushSubscription", () => ({
+  PUSH_SUBSCRIPTION_ID_KEY: "rgc_push_subscription_id",
+  LEGACY_FCM_TOKEN_ID_KEY: "rgc_fcm_token_id",
+  usePushSubscription: () => ({
     shouldPrompt: false,
+    needsResubscribe: false,
     requestPermission: vi.fn(),
     dismissPrompt: vi.fn(),
   }),

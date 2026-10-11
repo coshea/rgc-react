@@ -23,7 +23,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 
 - **When to run `npm run build-full`:** after changes to types, component interfaces, Firebase interactions, routing or providers. You can skip it for edits that only change JSX string literals or Tailwind classes.
 - **Pre-commit hook:** Husky runs lint, `tsc --noEmit` and the full test suite.
-- **Deploys happen in CI on merge to `main`.** Hosting goes out every time; functions go out when `functions/` changes. PRs get a preview channel.
+- **Deploys happen in CI on merge to `main`.** Hosting goes out every time; functions go out when `functions/` changes. Firestore/Storage rules and indexes go out when `firestore.rules`, `firestore.indexes.json` or `storage.rules` change (`firebase-deploy-rules.yml`). PRs get a preview channel.
 - **Env vars:** copy `.env.example` to `.env.local`. `VITE_FIREBASE_FUNCTIONS_BASE_URL` is required, and `src/api/functionsBase.ts` throws without it.
 
 **Run these without asking:** reading and searching files, tests, lint, type-check, build.
@@ -41,7 +41,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
   - Domain types are in `src/types/*`, plus `User` in `src/api/users.ts`.
 - **Cloud Functions (`functions/src/index.ts`):**
   - PayPal membership and donation verification, done server-side.
-  - Firestore-triggered notifications, sent by email (Resend) and push (FCM).
+  - Firestore-triggered notifications, sent by email (Resend) and push. Push goes out as Declarative Web Push via `web-push` to `users/{uid}/pushSubscriptions` (VAPID secrets `WEB_PUSH_VAPID_PUBLIC_KEY`/`WEB_PUSH_VAPID_PRIVATE_KEY`), plus legacy FCM to `fcmTokens` until devices migrate.
   - Avatar resize with `sharp`.
   - Genkit blog writeups.
   - The functions codebase name is `rgc-react`.

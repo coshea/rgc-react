@@ -4,6 +4,9 @@ import { Icon } from "@iconify/react";
 interface NotificationPermissionPromptProps {
   onAllow: () => void;
   onDismiss: () => void;
+  title?: string;
+  description?: string;
+  allowLabel?: string;
 }
 
 /**
@@ -16,12 +19,15 @@ interface NotificationPermissionPromptProps {
 export function NotificationPermissionPrompt({
   onAllow,
   onDismiss,
+  title = "Stay in the loop",
+  description = "Get notified about tournament registrations, results, and club\u00a0announcements.",
+  allowLabel = "Enable notifications",
 }: NotificationPermissionPromptProps) {
   return (
     <div
       role="dialog"
       aria-modal="false"
-      aria-label="Enable push notifications"
+      aria-label={title}
       className="fixed bottom-6 right-5 z-[9999] w-80 animate-in slide-in-from-bottom-4 fade-in duration-300"
     >
       <div className="bg-surface border rounded-2xl shadow-2xl overflow-hidden">
@@ -36,11 +42,10 @@ export function NotificationPermissionPrompt({
             </div>
             <div>
               <p className="font-semibold text-sm text-foreground leading-tight">
-                Stay in the loop
+                {title}
               </p>
               <p className="text-xs text-muted mt-0.5 leading-snug">
-                Get notified about tournament registrations, results, and
-                club&nbsp;announcements.
+                {description}
               </p>
             </div>
           </div>
@@ -49,7 +54,7 @@ export function NotificationPermissionPrompt({
           <div className="flex gap-2 mt-4">
             <Button size="sm" className="flex-1 font-medium" onPress={onAllow}>
               <Icon icon="lucide:bell" className="text-sm shrink-0" />
-              Enable notifications
+              {allowLabel}
             </Button>
             <Button
               size="sm"

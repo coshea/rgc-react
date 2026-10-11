@@ -30,8 +30,19 @@ export function onUserDoc(
 }
 
 /**
- * Subscribe to all registered FCM tokens across all users.
+ * Subscribe to all Web Push subscriptions across all users.
  * Used by admin dashboard to identify who has push notifications enabled.
+ */
+export function onAllPushSubscriptions(
+  next: (snap: QuerySnapshot<DocumentData>) => void,
+  error?: (error: FirestoreError) => void,
+) {
+  return onSnapshot(collectionGroup(db, "pushSubscriptions"), next, error);
+}
+
+/**
+ * Subscribe to all legacy FCM tokens across all users. Devices migrate to
+ * pushSubscriptions on their next launch; remove once no tokens remain.
  */
 export function onAllFCMTokens(
   next: (snap: QuerySnapshot<DocumentData>) => void,
