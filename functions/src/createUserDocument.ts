@@ -54,27 +54,32 @@ export function buildUserDocumentData(
   return payload;
 }
 
-export const createUserDocument = functions.auth.user().onCreate(
-  async (user: UserRecord) => {
-  const payload = buildUserDocumentData({
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName,
-    photoURL: user.photoURL,
-  });
+const ALREADY_EXISTS_CODE = 6;
 
-  if (!payload) {
+// Uses create() so a document the client already wrote (or an admin created) is
+// never overwritten. Deleting the user doc on account removal is intentionally
+// NOT done: we keep user records for record keeping.
+export const createUserDocument = functions.auth
+  .user()
+  .onCreate(async (user: UserRecord) => {
+    const payload = buildUserDocumentData({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    });
+
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      await getFirestore().collection("users").doc(user.uid).create(payload);
+    } catch (error) {
+      if ((error as { code?: number | string })?.code === ALREADY_EXISTS_CODE) {
+        return null;
+      }
+      throw error;
+    }
     return null;
-  }
-
-    const userDoc = getFirestore().collection("users").doc(user.uid);
-    return userDoc.set(payload, { merge: true });
-  },
-);
-
-export const deleteUserDocument = functions.auth.user().onDelete(
-  async (user: UserRecord) => {
-    const userDoc = getFirestore().collection("users").doc(user.uid);
-    return userDoc.delete();
-  },
-);
+  });

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import * as admin from "firebase-admin";
 import { onObjectFinalized } from "firebase-functions/v2/storage";
 import sharp from "sharp";
@@ -7,7 +9,7 @@ import { logger } from "./logger";
 const MAX_PROFILE_DIMENSION = 400;
 const AVATAR_PATH_PREFIX = "avatars/";
 
-function getUserUidFromAvatarPath(filePath: string): string | null {
+export function getUserUidFromAvatarPath(filePath: string): string | null {
   const parts = filePath.split("/");
   if (parts.length < 3 || parts[0] !== "avatars") {
     return null;
@@ -78,29 +80,36 @@ export const resize_user_avatar = onObjectFinalized(
       const resizedPath = `avatars/${uid}/resized/${outputFilename}`;
       const destinationFile = bucket.file(resizedPath);
 
+      // Firebase download token: revocable (unlike a far-future signed URL) and
+      // matches the URLs the client SDK's getDownloadURL() returns.
+      const downloadToken = randomUUID();
       await destinationFile.save(resizedBuffer, {
         contentType: "image/jpeg",
         metadata: {
           cacheControl: "public,max-age=31536000,immutable",
           contentDisposition: "inline",
+          metadata: { firebaseStorageDownloadTokens: downloadToken },
         },
       });
 
-      const [profileUrl] = await destinationFile.getSignedUrl({
-        action: "read",
-        expires: "03-09-2491",
-      });
+      const profileUrl =
+        `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/` +
+        `${encodeURIComponent(resizedPath)}?alt=media&token=${downloadToken}`;
 
-      await admin
-        .firestore()
-        .doc(`users/${uid}`)
-        .set(
-          {
-            profileURL: profileUrl,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+      // Never re-create a user doc that doesn't exist (e.g. removed record).
+      const userRef = admin.firestore().doc(`users/${uid}`);
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) {
+        logger.warn("resize_user_avatar: user doc missing; skipping profileURL", {
+          uid,
+        });
+        return;
+      }
+
+      await userRef.update({
+        profileURL: profileUrl,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
       logger.info("resize_user_avatar: generated resized profile", {
         uid,

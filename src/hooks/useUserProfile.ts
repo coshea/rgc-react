@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserProfile, saveUserProfile } from "@/api/users";
-import { uploadResizedProfilePicture } from "@/api/storage";
+import { uploadProfilePicture } from "@/api/storage";
 import type { UserProfilePayload } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -31,12 +31,11 @@ export function useUserProfile() {
     mutationFn: async (payload: SaveVars) => {
       if (!uid) throw new Error("Not authenticated");
 
+      // Only the original is uploaded; the `resize_user_avatar` Cloud Function
+      // generates the resized copy and writes `profileURL` server-side.
       let photoURL = payload.data.photoURL || null;
-      let profileURL = payload.data.profileURL || null;
       if (payload.file) {
-        const uploadResult = await uploadResizedProfilePicture(uid, payload.file);
-        photoURL = uploadResult.photoURL;
-        profileURL = uploadResult.profileURL;
+        photoURL = await uploadProfilePicture(uid, payload.file);
       }
 
       // Derive displayName client-side as well for immediate optimistic consistency
@@ -45,7 +44,10 @@ export function useUserProfile() {
       let displayName = payload.data.displayName?.trim();
       if (first || last)
         displayName = [first, last].filter(Boolean).join(" ").trim();
-      const toSave = { ...payload.data, displayName, photoURL, profileURL };
+      // Don't send profileURL: the function owns it and a stale client value
+      // would overwrite the resized URL.
+      const { profileURL: _profileURL, ...rest } = payload.data;
+      const toSave = { ...rest, displayName, photoURL };
       await saveUserProfile(uid, toSave);
       return toSave as UserProfilePayload;
     },
@@ -72,7 +74,6 @@ export function useUserProfile() {
                     .trim()
                 : vars.data.displayName,
             photoURL: vars.file ? "__pending_upload__" : vars.data.photoURL,
-            profileURL: vars.file ? "__pending_upload__" : vars.data.profileURL,
           }) as UserProfilePayload
       );
       return { previous };

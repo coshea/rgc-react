@@ -4,8 +4,7 @@ const mocks = vi.hoisted(() => {
   return {
     collectionMock: vi.fn(),
     docMock: vi.fn(),
-    setMock: vi.fn(),
-    deleteMock: vi.fn(),
+    createMock: vi.fn(),
     serverTimestampMock: vi.fn(() => ({ __serverTimestamp: true })),
   };
 });
@@ -23,25 +22,22 @@ vi.mock("firebase-functions/v1", () => ({
   auth: {
     user: () => ({
       onCreate: (handler: unknown) => handler,
-      onDelete: (handler: unknown) => handler,
     }),
   },
 }));
 
+import * as userDocumentModule from "../createUserDocument";
 import {
   buildUserDocumentData,
   createUserDocument,
-  deleteUserDocument,
+  parseDisplayName,
 } from "../createUserDocument";
 
 describe("buildUserDocumentData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.collectionMock.mockReturnValue({ doc: mocks.docMock });
-    mocks.docMock.mockReturnValue({
-      set: mocks.setMock,
-      delete: mocks.deleteMock,
-    });
+    mocks.docMock.mockReturnValue({ create: mocks.createMock });
   });
 
   it("captures the auth-derived fields and creates server timestamps", () => {
@@ -82,13 +78,10 @@ describe("createUserDocument", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.collectionMock.mockReturnValue({ doc: mocks.docMock });
-    mocks.docMock.mockReturnValue({
-      set: mocks.setMock,
-      delete: mocks.deleteMock,
-    });
+    mocks.docMock.mockReturnValue({ create: mocks.createMock });
   });
 
-  it("writes a merge-true user doc for new auth users", async () => {
+  it("creates the user doc for new auth users", async () => {
     await createUserDocument({
       uid: "user-789",
       email: "new@example.com",
@@ -97,33 +90,54 @@ describe("createUserDocument", () => {
     });
 
     expect(mocks.docMock).toHaveBeenCalledWith("user-789");
-    expect(mocks.setMock).toHaveBeenCalledTimes(1);
-    expect(mocks.setMock).toHaveBeenCalledWith(
+    expect(mocks.createMock).toHaveBeenCalledTimes(1);
+    expect(mocks.createMock).toHaveBeenCalledWith(
       expect.objectContaining({
         email: "new@example.com",
         displayName: "New User",
         firstName: "New",
         lastName: "User",
       }),
-      { merge: true },
     );
+  });
+
+  it("does not write when the auth user has no email", async () => {
+    await createUserDocument({ uid: "no-email", email: null });
+    expect(mocks.createMock).not.toHaveBeenCalled();
+  });
+
+  it("does not overwrite a doc that already exists", async () => {
+    mocks.createMock.mockRejectedValueOnce({ code: 6 });
+    await expect(
+      createUserDocument({ uid: "dup", email: "dup@example.com" }),
+    ).resolves.toBeNull();
+  });
+
+  it("rethrows unexpected Firestore errors", async () => {
+    mocks.createMock.mockRejectedValueOnce({ code: 7 });
+    await expect(
+      createUserDocument({ uid: "denied", email: "d@example.com" }),
+    ).rejects.toEqual({ code: 7 });
+  });
+
+  it("does not export a delete handler (user docs are kept for records)", () => {
+    expect("deleteUserDocument" in userDocumentModule).toBe(false);
   });
 });
 
-describe("deleteUserDocument", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.collectionMock.mockReturnValue({ doc: mocks.docMock });
-    mocks.docMock.mockReturnValue({
-      set: mocks.setMock,
-      delete: mocks.deleteMock,
+describe("parseDisplayName", () => {
+  it("splits first and remaining names", () => {
+    expect(parseDisplayName("  Mary  Ann Smith ")).toEqual({
+      firstName: "Mary",
+      lastName: "Ann Smith",
     });
   });
 
-  it("deletes the user doc when the auth record is removed", async () => {
-    await deleteUserDocument({ uid: "user-delete" });
-
-    expect(mocks.docMock).toHaveBeenCalledWith("user-delete");
-    expect(mocks.deleteMock).toHaveBeenCalledTimes(1);
+  it("handles missing names", () => {
+    expect(parseDisplayName(null)).toEqual({ firstName: "", lastName: "" });
+    expect(parseDisplayName("Cher")).toEqual({
+      firstName: "Cher",
+      lastName: "",
+    });
   });
 });

@@ -48,7 +48,8 @@ export {
   notify_registration_opening,
   send_registration_opening_preview_email,
 } from "./notifyRegistrationOpening";
-export { createUserDocument, deleteUserDocument } from "./createUserDocument";
+export { createUserDocument } from "./createUserDocument";
+export { deleteUserAvatars } from "./deleteUserAvatars";
 export { generate_blog_writeup } from "./generateBlogWriteup";
 export { resize_user_avatar } from "./resizeUserAvatar";
 

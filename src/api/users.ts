@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { db, auth } from "@/config/firebase";
 import {
   doc,
@@ -176,7 +177,9 @@ export function computeDisplayName(
 }
 
 /**
- * Save or merge a user profile to users/{uid}
+ * Fill in `users/{uid}` from the signed-in auth user without clobbering data.
+ * Never overwrites existing values and never replaces the document (always
+ * `merge: true`). Read failures propagate rather than being treated as "missing".
  */
 export async function hydrateUserProfileFromAuth(
   uid: string,
@@ -188,8 +191,6 @@ export async function hydrateUserProfileFromAuth(
     lastName?: string | null;
   },
 ) {
-  const ref = doc(db, "users", uid);
-
   const currentUid = auth.currentUser?.uid ?? null;
   if (!currentUid) {
     throw new Error(
@@ -202,68 +203,66 @@ export async function hydrateUserProfileFromAuth(
     );
   }
 
+  const ref = doc(db, "users", uid);
   const safeEmail = (authUser.email ?? "").trim();
-  const safeDisplayName = (authUser.displayName ?? "").trim();
-  const safePhotoUrl = authUser.photoURL ?? null;
   const safeFirstName = (authUser.firstName ?? "").trim();
   const safeLastName = (authUser.lastName ?? "").trim();
+  const safeDisplayName =
+    (authUser.displayName ?? "").trim() ||
+    [safeFirstName, safeLastName].filter(Boolean).join(" ").trim();
+  const safePhotoUrl = authUser.photoURL || null;
 
-  const profileSnap = await getDoc(ref).catch(() => null);
-  const existing = profileSnap?.exists() ? (profileSnap.data() as Partial<UserProfilePayload>) : {};
+  try {
+    await Sentry.startSpan(
+      { op: "db.write", name: "hydrateUserProfileFromAuth" },
+      async () => {
+        const profileSnap = await getDoc(ref);
+        const exists = profileSnap.exists();
+        const existing = exists
+          ? (profileSnap.data() as Partial<UserProfilePayload>)
+          : {};
 
-  const payload: Partial<FirestoreUserPayload> = {
-    updatedAt: serverTimestamp(),
-  };
+        const isBlank = (v: unknown) =>
+          typeof v !== "string" || v.trim() === "";
 
-  if (!profileSnap || !profileSnap.exists()) {
-    if (!safeEmail) {
-      throw new Error(
-        "Cannot create profile record: no email available for users/" +
-          uid +
-          ". Please re-authenticate and ensure your account has an email address.",
-      );
-    }
+        // Only include keys that have a value: Firestore rejects `undefined`.
+        const payload: Record<string, unknown> = {
+          updatedAt: serverTimestamp(),
+        };
+        if (isBlank(existing.email) && safeEmail) payload.email = safeEmail;
+        if (isBlank(existing.firstName) && safeFirstName)
+          payload.firstName = safeFirstName;
+        if (isBlank(existing.lastName) && safeLastName)
+          payload.lastName = safeLastName;
+        if (isBlank(existing.displayName) && safeDisplayName)
+          payload.displayName = safeDisplayName;
+        if (!existing.photoURL && safePhotoUrl) payload.photoURL = safePhotoUrl;
 
-    const defaultDisplayName =
-      safeDisplayName ||
-      [safeFirstName, safeLastName].filter(Boolean).join(" ").trim();
+        if (!exists) {
+          if (!safeEmail) {
+            throw new Error(
+              "Cannot create profile record: no email available for users/" +
+                uid +
+                ". Please re-authenticate and ensure your account has an email address.",
+            );
+          }
+          payload.boardMember = false;
+          payload.role = null;
+          payload.createdAt = serverTimestamp();
+        }
 
-    Object.assign(payload, {
-      email: safeEmail,
-      firstName: safeFirstName || undefined,
-      lastName: safeLastName || undefined,
-      displayName: defaultDisplayName || undefined,
-      photoURL: safePhotoUrl,
-      boardMember: false,
-      role: null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    await setDoc(ref, payload as FirestoreUserPayload, { merge: false });
-    return;
+        await setDoc(ref, payload, { merge: true });
+      },
+    );
+  } catch (error) {
+    Sentry.captureException(error);
+    throw error;
   }
-
-  const existingEmail = typeof existing.email === "string" ? existing.email.trim() : "";
-  const existingDisplayName = typeof existing.displayName === "string" ? existing.displayName.trim() : "";
-  const existingFirstName = typeof existing.firstName === "string" ? existing.firstName.trim() : "";
-  const existingLastName = typeof existing.lastName === "string" ? existing.lastName.trim() : "";
-  const existingPhotoUrl = existing.photoURL ?? null;
-
-  const nextDisplayName =
-    safeDisplayName ||
-    [safeFirstName, safeLastName].filter(Boolean).join(" ").trim() ||
-    existingDisplayName;
-
-  if (!existingEmail && safeEmail) payload.email = safeEmail;
-  if (!existingFirstName && safeFirstName) payload.firstName = safeFirstName;
-  if (!existingLastName && safeLastName) payload.lastName = safeLastName;
-  if (!existingDisplayName && nextDisplayName) payload.displayName = nextDisplayName;
-  if (!existingPhotoUrl && safePhotoUrl) payload.photoURL = safePhotoUrl;
-
-  await setDoc(ref, payload, { merge: true });
 }
 
+/**
+ * Save or merge a user profile to users/{uid}
+ */
 export async function saveUserProfile(uid: string, data: UserProfilePayload) {
   // Derive displayName from first + last if provided (trim + collapse spaces)
   const computedDisplay = computeDisplayName(data);
