@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import * as Sentry from "@sentry/react";
 import {
   Card,
   Input,
@@ -8,44 +9,24 @@ import {
   TextField,
   Label,
   FieldError,
-  Checkbox,
-  Modal,
-  Select,
-  ListBox,
 } from "@heroui/react";
+import { Icon } from "@iconify/react";
 import { formatPhone } from "@/utils/phone";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
-import { Icon } from "@iconify/react";
-import {
-  saveUserProfile,
-  T_SHIRT_SIZES,
-  type TShirtSize,
-  type UserProfilePayload,
-} from "@/api/users";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { GoldTeeSwitch } from "@/components/profile/gold-tee-switch";
+import { ShirtSizePicker } from "@/components/profile/shirt-size-picker";
+import {
+  profileFieldsFrom,
+  toProfilePayload,
+  validateProfileFields,
+  type ProfileFieldErrors,
+  type ProfileFields,
+} from "@/components/profile/profile-fields";
 
-interface FormData {
-  firstName: string;
-  lastName: string;
-  displayName: string; // derived
-  email: string;
-  phone: string;
-  ghinNumber: string;
-  tShirtSize: string;
-  profilePicture: File | null;
-  defaultGoldTee?: boolean;
-}
-
-interface FormErrors {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  ghinNumber?: string;
-  tShirtSize?: string;
-}
+type TextFieldKey = "firstName" | "lastName" | "email" | "phone" | "ghinNumber";
 
 type ProfileFormProps = {
   // Hide the internal Cancel/Save action row (useful when embedding in a modal with its own footer)
@@ -58,505 +39,331 @@ type ProfileFormProps = {
   onSaved?: () => void;
 };
 
+function ProfileSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3 py-6 first:pt-0 md:flex-row md:gap-8">
+      <div className="md:w-56 md:shrink-0">
+        <h2 className="text-base font-semibold">{title}</h2>
+        <p className="text-sm text-muted">{description}</p>
+      </div>
+      <Card className="min-w-0 flex-1 p-4 sm:p-5">{children}</Card>
+    </section>
+  );
+}
+
+/**
+ * Full profile form, grouped into sections. Used for first-time profile setup
+ * on every screen size and for editing on tablet/desktop. Phones edit through
+ * `ProfileSettingsList` instead.
+ */
 export function ProfileForm({
   hideActions = false,
   hideCancelWhenNew = false,
   formId,
   onSaved,
 }: ProfileFormProps) {
-  const [formData, setFormData] = React.useState<FormData>({
-    firstName: "",
-    lastName: "",
-    displayName: "",
-    email: "",
-    phone: "",
-    ghinNumber: "",
-    tShirtSize: "",
-    profilePicture: null,
-    defaultGoldTee: false,
-  });
-
-  const [errors, setErrors] = React.useState<FormErrors>({});
-  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isSuccess, setIsSuccess] = React.useState(false);
-  const [isDirty, setIsDirty] = React.useState(false);
-  const [goldTeeInfoOpen, setGoldTeeInfoOpen] = React.useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, saveError, isLoading } =
     useUserProfile();
 
-  // Initialize form data from userProfile hook (simplified single source of truth)
-  React.useEffect(() => {
-    if (isDirty) return;
-
-    if (user && userProfile !== undefined) {
-      // userProfile can be null (no Firestore doc) or populated
-      const profile = userProfile || {};
-      setFormData({
-        firstName: profile.firstName || "",
-        lastName: profile.lastName || "",
-        displayName: profile.displayName || user.displayName || "",
-        email: profile.email || user.email || "",
-        phone: profile.phone || user.phoneNumber || "",
-        ghinNumber: profile.ghinNumber || "",
-        tShirtSize: profile.tShirtSize || "",
-        profilePicture: null,
-        defaultGoldTee: profile.defaultGoldTee,
-      });
-      setImagePreview(profile.photoURL || user.photoURL || null);
-    } else if (user && !isLoading) {
-      // Fallback to auth user data if no profile exists and not loading
-      const nameParts = (user.displayName || "").split(" ");
-      setFormData({
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        displayName: user.displayName || "",
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        ghinNumber: "",
-        tShirtSize: "",
-        profilePicture: null,
-        defaultGoldTee: undefined,
-      });
-      setImagePreview(user.photoURL || null);
-    }
-  }, [user, userProfile, isLoading, isDirty]);
-
+  const [fields, setFields] = React.useState<ProfileFields>(() =>
+    profileFieldsFrom(null, null),
+  );
+  const [errors, setErrors] = React.useState<ProfileFieldErrors>({});
+  const [photoFile, setPhotoFile] = React.useState<File | null>(null);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const [isDirty, setIsDirty] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  // Hydrate from the stored profile (or auth data) until the user starts editing.
+  React.useEffect(() => {
+    if (isDirty || !user) return;
+    if (userProfile === undefined && isLoading) return;
+    setFields(profileFieldsFrom(userProfile, user));
+    setImagePreview(userProfile?.photoURL || user.photoURL || null);
+  }, [user, userProfile, isLoading, isDirty]);
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    if (
-      formData.phone &&
-      !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(
-        formData.phone,
-      )
-    ) {
-      newErrors.phone = "Please enter a valid phone number";
-    }
-
-    if (formData.ghinNumber) {
-      if (!/^\d+$/.test(formData.ghinNumber)) {
-        newErrors.ghinNumber = "GHIN number must be an integer";
-      }
-    }
-
-    if (!formData.tShirtSize) {
-      newErrors.tShirtSize = "T-shirt size is required";
-    } else if (!T_SHIRT_SIZES.includes(formData.tShirtSize as TShirtSize)) {
-      newErrors.tShirtSize = "Please select a valid T-shirt size";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field: keyof FormData) => (value: string) => {
+  const setTextField = (field: TextFieldKey) => (value: string) => {
     setIsDirty(true);
-    setFormData((prev) => {
-      const next = { ...prev };
-      if (field === "phone") {
-        next.phone = formatPhone(value);
-      } else if (
-        field === "firstName" ||
-        field === "lastName" ||
-        field === "email" ||
-        field === "ghinNumber" ||
-        field === "tShirtSize"
-      ) {
-        next[field] = value;
-      }
-
-      next.displayName = [next.firstName, next.lastName]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-      return next;
-    });
-
-    // Clear error when user types
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
+    setFields((prev) => ({
+      ...prev,
+      [field]: field === "phone" ? formatPhone(value) : value,
+    }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-
-    if (file) {
-      setIsDirty(true);
-      setFormData((prev) => ({ ...prev, profilePicture: file }));
-
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsDirty(true);
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
+    const nextErrors = validateProfileFields(fields);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     try {
-      if (!user || !user.uid) {
+      if (!user?.uid) {
         throw new Error("You must be signed in to save your profile");
       }
-
-      // Debug logging removed to satisfy lint rules and avoid require() in ESM
-
-      // Prepare data to save (do not include File objects)
-      const payload: UserProfilePayload = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        displayName: formData.displayName, // server will recompute anyway
-        email: formData.email,
-        phone: formData.phone,
-        ghinNumber: formData.ghinNumber,
-        tShirtSize: formData.tShirtSize as UserProfilePayload["tShirtSize"],
-        photoURL: imagePreview || user.photoURL || null,
-        ...(typeof formData.defaultGoldTee === "boolean" && {
-          defaultGoldTee: formData.defaultGoldTee,
-        }),
-        // Only include governance fields if current user is admin editing self (admin property on profile)
-      };
-
-      // Use the hook's save method (this handles uploading the file if present)
-      if (save) {
-        await save({ data: payload, file: formData.profilePicture });
-      } else {
-        await saveUserProfile(user.uid, payload);
-      }
-
-      console.log("Profile saved to Firestore for uid:", user.uid);
-      // After successful save, normalize (trim) name fields in local state so UI reflects canonical values
-      setFormData((prev) => {
-        const trimmedFirst = prev.firstName.trim();
-        const trimmedLast = prev.lastName.trim();
-        return {
-          ...prev,
-          firstName: trimmedFirst,
-          lastName: trimmedLast,
-          displayName: [trimmedFirst, trimmedLast]
-            .filter(Boolean)
-            .join(" ")
-            .trim(),
-        };
-      });
+      await Sentry.startSpan(
+        { op: "ui.submit", name: "profile-form.save" },
+        () =>
+          save({
+            data: toProfilePayload(
+              fields,
+              imagePreview || user.photoURL || null,
+            ),
+            file: photoFile,
+          }),
+      );
+      setFields((prev) => ({
+        ...prev,
+        firstName: prev.firstName.trim(),
+        lastName: prev.lastName.trim(),
+      }));
+      setPhotoFile(null);
       setIsDirty(false);
-      setIsSuccess(true);
-
-      // Toast feedback
       addToast({
         title: "Profile updated",
         description: "Your profile information has been saved.",
         color: "success",
       });
-
-      // Notify parent (e.g., close modal) on successful save
-      try {
-        onSaved?.();
-      } catch {
-        // no-op: parent may not provide a handler
-      }
-
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setIsSuccess(false);
-      }, 3000);
+      onSaved?.();
     } catch (error) {
-      console.error("Error submitting form:", error);
-    } finally {
-      setIsSubmitting(false);
+      // The saveError banner below explains the failure to the user.
+      Sentry.captureException(error);
     }
   };
 
-  // Show loading spinner while fetching profile data
   if (isLoading) {
     return (
-      <Card className="p-6">
-        <div className="flex justify-center items-center min-h-100">
-          <Spinner size="lg" aria-label="Loading profile data..." />
-        </div>
-      </Card>
+      <div className="flex min-h-100 items-center justify-center">
+        <Spinner size="lg" aria-label="Loading profile data..." />
+      </div>
     );
   }
 
+  const displayName =
+    [fields.firstName, fields.lastName].filter(Boolean).join(" ") ||
+    user?.displayName ||
+    user?.email ||
+    "User";
+  const showCancel = !(hideCancelWhenNew && userProfile === null);
+
   return (
-    <Card className="p-4 sm:p-5">
-      <form
-        id={formId || "profile-form"}
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
-        <div className="flex flex-col items-center mb-4">
-          <div
-            className="relative group cursor-pointer mb-2"
-            onClick={triggerFileInput}
-          >
-            <UserAvatar
-              src={imagePreview || undefined}
-              name={
-                formData.displayName ||
-                user?.displayName ||
-                user?.email ||
-                "User"
-              }
-              className="w-24 h-24 text-lg transition-transform duration-200 group-hover:scale-105 border-2"
-              size="lg"
-              alt={
-                formData.displayName ||
-                user?.displayName ||
-                user?.email ||
-                "User"
-              }
-            />
-            {/* upload spinner overlay when saving */}
-            {/** If hook reports saving, show spinner **/}
-            {/** eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {/** We check both local isSubmitting and hook saving state in case of differing states **/}
-            {(isSubmitting || isSaving) && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+    <form
+      id={formId || "profile-form"}
+      onSubmit={handleSubmit}
+      className="flex flex-col text-left"
+      noValidate
+    >
+      <div className="divide-y divide-border">
+        <ProfileSection
+          title="Photo & name"
+          description="How you appear on leaderboards, pairings and the directory."
+        >
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <UserAvatar
+                  src={imagePreview || undefined}
+                  name={displayName}
+                  alt={displayName}
+                  size="lg"
+                  className="h-18 w-18 text-lg"
+                />
+                {isSaving && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                    <Spinner size="sm" aria-label="Uploading photo" />
+                  </div>
+                )}
               </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <Icon icon="lucide:camera" className="text-white text-xl" />
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="secondary"
+                  className="h-11"
+                  onPress={() => fileInputRef.current?.click()}
+                >
+                  <Icon icon="lucide:camera" className="h-4 w-4" />
+                  Change photo
+                </Button>
+                <p className="text-xs text-muted">JPG or PNG</p>
+              </div>
+              {/* Native file input is required to open the OS picker; it is
+                  hidden and driven by the accessible HeroUI button above. */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                aria-hidden="true"
+                tabIndex={-1}
+                onChange={handleFileChange}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <TextField
+                isRequired
+                isInvalid={!!errors.firstName}
+                value={fields.firstName}
+                onChange={setTextField("firstName")}
+              >
+                <Label>First name</Label>
+                <Input autoComplete="given-name" />
+                <FieldError>{errors.firstName}</FieldError>
+              </TextField>
+              <TextField
+                isRequired
+                isInvalid={!!errors.lastName}
+                value={fields.lastName}
+                onChange={setTextField("lastName")}
+              >
+                <Label>Last name</Label>
+                <Input autoComplete="family-name" />
+                <FieldError>{errors.lastName}</FieldError>
+              </TextField>
             </div>
           </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <p className="text-muted text-sm">Click to upload profile picture</p>
-        </div>
+        </ProfileSection>
 
-        <div className="space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <ProfileSection
+          title="Contact"
+          description="Shown to members in the club directory."
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextField
               isRequired
-              isInvalid={!!errors.firstName}
-              value={formData.firstName}
-              onChange={(v) => handleInputChange("firstName")(v)}
+              isInvalid={!!errors.email}
+              value={fields.email}
+              onChange={setTextField("email")}
             >
-              <Label>First Name</Label>
-              <Input placeholder="Enter first name" />
-              <FieldError>{errors.firstName}</FieldError>
+              <Label>Email</Label>
+              <Input type="email" autoComplete="email" />
+              <FieldError>{errors.email}</FieldError>
             </TextField>
-            <TextField
-              isRequired
-              isInvalid={!!errors.lastName}
-              value={formData.lastName}
-              onChange={(v) => handleInputChange("lastName")(v)}
-            >
-              <Label>Last Name</Label>
-              <Input placeholder="Enter last name" />
-              <FieldError>{errors.lastName}</FieldError>
-            </TextField>
-          </div>
-
-          <TextField
-            isRequired
-            isInvalid={!!errors.email}
-            value={formData.email}
-            onChange={(v) => handleInputChange("email")(v)}
-          >
-            <Label>Email</Label>
-            <Input placeholder="Enter your email address" type="email" />
-            <FieldError>{errors.email}</FieldError>
-          </TextField>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TextField
               isInvalid={!!errors.phone}
-              value={formData.phone}
-              onChange={(v) => handleInputChange("phone")(v)}
+              value={fields.phone}
+              onChange={setTextField("phone")}
             >
-              <Label>Phone Number</Label>
-              <Input placeholder="Enter your phone number" type="tel" />
+              <Label>
+                Phone <span className="font-normal text-muted">· optional</span>
+              </Label>
+              <Input type="tel" autoComplete="tel" />
               <FieldError>{errors.phone}</FieldError>
             </TextField>
+          </div>
+        </ProfileSection>
 
+        <ProfileSection
+          title="Golf"
+          description="Used for handicaps, registrations and team pairings."
+        >
+          <div className="flex flex-col gap-4">
             <TextField
               isInvalid={!!errors.ghinNumber}
-              value={formData.ghinNumber}
-              onChange={(v) => handleInputChange("ghinNumber")(v)}
+              value={fields.ghinNumber}
+              onChange={setTextField("ghinNumber")}
+              className="sm:max-w-xs"
             >
-              <Label>GHIN Number</Label>
-              <Input placeholder="Enter your GHIN number" type="text" />
+              <Label>
+                GHIN number{" "}
+                <span className="font-normal text-muted">· optional</span>
+              </Label>
+              <Input inputMode="numeric" />
               <FieldError>{errors.ghinNumber}</FieldError>
             </TextField>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-foreground">
-                T-Shirt Size <span className="text-danger">*</span>
-              </label>
-              <Select
-                aria-label="T-Shirt Size"
-                placeholder="Select a T-shirt size"
-                value={formData.tShirtSize || undefined}
-                onChange={(key) =>
-                  handleInputChange("tShirtSize")(key ? String(key) : "")
-                }
-                isInvalid={!!errors.tShirtSize}
-                className="max-w-full"
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {T_SHIRT_SIZES.map((size) => (
-                      <ListBox.Item key={size} id={size} textValue={size}>
-                        {size}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              {errors.tShirtSize && (
-                <p className="text-sm text-danger">{errors.tShirtSize}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Gold Tees Default preference */}
-          <div className="pt-2 border-t">
-            <div className="flex items-start gap-3 rounded-lg border p-4 hover:bg-surface-secondary/50 transition-colors">
-              <Checkbox
-                isSelected={formData.defaultGoldTee}
-                onChange={(v) => {
+            <div className="border-t border-border pt-4">
+              <GoldTeeSwitch
+                isSelected={fields.defaultGoldTee ?? false}
+                onChange={(value) => {
                   setIsDirty(true);
-                  setFormData((prev) => ({ ...prev, defaultGoldTee: v }));
+                  setFields((prev) => ({ ...prev, defaultGoldTee: value }));
                 }}
-                aria-label="Default to gold tees"
-                className="mt-0.5 shrink-0"
-              >
-                <Checkbox.Control>
-                  <Checkbox.Indicator />
-                </Checkbox.Control>
-              </Checkbox>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-sm font-medium min-w-0">
-                    <Icon
-                      icon="lucide:flag"
-                      className="w-4 h-4 text-warning shrink-0"
-                    />
-                    <span className="truncate">
-                      Default to Gold (Senior) Tees
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="px-2 h-7 text-xs shrink-0"
-                    onPress={() => setGoldTeeInfoOpen(true)}
-                    aria-label="Gold tees information"
-                  >
-                    <Icon icon="lucide:info" className="w-3.5 h-3.5" />
-                    Info
-                  </Button>
-                </div>
-              </div>
+              />
             </div>
           </div>
+        </ProfileSection>
+
+        <ProfileSection
+          title="Club apparel"
+          description="Only club admins see this. Used for event shirts."
+        >
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">
+              T-shirt size <span className="text-danger">*</span>
+            </p>
+            <ShirtSizePicker
+              value={fields.tShirtSize}
+              isInvalid={!!errors.tShirtSize}
+              onChange={(size) => {
+                setIsDirty(true);
+                setFields((prev) => ({ ...prev, tShirtSize: size }));
+                if (errors.tShirtSize)
+                  setErrors((prev) => ({ ...prev, tShirtSize: undefined }));
+              }}
+            />
+            {errors.tShirtSize && (
+              <p className="text-sm text-danger" role="alert">
+                {errors.tShirtSize}
+              </p>
+            )}
+          </div>
+        </ProfileSection>
+      </div>
+
+      {saveError && (
+        <div
+          className="mt-4 flex items-center gap-2 rounded-md bg-danger/10 p-3 text-danger"
+          role="alert"
+        >
+          <Icon icon="lucide:alert-circle" />
+          <span>
+            There was an error uploading your avatar or saving your profile.
+            Please try again.
+          </span>
         </div>
+      )}
 
-        {!hideActions && (
-          <div className="pt-2">
-            <div className="flex items-center justify-between gap-2">
-              {!(hideCancelWhenNew && userProfile === null) && (
-                <Button
-                  type="button"
-                  className="w-1/3 h-10 text-sm py-1"
-                  onPress={() => navigate(-1)}
-                  isDisabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-              )}
-
-              <Button type="submit" className="w-1/3 h-10 text-sm py-1">
-                {isSubmitting ? "Saving..." : "Save Profile"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {isSuccess && (
-          <div className="mt-4 p-3 bg-success text-success-700 rounded-md flex items-center gap-2">
-            <Icon icon="lucide:check-circle" />
-            <span>Profile updated successfully!</span>
-          </div>
-        )}
-        {saveError && (
-          <div className="mt-4 p-3 bg-error-100 text-error-700 rounded-md flex items-center gap-2">
-            <Icon icon="lucide:alert-circle" />
-            <span>
-              There was an error uploading your avatar or saving profile. Please
-              try again.
-            </span>
-          </div>
-        )}
-      </form>
-
-      <Modal.Backdrop
-        isOpen={goldTeeInfoOpen}
-        onOpenChange={setGoldTeeInfoOpen}
-      >
-        <Modal.Container size="sm">
-          <Modal.Dialog aria-label="Gold tees setting information">
-            <>
-              <Modal.Header>Gold Tees Default</Modal.Header>
-              <Modal.Body>
-                <p className="text-sm text-muted">
-                  This setting is for seniors only. When enabled, you will be
-                  pre-selected for gold tees when you register for a tournament
-                  or when you are added to a team.
-                </p>
-              </Modal.Body>
-              <Modal.Footer>
-                <Button onPress={() => setGoldTeeInfoOpen(false)}>Close</Button>
-              </Modal.Footer>
-            </>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Card>
+      {!hideActions && (
+        <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex gap-2 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:justify-end sm:px-0">
+          {showCancel && (
+            <Button
+              variant="tertiary"
+              className="h-11 flex-1 sm:flex-none"
+              onPress={() => navigate(-1)}
+              isDisabled={isSaving}
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            className="h-11 flex-1 sm:flex-none sm:px-6"
+            isPending={isSaving}
+          >
+            {isSaving ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
+      )}
+    </form>
   );
 }

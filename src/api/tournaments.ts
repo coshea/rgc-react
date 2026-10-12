@@ -291,6 +291,22 @@ function todayAsUtcMidnight(now: Date = new Date()): Date {
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
+function isUserOnRegistration(data: DocumentData, uid: string): boolean {
+  if (data.ownerId === uid) return true;
+  if (Array.isArray(data.memberIds) && data.memberIds.includes(uid)) {
+    return true;
+  }
+  return (
+    Array.isArray(data.team) &&
+    data.team.some(
+      (m: unknown) =>
+        typeof m === "object" &&
+        m !== null &&
+        (m as { id?: unknown }).id === uid,
+    )
+  );
+}
+
 function toUserRegistration(
   regDoc: QueryDocumentSnapshot<DocumentData>,
   tournament: ReturnType<typeof mapTournamentDoc>,
@@ -326,9 +342,10 @@ function toUserRegistration(
  * manually marked Completed or Canceled.
  *
  * The work is bounded by the number of upcoming tournaments, not by the
- * user's registration history: one query for upcoming tournaments, then two
- * indexed queries per tournament against its own registrations subcollection
- * (owner match, and `memberIds` array-contains for teammates).
+ * user's registration history: one query for upcoming tournaments, then one
+ * plain read of each tournament's registrations subcollection, matched in
+ * code. This needs no special indexes and finds the user as captain or
+ * teammate even on registrations whose `memberIds` is missing or stale.
  *
  * Results are sorted by tournament date ascending.
  */
@@ -363,24 +380,10 @@ export async function fetchUserUpcomingRegistrations(
               tournament.firestoreId,
               "registrations",
             );
-            const [ownedSnap, memberSnap] = await Promise.all([
-              getDocs(query(regCol, where("ownerId", "==", uid))),
-              getDocs(
-                query(regCol, where("memberIds", "array-contains", uid)),
-              ),
-            ]);
-
-            // A captain matches both queries; dedupe by registration id.
-            const regDocs = new Map<
-              string,
-              QueryDocumentSnapshot<DocumentData>
-            >();
-            for (const d of [...ownedSnap.docs, ...memberSnap.docs]) {
-              regDocs.set(d.id, d);
-            }
-            return Array.from(regDocs.values()).map((d) =>
-              toUserRegistration(d, tournament, uid),
-            );
+            const regSnap = await getDocs(regCol);
+            return regSnap.docs
+              .filter((d) => isUserOnRegistration(d.data(), uid))
+              .map((d) => toUserRegistration(d, tournament, uid));
           }),
         );
 

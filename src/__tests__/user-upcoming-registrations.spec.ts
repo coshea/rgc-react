@@ -73,6 +73,22 @@ const registrations: Record<string, ReturnType<typeof snap>[]> = {
     }),
   ],
   "tournaments/t-later/registrations": [
+    snap("r-other", {
+      ownerId: "x",
+      memberIds: ["x", "y"],
+      team: [
+        { id: "x", displayName: "X" },
+        { id: "y", displayName: "Y" },
+      ],
+    }),
+    // Admin-edited before memberIds was kept in sync: only `team` lists "me".
+    snap("r-legacy", {
+      ownerId: "pal2",
+      team: [
+        { id: "pal2", displayName: "Pal 2" },
+        { id: "me", displayName: "Me" },
+      ],
+    }),
     snap("r-teammate", {
       ownerId: "pal",
       memberIds: ["pal", "me"],
@@ -98,7 +114,9 @@ function matches(doc: ReturnType<typeof snap>, c: Constraint) {
 beforeEach(() => {
   getDocsMock.mockReset();
   captureExceptionMock.mockReset();
-  getDocsMock.mockImplementation(async (q: MockQuery) => {
+  getDocsMock.mockImplementation(async (q: MockQuery | string) => {
+    // A bare collection path means "read every registration".
+    if (typeof q === "string") return { docs: registrations[q] ?? [] };
     if (q.col === "tournaments") return { docs: tournaments };
     const docs = (registrations[q.col] ?? []).filter((d) =>
       q.constraints.every((c) => matches(d, c)),
@@ -121,13 +139,14 @@ describe("fetchUserUpcomingRegistrations", () => {
     expect(d.getUTCMinutes()).toBe(0);
   });
 
-  it("returns captain and teammate registrations once each, in date order", async () => {
+  it("finds the user as captain, teammate, or on a legacy team without memberIds", async () => {
     const result = await fetchUserUpcomingRegistrations("me");
     expect(result.map((r) => r.registration.id)).toEqual([
       "r-captain",
+      "r-legacy",
       "r-teammate",
     ]);
-    expect(result[1].registration.ownerId).toBe("pal");
+    expect(result[2].registration.ownerId).toBe("pal");
     expect(result[0].tournament.title).toBe("Member-Guest");
   });
 
