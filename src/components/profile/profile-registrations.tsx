@@ -118,7 +118,9 @@ export function RegistrationList({
           icon="lucide:calendar-x"
           className="mx-auto mb-3 h-10 w-10 text-muted"
         />
-        <p className="text-muted">Not registered for any upcoming tournaments</p>
+        <p className="text-muted">
+          Not registered for any upcoming tournaments
+        </p>
       </div>
     );
   }
@@ -167,7 +169,7 @@ export function RegistrationList({
                   }
                   dateStr={
                     regDate
-                      ? `Registered ${regDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}`
+                      ? `Registered ${regDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
                       : ""
                   }
                   maxPlayers={maxPlayers}

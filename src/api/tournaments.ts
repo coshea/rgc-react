@@ -12,6 +12,7 @@ import {
   doc,
   onSnapshot,
   collection,
+  collectionGroup,
   query,
   orderBy,
   deleteDoc,
@@ -146,7 +147,7 @@ export async function upsertRegistration(
   payload: RegistrationPayload,
 ) {
   // memberIds is a derived flat array of team member IDs stored alongside the
-  // registration so teammates can be found with an array-contains query.
+  // registration to enable efficient collectionGroup queries (array-contains).
   const memberIds = payload.team.map((m) => m.id);
 
   // When creating a new registration, stamp it with the server timestamp so
@@ -291,22 +292,6 @@ function todayAsUtcMidnight(now: Date = new Date()): Date {
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
-function isUserOnRegistration(data: DocumentData, uid: string): boolean {
-  if (data.ownerId === uid) return true;
-  if (Array.isArray(data.memberIds) && data.memberIds.includes(uid)) {
-    return true;
-  }
-  return (
-    Array.isArray(data.team) &&
-    data.team.some(
-      (m: unknown) =>
-        typeof m === "object" &&
-        m !== null &&
-        (m as { id?: unknown }).id === uid,
-    )
-  );
-}
-
 function toUserRegistration(
   regDoc: QueryDocumentSnapshot<DocumentData>,
   tournament: ReturnType<typeof mapTournamentDoc>,
@@ -341,11 +326,10 @@ function toUserRegistration(
  * "Upcoming" means the tournament date is today or later and it has not been
  * manually marked Completed or Canceled.
  *
- * The work is bounded by the number of upcoming tournaments, not by the
- * user's registration history: one query for upcoming tournaments, then one
- * plain read of each tournament's registrations subcollection, matched in
- * code. This needs no special indexes and finds the user as captain or
- * teammate even on registrations whose `memberIds` is missing or stale.
+ * Two indexed collectionGroup queries find the user's registrations (as
+ * captain via `ownerId`, as teammate via `memberIds`), then only the
+ * referenced tournament documents are read. The date filter runs in code so
+ * tournaments whose `date` is stored as a string still match.
  *
  * Results are sorted by tournament date ascending.
  */
@@ -356,39 +340,65 @@ export async function fetchUserUpcomingRegistrations(
     { name: "fetchUserUpcomingRegistrations", op: "db.query" },
     async () => {
       try {
-        const tournamentsSnap = await getDocs(
-          query(
-            collection(db, "tournaments"),
-            where("date", ">=", todayAsUtcMidnight()),
-            orderBy("date", "asc"),
+        const [ownedSnap, memberSnap] = await Promise.all([
+          getDocs(
+            query(
+              collectionGroup(db, "registrations"),
+              where("ownerId", "==", uid),
+            ),
           ),
+          getDocs(
+            query(
+              collectionGroup(db, "registrations"),
+              where("memberIds", "array-contains", uid),
+            ),
+          ),
+        ]);
+
+        // Dedupe by full path: a captain matches both queries, and doc IDs
+        // are only unique within one tournament.
+        const regDocs = new Map<string, QueryDocumentSnapshot<DocumentData>>();
+        for (const d of [...ownedSnap.docs, ...memberSnap.docs]) {
+          regDocs.set(d.ref.path, d);
+        }
+        if (regDocs.size === 0) return [];
+
+        const tournamentIds = new Set<string>();
+        for (const d of regDocs.values()) {
+          const tournamentId = d.ref.parent.parent?.id;
+          if (tournamentId) tournamentIds.add(tournamentId);
+        }
+
+        const tournamentSnaps = await Promise.all(
+          Array.from(tournamentIds, (id) => getDoc(doc(db, "tournaments", id))),
         );
+        const today = todayAsUtcMidnight().getTime();
+        const upcomingById = new Map<
+          string,
+          ReturnType<typeof mapTournamentDoc>
+        >();
+        for (const tSnap of tournamentSnaps) {
+          if (!tSnap.exists()) continue;
+          const tournament = mapTournamentDoc(tSnap);
+          if (
+            tournament.status === TournamentStatus.Completed ||
+            tournament.status === TournamentStatus.Canceled ||
+            tournament.date.getTime() < today
+          ) {
+            continue;
+          }
+          upcomingById.set(tSnap.id, tournament);
+        }
 
-        const upcoming = tournamentsSnap.docs
-          .map((d) => mapTournamentDoc(d))
-          .filter(
-            (t) =>
-              t.status !== TournamentStatus.Completed &&
-              t.status !== TournamentStatus.Canceled,
-          );
+        const results: UserRegistrationWithTournament[] = [];
+        for (const d of regDocs.values()) {
+          const tournament = upcomingById.get(d.ref.parent.parent?.id ?? "");
+          if (tournament) results.push(toUserRegistration(d, tournament, uid));
+        }
 
-        const perTournament = await Promise.all(
-          upcoming.map(async (tournament) => {
-            const regCol = collection(
-              db,
-              "tournaments",
-              tournament.firestoreId,
-              "registrations",
-            );
-            const regSnap = await getDocs(regCol);
-            return regSnap.docs
-              .filter((d) => isUserOnRegistration(d.data(), uid))
-              .map((d) => toUserRegistration(d, tournament, uid));
-          }),
+        return results.sort(
+          (a, b) => a.tournament.date.getTime() - b.tournament.date.getTime(),
         );
-
-        // Tournaments were queried in date order, so the flattened list is too.
-        return perTournament.flat();
       } catch (error) {
         Sentry.captureException(error);
         throw error;

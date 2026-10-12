@@ -201,7 +201,7 @@ const UserProfilePage: React.FC = () => {
           <ProfileSummaryCard user={profileUser} isOwnProfile={isOwnProfile} />
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           <ProfileStats
             stats={[
               {
@@ -330,7 +330,7 @@ const UserProfilePage: React.FC = () => {
               <RegistrationList {...registrationsState} usersMap={usersMap} />
             </Tabs.Panel>
           </Tabs>
-        </main>
+        </div>
       </div>
     </div>
   );

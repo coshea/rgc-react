@@ -955,7 +955,8 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       );
       await updateDoc(regRef, {
         team,
-        // Keep in sync with team so profile "upcoming registrations" finds teammates.
+        // Keep in sync with team: the profile's upcoming-registrations
+        // collectionGroup query finds teammates via array-contains on memberIds.
         memberIds: team.map((m) => m.id),
         openSpotsOptIn,
       });

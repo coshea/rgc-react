@@ -87,8 +87,9 @@ export function ProfileSettingsList() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { userProfile, save, isSaving, isLoading } = useUserProfile();
-  const [openField, setOpenField] =
-    React.useState<EditableProfileField | null>(null);
+  const [openField, setOpenField] = React.useState<EditableProfileField | null>(
+    null,
+  );
   // Bumped on every open so the sheet remounts with fresh values.
   const [sheetKey, setSheetKey] = React.useState(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -106,8 +107,7 @@ export function ProfileSettingsList() {
     try {
       await Sentry.startSpan(
         { op: "ui.submit", name: "profile-settings.save" },
-        () =>
-          save({ data: toProfilePayload(next, photoURL), file: opts.file }),
+        () => save({ data: toProfilePayload(next, photoURL), file: opts.file }),
       );
       addToast({
         title: opts.successTitle,
@@ -156,7 +156,11 @@ export function ProfileSettingsList() {
     },
   ];
   const golfRows: Row[] = [
-    { field: "ghinNumber", label: "GHIN number", value: fields.ghinNumber || notSet },
+    {
+      field: "ghinNumber",
+      label: "GHIN number",
+      value: fields.ghinNumber || notSet,
+    },
     {
       field: "tShirtSize",
       label: "T-shirt size",
@@ -170,8 +174,7 @@ export function ProfileSettingsList() {
       <div className="flex flex-col items-center gap-1">
         <div className="relative">
           <UserAvatar
-            src={photoURL || undefined}
-            name={name || user?.email || "User"}
+            user={userProfile ?? undefined}
             size="lg"
             className="h-21 w-21 text-xl"
           />
@@ -201,7 +204,8 @@ export function ProfileSettingsList() {
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = "";
-            if (file) void persist(fields, { file, successTitle: "Photo updated" });
+            if (file)
+              void persist(fields, { file, successTitle: "Photo updated" });
           }}
         />
       </div>

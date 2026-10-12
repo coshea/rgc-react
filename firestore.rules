@@ -157,6 +157,12 @@ service cloud.firestore {
     match /{path=**}/fcmTokens/{tokenId} {
       allow read: if isAdmin();
     }
+    // Collection-group reads of registrations (profile "upcoming
+    // registrations" queries by ownerId / memberIds). Same visibility as the
+    // nested tournaments/{id}/registrations rule.
+    match /{path=**}/registrations/{registrationId} {
+      allow read: if request.auth != null;
+    }
 
     // Example: allow public read of tournaments, but restrict writes to a whitelist or admins
     match /tournaments/{tournamentId} {
