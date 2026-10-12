@@ -953,7 +953,12 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
         "registrations",
         regId,
       );
-      await updateDoc(regRef, { team, openSpotsOptIn });
+      await updateDoc(regRef, {
+        team,
+        // Keep in sync with team so profile "upcoming registrations" finds teammates.
+        memberIds: team.map((m) => m.id),
+        openSpotsOptIn,
+      });
       setRegistrations((prev) =>
         prev.map((r) => (r.id === regId ? { ...r, team, openSpotsOptIn } : r)),
       );
@@ -1016,6 +1021,7 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
       const docRef = await addDoc(colRef, {
         ownerId,
         team,
+        memberIds: team.map((m) => m.id),
         openSpotsOptIn: newOpenSpotsOptIn,
         registeredAt: serverTimestamp(),
       });

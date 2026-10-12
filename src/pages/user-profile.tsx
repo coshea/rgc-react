@@ -48,8 +48,12 @@ const UserProfilePage: React.FC = () => {
     useUserTournamentWins(userId);
   const { data: winnings, isLoading: winningsLoading } =
     useUserWinnings(userId);
-  const { data: userRegistrations = [], isLoading: registrationsLoading } =
-    useUserRegistrations(userId);
+  const {
+    data: userRegistrations = [],
+    isLoading: registrationsLoading,
+    isError: registrationsError,
+    refetch: refetchRegistrations,
+  } = useUserRegistrations(userId);
   const { usersMap } = useUsersMap();
 
   usePageTracking(profileUser?.displayName || `User ${userId}`, userLoading);
@@ -723,6 +727,21 @@ const UserProfilePage: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : registrationsError ? (
+            <div className="text-center py-8 space-y-3">
+              <Icon
+                icon="lucide:alert-circle"
+                className="w-12 h-12 mx-auto text-muted"
+              />
+              <p className="text-muted">Couldn&apos;t load registrations.</p>
+              <Button
+                variant="tertiary"
+                size="sm"
+                onPress={() => void refetchRegistrations()}
+              >
+                Try again
+              </Button>
             </div>
           ) : userRegistrations.length === 0 ? (
             <div className="text-center py-8">
