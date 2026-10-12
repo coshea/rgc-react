@@ -956,7 +956,9 @@ img { display: block; max-width: 100%; }
                           size="sm"
                           variant="danger-soft"
                           onPress={() =>
-                            navigate(`/tournaments/${firestoreId}/edit`)
+                            navigate(`/tournaments/${firestoreId}/edit`, {
+                              replace: true,
+                            })
                           }
                           aria-label="Edit tournament (Admin only)"
                           className="w-full"
@@ -1111,7 +1113,9 @@ img { display: block; max-width: 100%; }
                               size="sm"
                               variant="danger-soft"
                               onPress={() =>
-                                navigate(`/tournaments/${firestoreId}/edit`)
+                                navigate(`/tournaments/${firestoreId}/edit`, {
+                                  replace: true,
+                                })
                               }
                               aria-label="Edit tournament (Admin only)"
                               className="whitespace-nowrap"

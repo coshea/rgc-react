@@ -27,11 +27,6 @@
       ]
     },
     {
-      "collectionGroup": "fcmTokens",
-      "queryScope": "COLLECTION",
-      "fields": [{ "fieldPath": "token", "order": "ASCENDING" }]
-    },
-    {
       "collectionGroup": "memberPayments",
       "queryScope": "COLLECTION",
       "fields": [

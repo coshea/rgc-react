@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { TournamentStatus } from "@/types/tournament";
 import { getStatus, parseToDate } from "@/utils/tournamentStatus";
 // Centralized tournament-related Firestore access.
@@ -284,96 +285,124 @@ export interface UserRegistrationWithTournament {
 }
 
 /**
+ * Today's calendar date as midnight UTC, which is how tournament dates are
+ * stored (date-only). Tournaments happening today still count as upcoming.
+ */
+function todayAsUtcMidnight(now: Date = new Date()): Date {
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+function toUserRegistration(
+  regDoc: QueryDocumentSnapshot<DocumentData>,
+  tournament: ReturnType<typeof mapTournamentDoc>,
+  uid: string,
+): UserRegistrationWithTournament {
+  const regData = regDoc.data();
+  const team = Array.isArray(regData.team)
+    ? (regData.team as RegistrationMember[])
+    : [];
+  const ownerId = typeof regData.ownerId === "string" ? regData.ownerId : uid;
+  const openSpotsOptIn =
+    typeof regData.openSpotsOptIn === "boolean"
+      ? regData.openSpotsOptIn
+      : undefined;
+
+  return {
+    registration: {
+      id: regDoc.id,
+      ownerId,
+      team,
+      openSpotsOptIn,
+      registeredAt: parseToDate(regData.registeredAt),
+    },
+    tournament,
+  };
+}
+
+/**
  * Fetch upcoming tournaments where the given user is registered (as owner or
- * team member). Uses collectionGroup queries to avoid the N+1 pattern of
- * scanning all registrations for every tournament.
+ * team member).
  *
- * "Upcoming" means the tournament
- * has not been manually marked Completed or Canceled.
+ * "Upcoming" means the tournament date is today or later and it has not been
+ * manually marked Completed or Canceled.
+ *
+ * Two indexed collectionGroup queries find the user's registrations (as
+ * captain via `ownerId`, as teammate via `memberIds`), then only the
+ * referenced tournament documents are read. The date filter runs in code so
+ * tournaments whose `date` is stored as a string still match.
  *
  * Results are sorted by tournament date ascending.
  */
 export async function fetchUserUpcomingRegistrations(
   uid: string,
 ): Promise<UserRegistrationWithTournament[]> {
-  // Two targeted collectionGroup queries replace the old N+1 pattern.
-  // Query 1: registrations where the user is the captain/owner.
-  // Query 2: registrations where the user appears in the memberIds array
-  //          (populated by upsertRegistration for all new/updated registrations).
-  const [ownedSnaps, memberSnaps] = await Promise.all([
-    getDocs(
-      query(collectionGroup(db, "registrations"), where("ownerId", "==", uid)),
-    ),
-    getDocs(
-      query(
-        collectionGroup(db, "registrations"),
-        where("memberIds", "array-contains", uid),
-      ),
-    ),
-  ]);
+  return Sentry.startSpan(
+    { name: "fetchUserUpcomingRegistrations", op: "db.query" },
+    async () => {
+      try {
+        const [ownedSnap, memberSnap] = await Promise.all([
+          getDocs(
+            query(
+              collectionGroup(db, "registrations"),
+              where("ownerId", "==", uid),
+            ),
+          ),
+          getDocs(
+            query(
+              collectionGroup(db, "registrations"),
+              where("memberIds", "array-contains", uid),
+            ),
+          ),
+        ]);
 
-  // Merge results, deduplicating by full document path so that registrations
-  // from different tournaments with the same document ID are never conflated.
-  const regDocsById = new Map<string, QueryDocumentSnapshot<DocumentData>>();
-  for (const d of [...ownedSnaps.docs, ...memberSnaps.docs]) {
-    regDocsById.set(d.ref.path, d);
-  }
+        // Dedupe by full path: a captain matches both queries, and doc IDs
+        // are only unique within one tournament.
+        const regDocs = new Map<string, QueryDocumentSnapshot<DocumentData>>();
+        for (const d of [...ownedSnap.docs, ...memberSnap.docs]) {
+          regDocs.set(d.ref.path, d);
+        }
+        if (regDocs.size === 0) return [];
 
-  if (regDocsById.size === 0) return [];
+        const tournamentIds = new Set<string>();
+        for (const d of regDocs.values()) {
+          const tournamentId = d.ref.parent.parent?.id;
+          if (tournamentId) tournamentIds.add(tournamentId);
+        }
 
-  // Fetch only the specific tournament documents referenced by those
-  // registrations (typically 2-3 documents total).
-  const regDocsList = Array.from(regDocsById.values());
-  const tournamentSnaps = await Promise.all(
-    regDocsList.map((regDoc) => {
-      const tournamentId = regDoc.ref.parent.parent?.id;
-      return tournamentId
-        ? getDoc(doc(db, "tournaments", tournamentId))
-        : Promise.resolve(null);
-    }),
-  );
+        const tournamentSnaps = await Promise.all(
+          Array.from(tournamentIds, (id) => getDoc(doc(db, "tournaments", id))),
+        );
+        const today = todayAsUtcMidnight().getTime();
+        const upcomingById = new Map<
+          string,
+          ReturnType<typeof mapTournamentDoc>
+        >();
+        for (const tSnap of tournamentSnaps) {
+          if (!tSnap.exists()) continue;
+          const tournament = mapTournamentDoc(tSnap);
+          if (
+            tournament.status === TournamentStatus.Completed ||
+            tournament.status === TournamentStatus.Canceled ||
+            tournament.date.getTime() < today
+          ) {
+            continue;
+          }
+          upcomingById.set(tSnap.id, tournament);
+        }
 
-  const results: UserRegistrationWithTournament[] = [];
+        const results: UserRegistrationWithTournament[] = [];
+        for (const d of regDocs.values()) {
+          const tournament = upcomingById.get(d.ref.parent.parent?.id ?? "");
+          if (tournament) results.push(toUserRegistration(d, tournament, uid));
+        }
 
-  for (let i = 0; i < regDocsList.length; i++) {
-    const tSnap = tournamentSnaps[i];
-    if (!tSnap || !tSnap.exists()) continue;
-
-    const tournament = mapTournamentDoc(tSnap);
-
-    // Only include tournaments where registration window is open or has passed
-    // but the tournament has not been completed/canceled yet.
-    if (
-      tournament.status === TournamentStatus.Completed ||
-      tournament.status === TournamentStatus.Canceled
-    ) {
-      continue;
-    }
-
-    const regDoc = regDocsList[i];
-    const regData = regDoc.data();
-    const team = Array.isArray(regData.team)
-      ? (regData.team as RegistrationMember[])
-      : [];
-    const ownerId = typeof regData.ownerId === "string" ? regData.ownerId : uid;
-    const openSpotsOptIn =
-      typeof regData.openSpotsOptIn === "boolean"
-        ? regData.openSpotsOptIn
-        : undefined;
-
-    results.push({
-      registration: {
-        id: regDoc.id,
-        ownerId,
-        team,
-        openSpotsOptIn,
-        registeredAt: parseToDate(regData.registeredAt),
-      },
-      tournament,
-    });
-  }
-
-  return results.sort(
-    (a, b) => a.tournament.date.getTime() - b.tournament.date.getTime(),
+        return results.sort(
+          (a, b) => a.tournament.date.getTime() - b.tournament.date.getTime(),
+        );
+      } catch (error) {
+        Sentry.captureException(error);
+        throw error;
+      }
+    },
   );
 }

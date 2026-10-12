@@ -46,9 +46,7 @@ const TournamentEditPage: React.FC = () => {
   const [initialValues, setInitialValues] = React.useState<
     Partial<Tournament> | undefined
   >(undefined);
-  const [loading, setLoading] = React.useState<boolean>(
-    !isNew || !!templateId,
-  );
+  const [loading, setLoading] = React.useState<boolean>(!isNew || !!templateId);
 
   // Edit: keep the tournament live so bracket publish state and similar
   // server-side changes show up without a reload.
@@ -153,7 +151,9 @@ const TournamentEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate(isNew ? "/tournaments" : `/tournaments/${firestoreId}`);
+    navigate(isNew ? "/tournaments" : `/tournaments/${firestoreId}`, {
+      replace: true,
+    });
   };
 
   if (loading || (!isNew && !tournament)) return <LoadingEditor />;

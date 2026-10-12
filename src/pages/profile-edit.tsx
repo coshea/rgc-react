@@ -1,16 +1,38 @@
 import { ProfileForm } from "@/components/profile-form";
+import { ProfileSettingsList } from "@/components/profile/profile-settings-list";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import BackButton from "@/components/back-button";
 import { siteConfig } from "@/config/site";
 import { useAuth } from "@/providers/AuthProvider";
 import { Spinner } from "@heroui/react";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 const ProfileEditPage = () => {
   usePageTracking("Edit Profile");
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { userProfile, isLoading: profileLoading } = useUserProfile();
+  // Phones edit one field at a time; first-time setup (no profile doc yet)
+  // always uses the full form so every required field gets filled in.
+  // The layout is chosen once on mount so rotating the phone mid-edit
+  // doesn't swap editors and throw away an unsaved draft.
+  const isPhoneNow = useMediaQuery("(max-width: 640px)");
+  const [isPhone] = useState(isPhoneNow);
+  const useSettingsList = isPhone && userProfile != null;
+
+  // Return to wherever the member came from, or home when this page was the
+  // first entry in the session (bookmark, email link, new tab).
+  const handleSaved = () => {
+    if (location.key === "default") {
+      navigate(siteConfig.pages.home.link);
+    } else {
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,7 +51,7 @@ const ProfileEditPage = () => {
     }
   }, [loading, user, navigate]);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Spinner size="lg" aria-label="Loading profile..." />
@@ -42,14 +64,18 @@ const ProfileEditPage = () => {
   if (user && !user.emailVerified) return null;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="max-w-4xl mx-auto px-4 pt-4 sm:p-6">
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
         <BackButton />
-        <h1 className="text-xl font-semibold">Edit Profile</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Edit Profile</h1>
         <div className="w-10" />
       </div>
 
-      <ProfileForm onSaved={() => navigate(siteConfig.pages.home.link)} />
+      {useSettingsList ? (
+        <ProfileSettingsList />
+      ) : (
+        <ProfileForm onSaved={handleSaved} />
+      )}
     </div>
   );
 };
