@@ -125,6 +125,7 @@ describe("TournamentEditPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "cancel" }));
       expect(navigateMock).toHaveBeenCalledWith(
         "/tournaments/2026-fall-better-ball",
+        { replace: true },
       );
     });
 
@@ -198,7 +199,9 @@ describe("TournamentEditPage", () => {
     it("returns to the tournament list on cancel", async () => {
       render(<TournamentEditPage />);
       fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
-      expect(navigateMock).toHaveBeenCalledWith("/tournaments");
+      expect(navigateMock).toHaveBeenCalledWith("/tournaments", {
+        replace: true,
+      });
     });
   });
 });
