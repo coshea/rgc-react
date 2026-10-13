@@ -438,38 +438,28 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
     [registrations],
   );
 
-  const selectedWinnerCounts = React.useMemo(() => {
-    const counts = new Map<string, number>();
+  // Winners are de-duplicated per group (section), so the same person or team
+  // can be paid out in multiple groups.
+  const getGroupSelections = React.useCallback(
+    (group: WinnerGroup) => {
+      const userIds = new Set<string>();
+      const registrationIds = new Set<string>();
 
-    for (const group of groups) {
       for (const winner of group.winners || []) {
         for (const competitor of winner.competitors || []) {
-          counts.set(
-            competitor.userId,
-            (counts.get(competitor.userId) ?? 0) + 1,
-          );
+          userIds.add(competitor.userId);
         }
-      }
-    }
-
-    return counts;
-  }, [groups]);
-
-  const selectedRegistrationCounts = React.useMemo(() => {
-    const counts = new Map<string, number>();
-
-    for (const group of groups) {
-      for (const winner of group.winners || []) {
         for (const registrationId of getSelectedRegistrationIdsForCompetitors(
           winner.competitors || [],
         )) {
-          counts.set(registrationId, (counts.get(registrationId) ?? 0) + 1);
+          registrationIds.add(registrationId);
         }
       }
-    }
 
-    return counts;
-  }, [getSelectedRegistrationIdsForCompetitors, groups]);
+      return { userIds, registrationIds };
+    },
+    [getSelectedRegistrationIdsForCompetitors],
+  );
 
   const sorted = sortGroups(groups);
 
@@ -836,15 +826,18 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                           const currentRegistrationIds = new Set(
                             selectedRegistrationIds,
                           );
+                          const groupSelections = getGroupSelections(g);
                           const availableRegistrations = registrations.filter(
                             (registration) =>
                               currentRegistrationIds.has(registration.id) ||
-                              !selectedRegistrationCounts.has(registration.id),
+                              !groupSelections.registrationIds.has(
+                                registration.id,
+                              ),
                           );
                           const availableUsers = users.filter(
                             (user) =>
                               currentCompetitorIds.has(user.id) ||
-                              !selectedWinnerCounts.has(user.id),
+                              !groupSelections.userIds.has(user.id),
                           );
 
                           return (

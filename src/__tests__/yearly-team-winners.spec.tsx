@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { YearlyTeamWinners } from "@/components/yearly-team-winners";
 
@@ -14,20 +14,14 @@ vi.mock("@/components/search-input", () => ({
       onChange={(e) => onChange(e.target.value)}
     />
   ),
-  default: ({ value, onChange, ariaLabel, placeholder }: any) => (
-    <input
-      type="text"
-      role="textbox"
-      aria-label={ariaLabel ?? placeholder ?? "Search"}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  ),
 }));
 
-// Mock hooks used inside component
 vi.mock("@/providers/AuthProvider", () => ({
-  useAuth: () => ({ userLoggedIn: true }),
+  useAuth: () => ({ userLoggedIn: true, user: { uid: "C" } }),
+}));
+
+vi.mock("@/hooks/useUsers", () => ({
+  useUsersMap: () => ({ usersMap: new Map() }),
 }));
 
 vi.mock("@/hooks/useYearlyTournaments", () => ({
@@ -37,12 +31,7 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
       {
         firestoreId: "t1",
         title: "Spring Scramble",
-        date: new Date(2025, 3, 10),
-        description: "",
-        players: 40,
-        completed: true,
-        canceled: false,
-        prizePool: 500,
+        date: new Date("2025-04-10"),
         winnerGroups: [
           {
             id: "overall",
@@ -74,12 +63,7 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
       {
         firestoreId: "t2",
         title: "Better Ball",
-        date: new Date(2025, 4, 12),
-        description: "",
-        players: 32,
-        completed: true,
-        canceled: false,
-        prizePool: 400,
+        date: new Date("2025-05-12"),
         winnerGroups: [
           {
             id: "overall",
@@ -111,50 +95,50 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
   }),
 }));
 
+const card = (label: RegExp) => screen.getByLabelText(label);
+
 describe("YearlyTeamWinners", () => {
-  it("groups teams and shows aggregate stats", () => {
+  it("shows each team as a card with rank, stats and per-player money", () => {
     render(<YearlyTeamWinners year={2025} />);
-    expect(screen.getByText(/Team Performance/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/3 teams won \$310 across 2 team events/),
+    ).toBeInTheDocument();
 
-    const getStatsLine = (teamName: string) => {
-      const nameEl = screen.getByText(teamName);
-      // parent div holds name <p> followed by stats <p>
-      const container = nameEl.parentElement; // <div> wrapping name + stats
-      if (!container) throw new Error("Missing container for team " + teamName);
-      const ps = Array.from(container.querySelectorAll("p"));
-      // stats line should be second paragraph element
-      return ps.find((p) => p !== nameEl) as HTMLParagraphElement;
-    };
+    const ab = card(/^1st, Alice and Bob$/);
+    expect(within(ab).getByText("2 events, 1 win")).toBeInTheDocument();
+    expect(within(ab).getByText("$70")).toBeInTheDocument();
+    expect(within(ab).getByText("each")).toBeInTheDocument();
 
-    // Alice • Bob
-    const aliceStats = getStatsLine("Alice • Bob");
-    expect(aliceStats).toBeInTheDocument();
-    expect(aliceStats.textContent).toMatch(/1\s+win/);
-    expect(aliceStats.textContent).toMatch(/2\s+podium/);
+    const ef = card(/^2nd, Evan and Frank$/);
+    expect(within(ef).getByText("1 event, 1 win")).toBeInTheDocument();
 
-    // Evan • Frank
-    const evanStats = getStatsLine("Evan • Frank");
-    expect(evanStats.textContent).toMatch(/1\s+win/);
-    expect(evanStats.textContent).toMatch(/1\s+podium/);
+    const cd = card(/^3rd, Carol and Dan, your team$/);
+    expect(within(cd).getByText("1 event")).toBeInTheDocument();
+    expect(within(cd).getByText("Your team")).toBeInTheDocument();
+  });
 
-    // Carol • Dan (no wins, 1 podium)
-    const carolStats = getStatsLine("Carol • Dan");
-    expect(carolStats.textContent).toMatch(/0\s+win/);
-    expect(carolStats.textContent).toMatch(/1\s+podium/);
+  it("lists finishes newest first with ordinal places and UTC dates", () => {
+    render(<YearlyTeamWinners year={2025} />);
+    const list = screen.getByRole("list", {
+      name: "Finishes for Alice and Bob",
+    });
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("3rd");
+    expect(rows[0]).toHaveTextContent("Better Ball");
+    expect(rows[0]).toHaveTextContent("May 12, Overall");
+    expect(rows[1]).toHaveTextContent("1st");
+    expect(rows[1]).toHaveTextContent("Apr 10, Overall");
+    expect(
+      within(rows[1]).getByRole("link", { name: "Spring Scramble" }),
+    ).toHaveAttribute("href", "/tournaments/t1");
   });
 
   it("filters teams via search input", () => {
     render(<YearlyTeamWinners year={2025} />);
-    // SearchInput uses provided placeholder "Search team" but querying by aria-label is more robust
-    const input = screen.getByRole("textbox", { name: /search player?/i });
-    // Initially shows all three team name combinations
-    screen.getByText("Alice • Bob");
-    screen.getByText("Evan • Frank");
-    screen.getByText("Carol • Dan");
+    const input = screen.getByRole("textbox", { name: /find a team/i });
     fireEvent.change(input, { target: { value: "alice" } });
-    // Now only the Alice • Bob team should be visible
-    screen.getByText("Alice • Bob");
-    expect(screen.queryByText("Evan • Frank")).toBeNull();
-    expect(screen.queryByText("Carol • Dan")).toBeNull();
+    expect(card(/^1st, Alice and Bob$/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^2nd, Evan and Frank$/)).toBeNull();
+    expect(screen.queryByLabelText(/^3rd, Carol and Dan/)).toBeNull();
   });
 });

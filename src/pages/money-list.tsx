@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Select, Tabs, Label, ListBox } from "@heroui/react";
+import { Select, Tabs, Label, ListBox, Spinner } from "@heroui/react";
 import { useAuth } from "@/providers/AuthProvider";
 // Replaced legacy leaderboard with new standings component
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
@@ -15,7 +15,12 @@ export default function MoneyListPage() {
   const { userLoggedIn, loading } = useAuth();
   const [year, setYear] = useState<number>(currentYear);
   const [tab, setTab] = useState<string>("yearly");
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading)
+    return (
+      <div className="p-4 flex justify-center">
+        <Spinner aria-label="Loading money list" />
+      </div>
+    );
   if (!userLoggedIn)
     return (
       <div className="p-4 text-sm text-muted">
@@ -29,9 +34,9 @@ export default function MoneyListPage() {
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="space-y-1">
-          <h1 className="text-lg font-semibold tracking-tight">Money List</h1>
-          <p className="text-[11px] text-muted">
-            Yearly earnings (tournament winnings + season awards).
+          <h1 className="text-2xl font-semibold tracking-tight">Money List</h1>
+          <p className="text-sm text-muted">
+            Prize money paid out at club tournaments this season.
           </p>
         </div>
         <Select
@@ -123,12 +128,6 @@ export default function MoneyListPage() {
         {tab === "tournaments" && <TournamentBreakdown year={year} />}
         {tab === "teams" && <YearlyTeamWinners year={year} />}
       </div>
-
-      <p className="text-[10px] text-muted leading-relaxed">
-        Prize amounts are per-person shares; team winnings shown per member.
-        Totals include season awards (e.g. hole in one). Data updates live from
-        tournaments and awards.
-      </p>
     </div>
   );
 }

@@ -1,53 +1,28 @@
-import { useState, useMemo } from "react";
-import type { ReactNode } from "react";
-import { Chip, Skeleton, Tooltip, Button, Card } from "@heroui/react";
-import { UserAvatar } from "@/components/avatar";
-import { TeeBadge } from "@/components/tee-badge";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Button, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { getPlaceMeta } from "@/utils/placeMeta";
+import { TournamentResults } from "@/components/tournament-results";
 import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
-import {
-  getStatus,
-  statusText,
-  isRegistrationOpen,
-} from "@/utils/tournamentStatus";
-import { TournamentStatus } from "@/types/tournament";
-import type { Tournament } from "@/types/tournament";
-import type { WinnerGroup } from "@/types/winner";
-import { useAuth } from "@/providers/AuthProvider";
 import { useUsersMap } from "@/hooks/useUsers";
-import { isBracketRoundGroup } from "@/utils/bracketPayouts";
+import { useAuth } from "@/providers/AuthProvider";
+import type { Tournament } from "@/types/tournament";
+import {
+  formatEventDate,
+  getChampion,
+  getPaidPlayerCount,
+  getPaidTotal,
+  joinNames,
+} from "@/utils/tournamentResults";
 
 interface Props {
   year: number;
 }
 
-interface ResultRow {
-  id: string;
-  position: number;
-  userId: string;
-  name: string;
-  prize: number;
-  score?: string;
-  teamSize: number;
-}
+const EVENT_PARAM = "event";
 
-interface TournamentBundle {
-  tournament: Tournament;
-  rows: ResultRow[]; // legacy per-player rows (kept for internal use)
-  winnersCount: number;
-  podium: ResultRow[]; // first 3 distinct position entries
-  positions: Map<number, ResultRow[]>; // position -> rows (teams/players)
-  teamRows: Array<{
-    id: string;
-    teamKey: string;
-    names: string[];
-    userIds: string[];
-    totalPrize: number;
-    bestPosition?: number;
-    score?: string; // representative score (first available)
-  }>;
-}
+const formatMoney = (amount: number) => `$${amount.toLocaleString()}`;
+const eventId = (t: Tournament) => t.firestoreId || t.title;
 
 export function TournamentBreakdown({ year }: Props) {
   const { userLoggedIn } = useAuth();
@@ -56,711 +31,140 @@ export function TournamentBreakdown({ year }: Props) {
     enabled: userLoggedIn,
   });
   const { usersMap } = useUsersMap();
-  const tournamentBundles: TournamentBundle[] = useMemo(() => {
-    return tournaments
-      .filter((t) => {
-        const hasGroups = (t.winnerGroups?.length ?? 0) > 0;
-        return hasGroups;
-      })
-      .map((t) => {
-        const rows: ResultRow[] = [];
-        const placementRows: ResultRow[] = [];
-        const winnerIds = new Set<string>();
-        // Team aggregation across all groups for full results
-        const teamMap = new Map<
-          string,
-          {
-            names: string[];
-            userIds: string[];
-            totalPrize: number;
-            bestPosition?: number;
-            score?: string;
-          }
-        >();
-        const makeTeamKey = (
-          comps: Array<{ userId: string; displayName: string }>,
-        ) => {
-          // Prefer stable by userId; fallback to display names
-          const parts = comps.map((c) => c.userId || c.displayName).sort();
-          return parts.join("_");
-        };
-        const groups = t.winnerGroups as WinnerGroup[] | undefined;
-        if (groups && groups.length > 0) {
-          // Prefer 'overall' groups for podium construction; include all for detailed rows
-          groups.forEach((g) => {
-            (g.winners || []).forEach((w) => {
-              const comps = (w.competitors || []).map((c) => ({
-                userId: c.userId,
-                displayName: c.displayName || c.userId,
-              }));
-              const prizeAmount = w.prizeAmount || 0;
-              const rowEntries = comps.map((c, idx) => ({
-                id: `${t.firestoreId || t.title}-${g.type}-${w.place}-${c.userId}-${idx}`,
-                position: w.place,
-                userId: c.userId,
-                name: c.displayName || c.userId,
-                prize: prizeAmount,
-                score: w.score,
-                teamSize: comps.length,
-              }));
-              if (prizeAmount > 0) {
-                comps.forEach((c, idx) => {
-                  winnerIds.add(c.userId);
-                  rows.push(rowEntries[idx]);
-                });
-              }
-              if (!isBracketRoundGroup(g)) {
-                placementRows.push(...rowEntries);
-              }
-              // Aggregate team totals
-              if (comps.length && prizeAmount > 0) {
-                const teamKey = makeTeamKey(comps);
-                const existing = teamMap.get(teamKey);
-                const teamPrize = prizeAmount * comps.length; // prizeAmount assumed per player share
-                const bestPosition = Math.min(
-                  w.place,
-                  existing?.bestPosition ?? Number.POSITIVE_INFINITY,
-                );
-                teamMap.set(teamKey, {
-                  names: existing?.names || comps.map((c) => c.displayName),
-                  userIds: existing?.userIds || comps.map((c) => c.userId),
-                  totalPrize: (existing?.totalPrize || 0) + teamPrize,
-                  bestPosition,
-                  score: existing?.score || w.score,
-                });
-              }
-            });
-          });
-        }
+  const [searchParams, setSearchParams] = useSearchParams();
 
-        rows.sort((a, b) => a.position - b.position);
-        placementRows.sort((a, b) => a.position - b.position);
-        const positions = new Map<number, ResultRow[]>();
-        const podiumSourceRows =
-          placementRows.length > 0 ? placementRows : rows;
-        podiumSourceRows.forEach((r) => {
-          const list = positions.get(r.position) || [];
-          list.push(r);
-          positions.set(r.position, list);
-        });
-        const distinctPositions = Array.from(positions.keys()).sort(
-          (a, b) => a - b,
-        );
-        const podium: ResultRow[] = [];
-        distinctPositions.slice(0, 3).forEach((pos) => {
-          const group = positions.get(pos)!;
-          podium.push(group[0]);
-        });
-        // Build team rows sorted by total winnings desc (rank), tie-break by best official position then name
-        const teamRows = Array.from(teamMap.entries()).map(([teamKey, v]) => ({
-          id: `${t.firestoreId || t.title}-team-${teamKey}`,
-          teamKey,
-          names: v.names,
-          userIds: v.userIds,
-          totalPrize: v.totalPrize,
-          bestPosition: v.bestPosition,
-          score: v.score,
-        }));
-        teamRows.sort((a, b) => {
-          if (b.totalPrize !== a.totalPrize) return b.totalPrize - a.totalPrize;
-          const ap = a.bestPosition ?? Number.POSITIVE_INFINITY;
-          const bp = b.bestPosition ?? Number.POSITIVE_INFINITY;
-          if (ap !== bp) return ap - bp;
-          return (a.names[0] || "").localeCompare(b.names[0] || "");
-        });
+  // Newest first, only events that have results.
+  const events = useMemo(
+    () =>
+      tournaments
+        .filter((t) => (t.winnerGroups?.length ?? 0) > 0)
+        .sort((a, b) => b.date.getTime() - a.date.getTime()),
+    [tournaments],
+  );
 
-        return {
-          tournament: t,
-          rows,
-          winnersCount: winnerIds.size,
-          podium,
-          positions,
-          teamRows,
-        };
-      });
-  }, [tournaments]);
+  // On phones the list and the results are separate screens, so the chosen
+  // event lives in the URL. On wider screens both show, with the newest event
+  // open until one is picked.
+  const requestedId = searchParams.get(EVENT_PARAM);
+  const requested = events.find((t) => eventId(t) === requestedId);
+  const active = requested ?? events[0];
+  const showResultsOnPhone = !!requested;
 
-  // Global aggregate stats
-  const globalStats = useMemo(() => {
-    const withResults = tournamentBundles.length;
-    const uniqueWinnerIds = new Set<string>();
-    let totalPrize = 0;
-    let totalWinnerRows = 0;
-    tournamentBundles.forEach((b) => {
-      totalPrize += b.tournament.prizePool || 0;
-      b.rows.forEach((r) => uniqueWinnerIds.add(r.userId));
-      totalWinnerRows += b.rows.length;
-    });
-    const avgWinners = withResults ? totalWinnerRows / withResults : 0;
-    return {
-      withResults,
-      unique: uniqueWinnerIds.size,
-      totalPrize,
-      avgWinners,
-    };
-  }, [tournamentBundles]);
-
-  const ordinal = (n: number) => {
-    const s = ["th", "st", "nd", "rd"]; // basic ordinal suffixes
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  };
-
-  const PlaceIndicator: React.FC<{ pos: number; compact?: boolean }> = ({
-    pos,
-    compact = false,
-  }) => {
-    const meta = getPlaceMeta(pos);
-    return (
-      <span
-        className={
-          "inline-flex items-center gap-1 text-[11px] font-semibold min-w-10" +
-          (compact ? "" : "")
-        }
-        aria-label={`${ordinal(pos)} place`}
-      >
-        <Icon
-          icon={meta.icon}
-          className={["w-4 h-4", meta.colorClass].join(" ")}
-        />
-        <span className={meta.colorClass}>{ordinal(pos)}</span>
-      </span>
-    );
-  };
-
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const toggle = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  const selectEvent = (id: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set(EVENT_PARAM, id);
       return next;
     });
   };
-
-  const formatPrize = (amount: number) => `$${amount.toLocaleString()}`;
+  const backToList = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete(EVENT_PARAM);
+      return next;
+    });
+  };
 
   if (isLoading) {
     return (
       <div className="space-y-3">
         {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
       </div>
     );
   }
 
-  if (!tournamentBundles.length) {
+  if (!events.length) {
     return (
-      <div className="flex flex-col items-start gap-4">
-        <div className="flex items-center gap-2 text-muted text-sm">
-          <Icon icon="lucide:calendar-x" className="w-5 h-5" />
-          <span>No tournament results for {year}.</span>
-        </div>
+      <div className="flex items-center gap-2 text-muted text-sm">
+        <Icon icon="lucide:calendar-x" className="w-5 h-5" />
+        <span>No tournament results for {year}.</span>
       </div>
     );
   }
 
+  const totalPaid = events.reduce(
+    (sum, t) => sum + getPaidTotal(t.winnerGroups),
+    0,
+  );
+
+  const wonBy = (t: Tournament) => {
+    const champion = getChampion(t.winnerGroups);
+    if (!champion) {
+      const n = getPaidPlayerCount(t.winnerGroups);
+      return `${n} ${n === 1 ? "player" : "players"} paid`;
+    }
+    const names = champion.competitors.map(
+      (c) => usersMap.get(c.userId)?.displayName || c.displayName || c.userId,
+    );
+    return `Won by ${joinNames(names)}`;
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Stats Bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-          <Icon icon="lucide:layout-grid" className="text-accent" />
-          {year} Tournament Results
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          <Chip size="sm" variant="tertiary" color="accent">
-            <Icon
-              icon="lucide:trophy"
-              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-            />
-            {globalStats.withResults} events
-          </Chip>
-          <Chip size="sm" variant="tertiary" color="success">
-            <Icon
-              icon="lucide:users"
-              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-            />
-            {globalStats.unique} unique winners
-          </Chip>
-          <Chip size="sm" variant="tertiary" color="warning">
-            <Icon
-              icon="lucide:banknote"
-              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-            />
-            {formatPrize(globalStats.totalPrize)}
-          </Chip>
-          <Chip size="sm" variant="tertiary" color="default">
-            <Icon
-              icon="lucide:award"
-              className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
-            />
-            {globalStats.avgWinners.toFixed(1)} winners / event
-          </Chip>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
-        {tournamentBundles.map((bundle) => {
-          const { tournament, winnersCount, rows } = bundle;
-          const id = tournament.firestoreId || tournament.title;
-          const isOpen = expanded.has(id);
-          // Build podium summary: keep teams separate and include all tied groups for first 3 distinct positions
-          const podiumGroups: { position: number; players: ResultRow[] }[] = [];
-          const groups = tournament.winnerGroups as WinnerGroup[] | undefined;
-          if (groups && groups.length > 0) {
-            const overall = groups.filter((g) => g.type === "overall");
-            const primary =
-              overall.length > 0
-                ? overall
-                : [
-                    [...groups].sort(
-                      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0),
-                    )[0],
-                  ].filter(Boolean as unknown as <T>(x: T) => x is T);
-
-            // Build team-level entries directly from winner places
-            type TeamEntry = {
-              position: number;
-              players: ResultRow[];
-              key: string;
-            };
-            const teamEntries: TeamEntry[] = [];
-            primary.forEach((g) => {
-              (g.winners || []).forEach((w, wi) => {
-                const members = (w.competitors || []).map((c, ci) => ({
-                  id: `${id}-podium-${g.type}-w${wi}-p${w.place}-${c.userId}-${ci}`,
-                  position: w.place,
-                  userId: c.userId,
-                  name: c.displayName || c.userId,
-                  prize: w.prizeAmount || 0,
-                  score: w.score,
-                  teamSize: (w.competitors || []).length,
-                }));
-                if (members.length) {
-                  const key = `${g.type}-${w.place}-${members.map((m) => m.userId).join("_")}`;
-                  teamEntries.push({
-                    position: w.place,
-                    players: members,
-                    key,
-                  });
-                }
-              });
-            });
-            teamEntries.sort((a, b) => a.position - b.position);
-
-            // Take first 3 distinct positions, include all teams (ties) for those positions
-            const distinctPositions: number[] = [];
-            for (const te of teamEntries) {
-              if (!distinctPositions.includes(te.position)) {
-                distinctPositions.push(te.position);
-                if (distinctPositions.length === 3) break;
-              }
-            }
-            const allowedPositions = new Set(distinctPositions);
-            teamEntries
-              .filter((te) => allowedPositions.has(te.position))
-              .forEach((te) =>
-                podiumGroups.push({
-                  position: te.position,
-                  players: te.players,
-                }),
-              );
-          } else {
-            const seenPositions = new Set<number>();
-            rows.forEach((r) => {
-              if (seenPositions.size >= 3) return;
-              if (!seenPositions.has(r.position)) {
-                const group = rows.filter((x) => x.position === r.position);
-                podiumGroups.push({ position: r.position, players: group });
-                seenPositions.add(r.position);
-              }
-            });
-          }
-          return (
-            <article
-              key={id}
-              className="relative overflow-hidden rounded-lg border/60 dark:/10 bg-surface shadow-sm hover:shadow-md transition-shadow"
-              aria-labelledby={`tournament-${id}`}
-            >
-              <div className="h-1 w-full bg-linear-to-r from-primary/40 via-primary/10 to-transparent" />
-              <Card className="bg-transparent">
-                <Card.Content className="space-y-4">
-                  {/* Header */}
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <h3
-                          id={`tournament-${id}`}
-                          className="font-semibold leading-snug flex items-center gap-2"
-                        >
-                          <Icon
-                            icon="lucide:trophy"
-                            className="text-amber-500"
-                          />
-                          {tournament.title}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
-                          <span className="inline-flex items-center gap-1">
-                            <Icon icon="lucide:calendar" className="w-3 h-3" />
-                            {tournament.date.toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </span>
-                          <span className="h-1 w-1 rounded-full bg-default/60" />
-                          <TeeBadge tee={tournament.tee} size="xs" />
-                          <span className="h-1 w-1 rounded-full bg-default/60" />
-                          <span className="inline-flex items-center gap-1">
-                            <Icon icon="lucide:award" className="w-3 h-3" />
-                            {winnersCount}{" "}
-                            {winnersCount === 1 ? "winner" : "winners"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end text-right gap-1">
-                        <Chip
-                          size="sm"
-                          variant="tertiary"
-                          className="text-[11px]"
-                        >
-                          {formatPrize(tournament.prizePool)} pool
-                        </Chip>
-                        {(() => {
-                          const s = getStatus(tournament);
-                          const label = statusText(s);
-                          const registrationOpen =
-                            isRegistrationOpen(tournament);
-                          if (s === TournamentStatus.Canceled) {
-                            return (
-                              <Chip
-                                size="sm"
-                                variant="primary"
-                                className="text-[10px]"
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          }
-                          if (s === TournamentStatus.Completed) {
-                            return (
-                              <Chip
-                                size="sm"
-                                variant="tertiary"
-                                className="text-[10px]"
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          }
-                          if (registrationOpen) {
-                            return (
-                              <Chip
-                                size="sm"
-                                variant="tertiary"
-                                className="text-[10px]"
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          }
-                          if (s === TournamentStatus.InProgress) {
-                            return (
-                              <Chip
-                                size="sm"
-                                variant="tertiary"
-                                className="text-[10px]"
-                              >
-                                {label}
-                              </Chip>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Podium strip */}
-                  <div className="flex flex-col gap-2">
-                    {podiumGroups.map((g) => {
-                      // Aggregate names for multi-player teams per position
-                      const resolvedNames = g.players.map((p) => {
-                        const user = usersMap.get(p.userId);
-                        return user?.displayName || user?.email || p.name;
-                      });
-                      const nameList = resolvedNames.join(" • ");
-                      let nameContent: ReactNode;
-                      if (resolvedNames.length === 4) {
-                        const line1 = resolvedNames.slice(0, 2).join(" • ");
-                        const line2 = resolvedNames.slice(2).join(" • ");
-                        nameContent = (
-                          <>
-                            <span>{line1}</span>
-                            <br />
-                            <span>{line2}</span>
-                          </>
-                        );
-                      } else {
-                        nameContent = nameList;
-                      }
-                      const totalPrize = g.players.reduce(
-                        (sum, p) => sum + p.prize,
-                        0,
-                      );
-                      const perPlayer = totalPrize / g.players.length || 0;
-                      const champion = g.position === 1;
-                      return (
-                        <div
-                          key={`${g.position}-${(g.players || [])
-                            .map((p) => p.userId || p.name)
-                            .join("_")}`}
-                          className={
-                            "flex items-center gap-3 p-2 rounded-md bg-default/60/50 dark:bg-default/60/5" +
-                            (champion
-                              ? " ring-1 ring-amber-400/40 dark:ring-amber-300/30"
-                              : "")
-                          }
-                        >
-                          <PlaceIndicator pos={g.position} />
-                          {/* Desktop: avatars inline with names */}
-                          <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
-                            {g.players.slice(0, 4).map((p) => {
-                              const user = usersMap.get(p.userId);
-                              const resolvedName =
-                                user?.displayName || user?.email || p.name;
-                              return (
-                                <UserAvatar
-                                  key={p.userId}
-                                  size="sm"
-                                  className="ring-1 ring-background"
-                                  name={resolvedName}
-                                  user={user}
-                                />
-                              );
-                            })}
-                          </div>
-                          {/* Mobile: stack avatars above names */}
-                          <div className="flex-1 sm:hidden">
-                            <div className="flex justify-center -space-x-2 rtl:space-x-reverse mb-1.5">
-                              {g.players.slice(0, 4).map((p) => {
-                                const user = usersMap.get(p.userId);
-                                const resolvedName =
-                                  user?.displayName || user?.email || p.name;
-                                return (
-                                  <UserAvatar
-                                    key={p.userId}
-                                    size="sm"
-                                    className="ring-1 ring-background"
-                                    name={resolvedName}
-                                    user={user}
-                                  />
-                                );
-                              })}
-                            </div>
-                            <p
-                              className={
-                                "text-sm leading-snug text-center wrap-break-word" +
-                                (champion ? " font-semibold" : " font-medium")
-                              }
-                              title={nameList}
-                            >
-                              {nameContent}
-                            </p>
-                            <p
-                              className="text-[11px] text-muted text-center"
-                              aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
-                            >
-                              {g.players[0].score
-                                ? `Score: ${g.players[0].score}`
-                                : "—"}{" "}
-                              • {formatPrize(perPlayer)}
-                            </p>
-                          </div>
-                          {/* Desktop: names and info */}
-                          <div className="hidden sm:block flex-1">
-                            <p
-                              className={
-                                "text-sm leading-snug wrap-break-word" +
-                                (champion ? " font-semibold" : " font-medium")
-                              }
-                              title={nameList}
-                            >
-                              {nameContent}
-                            </p>
-                            <p
-                              className="text-[11px] text-muted"
-                              aria-label={`Score ${g.players[0].score || "not available"}; winnings ${formatPrize(perPlayer)}`}
-                            >
-                              {g.players[0].score
-                                ? `Score: ${g.players[0].score}`
-                                : "—"}{" "}
-                              • {formatPrize(perPlayer)}
-                            </p>
-                          </div>
-                          {g.players.length > 4 && (
-                            <Tooltip>
-                              <span className="text-[10px] text-muted">
-                                +{g.players.length - 4}
-                              </span>
-                              <Tooltip.Content>
-                                {g.players
-                                  .slice(4)
-                                  .map((p) => p.name)
-                                  .join(", ")}
-                              </Tooltip.Content>
-                            </Tooltip>
-                          )}
-                        </div>
-                      );
+    <div className="md:grid md:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)] md:items-start md:gap-6">
+      <div className={showResultsOnPhone ? "hidden md:block" : undefined}>
+        <p className="text-sm text-muted mb-2">
+          {events.length} {events.length === 1 ? "tournament" : "tournaments"},{" "}
+          {formatMoney(totalPaid)} paid
+          <span className="md:hidden">. Tap one for full results.</span>
+        </p>
+        <ul
+          aria-label="Tournaments with results"
+          className="rounded-lg border border-separator bg-surface divide-y divide-separator overflow-hidden"
+        >
+          {events.map((t) => {
+            const id = eventId(t);
+            const isActive = active && id === eventId(active);
+            return (
+              <li key={id}>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  aria-current={isActive ? "true" : undefined}
+                  onPress={() => selectEvent(id)}
+                  className={
+                    "h-auto min-h-14 justify-start gap-3 rounded-none px-4 py-3 text-left font-normal " +
+                    (isActive ? "md:bg-accent/10" : "")
+                  }
+                >
+                  <span className="w-14 shrink-0 tabular-nums text-muted">
+                    {formatEventDate(t.date, {
+                      month: "short",
+                      day: "numeric",
                     })}
-                  </div>
-
-                  {/* Expand button */}
-                  <div className="pt-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="rounded-sm"
-                      onPress={() => toggle(id)}
-                      aria-expanded={isOpen}
-                      aria-controls={`results-${id}`}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={
+                        "block truncate " + (isActive ? "md:text-accent" : "")
+                      }
                     >
-                      {isOpen ? "Hide full results" : "Show full results"}
-                      <Icon
-                        icon={
-                          isOpen ? "lucide:chevron-up" : "lucide:chevron-down"
-                        }
-                        className="w-4 h-4"
-                      />
-                      {isOpen ? "Hide full results" : "Show full results"}
-                    </Button>
-                  </div>
-
-                  <div
-                    id={`results-${id}`}
-                    aria-hidden={!isOpen}
-                    className={[
-                      "mt-2 transition-all duration-300 ease-in-out",
-                      isOpen
-                        ? "max-h-[80vh] opacity-100 overflow-y-auto"
-                        : "max-h-0 opacity-0 overflow-hidden",
-                    ].join(" ")}
-                  >
-                    {isOpen && (
-                      <table
-                        aria-label={`${tournament.title} full results`}
-                        className="w-full text-sm"
-                      >
-                        <thead>
-                          <tr>
-                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 w-12">
-                              POS
-                            </th>
-                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2">
-                              PLAYER(S)
-                            </th>
-                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
-                              SCORE
-                            </th>
-                            <th className="bg-default/60 text-foreground font-medium text-left px-3 py-2 hidden sm:table-cell">
-                              WINNINGS
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bundle.teamRows.length === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={4}
-                                className="px-3 py-4 text-center text-muted"
-                              >
-                                No results
-                              </td>
-                            </tr>
-                          ) : (
-                            bundle.teamRows.map((row, rowIdx) => {
-                              const rank = rowIdx + 1;
-                              const names: string[] = row.names;
-                              const userIds: string[] = row.userIds;
-                              const score: string | undefined = row.score;
-                              const totalPrize: number = row.totalPrize;
-                              return (
-                                <tr
-                                  key={row.id}
-                                  className={
-                                    rowIdx % 2 === 0 ? "bg-default/20" : ""
-                                  }
-                                >
-                                  <td className="px-3 py-2">
-                                    <PlaceIndicator pos={rank} compact />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <div className="flex items-center gap-3">
-                                      <div className="hidden sm:flex -space-x-2 rtl:space-x-reverse">
-                                        {userIds.slice(0, 4).map((uid, j) => {
-                                          const user = usersMap.get(uid);
-                                          const fallback = names[j] || uid;
-                                          return (
-                                            <UserAvatar
-                                              key={uid + j}
-                                              size="sm"
-                                              className="ring-1 ring-background"
-                                              user={user}
-                                              name={user ? undefined : fallback}
-                                            />
-                                          );
-                                        })}
-                                        {userIds.length > 4 && (
-                                          <span className="w-7 h-7 rounded-full bg-default/60 flex items-center justify-center text-[10px] font-medium ring-1 ring-default-200">
-                                            +{userIds.length - 4}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="min-w-0">
-                                        <p className="font-medium text-sm leading-tight wrap-break-word">
-                                          {names.join(" • ")}
-                                        </p>
-                                        <p className="sm:hidden text-[11px] text-muted">
-                                          {(score || "—") +
-                                            " • " +
-                                            formatPrize(totalPrize)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-2 hidden sm:table-cell">
-                                    <span
-                                      className={
-                                        score && score.startsWith("-")
-                                          ? "text-success font-medium"
-                                          : ""
-                                      }
-                                    >
-                                      {score || "—"}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 hidden sm:table-cell">
-                                    <span className="font-semibold text-sm">
-                                      {formatPrize(totalPrize)}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </Card.Content>
-              </Card>
-            </article>
-          );
-        })}
+                      {t.title}
+                    </span>
+                    <span className="block truncate text-sm text-muted">
+                      {wonBy(t)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 tabular-nums font-semibold">
+                    {formatMoney(getPaidTotal(t.winnerGroups))}
+                  </span>
+                  <Icon
+                    icon="lucide:chevron-right"
+                    className="w-4 h-4 shrink-0 text-muted md:hidden"
+                  />
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
+
+      {active && (
+        <div className={showResultsOnPhone ? undefined : "hidden md:block"}>
+          <TournamentResults tournament={active} onBack={backToList} />
+        </div>
+      )}
     </div>
   );
 }

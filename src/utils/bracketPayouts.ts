@@ -1,6 +1,6 @@
 import type { TournamentBracket } from "@/types/bracket";
 import type { BracketRoundPayout } from "@/types/tournament";
-import type { Competitor, WinnerGroup } from "@/types/winner";
+import type { Competitor, WinnerGroup, WinnerPlace } from "@/types/winner";
 
 const BRACKET_GROUP_ID_PREFIX = "bracket-round:";
 const BRACKET_STANDINGS_GROUP_ID = `${BRACKET_GROUP_ID_PREFIX}standings`;
@@ -15,6 +15,31 @@ export function makeBracketRoundGroupId(round: number): string {
 
 export function isBracketRoundGroup(group: WinnerGroup): boolean {
   return group.type === "bracketRound";
+}
+
+/** The single generated group holding each bracket team's placement and total prize. */
+export function isBracketStandingsGroup(group: WinnerGroup): boolean {
+  return group.id === BRACKET_STANDINGS_GROUP_ID;
+}
+
+/**
+ * Rounds a bracket team won. Uses the stored count when present; older
+ * results only have a placement, so it is derived from that, taking the
+ * number of payout rounds as the bracket's round count.
+ */
+export function getBracketRoundsWon(
+  winner: WinnerPlace,
+  payouts: BracketRoundPayout[] | undefined,
+): number | undefined {
+  if (typeof winner.roundsWon === "number") return winner.roundsWon;
+  const totalRounds = normalizeBracketRoundPayouts(payouts).at(-1)?.round;
+  if (!totalRounds) return undefined;
+  if (winner.place === 1) return totalRounds;
+  if (winner.place === 2) return totalRounds - 1;
+  const roundsAfterExit = Math.log2(winner.place - 1);
+  if (!Number.isInteger(roundsAfterExit)) return undefined;
+  const won = totalRounds - 1 - roundsAfterExit;
+  return won >= 0 ? won : undefined;
 }
 
 export function isAutomatedBracketWinnerGroup(group: WinnerGroup): boolean {
@@ -96,6 +121,7 @@ interface TeamStanding {
   teamName: string;
   totalPrize: number;
   placement: number;
+  roundsWon: number;
 }
 
 export function buildBracketWinnerGroups(
@@ -221,6 +247,8 @@ export function buildBracketWinnerGroups(
       teamName: standing.teamName,
       totalPrize: standing.totalPrize,
       placement,
+      roundsWon: bracket.matches.filter((match) => match.winnerId === teamId)
+        .length,
     });
   });
 
@@ -247,6 +275,7 @@ export function buildBracketWinnerGroups(
         place: standing.placement,
         competitors: standing.competitors,
         prizeAmount: standing.totalPrize,
+        roundsWon: standing.roundsWon,
       })),
     },
   ];
