@@ -5,7 +5,10 @@ import { Tournament, TournamentStatus } from "@/types/tournament";
 import { getStatus, isRegistrationOpen } from "@/utils/tournamentStatus";
 import { useNavigate } from "react-router-dom";
 import { TeeBadge } from "@/components/tee-badge";
-import { TournamentStatusChip } from "@/components/tournament-status-chip";
+import {
+  TournamentStatusChip,
+  getStatusBorderClass,
+} from "@/components/tournament-status-chip";
 import { TournamentStatusCard } from "@/components/tournament-status-card";
 
 interface TournamentListProps {
@@ -322,22 +325,7 @@ export const TournamentList: React.FC<TournamentListProps> = ({
                     `group transition-colors cursor-pointer ` +
                     `${idx % 2 === 0 ? "bg-surface/60" : "bg-surface-secondary/40"} ` +
                     `hover:bg-accent/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ` +
-                    `${(() => {
-                      const s = getStatus(tournament);
-                      if (s === TournamentStatus.Canceled) {
-                        return "border-l-4 border-l-danger";
-                      }
-                      if (s === TournamentStatus.Completed) {
-                        return "border-l-4 border-l-success";
-                      }
-                      if (s === TournamentStatus.InProgress) {
-                        return "border-l-4 border-l-accent";
-                      }
-                      if (isRegistrationOpen(tournament)) {
-                        return "border-l-4 border-l-warning";
-                      }
-                      return "border-l-4 border-l-border";
-                    })()}`
+                    `border-l-4 ${getStatusBorderClass(tournament)}`
                   }
                   aria-label={`View details for ${tournament.title}`}
                 >
