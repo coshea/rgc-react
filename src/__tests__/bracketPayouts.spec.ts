@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildBracketWinnerGroups,
+  getBracketRoundsWon,
+  isBracketStandingsGroup,
   isAutomatedBracketWinnerGroup,
   isBracketRoundGroup,
   mergeBracketWinnerGroups,
@@ -94,6 +96,7 @@ describe("buildBracketWinnerGroups", () => {
         { userId: "u8", displayName: "Heidi" },
       ],
       prizeAmount: 125,
+      roundsWon: 2,
     });
     expect(groups[0]?.winners?.[1]).toEqual({
       id: "team-a:standings",
@@ -103,6 +106,7 @@ describe("buildBracketWinnerGroups", () => {
         { userId: "u2", displayName: "Bob" },
       ],
       prizeAmount: 65,
+      roundsWon: 1,
     });
     expect(groups[0]?.winners?.some((winner) => winner.prizeAmount === 0)).toBe(
       false,
@@ -330,6 +334,40 @@ describe("buildBracketWinnerGroups", () => {
       { round: 1, amount: 0 },
       { round: 2, amount: 100 },
     ]);
+  });
+});
+
+describe("getBracketRoundsWon", () => {
+  const payouts = [
+    { round: 1, amount: 10 },
+    { round: 2, amount: 20 },
+    { round: 3, amount: 40, runnerUpAmount: 15 },
+  ];
+  const entry = (place: number, roundsWon?: number) => ({
+    place,
+    competitors: [],
+    roundsWon,
+  });
+
+  it("prefers the stored count", () => {
+    expect(getBracketRoundsWon(entry(5, 2), payouts)).toBe(2);
+  });
+
+  it("derives older results from placement and the payout rounds", () => {
+    expect(getBracketRoundsWon(entry(1), payouts)).toBe(3);
+    expect(getBracketRoundsWon(entry(2), payouts)).toBe(2);
+    expect(getBracketRoundsWon(entry(3), payouts)).toBe(1); // semifinal loss
+    expect(getBracketRoundsWon(entry(5), payouts)).toBe(0); // quarterfinal loss
+  });
+
+  it("returns undefined when it can't tell", () => {
+    expect(getBracketRoundsWon(entry(1), [])).toBeUndefined();
+    expect(getBracketRoundsWon(entry(4), payouts)).toBeUndefined();
+  });
+
+  it("recognizes the generated standings group", () => {
+    const [group] = buildBracketWinnerGroups(BRACKET, payouts.slice(0, 2));
+    expect(isBracketStandingsGroup(group)).toBe(true);
   });
 });
 

@@ -26,6 +26,8 @@ export interface WinnerPlace {
   score?: string; // optional score text
   /** Hole number for closest-to-pin competitions (e.g., 3, 5, 12, 17). Only used when group type is 'closestToPin' */
   holeNumber?: number;
+  /** Matches won, byes included. Only set on generated bracket standings. */
+  roundsWon?: number;
 }
 
 export interface WinnerGroup {
