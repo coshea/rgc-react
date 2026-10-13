@@ -123,12 +123,6 @@ export default function MoneyListPage() {
         {tab === "tournaments" && <TournamentBreakdown year={year} />}
         {tab === "teams" && <YearlyTeamWinners year={year} />}
       </div>
-
-      <p className="text-[10px] text-muted leading-relaxed">
-        Prize amounts are per-person shares; team winnings shown per member.
-        Totals include season awards (e.g. hole in one). Data updates live from
-        tournaments and awards.
-      </p>
     </div>
   );
 }

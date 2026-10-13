@@ -1,41 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom";
 import { TournamentBreakdown } from "@/components/tournament-breakdown";
 import type { Tournament } from "@/types/tournament";
-
-// Shim HeroUI v3 Table components — React Aria collection system fails in jsdom
-vi.mock("@heroui/react", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@heroui/react")>();
-  return {
-    ...actual,
-    Table: ({ children, "aria-label": ariaLabel, className }: any) => (
-      <table role="grid" aria-label={ariaLabel} className={className}>
-        {children}
-      </table>
-    ),
-    TableHeader: ({ children }: any) => (
-      <thead>
-        <tr>{children}</tr>
-      </thead>
-    ),
-    TableColumn: ({ children, className }: any) => (
-      <th className={className}>{children}</th>
-    ),
-    TableBody: ({ children, items, emptyContent }: any) => (
-      <tbody>
-        {items && typeof children === "function"
-          ? items.map((item: any) => children(item))
-          : (children ?? emptyContent)}
-      </tbody>
-    ),
-    TableRow: ({ children }: any) => <tr>{children}</tr>,
-    TableCell: ({ children, className }: any) => (
-      <td className={className}>{children}</td>
-    ),
-  };
-});
 
 // Mock auth to enable queries
 vi.mock("@/providers/AuthProvider", () => ({
@@ -75,8 +44,9 @@ vi.mock("@/hooks/useUsers", async () => {
 });
 
 // Dynamic tournament data for two events
-const janDate = new Date(2024, 0, 10);
-const febDate = new Date(2024, 1, 12);
+// Tournament dates are date-only, stored as midnight UTC.
+const janDate = new Date("2024-01-10T00:00:00Z");
+const febDate = new Date("2024-02-12T00:00:00Z");
 
 // Helper to build winnerGroups arrays
 // Event 1: two-person team wins (positions 1), second place solo, third place solo
@@ -119,6 +89,27 @@ const event1 = {
           competitors: [{ userId: "p4", displayName: "Dan" }],
           prizeAmount: 40,
           score: "E",
+        },
+        {
+          place: 3,
+          competitors: [{ userId: "p5", displayName: "Eve" }],
+          prizeAmount: 40,
+          score: "E",
+        },
+      ],
+    },
+    {
+      id: "ctp",
+      label: "Closest to pin",
+      type: "closestToPin",
+      order: 2,
+      winners: [
+        {
+          place: 1,
+          holeNumber: 12,
+          competitors: [{ userId: "p3", displayName: "Cara" }],
+          prizeAmount: 25,
+          score: "7' 9\"",
         },
       ],
     },
@@ -175,82 +166,103 @@ vi.mock("@/hooks/useYearlyTournaments", () => ({
   }),
 }));
 
-function renderComponent() {
+function renderComponent(initialEntry = "/money-list") {
   const qc = new QueryClient();
   render(
     <QueryClientProvider client={qc}>
-      <TournamentBreakdown year={2024} />
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <TournamentBreakdown year={2024} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe("TournamentBreakdown (redesigned)", () => {
+describe("TournamentBreakdown (list and detail)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders global stats chips with correct aggregate values", () => {
+  it("lists events newest first with date, winner and total paid", () => {
     renderComponent();
-    // 2 events
-    expect(screen.getByText(/2 events/i)).toBeInTheDocument();
-    // Unique winners: p1,p2,p3,p4,p5 => 5
-    expect(screen.getByText(/5 unique winners/i)).toBeInTheDocument();
-    // Total prize pool 300 + 200 = 500 (formatted with $)
-    expect(screen.getByText(/\$500/)).toBeInTheDocument();
-    // Avg winners per event: total winner rows = 2(team) +1 +1 +1 +1 +1 = 7 rows across 2 events = 3.5
-    expect(screen.getByText(/3\.5 winners \/ event/i)).toBeInTheDocument();
-  });
-
-  it("shows podium grouping with aggregated names for team winners", () => {
-    renderComponent();
-    // Podium for Winter Classic: position 1 should aggregate Alice • Bob
-    // Note: We now have both mobile and desktop layouts, so there will be multiple matches
-    const aliceBobElements = screen.getAllByText(/Alice • Bob/);
-    expect(aliceBobElements.length).toBeGreaterThan(0);
-    // Position 2 Cara, Position 3 Dan appear in summary (also duplicated for mobile/desktop)
-    expect(screen.getAllByText(/Cara/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Dan/).length).toBeGreaterThan(0);
-    // Frostbite Open podium includes Eve (1st), Alice (2nd), Bob (3rd)
-    expect(screen.getAllByText(/Eve/).length).toBeGreaterThan(0);
-  });
-
-  it("expands and shows full results table with correct per-player prize labels", () => {
-    renderComponent();
-    // Multiple expand buttons (one per event); target the first tournament card's button
-    const buttons = screen.getAllByRole("button", {
-      name: /show full results/i,
+    const list = screen.getByRole("list", {
+      name: /tournaments with results/i,
     });
-    const btn = buttons[0];
-    fireEvent.click(btn);
-    // After expansion, native <table> renders with role="table"
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("Frostbite Open");
+    expect(rows[0]).toHaveTextContent("Feb 12");
+    expect(rows[0]).toHaveTextContent("Won by Eve");
+    expect(rows[0]).toHaveTextContent("$160");
+    expect(rows[1]).toHaveTextContent("Winter Classic");
+    // Date-only values must not slip to the previous day.
+    expect(rows[1]).toHaveTextContent("Jan 10");
+    expect(rows[1]).toHaveTextContent("Won by Alice and Bob");
+    expect(screen.getByText(/2 tournaments, \$/)).toBeInTheDocument();
+  });
+
+  it("opens the newest event's results by default", () => {
+    renderComponent();
     expect(
-      screen.getByRole("table", { name: /Winter Classic full results/i }),
+      screen.getByRole("heading", { level: 2, name: "Frostbite Open" }),
     ).toBeInTheDocument();
-    // Team prize shows $100 ea for Alice since team of 2 with 100 each (component labels prizeAmount directly per player) => $100 ea appears in podium but table cell just $100 (no ea since logic uses teamSize >1). In table, we assert raw prize.
-    expect(screen.getAllByText(/\$100/).length).toBeGreaterThan(0);
-    // Score highlighting: negative scores rendered (e.g., -5 occurs twice for team position 1)
-    expect(screen.getAllByText("-5").length).toBeGreaterThan(0);
   });
 
-  it("toggles expand button label and aria-expanded state", () => {
+  it("shows another event's results when it is picked", () => {
     renderComponent();
-    const btn = screen.getAllByRole("button", {
-      name: /show full results/i,
-    })[0];
-    expect(btn).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(btn);
-    expect(btn).toHaveAttribute("aria-expanded", "true");
-    // Label changes
-    expect(btn.textContent?.toLowerCase()).toMatch(/hide full results/);
+    fireEvent.click(screen.getByRole("button", { name: /winter classic/i }));
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Winter Classic" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Wednesday, January 10/)).toBeInTheDocument();
   });
 
-  it("displays score with 'Score:' label in winner display", () => {
-    renderComponent();
-    // Check that scores are displayed with "Score:" prefix in podium
-    // The text may appear multiple times (mobile + desktop layouts)
-    expect(screen.getAllByText(/Score:/).length).toBeGreaterThan(0);
-    // Verify specific scores are present
-    expect(screen.getAllByText(/Score: -5/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Score: -3/).length).toBeGreaterThan(0);
+  it("opens the event named in the URL", () => {
+    renderComponent("/money-list?event=evt1");
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Winter Classic" }),
+    ).toBeInTheDocument();
+  });
+
+  it("writes ties as T3, in finishing order, and teams as each", () => {
+    renderComponent("/money-list?event=evt1");
+    const overall = screen
+      .getByRole("heading", { level: 3, name: "Overall" })
+      .closest("section")!;
+    const items = within(overall).getAllByRole("listitem");
+    expect(items).toHaveLength(4);
+    expect(items[0]).toHaveTextContent("1");
+    expect(items[0]).toHaveTextContent("Alice and Bob");
+    expect(items[0]).toHaveTextContent("$100");
+    expect(items[0]).toHaveTextContent("each");
+    expect(items[1]).toHaveTextContent("2");
+    expect(items[2]).toHaveTextContent("T3");
+    expect(items[3]).toHaveTextContent("T3");
+    expect(items[1]).not.toHaveTextContent("each");
+  });
+
+  it("marks under-par scores and labels closest-to-pin by hole", () => {
+    renderComponent("/money-list?event=evt1");
+    expect(screen.getAllByText("-5")[0]).toHaveClass("text-danger");
+    expect(screen.getAllByText("E")[0]).not.toHaveClass("text-danger");
+    const ctp = screen
+      .getByRole("heading", { level: 3, name: "Closest to pin" })
+      .closest("section")!;
+    expect(within(ctp).getByText("No. 12")).toBeInTheDocument();
+  });
+
+  it("offers a jump chip per section and a way back to the list", () => {
+    renderComponent("/money-list?event=evt1");
+    const jump = screen.getByRole("navigation", { name: /jump to section/i });
+    expect(
+      within(jump).getByRole("button", { name: "Overall" }),
+    ).toBeInTheDocument();
+    expect(
+      within(jump).getByRole("button", { name: "Closest to pin" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^tournaments$/i }));
+    // Back to the default (newest) selection once the param is cleared.
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Frostbite Open" }),
+    ).toBeInTheDocument();
   });
 });
