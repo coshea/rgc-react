@@ -11,6 +11,7 @@ import {
 import {
   initializeAnalytics,
   isSupported as analyticsIsSupported,
+  setAnalyticsCollectionEnabled,
   type Analytics,
 } from "firebase/analytics";
 import { getStorage, FirebaseStorage } from "firebase/storage";
@@ -116,11 +117,45 @@ export async function enableAnalytics(): Promise<Analytics | undefined> {
       analytics = initializeAnalytics(app, {
         config: { send_page_view: false },
       });
+    } else if (analytics) {
+      // Re-enabling after the user rejected and then accepted again.
+      setAnalyticsCollectionEnabled(analytics, true);
     }
   } catch {
     // ignore analytics initialization failures in non-browser environments
   }
   return analytics;
+}
+
+// Stops collection immediately when the user withdraws consent, and removes
+// the GA cookies already set. Without this, analytics keeps sending until the
+// next page load.
+export function disableAnalytics(): void {
+  if (analytics) {
+    try {
+      setAnalyticsCollectionEnabled(analytics, false);
+    } catch {
+      // ignore; the cookies below are still cleared
+    }
+  }
+  clearGoogleAnalyticsCookies();
+}
+
+function clearGoogleAnalyticsCookies(): void {
+  if (typeof document === "undefined") return;
+  // GA sets _ga / _ga_<id> on the top-level domain, so try every parent
+  // domain of the current host as well as the host itself.
+  const parts = window.location.hostname.split(".");
+  const domains = parts.map((_, i) => parts.slice(i).join("."));
+  for (const cookie of document.cookie.split(";")) {
+    const name = cookie.split("=")[0]?.trim();
+    if (!name || !name.startsWith("_ga")) continue;
+    const expire = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    document.cookie = expire;
+    for (const domain of domains) {
+      document.cookie = `${expire}; domain=.${domain}`;
+    }
+  }
 }
 
 // Getter for current analytics instance (may be undefined if not enabled)

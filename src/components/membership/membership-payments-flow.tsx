@@ -16,6 +16,7 @@ import {
 import { requestCheckMembershipPayment } from "@/api/membership";
 import { saveUserProfile } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
+import { PurchaseItem, trackPurchase } from "@/utils/analytics";
 
 import type {
   DonationState,
@@ -362,6 +363,18 @@ export default function MembershipPaymentsFlow({
             );
           }
 
+          if (!verifyResp.reused && verifyResp.amount != null) {
+            trackPurchase({
+              transactionId: data.orderID,
+              value: verifyResp.amount,
+              currency: verifyResp.currency ?? "USD",
+              item:
+                membershipType === MEMBERSHIP_TYPES.HANDICAP
+                  ? PurchaseItem.HANDICAP_MEMBERSHIP
+                  : PurchaseItem.FULL_MEMBERSHIP,
+            });
+          }
+
           await refetchUserProfile();
           logger.info("Membership payment: membership verified and recorded", {
             orderId: data.orderID ?? null,
@@ -385,6 +398,14 @@ export default function MembershipPaymentsFlow({
             throw new Error(
               `PayPal order not completed (status: ${verifyResp.paypalStatus ?? "unknown"}).`,
             );
+          }
+          if (!verifyResp.reused && verifyResp.amount != null) {
+            trackPurchase({
+              transactionId: data.orderID,
+              value: verifyResp.amount,
+              currency: verifyResp.currency ?? "USD",
+              item: PurchaseItem.DONATION,
+            });
           }
           logger.info("Membership payment: donation verified and recorded", {
             orderId: data.orderID ?? null,
