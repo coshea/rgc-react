@@ -24,6 +24,7 @@ import {
   Modal,
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
+import { siteConfig } from "@/config/site";
 import { UserAvatar } from "@/components/avatar";
 import BackButton from "@/components/back-button";
 import { TournamentStatusChip } from "@/components/tournament-status-chip";
@@ -123,7 +124,7 @@ const TournamentDetailPage: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isAdmin } = useAdminFlag(user);
 
   const [tournament, setTournament] = React.useState<Tournament | null>(null);
@@ -618,9 +619,10 @@ img { display: block; max-width: 100%; }
     return () => unsub();
   }, [tournament?.previousTournamentId]);
 
-  // Load bracket (real-time) when the tournament ID is available
+  // Load bracket (real-time). Brackets are members-only in firestore.rules,
+  // so only subscribe once authenticated to avoid permission errors.
   React.useEffect(() => {
-    if (!firestoreId) {
+    if (!firestoreId || !userId) {
       setBracket(null);
       return;
     }
@@ -630,7 +632,7 @@ img { display: block; max-width: 100%; }
       (err) => console.error("Failed to load bracket", err),
     );
     return unsub;
-  }, [firestoreId]);
+  }, [firestoreId, userId]);
 
   // Users are now loaded globally via React Query (useUsersMap)
 
@@ -1635,6 +1637,40 @@ img { display: block; max-width: 100%; }
                         highlightMatchIds={highlightedBracketMatchIds}
                       />
                     </div>
+                  </Card.Content>
+                </Card>
+              </div>
+            )}
+
+            {/* Brackets are members-only; point signed-out visitors to sign in */}
+            {!user && !authLoading && tournament.bracketPublished && (
+              <div className="mb-12">
+                <Card>
+                  <Card.Content className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className="text-2xl text-muted shrink-0"
+                        icon="lucide:git-fork"
+                      />
+                      <div>
+                        <h2 className="text-lg font-semibold">
+                          Tournament Bracket
+                        </h2>
+                        <p className="text-sm text-muted">
+                          Sign in to see the bracket and match results.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      className="min-h-11 w-full sm:w-auto"
+                      onPress={() =>
+                        navigate(siteConfig.pages.login.link, {
+                          state: { from: location.pathname },
+                        })
+                      }
+                    >
+                      Sign in
+                    </Button>
                   </Card.Content>
                 </Card>
               </div>

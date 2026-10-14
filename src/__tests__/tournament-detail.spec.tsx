@@ -13,6 +13,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import TournamentDetailPage from "@/pages/tournament-detail";
 import { TournamentStatus } from "@/types/tournament";
 import { openRegistrationWindow } from "./tournament-utils";
+import { onLookingForTeam } from "@/api/tournaments";
 
 // Mock hooks & Auth
 let authUserMock: { uid: string } | null = { uid: "user1" };
@@ -83,11 +84,11 @@ vi.mock("@/api/tournaments", () => ({
       apiListeners[key] = (apiListeners[key] || []).filter((fn) => fn !== next);
     };
   },
-  onLookingForTeam: (_id: string, next: any) => {
+  onLookingForTeam: vi.fn((_id: string, next: any) => {
     // Immediately resolve with an empty list so the section renders without hanging
     next([]);
     return () => {};
-  },
+  }),
   setLookingForTeamPost: vi.fn(async () => {}),
   deleteLookingForTeamPost: vi.fn(async () => {}),
   mapTournamentDoc: (snap: any) => ({ firestoreId: snap.id, ...snap.data() }),
@@ -931,6 +932,36 @@ describe("TournamentDetailPage", () => {
       emitBracket("bv1", minimalBracket);
       await screen.findByText("Club Championship");
       expect(screen.queryByText("Tournament Bracket")).toBeNull();
+    });
+
+    it("signed-out visitor gets a sign-in prompt and no bracket or looking-for-team subscription", async () => {
+      authUserMock = null;
+      vi.mocked(onLookingForTeam).mockClear();
+      renderWithRoute("bv0");
+      emitDoc("tournaments/bv0", {
+        ...baseTournament,
+        bracketPublished: true,
+        players: 2,
+      });
+      await screen.findByText("Club Championship");
+      expect(apiListeners["brackets/bv0"] ?? []).toHaveLength(0);
+      expect(onLookingForTeam).not.toHaveBeenCalled();
+      expect(screen.getByText("Tournament Bracket")).toBeInTheDocument();
+      expect(
+        screen.getByText(/Sign in to see the bracket/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("bracket-view")).toBeNull();
+    });
+
+    it("signed-out visitor sees no bracket prompt when bracket is unpublished", async () => {
+      authUserMock = null;
+      renderWithRoute("bv0b");
+      emitDoc("tournaments/bv0b", {
+        ...baseTournament,
+        bracketPublished: false,
+      });
+      await screen.findByText("Club Championship");
+      expect(screen.queryByText(/Sign in to see the bracket/i)).toBeNull();
     });
 
     it("non-admin sees bracket section when bracketPublished is true", async () => {
