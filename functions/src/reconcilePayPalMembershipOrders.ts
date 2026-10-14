@@ -23,6 +23,7 @@ import {
   required,
   resolveConfiguredValue,
 } from "./httpUtils";
+import { withSentry } from "./sentry";
 
 function parseMembershipCustomId(value: string): {
   uid: string;
@@ -69,7 +70,7 @@ async function requireAdminUser(uid: string): Promise<void> {
 
 export const reconcile_paypal_membership_orders = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
-  async (req, res) => {
+  withSentry("reconcile_paypal_membership_orders", async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
@@ -257,5 +258,5 @@ export const reconcile_paypal_membership_orders = onRequest(
         res.status(status).json({ ok: false, error: message });
       }
     });
-  },
+  }),
 );

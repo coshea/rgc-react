@@ -32,6 +32,7 @@ import {
   required,
   resolveConfiguredValue,
 } from "./httpUtils";
+import { withSentry } from "./sentry";
 
 admin.initializeApp();
 
@@ -55,7 +56,7 @@ export { resize_user_avatar } from "./resizeUserAvatar";
 
 export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
-  async (req, res) => {
+  withSentry("verify_and_record_membership_payment", async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
@@ -174,12 +175,12 @@ export const verify_and_record_membership_payment = onRequest(
         res.status(500).json({ ok: false, error: message });
       }
     });
-  },
+  }),
 );
 
 export const request_check_membership_payment = onRequest(
   { secrets: [RESEND_API_KEY] },
-  async (req, res) => {
+  withSentry("request_check_membership_payment", async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
@@ -268,12 +269,12 @@ export const request_check_membership_payment = onRequest(
         res.status(500).json({ ok: false, error: message });
       }
     });
-  },
+  }),
 );
 
 export const verify_and_record_donation_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
-  async (req, res) => {
+  withSentry("verify_and_record_donation_payment", async (req, res) => {
     corsMiddleware(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
@@ -388,7 +389,7 @@ export const verify_and_record_donation_payment = onRequest(
         res.status(500).json({ ok: false, error: message });
       }
     });
-  },
+  }),
 );
 
 export { reconcile_paypal_membership_orders } from "./reconcilePayPalMembershipOrders";

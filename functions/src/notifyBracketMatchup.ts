@@ -3,6 +3,7 @@ import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { logger } from "./logger";
 import { RESEND_API_KEY } from "./resendConfig";
 import { sendBracketMatchupEmail } from "./sendBracketMatchupEmails";
+import { withSentry } from "./sentry";
 
 interface BracketTeam {
   id: string;
@@ -143,7 +144,7 @@ export const notify_bracket_matchup = onDocumentWritten(
     document: "brackets/{tournamentId}",
     secrets: [RESEND_API_KEY],
   },
-  async (event) => {
+  withSentry("notify_bracket_matchup", async (event) => {
     const afterExists = event.data?.after.exists;
     if (!afterExists) return;
 
@@ -292,5 +293,5 @@ export const notify_bracket_matchup = onDocumentWritten(
     logger.info(
       `[notify_bracket_matchup] Completed sends for tournament=${tournamentId}: sent=${results.length - failed.length}, failed=${failed.length}`,
     );
-  },
+  }),
 );

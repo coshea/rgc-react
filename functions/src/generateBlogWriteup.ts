@@ -1,12 +1,17 @@
 import * as path from "path";
 import * as admin from "firebase-admin";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import {
+  onCall,
+  HttpsError,
+  type CallableRequest,
+} from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { genkit } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
 import { enableFirebaseTelemetry } from "@genkit-ai/firebase";
 import { z } from "zod";
 import { logger } from "./logger";
+import { withSentry } from "./sentry";
 
 export const GOOGLE_GENAI_API_KEY = defineSecret("GOOGLE_GENAI_API_KEY");
 
@@ -184,7 +189,7 @@ function buildPromptData(input: BlogWriteupInput): PromptData {
  */
 export const generate_blog_writeup = onCall(
   { secrets: [GOOGLE_GENAI_API_KEY] },
-  async (request) => {
+  withSentry("generate_blog_writeup", async (request: CallableRequest) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be signed in.");
     }
@@ -216,5 +221,5 @@ export const generate_blog_writeup = onCall(
     const result = await writeupPrompt(buildPromptData(parsed.data));
 
     return { content: result.text };
-  },
+  }),
 );

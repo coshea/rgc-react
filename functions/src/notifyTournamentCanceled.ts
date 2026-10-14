@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "./logger";
+import { withSentry } from "./sentry";
 
 const CANCELED_STATUS = "Canceled";
 const TTL_DAYS = 60;
@@ -37,7 +38,7 @@ interface UserPrefsData {
  */
 export const notify_tournament_canceled = onDocumentUpdated(
   "tournaments/{tournamentId}",
-  async (event) => {
+  withSentry("notify_tournament_canceled", async (event) => {
     const before = event.data?.before.data() as TournamentData | undefined;
     const after = event.data?.after.data() as TournamentData | undefined;
 
@@ -133,5 +134,5 @@ export const notify_tournament_canceled = onDocumentUpdated(
       `[notify_tournament_canceled] Sent ${eligibleUids.length} notifications` +
         ` for canceled tournament ${tournamentId}`,
     );
-  },
+  }),
 );

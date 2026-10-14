@@ -1,6 +1,7 @@
 import type { UserRecord } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import * as functions from "firebase-functions/v1";
+import { withSentry } from "./sentry";
 
 export type AuthUserDocumentFields = {
   uid: string;
@@ -59,9 +60,8 @@ const ALREADY_EXISTS_CODE = 6;
 // Uses create() so a document the client already wrote (or an admin created) is
 // never overwritten. Deleting the user doc on account removal is intentionally
 // NOT done: we keep user records for record keeping.
-export const createUserDocument = functions.auth
-  .user()
-  .onCreate(async (user: UserRecord) => {
+export const createUserDocument = functions.auth.user().onCreate(
+  withSentry("createUserDocument", async (user: UserRecord) => {
     const payload = buildUserDocumentData({
       uid: user.uid,
       email: user.email,
@@ -82,4 +82,5 @@ export const createUserDocument = functions.auth
       throw error;
     }
     return null;
-  });
+  }),
+);
