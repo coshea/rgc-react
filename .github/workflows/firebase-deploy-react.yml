@@ -60,5 +60,5 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ridgefield-golf-club
-          SENTRY_PROJECT: javascript-react
+          SENTRY_PROJECT: rgc-react
         run: npx sentry-cli releases deploys "$SENTRY_RELEASE" new -e production

@@ -16,7 +16,7 @@ export default defineConfig({
     tailwindcss(),
     sentryVitePlugin({
       org: "ridgefield-golf-club",
-      project: "javascript-react",
+      project: "rgc-react",
       release: {
         // CI sets SENTRY_RELEASE (e.g. rgc-react@9.10.0+<sha>) so the deploy
         // step can mark the same release as deployed. Locally the plugin
@@ -24,7 +24,9 @@ export default defineConfig({
         name: process.env.SENTRY_RELEASE || undefined,
         // Preview builds must not claim commits, or each production release's
         // commit range starts at the last preview instead of the last release.
-        setCommits: isPreviewBuild ? false : { auto: true, ignoreMissing: true },
+        setCommits: isPreviewBuild
+          ? false
+          : { auto: true, ignoreMissing: true },
       },
       sourcemaps: {
         // Maps are uploaded to Sentry for symbolication; don't ship them publicly.
