@@ -1,4 +1,8 @@
 import * as Sentry from "@sentry/node";
+import {
+  HttpsError,
+  type FunctionsErrorCode,
+} from "firebase-functions/v2/https";
 
 // Sentry for Cloud Functions, reporting to the same rgc-react project as the
 // site. Disabled unless SENTRY_DSN is set (the functions deploy workflow writes
@@ -25,6 +29,27 @@ if (enabled) {
 /** Time allowed to send queued events before an invocation ends. */
 const FLUSH_TIMEOUT_MS = 2000;
 
+// HttpsError codes that answer a bad or unauthorized request rather than
+// signal a bug, so they are returned to the caller but not reported.
+const EXPECTED_HTTPS_ERROR_CODES: ReadonlySet<FunctionsErrorCode> = new Set([
+  "cancelled",
+  "invalid-argument",
+  "not-found",
+  "already-exists",
+  "permission-denied",
+  "resource-exhausted",
+  "failed-precondition",
+  "out-of-range",
+  "unauthenticated",
+]);
+
+/** True for errors worth an issue; false for expected HttpsErrors. */
+export function shouldReportError(err: unknown): boolean {
+  return !(
+    err instanceof HttpsError && EXPECTED_HTTPS_ERROR_CODES.has(err.code)
+  );
+}
+
 /**
  * Wraps a Cloud Functions handler so thrown errors are reported with the
  * function name, and queued events (including ones from `logger.error`) are
@@ -42,7 +67,7 @@ export function withSentry<A extends unknown[], R>(
       try {
         return await handler(...args);
       } catch (err) {
-        Sentry.captureException(err);
+        if (shouldReportError(err)) Sentry.captureException(err);
         throw err;
       } finally {
         await Sentry.flush(FLUSH_TIMEOUT_MS);

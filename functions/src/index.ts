@@ -25,7 +25,7 @@ import {
 } from "./sendPaymentConfirmationEmails";
 import {
   AuthError,
-  corsMiddleware,
+  runWithCors,
   getFirestoreWriteTime,
   getUidFromRequest,
   mockPayPalFetchFromEnv,
@@ -57,7 +57,7 @@ export { resize_user_avatar } from "./resizeUserAvatar";
 export const verify_and_record_membership_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
   withSentry("verify_and_record_membership_payment", async (req, res) => {
-    corsMiddleware(req, res, async () => {
+    await runWithCors(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
         return;
@@ -181,7 +181,7 @@ export const verify_and_record_membership_payment = onRequest(
 export const request_check_membership_payment = onRequest(
   { secrets: [RESEND_API_KEY] },
   withSentry("request_check_membership_payment", async (req, res) => {
-    corsMiddleware(req, res, async () => {
+    await runWithCors(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
         return;
@@ -275,7 +275,7 @@ export const request_check_membership_payment = onRequest(
 export const verify_and_record_donation_payment = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET, RESEND_API_KEY] },
   withSentry("verify_and_record_donation_payment", async (req, res) => {
-    corsMiddleware(req, res, async () => {
+    await runWithCors(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
         return;

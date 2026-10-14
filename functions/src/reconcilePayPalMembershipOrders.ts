@@ -16,7 +16,7 @@ import { MEMBERSHIP_TYPES } from "./types";
 import type { MembershipType, ReconcilePayPalOrdersResponse } from "./types";
 import {
   AuthError,
-  corsMiddleware,
+  runWithCors,
   getFirestoreWriteTime,
   getUidFromRequest,
   mockPayPalFetchFromEnv,
@@ -71,7 +71,7 @@ async function requireAdminUser(uid: string): Promise<void> {
 export const reconcile_paypal_membership_orders = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
   withSentry("reconcile_paypal_membership_orders", async (req, res) => {
-    corsMiddleware(req, res, async () => {
+    await runWithCors(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
         return;
