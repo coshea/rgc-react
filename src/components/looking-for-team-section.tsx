@@ -11,6 +11,7 @@ import {
 } from "@/api/tournaments";
 import { getUserProfile, type UserProfilePayload } from "@/api/users";
 import { useUsersMap } from "@/hooks/useUsers";
+import { reportListenerError } from "@/utils/firebaseErrors";
 
 export interface LookingForTeamSectionProps {
   tournamentId: string;
@@ -70,7 +71,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
         setLoading(false);
       },
       (err) => {
-        console.error("Failed to load looking-for-team posts", err);
+        reportListenerError("lookingForTeam", err);
         setLoading(false);
       },
     );

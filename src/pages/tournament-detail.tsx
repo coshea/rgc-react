@@ -25,6 +25,7 @@ import {
 } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { siteConfig } from "@/config/site";
+import { reportListenerError } from "@/utils/firebaseErrors";
 import { UserAvatar } from "@/components/avatar";
 import BackButton from "@/components/back-button";
 import { TournamentStatusChip } from "@/components/tournament-status-chip";
@@ -549,7 +550,7 @@ img { display: block; max-width: 100%; }
         setLoading(false);
       },
       (err) => {
-        console.error(err);
+        reportListenerError("tournament", err);
         addToast({
           title: "Error",
           description: "Failed to load tournament",
@@ -583,7 +584,7 @@ img { display: block; max-width: 100%; }
         setRegsLoading(false);
       },
       (err) => {
-        console.error("Failed to load registrations", err);
+        reportListenerError("tournamentRegistrations", err);
         setRegsLoading(false);
       },
     );
@@ -612,7 +613,7 @@ img { display: block; max-width: 100%; }
         }
       },
       (err: any) => {
-        console.error("Failed to load previous tournament", err);
+        reportListenerError("previousTournament", err);
         setPreviousTournament(null);
       },
     );
@@ -629,7 +630,7 @@ img { display: block; max-width: 100%; }
     const unsub = onBracket(
       firestoreId,
       (b) => setBracket(b),
-      (err) => console.error("Failed to load bracket", err),
+      (err) => reportListenerError("bracket", err),
     );
     return unsub;
   }, [firestoreId, userId]);

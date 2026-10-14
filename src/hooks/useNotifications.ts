@@ -14,6 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import type { AppNotification } from "@/types/notification";
+import { reportListenerError } from "@/utils/firebaseErrors";
 
 type BadgeNavigator = Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -101,7 +102,7 @@ export function useNotifications(
         setLoading(false);
       },
       (err) => {
-        console.error("[Notifications] Snapshot error:", err);
+        reportListenerError("notifications", err);
         setLoading(false);
       },
     );

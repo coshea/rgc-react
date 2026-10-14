@@ -39,16 +39,20 @@ export const logger = {
       data,
     });
   },
-  info: (msg: any, data?: any) => {
-    Sentry.captureMessage(String(msg), { level: "info", extra: data });
+  // info/warn go to Sentry Logs (searchable, attached to the trace) rather
+  // than creating issues. error/fatal also raise an issue so they alert.
+  info: (msg: any, data?: Record<string, unknown>) => {
+    Sentry.logger.info(String(msg), data);
   },
-  warn: (msg: any, data?: any) => {
-    Sentry.captureMessage(String(msg), { level: "warning", extra: data });
+  warn: (msg: any, data?: Record<string, unknown>) => {
+    Sentry.logger.warn(String(msg), data);
   },
-  error: (msg: any, data?: any) => {
+  error: (msg: any, data?: Record<string, unknown>) => {
+    Sentry.logger.error(String(msg), data);
     Sentry.captureMessage(String(msg), { level: "error", extra: data });
   },
-  fatal: (msg: any, data?: any) => {
+  fatal: (msg: any, data?: Record<string, unknown>) => {
+    Sentry.logger.fatal(String(msg), data);
     Sentry.captureMessage(String(msg), { level: "fatal", extra: data });
   },
   // Metrics
@@ -132,7 +136,9 @@ if (enabled) {
 
   Sentry.init({
     dsn: SENTRY_DSN,
-    environment: import.meta.env.MODE,
+    // CI sets VITE_SENTRY_ENVIRONMENT ("production" / "preview") so preview
+    // channels, which are also built in production mode, stay separate.
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
 
     // Privacy: keep PII off unless explicitly enabled.
     sendDefaultPii: import.meta.env.VITE_SENTRY_SEND_DEFAULT_PII === "true",
@@ -205,6 +211,23 @@ if (enabled) {
           /\btab not found\b/i.test(combinedText)) ||
         (hasBrowserExtensionFrame && /\btab not found\b/i.test(combinedText));
       if (isBrowserExtensionSendMessageNoise) {
+        return null;
+      }
+
+      // Service worker registration rejected by an injected script (browser
+      // extension / security software wrapping ServiceWorkerContainer.register)
+      // or unsupported in in-app WKWebViews (Gmail, Facebook). Not actionable.
+      const isServiceWorkerRegistrationNoise =
+        event.tags?.error_type === "service_worker_registration_failure" &&
+        (/^Rejected$/i.test(exceptionValues[0]?.value ?? "") ||
+          /firebase-messaging-sw\.js load failed/i.test(combinedText));
+      if (isServiceWorkerRegistrationNoise) {
+        return null;
+      }
+
+      // Thrown from inside Google's reCAPTCHA script, typically after the
+      // widget unmounts; the form surfaces its own error if submit fails.
+      if (/reCAPTCHA Timeout/i.test(combinedText)) {
         return null;
       }
 

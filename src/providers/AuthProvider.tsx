@@ -29,6 +29,7 @@ import {
   UserCredential,
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
+import * as Sentry from "@sentry/react";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
 const HEROUI_THEME_STORAGE_KEY = "heroui-theme";
@@ -205,8 +206,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (firebaseUser) {
       setUser(firebaseUser); // Store the original Firebase User object
       setUserLoggedIn(true);
+      // UID only (no email/name) so Sentry can count affected users.
+      Sentry.setUser({ id: firebaseUser.uid });
     } else {
       applyLightThemeForLoggedOutUser();
+      Sentry.setUser(null);
       setUser(null);
       setUserLoggedIn(false);
     }
