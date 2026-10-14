@@ -67,6 +67,9 @@ jobs:
         run: |
           echo "PAYPAL_CLIENT_ID=${{ secrets.VITE_PAYPAL_CLIENT_ID }}" >> functions/.env
           echo "PAYPAL_ENVIRONMENT=${{ secrets.VITE_PAYPAL_ENVIRONMENT }}" >> functions/.env
+          # Functions report to the same Sentry project as the site (tagged
+          # service:functions). A DSN is not a secret; it only allows sending events.
+          echo "SENTRY_DSN=https://fc000efe85e0fae20f18bfb05ee0ab21@o4510721156644864.ingest.us.sentry.io/4510721158283264" >> functions/.env
 
       - name: Deploy Cloud Functions
         # Secret values (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, RESEND_API_KEY) are

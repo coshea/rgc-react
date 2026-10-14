@@ -121,7 +121,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **Listener errors:** pass Firestore listener error callbacks to `reportListenerError("<name>", err)` (`src/utils/firebaseErrors.ts`). It reports `permission-denied` to Sentry, which usually means a subscription started before auth.
 - **User context:** `AuthProvider` sets `Sentry.setUser({ id: uid })`. Never add email or name to it.
 - **Releases:** CI names releases `rgc-react@<version>+<sha>` (`SENTRY_RELEASE`) and marks the production deploy after Firebase Hosting finishes. PR previews report as environment `preview` and don't claim commits. Source maps are uploaded to Sentry and deleted from `dist/`, so they are never public.
-- **Cloud Functions:** wrap every exported trigger handler in `withSentry("<export name>", handler)` from `functions/src/sentry.ts`, so thrown errors are captured and events are flushed before the invocation ends. `logger.error` in functions also reports to Sentry. Sentry is off unless `SENTRY_DSN` is set in `functions/.env`.
+- **Cloud Functions:** wrap every exported trigger handler in `withSentry("<export name>", handler)` from `functions/src/sentry.ts`, so thrown errors are captured and events are flushed before the invocation ends. `logger.error` in functions also reports to Sentry. Functions report to the same `rgc-react` Sentry project, tagged `service:functions`. Sentry is off unless `SENTRY_DSN` is set; the functions deploy workflow writes it to `functions/.env`.
 
 ## Testing
 

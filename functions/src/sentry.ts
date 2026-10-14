@@ -1,8 +1,8 @@
 import * as Sentry from "@sentry/node";
 
-// Sentry for Cloud Functions. Disabled unless SENTRY_DSN is set (via
-// functions/.env at deploy time), and never in the emulator or tests, so
-// local runs and CI don't report.
+// Sentry for Cloud Functions, reporting to the same rgc-react project as the
+// site. Disabled unless SENTRY_DSN is set (the functions deploy workflow writes
+// it to functions/.env), and never in the emulator or tests.
 const dsn = process.env.SENTRY_DSN;
 const enabled =
   !!dsn &&
@@ -17,6 +17,8 @@ if (enabled) {
     // Errors only: tracing would add OpenTelemetry overhead to every cold start.
     tracesSampleRate: 0,
     sendDefaultPii: false,
+    // Shares the rgc-react project with the site; filter with service:functions.
+    initialScope: { tags: { service: "functions" } },
   });
 }
 
