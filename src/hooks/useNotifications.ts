@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
+import * as Sentry from "@sentry/react";
 import { db } from "@/config/firebase";
 import {
   collection,
@@ -13,6 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import type { AppNotification } from "@/types/notification";
+import { reportListenerError } from "@/utils/firebaseErrors";
 
 type BadgeNavigator = Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -100,7 +102,7 @@ export function useNotifications(
         setLoading(false);
       },
       (err) => {
-        console.error("[Notifications] Snapshot error:", err);
+        reportListenerError("notifications", err);
         setLoading(false);
       },
     );
@@ -123,9 +125,17 @@ export function useNotifications(
   const markRead = useCallback(
     async (id: string) => {
       if (!uid) return;
-      await updateDoc(doc(db, "notifications", id), { read: true });
+      // firestore.rules only permits the unread -> read transition, so
+      // re-marking an already-read notification would be denied.
+      if (notifications.find((n) => n.id === id)?.read) return;
+      try {
+        await updateDoc(doc(db, "notifications", id), { read: true });
+      } catch (err) {
+        // Best-effort: callers fire-and-forget this on tap, so never reject.
+        Sentry.captureException(err);
+      }
     },
-    [uid],
+    [uid, notifications],
   );
 
   const markAllRead = useCallback(async () => {

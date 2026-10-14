@@ -24,6 +24,7 @@ import RegistrationEditor from "@/components/registration-editor";
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
 import { Icon } from "@iconify/react";
 import { saveUserProfile } from "@/api/users";
+import { AnalyticsEvent, trackEvent } from "@/utils/analytics";
 
 const TournamentRegister: React.FC = () => {
   const { firestoreId } = useParams<{ firestoreId: string }>();
@@ -97,6 +98,17 @@ const TournamentRegister: React.FC = () => {
           ownerId,
           openSpotsOptIn: nextOpenSpotsOptIn,
         });
+        trackEvent(
+          registrationId
+            ? AnalyticsEvent.TOURNAMENT_REGISTRATION_UPDATE
+            : AnalyticsEvent.TOURNAMENT_REGISTER,
+          {
+            tournament_id: tournament.firestoreId,
+            tournament_name: tournament.title,
+            team_size: members.length,
+            open_spots_opt_in: nextOpenSpotsOptIn,
+          },
+        );
         addToast({
           title: "Registered",
           description: "Your team has been registered.",
@@ -632,6 +644,10 @@ const TournamentRegister: React.FC = () => {
     try {
       const api = await import("@/api/tournaments");
       await api.deleteRegistration(tournament.firestoreId, registrationId);
+      trackEvent(AnalyticsEvent.TOURNAMENT_WITHDRAW, {
+        tournament_id: tournament.firestoreId,
+        tournament_name: tournament.title,
+      });
       addToast({
         title: "Cancelled",
         description: "Your registration has been removed.",

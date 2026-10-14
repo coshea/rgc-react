@@ -117,6 +117,11 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **Errors:** wrap Firebase, storage and network calls in `try`/`catch` with `Sentry.captureException`.
 - **Spans:** use `Sentry.startSpan` for Firestore reads and writes, form submits and async work over 100ms, with ops like `db.query`, `db.write`, `ui.submit` and `http.client`. Don't instrument synchronous UI state.
 - **Logging config:** if you change `consoleLoggingIntegration`, change `enableLogs` to match.
+- **Logger levels:** `logger.info`/`warn` go to Sentry Logs only; `logger.error`/`fatal` also create an issue. Don't use `logger.info` for something you want to be alerted on.
+- **Listener errors:** pass Firestore listener error callbacks to `reportListenerError("<name>", err)` (`src/utils/firebaseErrors.ts`). It reports `permission-denied` to Sentry, which usually means a subscription started before auth.
+- **User context:** `AuthProvider` sets `Sentry.setUser({ id: uid })`. Never add email or name to it.
+- **Releases:** CI names releases `rgc-react@<version>+<sha>` (`SENTRY_RELEASE`) and marks the production deploy after Firebase Hosting finishes. PR previews report as environment `preview` and don't claim commits. Source maps are uploaded to Sentry and deleted from `dist/`, so they are never public.
+- **Cloud Functions:** wrap every exported trigger handler in `withSentry("<export name>", handler)` from `functions/src/sentry.ts`, so thrown errors are captured and events are flushed before the invocation ends. In `onRequest` handlers, `await runWithCors(req, res, …)` (`functions/src/httpUtils.ts`) instead of calling `corsMiddleware` directly, or the flush runs before the handler body. Expected `HttpsError`s (`unauthenticated`, `invalid-argument`, etc.) are rethrown but not reported. `logger.error` in functions also reports to Sentry. Functions report to the same `rgc-react` Sentry project, tagged `service:functions`. Sentry is off unless `SENTRY_DSN` is set; the functions deploy workflow writes it to `functions/.env`.
 
 ## Testing
 

@@ -1,6 +1,10 @@
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
+import {
+  HttpsError,
+  onCall,
+  type CallableRequest,
+} from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import {
   type NotificationType,
@@ -11,6 +15,7 @@ import { collectRegisteredUserIds } from "./registrationRecipients";
 import { logger } from "./logger";
 import { RESEND_API_KEY } from "./resendConfig";
 import { sendRegistrationOpeningAdminEmail } from "./sendRegistrationOpeningEmails";
+import { withSentry } from "./sentry";
 
 const REGISTRATION_OPENING_TYPE: NotificationType = "registration_opening";
 const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
@@ -308,50 +313,54 @@ async function sendRegistrationOpeningBroadcast(
 
 export const send_registration_opening_preview_email = onCall(
   { secrets: [RESEND_API_KEY] },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Must be signed in.");
-    }
+  withSentry(
+    "send_registration_opening_preview_email",
+    async (request: CallableRequest) => {
+      if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Must be signed in.");
+      }
 
-    const callerUid = request.auth.uid;
-    const tournamentId = String(request.data?.tournamentId ?? "").trim();
-    if (!tournamentId) {
-      throw new HttpsError("invalid-argument", "tournamentId is required.");
-    }
+      const callerUid = request.auth.uid;
+      const tournamentId = String(request.data?.tournamentId ?? "").trim();
+      if (!tournamentId) {
+        throw new HttpsError("invalid-argument", "tournamentId is required.");
+      }
 
-    const adminDoc = await admin.firestore().doc(`admin/${callerUid}`).get();
-    const isDocAdmin =
-      adminDoc.exists && isAdminFlags(adminDoc.data() as AdminFlags | undefined);
+      const adminDoc = await admin.firestore().doc(`admin/${callerUid}`).get();
+      const isDocAdmin =
+        adminDoc.exists &&
+        isAdminFlags(adminDoc.data() as AdminFlags | undefined);
 
-    if (!isDocAdmin) {
-      throw new HttpsError("permission-denied", "Admin access required.");
-    }
+      if (!isDocAdmin) {
+        throw new HttpsError("permission-denied", "Admin access required.");
+      }
 
-    const db = admin.firestore();
-    const tournamentDoc = await db.doc(`tournaments/${tournamentId}`).get();
-    if (!tournamentDoc.exists) {
-      throw new HttpsError("not-found", "Tournament not found.");
-    }
+      const db = admin.firestore();
+      const tournamentDoc = await db.doc(`tournaments/${tournamentId}`).get();
+      if (!tournamentDoc.exists) {
+        throw new HttpsError("not-found", "Tournament not found.");
+      }
 
-    const tournamentData = tournamentDoc.data() as TournamentNotificationData;
-    const apiKey = RESEND_API_KEY.value();
-    if (!apiKey) {
-      throw new HttpsError("internal", "Resend is not configured.");
-    }
+      const tournamentData = tournamentDoc.data() as TournamentNotificationData;
+      const apiKey = RESEND_API_KEY.value();
+      if (!apiKey) {
+        throw new HttpsError("internal", "Resend is not configured.");
+      }
 
-    const result = await sendRegistrationOpeningPreviewEmail({
-      db,
-      apiKey,
-      recipientUid: callerUid,
-      tournamentId,
-      tournament: tournamentData,
-    });
+      const result = await sendRegistrationOpeningPreviewEmail({
+        db,
+        apiKey,
+        recipientUid: callerUid,
+        tournamentId,
+        tournament: tournamentData,
+      });
 
-    return {
-      success: true,
-      recipientEmail: result.email,
-    };
-  },
+      return {
+        success: true,
+        recipientEmail: result.email,
+      };
+    },
+  ),
 );
 
 export const notify_registration_opening = onSchedule(
@@ -360,7 +369,7 @@ export const notify_registration_opening = onSchedule(
     timeZone: "America/New_York",
     secrets: [RESEND_API_KEY],
   },
-  async () => {
+  withSentry("notify_registration_opening", async () => {
     const db = admin.firestore();
     const resendApiKey = RESEND_API_KEY.value();
     const now = new Date();
@@ -442,5 +451,5 @@ export const notify_registration_opening = onSchedule(
       tournamentCount,
       notificationCount,
     });
-  },
+  }),
 );

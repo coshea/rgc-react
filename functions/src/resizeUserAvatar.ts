@@ -5,6 +5,7 @@ import { onObjectFinalized } from "firebase-functions/v2/storage";
 import sharp from "sharp";
 
 import { logger } from "./logger";
+import { withSentry } from "./sentry";
 
 const MAX_PROFILE_DIMENSION = 400;
 const AVATAR_PATH_PREFIX = "avatars/";
@@ -26,7 +27,7 @@ export const resize_user_avatar = onObjectFinalized(
     timeoutSeconds: 60,
     memory: "1GiB",
   },
-  async (event) => {
+  withSentry("resize_user_avatar", async (event) => {
     const filePath = event.data?.name;
     const bucketName = event.data?.bucket;
     const contentType = event.data?.contentType ?? "";
@@ -35,7 +36,10 @@ export const resize_user_avatar = onObjectFinalized(
       return;
     }
 
-    if (!filePath.startsWith(AVATAR_PATH_PREFIX) || filePath.includes("/resized/")) {
+    if (
+      !filePath.startsWith(AVATAR_PATH_PREFIX) ||
+      filePath.includes("/resized/")
+    ) {
       return;
     }
 
@@ -57,7 +61,10 @@ export const resize_user_avatar = onObjectFinalized(
     try {
       const [sourceBuffer] = await sourceFile.download();
       const metadata = await sharp(sourceBuffer).metadata();
-      const largestDimension = Math.max(metadata.width ?? 0, metadata.height ?? 0);
+      const largestDimension = Math.max(
+        metadata.width ?? 0,
+        metadata.height ?? 0,
+      );
 
       if (largestDimension <= MAX_PROFILE_DIMENSION) {
         return;
@@ -100,9 +107,12 @@ export const resize_user_avatar = onObjectFinalized(
       const userRef = admin.firestore().doc(`users/${uid}`);
       const userSnap = await userRef.get();
       if (!userSnap.exists) {
-        logger.warn("resize_user_avatar: user doc missing; skipping profileURL", {
-          uid,
-        });
+        logger.warn(
+          "resize_user_avatar: user doc missing; skipping profileURL",
+          {
+            uid,
+          },
+        );
         return;
       }
 
@@ -123,5 +133,5 @@ export const resize_user_avatar = onObjectFinalized(
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  },
+  }),
 );

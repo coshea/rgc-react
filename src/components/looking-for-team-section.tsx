@@ -11,6 +11,7 @@ import {
 } from "@/api/tournaments";
 import { getUserProfile, type UserProfilePayload } from "@/api/users";
 import { useUsersMap } from "@/hooks/useUsers";
+import { reportListenerError } from "@/utils/firebaseErrors";
 
 export interface LookingForTeamSectionProps {
   tournamentId: string;
@@ -55,9 +56,14 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
 
   const { usersMap } = useUsersMap();
 
-  // Subscribe to the lookingForTeam sub-collection
+  // Subscribe to the lookingForTeam sub-collection. Posts are members-only in
+  // firestore.rules, so only subscribe once authenticated.
   useEffect(() => {
-    if (!tournamentId) return;
+    if (!tournamentId || !currentUserId) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
     const unsub = onLookingForTeam(
       tournamentId,
       (next) => {
@@ -65,12 +71,12 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
         setLoading(false);
       },
       (err) => {
-        console.error("Failed to load looking-for-team posts", err);
+        reportListenerError("lookingForTeam", err);
         setLoading(false);
       },
     );
     return () => unsub();
-  }, [tournamentId]);
+  }, [tournamentId, currentUserId]);
 
   // Fetch owner profiles for any posts not yet cached
   const ownerIds = useMemo(

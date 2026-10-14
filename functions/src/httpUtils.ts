@@ -11,6 +11,27 @@ export const corsMiddleware = cors({
   allowedHeaders: ["content-type", "authorization"],
 });
 
+/**
+ * Runs `handler` behind the CORS middleware and resolves once it finishes.
+ * Await this (rather than calling corsMiddleware directly) so withSentry()
+ * flushes events logged by the handler before the invocation ends.
+ */
+export function runWithCors(
+  req: Parameters<typeof corsMiddleware>[0],
+  res: Parameters<typeof corsMiddleware>[1],
+  handler: () => Promise<void>,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    corsMiddleware(req, res, (err?: unknown) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      handler().then(resolve, reject);
+    });
+  });
+}
+
 export class AuthError extends Error {
   status: number;
 

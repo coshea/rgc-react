@@ -1,6 +1,8 @@
 // Lightweight logger shim that prefers `firebase-functions/logger` when
 // available at runtime, but falls back to console methods for tests and
 // local dev where the module may not be present or behave differently.
+import { captureLoggedError } from "./sentry";
+
 let remote: any = undefined;
 try {
   // Use require so this works in both ESM and CommonJS test runtimes.
@@ -21,7 +23,18 @@ const fallback = {
 
 // The firebase logger package sometimes exports the logger as the default
 // export or as a named `logger` property. Support both shapes.
-export const logger: typeof fallback =
-  (remote && (remote.logger || remote)) || fallback;
+const base: typeof fallback = (remote && (remote.logger || remote)) || fallback;
+
+// Errors are also reported to Sentry. Handlers wrapped in withSentry() flush
+// them before the invocation ends.
+export const logger: typeof fallback = {
+  info: (...args) => base.info(...args),
+  warn: (...args) => base.warn(...args),
+  debug: (...args) => base.debug(...args),
+  error: (message?: unknown, ...detail: unknown[]) => {
+    base.error(message, ...detail);
+    captureLoggedError(String(message), detail);
+  },
+};
 
 export default logger;

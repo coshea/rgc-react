@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/react";
+
 export type FirebaseAuthError = {
   code?: string;
   message?: string;
@@ -20,4 +22,19 @@ export function extractFirebaseAuthError(
   }
 
   return null;
+}
+
+/**
+ * Error callback for Firestore listeners. Keeps the console message, and
+ * reports permission-denied to Sentry: a denied listener means the client
+ * subscribed to something the rules don't allow (e.g. before auth), which is
+ * a bug rather than a transient network failure.
+ */
+export function reportListenerError(listener: string, error: unknown): void {
+  console.error(`Firestore listener "${listener}" failed`, error);
+  if (extractFirebaseAuthError(error)?.code === "permission-denied") {
+    Sentry.captureException(error, {
+      tags: { error_type: "firestore_listener_denied", listener },
+    });
+  }
 }

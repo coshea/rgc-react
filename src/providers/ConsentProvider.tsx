@@ -6,7 +6,8 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { enableAnalytics } from "@/config/firebase";
+import { disableAnalytics, enableAnalytics } from "@/config/firebase";
+import { flushPageView } from "@/utils/analytics";
 
 type ConsentStatus = "unknown" | "accepted" | "rejected";
 
@@ -40,12 +41,15 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // If accepted, enable analytics lazily
+  // If accepted, enable analytics lazily, then send the page_view queued for
+  // the page the user is on (it was held until analytics was ready).
   useEffect(() => {
     if (status === "accepted") {
-      void enableAnalytics().catch(() => {
-        // ignore analytics initialization errors
-      });
+      void enableAnalytics()
+        .then(() => flushPageView())
+        .catch(() => {
+          // ignore analytics initialization errors
+        });
     }
   }, [status]);
 
@@ -64,6 +68,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore storage failures
     }
+    disableAnalytics();
     setStatus("rejected");
   }, []);
 

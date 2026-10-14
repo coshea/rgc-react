@@ -16,13 +16,14 @@ import { MEMBERSHIP_TYPES } from "./types";
 import type { MembershipType, ReconcilePayPalOrdersResponse } from "./types";
 import {
   AuthError,
-  corsMiddleware,
+  runWithCors,
   getFirestoreWriteTime,
   getUidFromRequest,
   mockPayPalFetchFromEnv,
   required,
   resolveConfiguredValue,
 } from "./httpUtils";
+import { withSentry } from "./sentry";
 
 function parseMembershipCustomId(value: string): {
   uid: string;
@@ -69,8 +70,8 @@ async function requireAdminUser(uid: string): Promise<void> {
 
 export const reconcile_paypal_membership_orders = onRequest(
   { secrets: [PAYPAL_CLIENT_SECRET] },
-  async (req, res) => {
-    corsMiddleware(req, res, async () => {
+  withSentry("reconcile_paypal_membership_orders", async (req, res) => {
+    await runWithCors(req, res, async () => {
       if (req.method === "OPTIONS") {
         res.status(204).send("");
         return;
@@ -257,5 +258,5 @@ export const reconcile_paypal_membership_orders = onRequest(
         res.status(status).json({ ok: false, error: message });
       }
     });
-  },
+  }),
 );

@@ -13,6 +13,7 @@ import {
   sendTournamentMemberEmail,
   sendTournamentRemovedMemberEmail,
 } from "./sendRegistrationEmails";
+import { withSentry } from "./sentry";
 
 interface RegistrationMember {
   id: string;
@@ -85,7 +86,7 @@ export const notify_team_registration = onDocumentCreated(
     document: "tournaments/{tournamentId}/registrations/{registrationId}",
     secrets: [RESEND_API_KEY],
   },
-  async (event) => {
+  withSentry("notify_team_registration", async (event) => {
     const snap = event.data;
     if (!snap) return;
 
@@ -302,7 +303,7 @@ export const notify_team_registration = onDocumentCreated(
         );
       }
     }
-  },
+  }),
 );
 
 /**
@@ -312,7 +313,7 @@ export const notify_team_registration = onDocumentCreated(
  */
 export const notify_team_registration_canceled = onDocumentDeleted(
   "tournaments/{tournamentId}/registrations/{registrationId}",
-  async (event) => {
+  withSentry("notify_team_registration_canceled", async (event) => {
     const snap = event.data;
     if (!snap) return;
 
@@ -372,7 +373,7 @@ export const notify_team_registration_canceled = onDocumentDeleted(
       `[notify_team_registration_canceled] Sent ${eligibleMembers.length} notifications` +
         ` for tournament ${tournamentId} (registration ${event.params.registrationId})`,
     );
-  },
+  }),
 );
 
 /**
@@ -384,7 +385,7 @@ export const notify_team_registration_updated = onDocumentUpdated(
     document: "tournaments/{tournamentId}/registrations/{registrationId}",
     secrets: [RESEND_API_KEY],
   },
-  async (event) => {
+  withSentry("notify_team_registration_updated", async (event) => {
     const beforeSnap = event.data?.before;
     const afterSnap = event.data?.after;
     if (!beforeSnap || !afterSnap) return;
@@ -570,5 +571,5 @@ export const notify_team_registration_updated = onDocumentUpdated(
         );
       }
     }
-  },
+  }),
 );

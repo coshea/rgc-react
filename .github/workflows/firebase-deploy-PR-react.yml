@@ -20,6 +20,10 @@ jobs:
           VITE_FIREBASE_FUNCTIONS_BASE_URL: ${{ secrets.VITE_FIREBASE_FUNCTIONS_BASE_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           VITE_SENTRY_ENABLE_LOGS: ${{ secrets.VITE_SENTRY_ENABLE_LOGS }}
+          # Keeps preview-channel errors out of production issue counts and
+          # stops previews from claiming commits (see vite.config.ts).
+          VITE_SENTRY_ENVIRONMENT: preview
+          SENTRY_RELEASE: rgc-react@pr-${{ github.event.pull_request.number }}+${{ github.event.pull_request.head.sha }}
           VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
           VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}

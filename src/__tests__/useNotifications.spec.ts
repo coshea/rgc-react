@@ -215,6 +215,67 @@ describe("useNotifications", () => {
     expect(updateDoc).toHaveBeenCalledWith(docRef, { read: true });
   });
 
+  it("markRead skips notifications that are already read", async () => {
+    const updateDoc = vi.fn();
+    const readDoc = makeNotification({ id: "notif-1", read: true });
+
+    vi.doMock("@/config/firebase", () => ({ db: {} }));
+    vi.doMock("firebase/firestore", () => ({
+      collection: vi.fn(() => ({})),
+      query: vi.fn(() => ({})),
+      where: vi.fn(() => ({})),
+      orderBy: vi.fn(() => ({})),
+      limit: vi.fn(() => ({})),
+      onSnapshot: vi.fn((_q: unknown, next: (snap: unknown) => void) => {
+        next({ docs: [{ id: readDoc.id, data: () => readDoc }] });
+        return () => {};
+      }),
+      doc: vi.fn(() => ({})),
+      updateDoc,
+      deleteDoc: vi.fn(),
+      writeBatch: vi.fn(),
+    }));
+
+    const { renderHook, waitFor } = await import("@testing-library/react");
+    const { useNotifications } = await import("@/hooks/useNotifications");
+
+    const { result } = renderHook(() => useNotifications("user-123"));
+    await waitFor(() => expect(result.current.notifications).toHaveLength(1));
+    await result.current.markRead("notif-1");
+
+    expect(updateDoc).not.toHaveBeenCalled();
+  });
+
+  it("markRead does not reject when the write is denied", async () => {
+    const denied = Object.assign(
+      new Error("Missing or insufficient permissions."),
+      { code: "permission-denied" },
+    );
+    const captureException = vi.fn();
+
+    vi.doMock("@sentry/react", () => ({ captureException }));
+    vi.doMock("@/config/firebase", () => ({ db: {} }));
+    vi.doMock("firebase/firestore", () => ({
+      collection: vi.fn(() => ({})),
+      query: vi.fn(() => ({})),
+      where: vi.fn(() => ({})),
+      orderBy: vi.fn(() => ({})),
+      limit: vi.fn(() => ({})),
+      onSnapshot: vi.fn(() => () => {}),
+      doc: vi.fn(() => ({})),
+      updateDoc: vi.fn().mockRejectedValue(denied),
+      deleteDoc: vi.fn(),
+      writeBatch: vi.fn(),
+    }));
+
+    const { renderHook } = await import("@testing-library/react");
+    const { useNotifications } = await import("@/hooks/useNotifications");
+
+    const { result } = renderHook(() => useNotifications("user-123"));
+    await expect(result.current.markRead("notif-1")).resolves.toBeUndefined();
+    expect(captureException).toHaveBeenCalledWith(denied);
+  });
+
   it("dismissNotification calls deleteDoc", async () => {
     const deleteDoc = vi.fn();
     const docRef = { path: "notifications/notif-1" };

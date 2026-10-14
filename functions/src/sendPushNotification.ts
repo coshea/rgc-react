@@ -3,6 +3,7 @@ import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import webpush, { WebPushError, type PushSubscription } from "web-push";
 import { logger } from "./logger";
+import { withSentry } from "./sentry";
 
 export const WEB_PUSH_VAPID_PUBLIC_KEY = defineSecret(
   "WEB_PUSH_VAPID_PUBLIC_KEY",
@@ -340,7 +341,7 @@ export const dispatch_push_notification = onDocumentCreated(
     document: "notifications/{notificationId}",
     secrets: [WEB_PUSH_VAPID_PUBLIC_KEY, WEB_PUSH_VAPID_PRIVATE_KEY],
   },
-  async (event) => {
+  withSentry("dispatch_push_notification", async (event) => {
     const snap = event.data;
     if (!snap) return;
 
@@ -377,5 +378,5 @@ export const dispatch_push_notification = onDocumentCreated(
         });
       }
     });
-  },
+  }),
 );

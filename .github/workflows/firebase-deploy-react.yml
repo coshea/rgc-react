@@ -27,6 +27,10 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Compute Sentry release name
+        # Matches the semver release tag (v<version>) and keeps the SHA unique.
+        run: echo "SENTRY_RELEASE=rgc-react@$(node -p "require('./package.json').version")+${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+
       - name: Build
         env:
           VITE_PAYPAL_CLIENT_ID: ${{ secrets.VITE_PAYPAL_CLIENT_ID }}
@@ -34,6 +38,7 @@ jobs:
           VITE_FIREBASE_FUNCTIONS_BASE_URL: ${{ secrets.VITE_FIREBASE_FUNCTIONS_BASE_URL }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           VITE_SENTRY_ENABLE_LOGS: ${{ secrets.VITE_SENTRY_ENABLE_LOGS }}
+          VITE_SENTRY_ENVIRONMENT: production
           VITE_RECAPTCHA_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
           VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
@@ -48,3 +53,12 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}
           channelId: live
           projectId: ridgefield-golf-club
+
+      - name: Mark Sentry release as deployed
+        # Runs after the live deploy so Sentry's deploy time matches when
+        # members actually got the new code.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ridgefield-golf-club
+          SENTRY_PROJECT: rgc-react
+        run: npx sentry-cli releases deploys "$SENTRY_RELEASE" new -e production
