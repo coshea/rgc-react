@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const isPreviewBuild = process.env.VITE_SENTRY_ENVIRONMENT === "preview";
+
 // https://vitejs.dev/config/
 export default defineConfig({
   optimizeDeps: {},
@@ -15,6 +17,19 @@ export default defineConfig({
     sentryVitePlugin({
       org: "ridgefield-golf-club",
       project: "javascript-react",
+      release: {
+        // CI sets SENTRY_RELEASE (e.g. rgc-react@9.10.0+<sha>) so the deploy
+        // step can mark the same release as deployed. Locally the plugin
+        // falls back to the git SHA.
+        name: process.env.SENTRY_RELEASE || undefined,
+        // Preview builds must not claim commits, or each production release's
+        // commit range starts at the last preview instead of the last release.
+        setCommits: isPreviewBuild ? false : { auto: true, ignoreMissing: true },
+      },
+      sourcemaps: {
+        // Maps are uploaded to Sentry for symbolication; don't ship them publicly.
+        filesToDeleteAfterUpload: ["./dist/**/*.map"],
+      },
     }),
   ],
   build: {
