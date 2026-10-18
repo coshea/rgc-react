@@ -4,14 +4,17 @@ import {
   type FunctionsErrorCode,
 } from "firebase-functions/v2/https";
 
-// Sentry for Cloud Functions, reporting to the same rgc-react project as the
-// site. Disabled unless SENTRY_DSN is set (the functions deploy workflow writes
-// it to functions/.env), and never in the emulator or tests.
+// Sentry for Cloud Functions, reporting to the rgc-functions project. Disabled
+// unless SENTRY_DSN is set (the functions deploy workflow writes it to
+// functions/.env), and never in the emulator or tests.
 const dsn = process.env.SENTRY_DSN;
 const enabled =
   !!dsn &&
   process.env.FUNCTIONS_EMULATOR !== "true" &&
   process.env.VITEST === undefined;
+// Sentry Logs for logger.info/warn/error. On by default; SENTRY_ENABLE_LOGS=false
+// turns them off without a code change.
+const logsEnabled = enabled && process.env.SENTRY_ENABLE_LOGS !== "false";
 
 if (enabled) {
   Sentry.init({
@@ -21,7 +24,8 @@ if (enabled) {
     // Errors only: tracing would add OpenTelemetry overhead to every cold start.
     tracesSampleRate: 0,
     sendDefaultPii: false,
-    // Shares the rgc-react project with the site; filter with service:functions.
+    enableLogs: logsEnabled,
+    // Kept so functions events stay distinguishable if projects are ever merged.
     initialScope: { tags: { service: "functions" } },
   });
 }
@@ -89,4 +93,64 @@ export function captureLoggedError(message: string, detail: unknown[]): void {
   } else {
     Sentry.captureMessage(message, { level: "error", extra });
   }
+}
+
+type LogAttributeValue = string | number | boolean;
+
+/**
+ * Turns logger detail args into Sentry log attributes. A plain object's fields
+ * become searchable attributes (e.g. `uid`, `orderId`); anything else is kept
+ * as a string under `detail`.
+ */
+export function toLogAttributes(
+  detail: unknown[],
+): Record<string, LogAttributeValue> {
+  const attributes: Record<string, LogAttributeValue> = {};
+  const rest: string[] = [];
+  for (const item of detail) {
+    if (isPlainObject(item)) {
+      for (const [key, value] of Object.entries(item)) {
+        if (value !== undefined) attributes[key] = toAttributeValue(value);
+      }
+    } else if (item !== undefined) {
+      rest.push(String(toAttributeValue(item)));
+    }
+  }
+  if (rest.length > 0) attributes.detail = rest.join(" ");
+  return attributes;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function toAttributeValue(value: unknown): LogAttributeValue {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  if (value instanceof Error) return `${value.name}: ${value.message}`;
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+/**
+ * Sends a logger call to Sentry Logs. Logs are buffered and sent by the same
+ * flush withSentry() runs at the end of each invocation.
+ */
+export function captureLog(
+  level: "info" | "warn" | "error",
+  message: string,
+  detail: unknown[],
+): void {
+  if (!logsEnabled) return;
+  Sentry.logger[level](message, toLogAttributes(detail));
 }

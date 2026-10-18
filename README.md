@@ -167,6 +167,16 @@ firebase deploy --only functions:rgc-react --project ridgefield-golf-club
 
 If `PAYPAL_CLIENT_ID` should be treated as sensitive, you can also migrate it to `defineSecret()` in `functions/src/paypalConfig.ts` and manage it through Secret Manager.
 
+#### Cloud Functions monitoring (Sentry)
+
+Cloud Functions report to the `rgc-functions` Sentry project, separate from the site's `rgc-react` project. The functions deploy workflow writes these to `functions/.env`:
+
+- `SENTRY_DSN`: the `rgc-functions` DSN. It isn't a secret, so it lives in the workflow. Leave it empty for local deploys to keep Sentry off. Sentry never runs in the emulator or in tests.
+- `SENTRY_RELEASE`: `rgc-functions@<version>+<sha>`. After deploying, the workflow creates this release, links its commits and marks it deployed to `production`.
+- `SENTRY_ENABLE_LOGS` (optional): set to `false` to stop sending `logger` output to Sentry Logs. Errors are still reported.
+
+Thrown errors and `logger.error` calls become Sentry issues. `logger.info`, `warn` and `error` also go to Sentry Logs.
+
 #### Build-Time Environment Variables (Vite)
 
 The client bundle is built with Vite; only variables prefixed with `VITE_` are embedded into the production build. If a variable like `VITE_PAYPAL_CLIENT_ID` is missing at build time, PayPal will be disabled in production.
@@ -176,7 +186,7 @@ For GitHub Actions deployments to Firebase Hosting, configure these repository s
 - `VITE_PAYPAL_CLIENT_ID` (required for PayPal buttons)
 - `VITE_PAYPAL_ENVIRONMENT` (optional; defaults to `SANDBOX` if unset)
 - `VITE_FIREBASE_FUNCTIONS_BASE_URL` (if your deployment uses a non-default functions base URL)
-- `SENTRY_AUTH_TOKEN` (optional; enables sourcemap upload)
+- `SENTRY_AUTH_TOKEN` (optional; enables sourcemap upload and release tracking). The functions workflow uses the same secret for `rgc-functions` releases, so it must be an organization token, or a user token with access to both projects.
 
 ## Architecture & Coding Conventions
 
