@@ -58,6 +58,10 @@ jobs:
         with:
           credentials_json: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIDGEFIELD_GOLF_CLUB }}"
 
+      - name: Compute Sentry release name
+        # Same naming as the site's releases (root package.json version + SHA).
+        run: echo "SENTRY_RELEASE=rgc-functions@$(node -p "require('./package.json').version")+${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+
       - name: Write non-secret function params to .env
         # VITE_PAYPAL_CLIENT_ID and VITE_PAYPAL_ENVIRONMENT are defineString() params (non-secret).
         # They must be available at deploy time. Store them as GitHub repository secrets
@@ -67,9 +71,10 @@ jobs:
         run: |
           echo "PAYPAL_CLIENT_ID=${{ secrets.VITE_PAYPAL_CLIENT_ID }}" >> functions/.env
           echo "PAYPAL_ENVIRONMENT=${{ secrets.VITE_PAYPAL_ENVIRONMENT }}" >> functions/.env
-          # Functions report to the same Sentry project as the site (tagged
-          # service:functions). A DSN is not a secret; it only allows sending events.
-          echo "SENTRY_DSN=https://fc000efe85e0fae20f18bfb05ee0ab21@o4510721156644864.ingest.us.sentry.io/4510721158283264" >> functions/.env
+          # Functions report to the rgc-functions Sentry project. A DSN is not a
+          # secret; it only allows sending events.
+          echo "SENTRY_DSN=https://32d292c9243d768566cd5e355c81429e@o4510721156644864.ingest.us.sentry.io/4512255241027584" >> functions/.env
+          echo "SENTRY_RELEASE=$SENTRY_RELEASE" >> functions/.env
 
       - name: Deploy Cloud Functions
         # Secret values (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, RESEND_API_KEY) are
@@ -78,3 +83,17 @@ jobs:
         # above (or pre-set via `firebase functions:params:set`).
         run: |
           firebase deploy --only functions:rgc-react --project ridgefield-golf-club --non-interactive
+
+      - name: Create Sentry release and mark it deployed
+        # Runs after the deploy so Sentry's deploy time matches when the new
+        # functions went live. Root dependencies aren't installed in this job,
+        # so the CLI is pinned here to the version the site uses.
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ridgefield-golf-club
+          SENTRY_PROJECT: rgc-functions
+        run: |
+          npx --yes @sentry/cli@2.58.5 releases new "$SENTRY_RELEASE"
+          npx --yes @sentry/cli@2.58.5 releases set-commits "$SENTRY_RELEASE" --auto --ignore-missing
+          npx --yes @sentry/cli@2.58.5 releases finalize "$SENTRY_RELEASE"
+          npx --yes @sentry/cli@2.58.5 releases deploys "$SENTRY_RELEASE" new -e production
