@@ -64,12 +64,15 @@ interface SendNotificationResult {
   count: number;
 }
 
+/** Season Wrapped notifications are sent from the Season Wrapped tab only. */
 const NOTIFICATION_TYPES = (
   Object.entries(NOTIFICATION_TYPE_META) as [
     NotificationType,
     (typeof NOTIFICATION_TYPE_META)[NotificationType],
   ][]
-).map(([value, meta]) => ({ value, ...meta }));
+)
+  .filter(([value]) => value !== "season_wrapped")
+  .map(([value, meta]) => ({ value, ...meta }));
 
 const TYPE_COLORS: Record<
   NotificationType,

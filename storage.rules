@@ -50,6 +50,12 @@ service firebase.storage {
       );
     }
 
+    // Season Wrapped share images: written by Cloud Functions (Admin SDK) and
+    // served through the get_season_wrapped_share_image callable.
+    match /wrapped/{allPaths=**} {
+      allow read, write: if false;
+    }
+
     // Default: deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

@@ -8,6 +8,11 @@ import { logger } from "./logger";
 import { RESEND_WEBHOOK_SECRET } from "./resendConfig";
 import { withSentry } from "./sentry";
 import {
+  SEASON_WRAPPED_COLLECTION,
+  SEASON_WRAPPED_DELIVERY,
+  SEASON_WRAPPED_EMAIL_CATEGORY,
+} from "./seasonWrapped/types";
+import {
   EMAIL_ISSUE_STATUS,
   EMAIL_ISSUES_COLLECTION,
   type EmailIssue,
@@ -134,13 +139,56 @@ export async function recordEmailIssues(
   return recipients.length;
 }
 
+/**
+ * Records a click on a Season Wrapped email against the member's delivery
+ * record. Needs click tracking on the sending domain and `email.clicked` in
+ * the webhook's events. Returns false for any other event.
+ */
+export async function recordSeasonWrappedClick(
+  db: admin.firestore.Firestore,
+  event: ResendEmailEvent,
+): Promise<boolean> {
+  const tags = event.data?.tags;
+  const year = Number(tags?.year);
+  const uid = tags?.uid;
+  if (
+    event.type !== "email.clicked" ||
+    tags?.category !== SEASON_WRAPPED_EMAIL_CATEGORY ||
+    !uid ||
+    !Number.isInteger(year)
+  ) {
+    return false;
+  }
+
+  const ref = db
+    .collection(SEASON_WRAPPED_COLLECTION)
+    .doc(String(year))
+    .collection(SEASON_WRAPPED_DELIVERY)
+    .doc(uid);
+  const clickedAt = event.created_at ?? new Date().toISOString();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    tx.set(
+      ref,
+      {
+        uid,
+        emailClicks: FieldValue.increment(1),
+        lastEmailClickAt: clickedAt,
+        ...(snap.data()?.firstEmailClickAt ? {} : { firstEmailClickAt: clickedAt }),
+      },
+      { merge: true },
+    );
+  });
+  return true;
+}
+
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
 /**
- * Resend webhook endpoint. Subscribe it to email.bounced, email.complained
- * and email.suppressed in the Resend dashboard (Webhooks), and store the
+ * Resend webhook endpoint. Subscribe it to email.bounced, email.complained,
+ * email.suppressed and email.clicked in the Resend dashboard (Webhooks), and store the
  * signing secret with `firebase functions:secrets:set RESEND_WEBHOOK_SECRET`.
  */
 export const resend_webhook = onRequest(
@@ -176,7 +224,13 @@ export const resend_webhook = onRequest(
       return;
     }
 
-    const recorded = await recordEmailIssues(admin.firestore(), event);
+    const db = admin.firestore();
+    if (await recordSeasonWrappedClick(db, event)) {
+      res.status(200).send("ok");
+      return;
+    }
+
+    const recorded = await recordEmailIssues(db, event);
     if (recorded > 0) {
       // No addresses in logs; the emailIssues doc holds them for admins.
       logger.info("resend_webhook: email issue recorded", {

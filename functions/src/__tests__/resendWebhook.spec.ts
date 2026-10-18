@@ -2,11 +2,15 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase-admin/firestore", () => ({
-  FieldValue: { serverTimestamp: vi.fn(() => "server-timestamp") },
+  FieldValue: {
+    serverTimestamp: vi.fn(() => "server-timestamp"),
+    increment: vi.fn((n: number) => ({ increment: n })),
+  },
 }));
 
 import {
   recordEmailIssues,
+  recordSeasonWrappedClick,
   toEmailIssue,
   verifyResendSignature,
 } from "../resendWebhook";
@@ -172,5 +176,61 @@ describe("recordEmailIssues", () => {
     await expect(
       recordEmailIssues(db, { type: "email.delivered", data: { to: ["a@x"] } }),
     ).resolves.toBe(0);
+  });
+});
+
+describe("recordSeasonWrappedClick", () => {
+  function fakeDb(existing: Record<string, unknown> | undefined) {
+    const set = vi.fn();
+    const doc = vi.fn(() => ({ path: "delivery-doc" }));
+    const db = {
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({ collection: vi.fn(() => ({ doc })) })),
+      })),
+      runTransaction: vi.fn(async (fn: (tx: unknown) => Promise<void>) =>
+        fn({ get: vi.fn(async () => ({ data: () => existing })), set }),
+      ),
+    };
+    return { db, set, doc };
+  }
+
+  const click = {
+    type: "email.clicked",
+    created_at: "2026-12-02T15:00:00.000Z",
+    data: { tags: { category: "season_wrapped", year: "2026", uid: "uid_1" } },
+  };
+
+  it("records the first click on a Wrapped email", async () => {
+    const { db, set, doc } = fakeDb(undefined);
+    await expect(
+      recordSeasonWrappedClick(db as unknown as Parameters<typeof recordSeasonWrappedClick>[0], click),
+    ).resolves.toBe(true);
+    expect(doc).toHaveBeenCalledWith("uid_1");
+    expect(set).toHaveBeenCalledWith(
+      { path: "delivery-doc" },
+      {
+        uid: "uid_1",
+        emailClicks: { increment: 1 },
+        lastEmailClickAt: click.created_at,
+        firstEmailClickAt: click.created_at,
+      },
+      { merge: true },
+    );
+  });
+
+  it("keeps the first click time on later clicks", async () => {
+    const { db, set } = fakeDb({ firstEmailClickAt: "2026-12-01T00:00:00.000Z" });
+    await recordSeasonWrappedClick(db as unknown as Parameters<typeof recordSeasonWrappedClick>[0], click);
+    expect(set.mock.calls[0][1]).not.toHaveProperty("firstEmailClickAt");
+  });
+
+  it("ignores clicks on other emails and other event types", async () => {
+    const { db } = fakeDb(undefined);
+    const typedDb = db as unknown as Parameters<typeof recordSeasonWrappedClick>[0];
+    await expect(
+      recordSeasonWrappedClick(typedDb, { ...click, data: { tags: { category: "registration_opening" } } }),
+    ).resolves.toBe(false);
+    await expect(recordSeasonWrappedClick(typedDb, { ...click, type: "email.bounced" })).resolves.toBe(false);
+    expect(db.runTransaction).not.toHaveBeenCalled();
   });
 });

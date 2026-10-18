@@ -36,6 +36,7 @@ const AdminDashboardPage = lazy(() => import("@/pages/admin-dashboard"));
 const VerifyEmailPage = lazy(() => import("@/pages/verify-email"));
 const BoardOfGovernorsPage = lazy(() => import("@/pages/board-of-governors"));
 const MoneyListPage = lazy(() => import("@/pages/money-list"));
+const SeasonWrappedPage = lazy(() => import("@/pages/season-wrapped"));
 const FindAGamePage = lazy(() => import("@/pages/find-a-game"));
 const BlogListPage = lazy(() =>
   import("@/pages/blog-list").then((m) => ({ default: m.BlogListPage })),
@@ -134,6 +135,14 @@ function App() {
                 path="/profile/:userId"
               />
               <Route element={<TournamentsPage />} path="/tournaments" />
+              <Route
+                element={
+                  <RequireAuth>
+                    <SeasonWrappedPage />
+                  </RequireAuth>
+                }
+                path={siteConfig.pages.seasonWrapped.link}
+              />
               <Route
                 element={
                   <RequireAdmin>

@@ -509,6 +509,63 @@ service cloud.firestore {
       allow create: if isAdmin();
     }
 
+    // Season Wrapped year-end recap (functions/src/seasonWrapped). Cloud
+    // Functions write the season, member stories and delivery records; members
+    // see the season and their own story only once it's published, and admins
+    // can read drafts. The member's own browser writes their view record.
+    match /seasonWrapped/{year} {
+      function seasonPublished() {
+        return get(/databases/$(database)/documents/seasonWrapped/$(year)).data.status == 'published';
+      }
+
+      allow read: if isAdmin() || (request.auth != null && resource.data.status == 'published');
+      allow write: if false;
+
+      match /members/{uid} {
+        allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid && seasonPublished());
+        allow write: if false;
+      }
+
+      match /delivery/{uid} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      // Open tracking. Counts only move forward; the member can't edit
+      // anyone else's record or delete their own.
+      match /views/{uid} {
+        function validView(d) {
+          return d.keys().hasOnly(['uid', 'openCount', 'firstOpenedAt', 'lastOpenedAt',
+                                   'furthestCard', 'cardCount', 'completed', 'shared',
+                                   'firstSource', 'sources'])
+            && d.uid == uid
+            && d.openCount is int
+            && d.furthestCard is int
+            && d.cardCount is int
+            && d.completed is bool
+            && d.shared is bool
+            && d.firstSource in ['email', 'push', 'banner', 'direct']
+            && d.sources is map
+            && d.sources.keys().hasOnly(['email', 'push', 'banner', 'direct']);
+        }
+
+        allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && seasonPublished()
+          && validView(request.resource.data);
+        allow update: if request.auth != null
+          && request.auth.uid == uid
+          && seasonPublished()
+          && validView(request.resource.data)
+          && request.resource.data.openCount >= resource.data.openCount
+          && request.resource.data.furthestCard >= resource.data.furthestCard
+          && request.resource.data.firstSource == resource.data.firstSource
+          && request.resource.data.firstOpenedAt == resource.data.firstOpenedAt;
+        allow delete: if false;
+      }
+    }
+
     // Default: deny everything else
     match /{document=**} {
       allow read, write: if false;

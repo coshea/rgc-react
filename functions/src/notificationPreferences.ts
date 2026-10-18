@@ -4,7 +4,8 @@ export type NotificationType =
   | "tournament_canceled"
   | "registration_opening"
   | "registration_closing_soon"
-  | "new_features";
+  | "new_features"
+  | "season_wrapped";
 
 export interface UserPrefsData {
   notificationPreferences?: {
@@ -19,6 +20,7 @@ export function prefKeyForType(
 ): keyof NonNullable<UserPrefsData["notificationPreferences"]> | null {
   switch (type) {
     case "announcement":
+    case "season_wrapped":
       return "generalAnnouncements";
     case "tournament":
     case "tournament_canceled":

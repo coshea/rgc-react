@@ -1,15 +1,18 @@
-import { useCallback } from "react";
+import { useCallback, type ComponentType } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Tabs } from "@heroui/react";
-import { Icon } from "@iconify/react";
 
 import { usePageTracking } from "@/hooks/usePageTracking";
+import {
+  AdminSectionNav,
+  type AdminSection,
+} from "@/components/admin-dashboard/admin-section-nav";
 import { PaymentsTab } from "@/components/admin-dashboard/payments-tab";
 import { MemberOverviewTab } from "@/components/admin-dashboard/member-overview-tab";
 import { MemberDataGridTab } from "@/components/admin-dashboard/member-data-grid-tab";
 import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-status-tab";
 import { NotificationsTab } from "@/components/admin-dashboard/notifications-tab";
 import { MembershipSettingsTab } from "@/components/admin-dashboard/membership-settings-tab";
+import { SeasonWrappedTab } from "@/components/admin-dashboard/season-wrapped/season-wrapped-tab";
 
 type TabKey =
   | "overview"
@@ -17,21 +20,71 @@ type TabKey =
   | "payments"
   | "membership"
   | "tournaments"
+  | "wrapped"
   | "notifications";
 
-const VALID_TABS = new Set<TabKey>([
-  "overview",
-  "members",
-  "payments",
-  "membership",
-  "tournaments",
-  "notifications",
-]);
+const EmbeddedPaymentsTab = () => <PaymentsTab isEmbedded />;
+
+/**
+ * Every admin section, in nav order. Sections sharing a `group` are listed
+ * together. To add a section: add its key to `TabKey` and one entry here.
+ */
+const SECTIONS: readonly (AdminSection<TabKey> & {
+  Component: ComponentType;
+})[] = [
+  {
+    key: "overview",
+    label: "Overview",
+    icon: "lucide:layout-dashboard",
+    group: "Club",
+    Component: MemberOverviewTab,
+  },
+  {
+    key: "members",
+    label: "Members",
+    icon: "lucide:users",
+    group: "Club",
+    Component: MemberDataGridTab,
+  },
+  {
+    key: "payments",
+    label: "Payments",
+    icon: "lucide:credit-card",
+    group: "Club",
+    Component: EmbeddedPaymentsTab,
+  },
+  {
+    key: "membership",
+    label: "Membership settings",
+    icon: "lucide:settings",
+    group: "Club",
+    Component: MembershipSettingsTab,
+  },
+  {
+    key: "tournaments",
+    label: "Tournaments",
+    icon: "lucide:flag",
+    group: "Season",
+    Component: TournamentStatusTab,
+  },
+  {
+    key: "wrapped",
+    label: "Season Wrapped",
+    icon: "lucide:gift",
+    group: "Season",
+    Component: SeasonWrappedTab,
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    icon: "lucide:bell",
+    group: "Communication",
+    Component: NotificationsTab,
+  },
+];
 
 function toTabKey(value: string | null): TabKey {
-  return value !== null && VALID_TABS.has(value as TabKey)
-    ? (value as TabKey)
-    : "overview";
+  return SECTIONS.find((s) => s.key === value)?.key ?? "overview";
 }
 
 export default function AdminDashboardPage() {
@@ -39,105 +92,36 @@ export default function AdminDashboardPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = toTabKey(searchParams.get("tab"));
+  const active = SECTIONS.find((s) => s.key === activeTab) ?? SECTIONS[0];
 
-  const handleTabChange = useCallback(
-    (key: string | number) => {
-      setSearchParams({ tab: key as string }, { replace: true });
+  const handleSelect = useCallback(
+    (key: TabKey) => {
+      setSearchParams({ tab: key }, { replace: true });
     },
     [setSearchParams],
   );
 
   return (
-    <div className="min-h-screen px-4 py-12 sm:px-6">
-      <div className="mx-auto max-w-6xl">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="mt-1 text-muted text-sm">
-              Club membership reporting, payments, and tournament status.
-            </p>
-          </div>
+    <div className="min-h-screen px-4 pb-12 pt-6 sm:px-6 lg:pt-12">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-4 lg:mb-8">
+          <h1 className="text-2xl font-bold sm:text-3xl">Admin Dashboard</h1>
+          <p className="mt-1 text-sm text-muted">
+            Club membership reporting, payments, and tournament status.
+          </p>
         </div>
 
-        {/* Tabs */}
-        <Tabs selectedKey={activeTab} onSelectionChange={handleTabChange}>
-          <Tabs.ListContainer>
-            <Tabs.List
-              aria-label="Admin Dashboard"
-              className="mb-2 overflow-x-auto scrollbar-hide"
-            >
-              <Tabs.Tab id="overview" aria-label="Overview">
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:layout-dashboard" className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Overview</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="members" aria-label="Members">
-                <Tabs.Separator />
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:users" className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Members</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="payments" aria-label="Payments">
-                <Tabs.Separator />
-                <div className="flex items-center gap-2">
-                  <Icon
-                    icon="lucide:credit-card"
-                    className="w-4 h-4 shrink-0"
-                  />
-                  <span className="hidden sm:inline">Payments</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="membership" aria-label="Membership">
-                <Tabs.Separator />
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:settings" className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Membership</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="tournaments" aria-label="Tournaments">
-                <Tabs.Separator />
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:flag" className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Tournaments</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="notifications" aria-label="Notifications">
-                <Tabs.Separator />
-                <div className="flex items-center gap-2">
-                  <Icon icon="lucide:bell" className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Notifications</span>
-                </div>
-                <Tabs.Indicator />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
-          <Tabs.Panel id="overview">
-            <MemberOverviewTab />
-          </Tabs.Panel>
-          <Tabs.Panel id="members">
-            <MemberDataGridTab />
-          </Tabs.Panel>
-          <Tabs.Panel id="payments">
-            <PaymentsTab isEmbedded />
-          </Tabs.Panel>
-          <Tabs.Panel id="membership">
-            <MembershipSettingsTab />
-          </Tabs.Panel>
-          <Tabs.Panel id="tournaments">
-            <TournamentStatusTab />
-          </Tabs.Panel>
-          <Tabs.Panel id="notifications">
-            <NotificationsTab />
-          </Tabs.Panel>
-        </Tabs>
+        <div className="lg:flex lg:items-start lg:gap-8">
+          <AdminSectionNav
+            activeKey={activeTab}
+            sections={SECTIONS}
+            onSelect={handleSelect}
+          />
+
+          <section aria-label={active.label} className="min-w-0 flex-1">
+            <active.Component />
+          </section>
+        </div>
       </div>
     </div>
   );
