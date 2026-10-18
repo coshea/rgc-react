@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -91,6 +91,15 @@ vi.mock("@/components/membership/hooks", () => ({
     useMembersPushStatusMock(...args),
 }));
 
+const emailIssuesApi = vi.hoisted(() => ({
+  get: vi.fn(async () => new Map()),
+  clear: vi.fn(async () => undefined),
+}));
+vi.mock("@/api/emailIssues", () => ({
+  getEmailIssues: emailIssuesApi.get,
+  clearEmailIssue: emailIssuesApi.clear,
+}));
+
 describe("MemberDataGridTab push enabled column", () => {
   it("marks members enabled from stored push preferences or FCM tokens", () => {
     useAdminFlagMock.mockReturnValue({ isAdmin: true });
@@ -179,5 +188,60 @@ describe("MemberDataGridTab push enabled column", () => {
         .getAllByRole("cell")
         .some((cell) => cell.querySelector('[data-icon="lucide:bell-off"]')),
     ).toBe(true);
+  });
+});
+
+describe("MemberDataGridTab email issues", () => {
+  it("flags members whose email bounced and lets admins clear it", async () => {
+    useAdminFlagMock.mockReturnValue({ isAdmin: true });
+    useMembersPushStatusMock.mockReturnValue({
+      pushEnabledUids: new Set<string>(),
+      loading: false,
+    });
+    useMembersMock.mockReturnValue({
+      loading: false,
+      activeSet: new Set<string>(),
+      allMembers: [
+        { id: "ok", displayName: "Okay Member", email: "ok@example.com" },
+        { id: "bad", displayName: "Bad Address", email: "Bad@Example.com" },
+      ],
+    });
+    emailIssuesApi.get.mockResolvedValue(
+      new Map([
+        [
+          "bad@example.com",
+          {
+            email: "bad@example.com",
+            status: "bounced",
+            reason: "Mailbox does not exist",
+            occurredAt: "2026-10-18T12:00:00.000Z",
+          },
+        ],
+      ]),
+    );
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemberDataGridTab />
+      </QueryClientProvider>,
+    );
+
+    const badRow = (await screen.findByText("Email bounced")).closest("tr");
+    expect(badRow).toHaveTextContent("Bad@Example.com");
+    expect(screen.getByText("ok@example.com").closest("tr")).not.toHaveTextContent(
+      "Email bounced",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 member has an email delivery problem",
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Clear email issue for bad@example.com",
+      }),
+    );
+    await waitFor(() =>
+      expect(emailIssuesApi.clear).toHaveBeenCalledWith("bad@example.com"),
+    );
   });
 });

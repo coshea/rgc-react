@@ -70,3 +70,38 @@ export type ReconcilePayPalOrdersResponse = {
   }>;
   error?: string;
 };
+
+/**
+ * Admin-only record of an address Resend could not deliver to, written by the
+ * `resend_webhook` function. Stored at `emailIssues/{lowercased email}` so a
+ * member who updates their email is no longer flagged.
+ */
+export const EMAIL_ISSUES_COLLECTION = "emailIssues";
+
+export const EMAIL_ISSUE_STATUS = {
+  BOUNCED: "bounced",
+  COMPLAINED: "complained",
+  SUPPRESSED: "suppressed",
+} as const;
+
+export type EmailIssueStatus =
+  (typeof EMAIL_ISSUE_STATUS)[keyof typeof EMAIL_ISSUE_STATUS];
+
+export type EmailIssue = {
+  email: string;
+  status: EmailIssueStatus;
+  /** Provider message, e.g. the bounce reason. */
+  reason?: string;
+  /** Resend email id of the send that triggered this. */
+  emailId?: string;
+  /** Resend tag `category` of that send, e.g. `registration_opening`. */
+  category?: string;
+  /** ISO time Resend reported the event. */
+  occurredAt: string;
+};
+
+/** Doc id for an address in `emailIssues`. */
+export function emailIssueDocId(email: string): string {
+  // "/" is legal in an address but not in a Firestore doc id.
+  return email.trim().toLowerCase().replace(/\//g, "_");
+}

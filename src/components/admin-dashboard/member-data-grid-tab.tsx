@@ -16,7 +16,9 @@ import { EditMemberModal } from "@/components/membership";
 import { UserAvatar } from "@/components/avatar";
 import { updateUser } from "@/api/users";
 import type { User } from "@/api/users";
-import { MEMBERSHIP_TYPES } from "@@/types";
+import { type EmailIssue, MEMBERSHIP_TYPES, emailIssueDocId } from "@@/types";
+import { useEmailIssues } from "@/hooks/useEmailIssues";
+import { EmailIssueBadge } from "@/components/admin-dashboard/email-issue-badge";
 import { formatPhone } from "@/utils/phone";
 import { hasStoredPushPreferenceEnabled } from "@/utils/notificationPreferences";
 import { isAllowedBoardRole } from "@/types/roles";
@@ -38,6 +40,7 @@ interface MemberRow {
   isActive: boolean;
   defaultGoldTee: boolean | null;
   pushEnabled: boolean;
+  emailIssue: EmailIssue | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -198,6 +201,7 @@ export function MemberDataGridTab() {
 
   const { allMembers, loading, activeSet } = useMembers(currentYear);
   const { pushEnabledUids } = useMembersPushStatus(isAdmin);
+  const { data: emailIssues } = useEmailIssues(isAdmin);
 
   // Search filter
   const [search, setSearch] = useState("");
@@ -246,9 +250,21 @@ export function MemberDataGridTab() {
         pushEnabled:
           pushEnabledUids.has(m.id) ||
           hasStoredPushPreferenceEnabled(m.notificationPreferences),
+        emailIssue: m.email
+          ? (emailIssues?.get(emailIssueDocId(m.email)) ?? null)
+          : null,
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [allMembers, activeSet, search, pushEnabledUids]);
+  }, [allMembers, activeSet, search, pushEnabledUids, emailIssues]);
+
+  // Counted over all members, not `rows`, so the banner ignores the search.
+  const emailIssueCount = useMemo(
+    () =>
+      allMembers.filter(
+        (m) => m.email && emailIssues?.has(emailIssueDocId(m.email)),
+      ).length,
+    [allMembers, emailIssues],
+  );
 
   // ── Open edit modal ──────────────────────────────────────────────────────────
 
@@ -282,6 +298,7 @@ export function MemberDataGridTab() {
                 {row.displayName}
               </span>
               <span className="text-xs text-muted truncate">{row.email}</span>
+              {row.emailIssue && <EmailIssueBadge issue={row.emailIssue} />}
             </div>
           </div>
         ),
@@ -428,6 +445,20 @@ export function MemberDataGridTab() {
           {rows.length} member{rows.length !== 1 ? "s" : ""}
         </span>
       </div>
+
+      {emailIssueCount > 0 && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-lg border border-danger/40 bg-danger/5 p-3 text-sm"
+        >
+          <Icon icon="lucide:mail-x" className="mt-0.5 shrink-0 text-danger" />
+          <span>
+            {emailIssueCount} member{emailIssueCount !== 1 ? "s have" : " has"}{" "}
+            an email delivery problem. Automated emails skip these addresses;
+            ask the member to check or update their email.
+          </span>
+        </div>
+      )}
 
       {/* Grid */}
       {loading ? (

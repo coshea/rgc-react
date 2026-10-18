@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -141,4 +141,21 @@ describe("NotificationSettingsPage", () => {
     // Permission is granted but this device isn't registered: offer the fix.
     expect(screen.getByRole("button", { name: "Enable" })).toBeInTheDocument();
   });
+
+  it("renders interactive preference switches that toggle on click", async () => {
+    const { default: NotificationSettingsPage } =
+      await import("@/pages/notification-settings");
+
+    render(<NotificationSettingsPage />);
+
+    // Regression: a Switch.Control outside Switch.Content renders no input.
+    expect(await screen.findAllByRole("switch")).toHaveLength(8);
+    const emailUpdates = screen.getByRole("switch", {
+      name: "Email: Tournament Updates",
+    });
+    expect(emailUpdates).toBeChecked();
+    fireEvent.click(emailUpdates);
+    expect(emailUpdates).not.toBeChecked();
+  });
 });
+

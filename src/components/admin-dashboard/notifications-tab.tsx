@@ -730,8 +730,8 @@ export function NotificationsTab() {
                 Send test registration email
               </Button>
               <Tooltip.Content placement="top">
-                Sends the registration-open email to your account only for
-                preview.
+                Sends the member version of the registration-open email to your
+                account only, marked [Test].
               </Tooltip.Content>
             </Tooltip>
             <Button

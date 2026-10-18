@@ -9,13 +9,21 @@ import { MemberOverviewTab } from "@/components/admin-dashboard/member-overview-
 import { MemberDataGridTab } from "@/components/admin-dashboard/member-data-grid-tab";
 import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-status-tab";
 import { NotificationsTab } from "@/components/admin-dashboard/notifications-tab";
+import { MembershipSettingsTab } from "@/components/admin-dashboard/membership-settings-tab";
 
-type TabKey = "overview" | "members" | "payments" | "tournaments" | "notifications";
+type TabKey =
+  | "overview"
+  | "members"
+  | "payments"
+  | "membership"
+  | "tournaments"
+  | "notifications";
 
 const VALID_TABS = new Set<TabKey>([
   "overview",
   "members",
   "payments",
+  "membership",
   "tournaments",
   "notifications",
 ]);
@@ -85,6 +93,14 @@ export default function AdminDashboardPage() {
                 </div>
                 <Tabs.Indicator />
               </Tabs.Tab>
+              <Tabs.Tab id="membership" aria-label="Membership">
+                <Tabs.Separator />
+                <div className="flex items-center gap-2">
+                  <Icon icon="lucide:settings" className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Membership</span>
+                </div>
+                <Tabs.Indicator />
+              </Tabs.Tab>
               <Tabs.Tab id="tournaments" aria-label="Tournaments">
                 <Tabs.Separator />
                 <div className="flex items-center gap-2">
@@ -111,6 +127,9 @@ export default function AdminDashboardPage() {
           </Tabs.Panel>
           <Tabs.Panel id="payments">
             <PaymentsTab isEmbedded />
+          </Tabs.Panel>
+          <Tabs.Panel id="membership">
+            <MembershipSettingsTab />
           </Tabs.Panel>
           <Tabs.Panel id="tournaments">
             <TournamentStatusTab />

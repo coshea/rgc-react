@@ -23,6 +23,10 @@ vi.mock("@/components/admin-dashboard/tournament-status-tab", () => ({
   TournamentStatusTab: () => <div>Tournaments Tab Content</div>,
 }));
 
+vi.mock("@/components/admin-dashboard/membership-settings-tab", () => ({
+  MembershipSettingsTab: () => <div>Membership Tab Content</div>,
+}));
+
 vi.mock("@/hooks/usePageTracking", () => ({
   usePageTracking: () => {},
 }));
@@ -44,7 +48,7 @@ describe("AdminDashboardPage — tab routing", () => {
 
   it("selects Members tab when ?tab=members is in the URL", async () => {
     renderPage("?tab=members");
-    const membersTab = await screen.findByRole("tab", { name: /Members/i });
+    const membersTab = await screen.findByRole("tab", { name: /^Members$/i });
     expect(membersTab).toHaveAttribute("aria-selected", "true");
   });
 
@@ -52,6 +56,17 @@ describe("AdminDashboardPage — tab routing", () => {
     renderPage("?tab=payments");
     const paymentsTab = await screen.findByRole("tab", { name: /Payments/i });
     expect(paymentsTab).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("selects Membership settings tab when ?tab=membership is in the URL", async () => {
+    renderPage("?tab=membership");
+    const membershipTab = await screen.findByRole("tab", {
+      name: /^Membership$/i,
+    });
+    expect(membershipTab).toHaveAttribute("aria-selected", "true");
+    expect(
+      await screen.findByText("Membership Tab Content"),
+    ).toBeInTheDocument();
   });
 
   it("selects Tournaments tab when ?tab=tournaments is in the URL", async () => {

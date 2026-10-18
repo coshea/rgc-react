@@ -42,6 +42,8 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **Cloud Functions (`functions/src/index.ts`):**
   - PayPal membership and donation verification, done server-side.
   - Firestore-triggered notifications, sent by email (Resend) and push. Push goes out as Declarative Web Push via `web-push` to `users/{uid}/pushSubscriptions` (VAPID secrets `WEB_PUSH_VAPID_PUBLIC_KEY`/`WEB_PUSH_VAPID_PRIVATE_KEY`), plus legacy FCM to `fcmTokens` until devices migrate.
+  - Member emails go through the Resend batch API (`functions/src/resendBatch.ts`: 100 per call, a content-hash `Idempotency-Key` per chunk, 429/5xx retries). `notify_registration_opening` emails current paid full members (`membershipType === "full"`, `lastPaidYear` ≥ the tournament's year) unless `emailTournamentUpdates` is `false`, and only while `config/membershipSettings.automatedMemberEmailsEnabled` is `true` (the toggle in Membership settings), and skips addresses in `emailIssues`. It sets `registrationOpeningNotificationSentAt` before sending anything, so a failed run never re-emails everyone; recipients whose chunks failed go to `registrationOpeningEmailRetries/{tournamentId}` and are retried on later runs (3 attempts at most, and only while registration is open). Links carry UTM tags (`utm_source=resend`) so GA4 credits registrations to the email.
+  - `resend_webhook` (`functions/src/resendWebhook.ts`) verifies Resend's Svix signature (secret `RESEND_WEBHOOK_SECRET`) and records permanent bounces, spam complaints and suppressions in the admin-only `emailIssues/{lowercased email}` collection (types in `functions/src/types.ts`). The Members tab shows them and admins can clear them.
   - Avatar resize with `sharp`.
   - Genkit blog writeups.
   - The functions codebase name is `rgc-react`.
@@ -80,6 +82,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
   - Don't override the 16px input font size in `src/styles/globals.css`; it stops iOS Safari from zooming in when a field gets focus.
   - When proposing a design, show the phone layout alongside the desktop one.
 - **Compound APIs:** HeroUI v3 uses compound APIs, e.g. `<Dropdown><Button/><Dropdown.Popover><Dropdown.Menu><Dropdown.Item textValue="…"/></Dropdown.Menu></Dropdown.Popover></Dropdown>`. Never use v2 names (`DropdownTrigger`, `DropdownItem`, `ModalContent`, `HeroUIProvider`). To look up v3 docs, use the scripts in `.github/skills/heroui-react/`.
+- **Switch:** put `Switch.Control` (and any visible label) inside `Switch.Content`. `Switch.Content` renders the real `<input>`, so a control outside it can't be toggled (see `profile/gold-tee-switch.tsx`).
 - **Events:** use `onPress` on HeroUI components and `onClick` only on native elements. Never put `onPress` on native DOM nodes; wrap them in a HeroUI `Button`/`Link` instead (this includes a clickable `UserAvatar`, which deliberately doesn't forward `onPress`). Filter out non-DOM props before spreading them onto native elements.
 - **Prefer HeroUI controls** over raw `<button>`/`<input>`/`<select>`/`<img>` in new code and on lines you change. Don't proactively upgrade legacy controls elsewhere in a file you touch. If raw HTML is unavoidable, keep it accessible and say why in a comment.
 - **Modals:**

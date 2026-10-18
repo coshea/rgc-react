@@ -23,6 +23,13 @@ export interface MembershipSettings {
   /** URL to the new member application PDF */
   membershipApplicationUrl?: string;
 
+  /**
+   * Kill switch for automated member emails sent through Resend (read by
+   * `notify_registration_opening`). Absent = off. Turn off while the Resend
+   * subscription is paused for the off season.
+   */
+  automatedMemberEmailsEnabled?: boolean;
+
   /** Last updated timestamp */
   updatedAt?: Date | { toDate(): Date };
 

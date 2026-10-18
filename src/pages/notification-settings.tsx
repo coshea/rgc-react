@@ -305,7 +305,7 @@ export default function NotificationSettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-base">Tournament Updates & Cancellations</p>
                 <p className="text-sm text-muted">
-                  When a tournament is canceled or has important updates
+                  When registration opens, a tournament is canceled, or has important updates
                 </p>
               </div>
               <div className="w-16 flex justify-center">

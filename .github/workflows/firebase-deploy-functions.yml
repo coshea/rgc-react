@@ -77,7 +77,8 @@ jobs:
           echo "SENTRY_RELEASE=$SENTRY_RELEASE" >> functions/.env
 
       - name: Deploy Cloud Functions
-        # Secret values (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, RESEND_API_KEY) are
+        # Secret values (PAYPAL_CLIENT_SECRET, GOOGLE_GENAI_API_KEY, RESEND_API_KEY,
+        # RESEND_WEBHOOK_SECRET) are
         # stored in Google Cloud Secret Manager and referenced via defineSecret() — they
         # are NOT passed here. Non-secret string params are supplied via functions/.env
         # above (or pre-set via `firebase functions:params:set`).

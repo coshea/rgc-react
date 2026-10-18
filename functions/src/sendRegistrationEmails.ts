@@ -155,7 +155,7 @@ export function buildLeaderEmailHtml(p: LeaderEmailParams): string {
           <tr>
             <td style="padding:28px 40px 0;">
               <p style="margin:0;font-size:15px;color:#11181c;font-family:${FONT};line-height:1.6;">Hi <strong>${esc(firstName)}</strong>,</p>
-              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;">Great news &#8212; your team is registered for the <strong>${esc(tournamentTitle)}</strong>. Here&#39;s everything you need to know.</p>
+              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;">Great news &#8212; your team is registered for <strong>${esc(tournamentTitle)}</strong>. Here&#39;s everything you need to know.</p>
             </td>
           </tr>
 
@@ -286,7 +286,7 @@ export function buildMemberEmailHtml(p: MemberEmailParams): string {
           <tr>
             <td style="padding:28px 40px 0;">
               <p style="margin:0;font-size:15px;color:#11181c;font-family:${FONT};line-height:1.6;">Hi <strong>${esc(firstName)}</strong>,</p>
-              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;"><strong>${esc(leaderName)}</strong> has added you to their team for the <strong>${esc(tournamentTitle)}</strong>. Here&#39;s what you need to know.</p>
+              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;"><strong>${esc(leaderName)}</strong> has added you to their team for <strong>${esc(tournamentTitle)}</strong>. Here&#39;s what you need to know.</p>
             </td>
           </tr>
 
@@ -416,7 +416,7 @@ export function buildRemovedMemberEmailHtml(
           <tr>
             <td style="padding:28px 40px 0;">
               <p style="margin:0;font-size:15px;color:#11181c;font-family:${FONT};line-height:1.6;">Hi <strong>${esc(firstName)}</strong>,</p>
-              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;"><strong>${esc(leaderName)}</strong> removed you from their team for the <strong>${esc(tournamentTitle)}</strong>.</p>
+              <p style="margin:10px 0 0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;"><strong>${esc(leaderName)}</strong> removed you from their team for <strong>${esc(tournamentTitle)}</strong>.</p>
             </td>
           </tr>
 
@@ -577,7 +577,7 @@ export async function sendTournamentMemberEmail(
   await callResendApi(apiKey, {
     from: FROM_EMAIL,
     to: [to],
-    subject: `You've been added to a team: ${params.tournamentTitle}`,
+    subject: `You've Been Added to a Team: ${params.tournamentTitle}`,
     html: buildMemberEmailHtml(params),
   });
 }
@@ -590,7 +590,7 @@ export async function sendTournamentRemovedMemberEmail(
   await callResendApi(apiKey, {
     from: FROM_EMAIL,
     to: [to],
-    subject: `You've been removed from a team: ${params.tournamentTitle}`,
+    subject: `You've Been Removed from a Team: ${params.tournamentTitle}`,
     html: buildRemovedMemberEmailHtml(params),
   });
 }
