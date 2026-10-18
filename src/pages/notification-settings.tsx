@@ -277,9 +277,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Registration"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -289,9 +291,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Registration"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
             </div>
@@ -311,9 +315,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Tournament Updates"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -323,9 +329,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Tournament Updates"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
             </div>
@@ -345,9 +353,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: Announcements"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -357,9 +367,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: Announcements"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
             </div>
@@ -379,9 +391,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Push: New Features"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
               <div className="w-16 flex justify-center">
@@ -391,9 +405,11 @@ export default function NotificationSettingsPage() {
                   isDisabled={isLoading}
                   aria-label="Email: New Features"
                 >
-                  <Switch.Control className="shrink-0">
-                    <Switch.Thumb />
-                  </Switch.Control>
+                  <Switch.Content>
+                    <Switch.Control className="shrink-0">
+                      <Switch.Thumb />
+                    </Switch.Control>
+                  </Switch.Content>
                 </Switch>
               </div>
             </div>

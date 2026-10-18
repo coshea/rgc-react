@@ -78,10 +78,13 @@ export function PlayerEntrySection({
                 size="sm"
                 isSelected={entry.isHistorical}
                 onChange={(value) => onUpdateHistorical(index, value)}
+                aria-label={`${singular} ${index + 1} historical`}
               >
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
+                <Switch.Content>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Content>
               </Switch>
             </div>
           </div>

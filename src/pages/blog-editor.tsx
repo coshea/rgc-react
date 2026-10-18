@@ -652,10 +652,10 @@ export const BlogEditorPage: React.FC = () => {
             isSelected={formData.isPinned || false}
             onChange={(value) => setFormData({ ...formData, isPinned: value })}
           >
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
             <Switch.Content>
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
               <Label>Pin to top of blog list</Label>
             </Switch.Content>
           </Switch>

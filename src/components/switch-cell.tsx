@@ -21,9 +21,11 @@ const SwitchCell = React.forwardRef<HTMLDivElement, SwitchCellProps>(
         <p className="text-sm text-muted">{description}</p>
       </div>
       <Switch {...props}>
-        <Switch.Control className="shrink-0">
-          <Switch.Thumb />
-        </Switch.Control>
+        <Switch.Content>
+          <Switch.Control className="shrink-0">
+            <Switch.Thumb />
+          </Switch.Control>
+        </Switch.Content>
       </Switch>
     </div>
   ),
