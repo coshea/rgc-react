@@ -17,6 +17,13 @@ permissions:
   contents: read
   id-token: write
 
+# One deploy at a time, in merge order. A newer run waits for the current one,
+# and a newer pending run replaces an older pending one (it deploys a later
+# commit), so a backlog never leaves production on stale code.
+concurrency:
+  group: deploy-rules
+  cancel-in-progress: false
+
 jobs:
   deploy-rules:
     runs-on: ubuntu-latest
