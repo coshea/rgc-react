@@ -610,8 +610,8 @@ function appNotification(year: number, uid: string, test = false) {
     ? `${seasonWrappedPath(year)}?member=${encodeURIComponent(uid)}`
     : `${seasonWrappedPath(year)}?utm_source=${SEASON_WRAPPED_SOURCE.PUSH}`;
   return {
-    title: `${test ? "[Test] " : ""}Your ${year} RGC season is ready`,
-    body: "Tap to see your season: partners, best finishes, the majors and more.",
+    title: `${test ? "[Test] " : ""}Your ${year} RGC year in review`,
+    body: "Your season at a glance: events played, results, winnings and the year's majors.",
     type: SEASON_WRAPPED_TYPE,
     read: false,
     createdAt: FieldValue.serverTimestamp(),
