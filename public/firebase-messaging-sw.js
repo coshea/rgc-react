@@ -1,4 +1,4 @@
-// App service worker: offline app shell, static asset cache and push notifications.
+// App service worker: offline app shell, cached build assets and push notifications.
 //
 // The filename is kept for continuity: existing installs are registered at
 // /firebase-messaging-sw.js, and renaming it would orphan those registrations.
@@ -12,8 +12,15 @@
 //      displays these itself; other browsers render them here.
 //   2. Legacy FCM data messages ({ data: { title, body, link, ... } }) for
 //      devices that have not yet migrated off their FCM token.
-const APP_SHELL_CACHE = "rgc-app-shell-v2";
-const STATIC_ASSET_CACHE = "rgc-static-v2";
+const APP_SHELL_CACHE = "rgc-app-shell-v3";
+const STATIC_ASSET_CACHE = "rgc-static-v3";
+// Each deploy adds new hashed bundles; keep the newest so the cache can't grow
+// without limit. Comfortably more than one build's worth of files.
+const STATIC_ASSET_LIMIT = 250;
+// On a weak signal at the course, a page request can hang for a long time.
+// After this long, serve the saved app shell and let the network finish in
+// the background to refresh it.
+const NAVIGATION_TIMEOUT_MS = 4000;
 const APP_SHELL_URLS = [
   "/",
   "/apple-touch-icon.png",
@@ -28,8 +35,23 @@ function isSameOrigin(url) {
   return url.origin === self.location.origin;
 }
 
-function isCacheableAssetRequest(request) {
-  return ["font", "image", "manifest"].includes(request.destination);
+function isCacheableAssetRequest(request, url) {
+  if (["font", "image", "manifest"].includes(request.destination)) return true;
+  // Vite's build output is content-hashed (and served immutable), so a cached
+  // copy is always the right one. Without these the shell loads offline but
+  // its scripts don't.
+  return url.pathname.startsWith("/assets/");
+}
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  // Keys come back in insertion order, so the oldest go first.
+  await Promise.all(
+    keys
+      .slice(0, Math.max(0, keys.length - maxEntries))
+      .map((key) => cache.delete(key)),
+  );
 }
 
 async function applyBadgeCount(count) {
@@ -50,28 +72,35 @@ async function applyBadgeCount(count) {
   }
 }
 
-async function handleNavigationRequest(request) {
+async function handleNavigationRequest(event) {
+  const { request } = event;
   const cache = await caches.open(APP_SHELL_CACHE);
+  const cachedShell = async () =>
+    (await cache.match(request)) || (await cache.match("/"));
 
-  try {
-    const response = await fetch(request);
+  const network = fetch(request).then(async (response) => {
     if (response.ok) {
       await cache.put("/", response.clone());
       await cache.put(request, response.clone());
     }
     return response;
+  });
+  // Keep the worker alive so a slow response still refreshes the cache.
+  event.waitUntil(network.catch(() => undefined));
+
+  const timeout = new Promise((resolve) =>
+    setTimeout(resolve, NAVIGATION_TIMEOUT_MS),
+  ).then(async () => (await cachedShell()) || network);
+
+  try {
+    return await Promise.race([network, timeout]);
   } catch {
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) return cachedResponse;
-
-    const appShell = await cache.match("/");
-    if (appShell) return appShell;
-
-    return Response.error();
+    return (await cachedShell()) || Response.error();
   }
 }
 
-async function handleStaticAssetRequest(request) {
+async function handleStaticAssetRequest(event) {
+  const { request } = event;
   const cache = await caches.open(STATIC_ASSET_CACHE);
   const cachedResponse = await cache.match(request);
   if (cachedResponse) return cachedResponse;
@@ -79,6 +108,7 @@ async function handleStaticAssetRequest(request) {
   const response = await fetch(request);
   if (response.ok) {
     await cache.put(request, response.clone());
+    event.waitUntil(trimCache(STATIC_ASSET_CACHE, STATIC_ASSET_LIMIT));
   }
   return response;
 }
@@ -255,12 +285,12 @@ self.addEventListener("fetch", (event) => {
   if (!isSameOrigin(url)) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(handleNavigationRequest(request));
+    event.respondWith(handleNavigationRequest(event));
     return;
   }
 
-  if (isCacheableAssetRequest(request)) {
-    event.respondWith(handleStaticAssetRequest(request));
+  if (isCacheableAssetRequest(request, url)) {
+    event.respondWith(handleStaticAssetRequest(event));
   }
 });
 

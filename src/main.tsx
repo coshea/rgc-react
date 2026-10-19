@@ -13,7 +13,12 @@ import "@/styles/globals.css";
 import ScrollToTop from "@/components/scroll-to-top.tsx";
 import DefaultLayout from "@/layouts/default";
 
-const queryClient = new QueryClient();
+// "offlineFirst" runs each query once even when the browser reports no
+// connection, so Firestore can answer from the data saved on the device. The
+// default ("online") would pause them and leave pages loading at the course.
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { networkMode: "offlineFirst" } },
+});
 
 const CHUNK_RELOAD_GUARD_KEY = "rgc:chunk-reload-attempted";
 
@@ -134,8 +139,40 @@ function registerAppServiceWorker(): void {
   );
 }
 
+/**
+ * Loads the code for the pages members need at the course once the app is
+ * idle, so the service worker has cached it before they lose reception.
+ * Routes are otherwise only cached after a visit.
+ */
+function warmOfflineRoutes(): void {
+  if (import.meta.env.DEV || typeof window === "undefined") return;
+
+  const warm = () => {
+    void Promise.all([
+      import("@/pages/tournaments"),
+      import("@/pages/tournament-detail"),
+      import("@/pages/user-profile"),
+    ]).catch(() => {
+      // Best-effort; the routes still load normally when visited.
+    });
+  };
+
+  window.addEventListener(
+    "load",
+    () => {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(warm, { timeout: 10_000 });
+      } else {
+        setTimeout(warm, 5_000);
+      }
+    },
+    { once: true },
+  );
+}
+
 installChunkLoadRecovery();
 registerAppServiceWorker();
+warmOfflineRoutes();
 
 // If we previously reloaded to recover from a chunk load failure, clear the
 // guard now that the main bundle has loaded successfully. This ensures that a

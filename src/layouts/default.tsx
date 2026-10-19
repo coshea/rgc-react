@@ -1,4 +1,6 @@
 import { MainNavbar as MainNavbar } from "@/components/navbar-with-avatar";
+import { OfflineBanner } from "@/components/offline-banner";
+import { OfflineWarmup } from "@/components/offline-warmup";
 import { useConsent } from "@/providers/ConsentProvider";
 import clsx from "clsx";
 
@@ -22,6 +24,8 @@ export default function DefaultLayout({
             : "pb-[max(2rem,env(safe-area-inset-bottom))]",
         )}
       >
+        <OfflineBanner />
+        <OfflineWarmup />
         {children}
       </main>
       <footer className="w-full flex items-center justify-center py-3 shrink-0"></footer>

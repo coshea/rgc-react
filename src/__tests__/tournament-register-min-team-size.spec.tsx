@@ -309,3 +309,39 @@ describe("TournamentRegister open-spots / partner-team checkbox visibility", () 
     expect(screen.queryByText(/Open to new players/i)).not.toBeInTheDocument();
   });
 });
+
+describe("TournamentRegister while offline", () => {
+  it("disables registering and explains that it needs a connection", async () => {
+    upsertRegistrationMock.mockClear();
+    const onLine = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      fetchTournamentMock.mockResolvedValueOnce({
+        ...openRegistrationWindow(),
+        firestoreId: "t1",
+        title: "Solo Tournament",
+        date: new Date(),
+        description: "d",
+        players: 1,
+        status: TournamentStatus.Upcoming,
+        prizePool: 0,
+        winners: [],
+        tee: "Mixed",
+      });
+
+      renderPage();
+      await screen.findByText(/Register for\s+Solo Tournament/i);
+
+      expect(
+        screen.getByRole("button", { name: /^Register$/i }),
+      ).toBeDisabled();
+      expect(
+        screen.getByText(
+          /registering or changing a registration needs a connection/i,
+        ),
+      ).toBeInTheDocument();
+      expect(upsertRegistrationMock).not.toHaveBeenCalled();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+});

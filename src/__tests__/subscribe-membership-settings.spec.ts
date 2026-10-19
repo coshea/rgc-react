@@ -12,6 +12,8 @@ describe("subscribeMembershipSettings onError handling", () => {
     // Mock firebase/firestore before importing the module under test.
     vi.doMock("firebase/firestore", () => ({
       getFirestore: () => ({}),
+      initializeFirestore: () => ({}),
+      memoryLocalCache: () => ({}),
       doc: () => ({}),
       onSnapshot: (_ref: any, _next: any, error: any) => {
         error?.({ code: "permission-denied" });
@@ -36,6 +38,8 @@ describe("subscribeMembershipSettings onError handling", () => {
 
     vi.doMock("firebase/firestore", () => ({
       getFirestore: () => ({}),
+      initializeFirestore: () => ({}),
+      memoryLocalCache: () => ({}),
       doc: () => ({}),
       onSnapshot: (_ref: any, _next: any, error: any) => {
         error?.(err);

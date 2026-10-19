@@ -30,6 +30,7 @@ import {
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 import * as Sentry from "@sentry/react";
+import { logger } from "@/config/sentry";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
 const HEROUI_THEME_STORAGE_KEY = "heroui-theme";
@@ -153,9 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { getAdditionalUserInfo } = await import("firebase/auth");
             const additionalUserInfo = getAdditionalUserInfo(result);
             if (additionalUserInfo?.isNewUser) {
-              const { hydrateUserProfileFromAuth } = await import(
-                "@/api/users"
-              );
+              const { hydrateUserProfileFromAuth } =
+                await import("@/api/users");
               const { parseDisplayName } =
                 await import("@/utils/profileCompletion");
               const { firstName: first, lastName } = parseDisplayName(
@@ -413,6 +413,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Signed-out visitors shouldn't be able to read the member data Firestore
+  // saved for offline use. Clearing shuts Firestore down, so reload to home.
+  const clearOfflineDataAndReload = async () => {
+    try {
+      const { clearOfflineData } = await import("@/config/firebase");
+      const cleared = await clearOfflineData();
+      if (!cleared) {
+        logger.warn(
+          "Offline data not cleared on sign-out; another tab has it open",
+        );
+      }
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+    window.location.assign(siteConfig.pages.home.link);
+  };
+
   const logout = async () => {
     setLoading(true);
     setError(null);
@@ -444,6 +461,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       await withAuthPersistenceRetry(() => signOut(auth));
       // onAuthStateChanged will handle setting user to null and userLoggedIn to false
+      await clearOfflineDataAndReload();
     } catch (err) {
       setError(err as Error);
       throw err; // Re-throw the error for the calling component

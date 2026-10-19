@@ -28,6 +28,8 @@ vi.mock("firebase/auth", () => ({
 
 vi.mock("firebase/firestore", () => ({
   getFirestore: vi.fn(() => ({ __db: true })),
+  initializeFirestore: vi.fn(() => ({ __db: true })),
+  memoryLocalCache: vi.fn(() => ({})),
 }));
 
 vi.mock("firebase/storage", () => ({

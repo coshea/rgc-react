@@ -99,10 +99,42 @@ export async function withAuthPersistenceRetry<T>(
   }
 }
 
-// If you plan to use other Firebase services like Firestore,
-// initialize them here and export as well:
-import { getFirestore, Firestore } from "firebase/firestore";
-const db: Firestore = getFirestore(app);
+import {
+  clearIndexedDbPersistence,
+  initializeFirestore,
+  memoryLocalCache,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  terminate,
+  Firestore,
+} from "firebase/firestore";
+
+// Firestore keeps what members have read in IndexedDB, so the tournament list
+// and their registrations still load at the course with no reception. The
+// multi-tab manager shares one cache between open tabs. The SDK falls back to
+// memory by itself where IndexedDB is unavailable; tests always use memory.
+const db: Firestore = initializeFirestore(app, {
+  localCache: import.meta.env.VITEST
+    ? memoryLocalCache()
+    : persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+});
+
+/**
+ * Deletes the Firestore data saved on this device, so the next person on a
+ * shared computer can't read it. `db` is unusable afterwards; reload the page.
+ * Returns false when the cache couldn't be cleared (e.g. another tab has it
+ * open); it is still shut down.
+ */
+export async function clearOfflineData(): Promise<boolean> {
+  await terminate(db);
+  try {
+    await clearIndexedDbPersistence(db);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const storage: FirebaseStorage = getStorage(app);
 const functions: Functions = getFunctions(app);
 
