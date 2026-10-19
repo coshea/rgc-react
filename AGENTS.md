@@ -23,7 +23,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 
 - **When to run `npm run build-full`:** after changes to types, component interfaces, Firebase interactions, routing or providers. You can skip it for edits that only change JSX string literals or Tailwind classes.
 - **Pre-commit hook:** Husky runs lint, `tsc --noEmit` and the full test suite.
-- **Deploys happen in CI on merge to `main`.** Hosting goes out every time; functions go out when `functions/` changes. Firestore/Storage rules and indexes go out when `firestore.rules`, `firestore.indexes.json` or `storage.rules` change (`firebase-deploy-rules.yml`). PRs get a preview channel.
+- **Deploys happen in CI on merge to `main`.** Hosting goes out every time; functions go out when `functions/` changes. Firestore/Storage rules and indexes go out when `firestore.rules`, `firestore.indexes.json` or `storage.rules` change (`firebase-deploy-rules.yml`). Each deploy workflow has a `concurrency` group, so production deploys run one at a time in merge order; keep it when you add or edit one. PRs get a preview channel.
 - **Env vars:** copy `.env.example` to `.env.local`. `VITE_FIREBASE_FUNCTIONS_BASE_URL` is required, and `src/api/functionsBase.ts` throws without it.
 
 **Run these without asking:** reading and searching files, tests, lint, type-check, build.
