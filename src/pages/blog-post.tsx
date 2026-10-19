@@ -12,6 +12,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
 import { UserAvatar } from "@/components/avatar";
+import { BlogReactions } from "@/components/blog-reactions";
 import { onTournament, mapTournamentDoc } from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
 import { addToast } from "@/providers/toast";
@@ -292,6 +293,8 @@ export const BlogPostPage: React.FC = () => {
       <Card>
         <Card.Content className="p-8">{renderContent()}</Card.Content>
       </Card>
+
+      <BlogReactions postId={post.id} className="mt-4" />
 
       {/* Tournament Results — shown as a separate section below content */}
       {post.category === BlogCategory.TournamentResults &&

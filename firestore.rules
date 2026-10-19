@@ -473,6 +473,31 @@ service cloud.firestore {
         request.resource.data.authorId == resource.data.authorId;
       
       allow delete: if isAdmin();
+
+      // Member emoji reactions, one doc per member. Signed-in members only.
+      // The keys must match BLOG_REACTIONS in src/types/blog.ts
+      // (blog-reactions.spec.tsx checks this).
+      match /reactions/{uid} {
+        allow read: if request.auth != null;
+
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && get(/databases/$(database)/documents/blogPosts/$(postId)).data.status == 'published'
+          && request.resource.data.keys().hasOnly(['emojis', 'updatedAt'])
+          && request.resource.data.emojis is list
+          && request.resource.data.emojis.size() > 0
+          && request.resource.data.emojis.size() <= 10
+          && request.resource.data.emojis.hasOnly([
+               'thumbsUp', 'heart', 'laugh', 'clap', 'party',
+               'flag', 'golfer', 'trophy', 'birdie', 'eagle'
+             ])
+          && request.resource.data.emojis.toSet().size() == request.resource.data.emojis.size()
+          && request.resource.data.updatedAt == request.time;
+
+        // Admins clear reactions when they delete a post.
+        allow delete: if request.auth != null
+          && (request.auth.uid == uid || isAdmin());
+      }
     }
 
     // Policies collection - admin-editable markdown documents

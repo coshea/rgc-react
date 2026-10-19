@@ -1,9 +1,10 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, Button, Chip, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { BlogPost } from "@/types/blog";
 import { onPublishedBlogPosts, mapBlogPostDoc } from "@/api/blog";
+import { BlogReactions } from "@/components/blog-reactions";
 
 interface RecentBlogPostsProps {
   limit?: number;
@@ -116,10 +117,11 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {posts.map((post) => (
           <Card key={post.id} className="w-full h-full">
-            <button
-              type="button"
-              className="w-full cursor-pointer text-left"
-              onClick={() => navigate(`/announcements/${post.slug}`)}
+            {/* A link rather than a button so the reactions below can sit
+                beside it: buttons can't be nested inside a button. */}
+            <Link
+              to={`/announcements/${post.slug}`}
+              className="block w-full flex-1 text-left"
             >
               <Card.Content className="p-0">
                 <div className="flex flex-col h-full">
@@ -173,7 +175,15 @@ export const RecentBlogPosts: React.FC<RecentBlogPostsProps> = ({
                   </div>
                 </div>
               </Card.Content>
-            </button>
+            </Link>
+            {/* -mt-3 cancels the Card's gap-3 so the divider sits 12px under
+                the meta line; mx-3 lines it up with the text above. The
+                divider separates "open the post" from "react". */}
+            <BlogReactions
+              postId={post.id}
+              compact
+              className="mx-3 -mt-3 border-t border-separator pt-3"
+            />
           </Card>
         ))}
       </div>

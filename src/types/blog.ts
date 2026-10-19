@@ -70,3 +70,40 @@ export interface BlogPostSummary {
   featuredImage?: string;
   isPinned?: boolean;
 }
+
+// Emoji reactions members can leave on a published post. Firestore stores the
+// `key`, never the emoji itself. Keep the keys in step with the
+// `blogPosts/{postId}/reactions` rule in firestore.rules (a spec checks this).
+// Display order follows this array.
+export const BLOG_REACTIONS = [
+  { key: "thumbsUp", emoji: "👍", label: "Thumbs up" },
+  { key: "heart", emoji: "❤️", label: "Love" },
+  { key: "laugh", emoji: "😂", label: "Haha" },
+  { key: "clap", emoji: "👏", label: "Applause" },
+  { key: "party", emoji: "🎉", label: "Celebrate" },
+  { key: "flag", emoji: "⛳", label: "Pin high" },
+  { key: "golfer", emoji: "🏌️", label: "Nice swing" },
+  { key: "trophy", emoji: "🏆", label: "Champion" },
+  { key: "birdie", emoji: "🐦", label: "Birdie" },
+  { key: "eagle", emoji: "🦅", label: "Eagle" },
+] as const;
+
+export type BlogReactionDef = (typeof BLOG_REACTIONS)[number];
+export type ReactionKey = BlogReactionDef["key"];
+
+export const BLOG_REACTION_KEYS: readonly ReactionKey[] = BLOG_REACTIONS.map(
+  (r) => r.key,
+);
+
+export function isReactionKey(value: unknown): value is ReactionKey {
+  return (
+    typeof value === "string" &&
+    (BLOG_REACTION_KEYS as readonly string[]).includes(value)
+  );
+}
+
+/** One member's reactions to a post (`blogPosts/{postId}/reactions/{uid}`). */
+export interface BlogReaction {
+  uid: string;
+  emojis: ReactionKey[];
+}

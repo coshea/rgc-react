@@ -19,6 +19,7 @@ import {
   FieldValue,
 } from "firebase/firestore";
 import { BlogPost, BlogPostStatus, BlogCategory } from "@/types/blog";
+import { deleteAllBlogReactions } from "@/api/blogReactions";
 
 const BLOG_COLLECTION = "blogPosts";
 
@@ -188,6 +189,8 @@ export async function updateBlogPost(
 
 // Delete a blog post
 export async function deleteBlogPost(id: string): Promise<void> {
+  // Firestore doesn't delete subcollections with their parent.
+  await deleteAllBlogReactions(id);
   const docRef = doc(db, BLOG_COLLECTION, id);
   await deleteDoc(docRef);
 }
