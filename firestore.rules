@@ -534,6 +534,10 @@ service cloud.firestore {
       // Open tracking. Counts only move forward; the member can't edit
       // anyone else's record or delete their own.
       match /views/{uid} {
+        function validSourceCount(sources, key) {
+          return !(key in sources) || (sources[key] is int && sources[key] >= 0);
+        }
+
         function validView(d) {
           return d.keys().hasOnly(['uid', 'openCount', 'firstOpenedAt', 'lastOpenedAt',
                                    'furthestCard', 'cardCount', 'completed', 'shared',
@@ -546,7 +550,13 @@ service cloud.firestore {
             && d.shared is bool
             && d.firstSource in ['email', 'push', 'banner', 'direct']
             && d.sources is map
-            && d.sources.keys().hasOnly(['email', 'push', 'banner', 'direct']);
+            && d.sources.keys().hasOnly(['email', 'push', 'banner', 'direct'])
+            && validSourceCount(d.sources, 'email')
+            && validSourceCount(d.sources, 'push')
+            && validSourceCount(d.sources, 'banner')
+            && validSourceCount(d.sources, 'direct')
+            && d.firstOpenedAt is timestamp
+            && d.lastOpenedAt is timestamp;
         }
 
         allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);

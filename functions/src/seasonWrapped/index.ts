@@ -354,7 +354,11 @@ async function saveShareImage(member: SeasonWrappedMember): Promise<Buffer> {
     .save(png, {
       contentType: "image/png",
       resumable: false,
-      metadata: { cacheControl: "private, max-age=0" },
+      metadata: {
+        cacheControl: "private, max-age=0",
+        // Lets the share callable tell a stale image from an earlier version.
+        metadata: { storyVersion: String(member.version) },
+      },
     });
   return png;
 }
@@ -462,7 +466,10 @@ export const generate_season_wrapped = onCall(
     const seasonSnap = await ref.get();
     if (seasonSnap.exists) {
       // update() replaces `club` whole, so stale nested fields can't linger.
-      await ref.update({ club, memberCount, generatedAt, generatedBy: callerUid });
+      // A partial regenerate doesn't claim the whole season was regenerated.
+      await ref.update(
+        uids ? { club, memberCount } : { club, memberCount, generatedAt, generatedBy: callerUid },
+      );
     } else {
       const season: SeasonWrappedSeason = {
         year,
@@ -864,13 +871,19 @@ export const get_season_wrapped_share_image = onCall(
       throw new HttpsError("permission-denied", "Wrapped isn't published yet.");
     }
 
-    let png: Buffer;
+    let png: Buffer | undefined;
     try {
-      [png] = await admin.storage().bucket().file(story.shareImagePath).download();
+      const file = admin.storage().bucket().file(story.shareImagePath);
+      const [meta] = await file.getMetadata();
+      if (String(meta.metadata?.storyVersion ?? "") === String(story.version)) {
+        [png] = await file.download();
+      }
     } catch {
-      // Missing (e.g. it failed during generate): render it now and keep it.
-      png = await saveShareImage(story);
+      // Missing; rendered below.
     }
+    // Missing or from an earlier version (e.g. it failed during a regenerate):
+    // render it now and keep it.
+    png ??= await saveShareImage(story);
 
     const response: GetShareImageResponse = {
       ok: true,

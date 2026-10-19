@@ -167,9 +167,13 @@ export async function recordWrappedView(
 // Callables (admin, except the share image)
 // ---------------------------------------------------------------------------
 
-async function call<Req, Res>(name: string, data: Req): Promise<Res> {
+// Matches the server's timeoutSeconds for generate/send, which render images
+// and send email in chunks; the SDK default (70s) gives up while they still run.
+const LONG_CALL_TIMEOUT_MS = 540_000;
+
+async function call<Req, Res>(name: string, data: Req, timeout?: number): Promise<Res> {
   return Sentry.startSpan({ name, op: "http.client" }, async () => {
-    const fn = httpsCallable<Req, Res>(functions, name);
+    const fn = httpsCallable<Req, Res>(functions, name, timeout ? { timeout } : undefined);
     const result = await fn(data);
     return result.data;
   });
@@ -179,6 +183,7 @@ export function generateWrapped(req: GenerateSeasonWrappedRequest) {
   return call<GenerateSeasonWrappedRequest, GenerateSeasonWrappedResponse>(
     "generate_season_wrapped",
     req,
+    LONG_CALL_TIMEOUT_MS,
   );
 }
 
@@ -193,6 +198,7 @@ export function sendWrappedAnnouncements(req: SendSeasonWrappedRequest) {
   return call<SendSeasonWrappedRequest, SendSeasonWrappedResponse>(
     "send_season_wrapped_announcements",
     req,
+    LONG_CALL_TIMEOUT_MS,
   );
 }
 

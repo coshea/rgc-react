@@ -294,6 +294,8 @@ export interface SeasonWrappedDelivery {
   emailClicks?: number;
   firstEmailClickAt?: string;
   lastEmailClickAt?: string;
+  /** Svix ids of counted clicks, so a retried webhook isn't counted twice. */
+  emailClickEventIds?: string[];
 }
 
 /** Written by the member's own browser (rules restrict fields). */

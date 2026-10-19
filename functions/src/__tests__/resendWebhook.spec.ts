@@ -5,6 +5,7 @@ vi.mock("firebase-admin/firestore", () => ({
   FieldValue: {
     serverTimestamp: vi.fn(() => "server-timestamp"),
     increment: vi.fn((n: number) => ({ increment: n })),
+    arrayUnion: vi.fn((...v: unknown[]) => ({ arrayUnion: v })),
   },
 }));
 
@@ -197,7 +198,10 @@ describe("recordSeasonWrappedClick", () => {
   const click = {
     type: "email.clicked",
     created_at: "2026-12-02T15:00:00.000Z",
-    data: { tags: { category: "season_wrapped", year: "2026", uid: "uid_1" } },
+    data: {
+      tags: { category: "season_wrapped", year: "2026", uid: "uid_1" },
+      click: { link: "https://ridgefieldgolfclub.org/wrapped/2026?utm_source=resend" },
+    },
   };
 
   it("records the first click on a Wrapped email", async () => {
@@ -222,6 +226,23 @@ describe("recordSeasonWrappedClick", () => {
     const { db, set } = fakeDb({ firstEmailClickAt: "2026-12-01T00:00:00.000Z" });
     await recordSeasonWrappedClick(db as unknown as Parameters<typeof recordSeasonWrappedClick>[0], click);
     expect(set.mock.calls[0][1]).not.toHaveProperty("firstEmailClickAt");
+  });
+
+  it("doesn't count clicks on other links in the email", async () => {
+    const { db } = fakeDb(undefined);
+    await expect(
+      recordSeasonWrappedClick(db as unknown as Parameters<typeof recordSeasonWrappedClick>[0], {
+        ...click,
+        data: { ...click.data, click: { link: "https://ridgefieldgolfclub.org/profile#notifications" } },
+      }),
+    ).resolves.toBe(true);
+    expect(db.runTransaction).not.toHaveBeenCalled();
+  });
+
+  it("counts a retried webhook delivery once", async () => {
+    const { db, set } = fakeDb({ emailClicks: 1, emailClickEventIds: ["msg_1"] });
+    await recordSeasonWrappedClick(db as unknown as Parameters<typeof recordSeasonWrappedClick>[0], click, "msg_1");
+    expect(set).not.toHaveBeenCalled();
   });
 
   it("ignores clicks on other emails and other event types", async () => {

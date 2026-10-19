@@ -287,7 +287,8 @@ function MoneyCard({ story, progress }: CardProps) {
       )}
       <ul className="wr-finishes">
         {shown.map((e, i) => (
-          <li key={`${e.tournamentTitle}-${e.result}`} style={order({ "--i": i })}>
+          // Titles and results can repeat across events; the list is static.
+          <li key={`${i}-${e.tournamentTitle}`} style={order({ "--i": i })}>
             <span>{e.tournamentTitle}</span>
             <span className="pl">
               {e.result} · {formatMoney(e.amount)}

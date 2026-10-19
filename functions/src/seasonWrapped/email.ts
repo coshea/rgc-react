@@ -198,6 +198,25 @@ export function buildSeasonWrappedEmailText(
   ].join("\n");
 }
 
+/** Resend tag values may only hold ASCII letters, digits, `_` and `-`. */
+const RESEND_TAG_VALUE = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * Tags the member's uid as is when Resend allows it, else base64url-encoded
+ * (same alphabet) under `uid_b64`, so the webhook can recover it exactly.
+ */
+export function seasonWrappedUidTag(uid: string): { name: string; value: string } {
+  return RESEND_TAG_VALUE.test(uid)
+    ? { name: "uid", value: uid }
+    : { name: "uid_b64", value: Buffer.from(uid, "utf8").toString("base64url") };
+}
+
+/** Reverses `seasonWrappedUidTag`. */
+export function uidFromSeasonWrappedTags(tags: Record<string, string>): string | undefined {
+  if (tags.uid_b64) return Buffer.from(tags.uid_b64, "base64url").toString("utf8") || undefined;
+  return tags.uid || undefined;
+}
+
 /**
  * One member's Wrapped email for the Resend batch API. Tags carry the uid and
  * year so `resend_webhook` can record link clicks against the member.
@@ -220,7 +239,7 @@ export function buildSeasonWrappedEmail(
     tags: [
       { name: "category", value: SEASON_WRAPPED_EMAIL_CATEGORY },
       { name: "year", value: String(member.year) },
-      { name: "uid", value: member.uid.replace(/[^A-Za-z0-9_-]/g, "_") },
+      seasonWrappedUidTag(member.uid),
     ],
   };
 }

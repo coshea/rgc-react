@@ -99,11 +99,11 @@ export function SeasonWrappedTab() {
     onSettled: () => setBusyUid(null),
   });
 
-  const runGenerate = (uids?: string[]) =>
+  const runGenerate = (uids?: string[], fromPicker = false) =>
     generate.mutate(uids, {
       onSuccess: (result) => {
         generatedToast(year, result);
-        if (uids) setSelected([]);
+        if (fromPicker) setSelected([]);
       },
       onError: (error) => reportWrappedError(error, "Couldn't generate Wrapped"),
       onSettled: () => setBusyUid(null),
@@ -213,7 +213,7 @@ export function SeasonWrappedTab() {
               className="min-h-11 sm:mt-5.5"
               isDisabled={selected.length === 0 || generate.isPending}
               isPending={generate.isPending && selected.length > 0}
-              onPress={() => runGenerate(selected)}
+              onPress={() => runGenerate(selected, true)}
             >
               Generate {selected.length || ""} selected
             </Button>
@@ -241,7 +241,8 @@ export function SeasonWrappedTab() {
             {summary.opensBySource.banner}, direct {summary.opensBySource.direct}. Admin previews aren&apos;t counted.
           </p>
 
-          <WrappedSendPanel year={year} published={published} />
+          {/* Keyed by year so a preview never carries over to another season. */}
+          <WrappedSendPanel key={year} year={year} published={published} />
 
           {rowsQuery.isLoading ? (
             <Skeleton className="h-64 w-full rounded-xl" />

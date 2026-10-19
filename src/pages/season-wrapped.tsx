@@ -69,7 +69,7 @@ export default function SeasonWrappedPage() {
 
   const published = season?.status === SEASON_WRAPPED_STATUS.PUBLISHED;
   // Admin previews (drafts, other members, ?member= links) are never counted.
-  const tracking = !!story && !!user && published && !memberParam && story.uid === user.uid;
+  const tracking = !!story && !!user && published && !previewOther && story.uid === user.uid;
 
   const cards = useMemo(() => (season && story ? buildCards(season, story) : []), [season, story]);
 
@@ -150,7 +150,7 @@ export default function SeasonWrappedPage() {
 
   return (
     <div className="px-2 py-4 sm:px-4 sm:py-8">
-      {(memberParam || !published) && (
+      {(previewOther || !published) && (
         <div className="mx-auto mb-3 flex max-w-[420px] flex-wrap items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
           <Chip size="sm" color={published ? "success" : "warning"} variant="soft">
             {published ? "Published" : "Draft"}

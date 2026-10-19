@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildSeasonWrappedEmail,
   headlineStats,
+  seasonWrappedUidTag,
+  uidFromSeasonWrappedTags,
 } from "../seasonWrapped/email";
 import { shareStats } from "../seasonWrapped/shareImage";
 import type {
@@ -74,6 +76,15 @@ describe("Season Wrapped email", () => {
       { name: "year", value: "2026" },
       { name: "uid", value: "uid_1" },
     ]);
+  });
+
+  it("encodes uids Resend can't tag and the webhook decodes them back", () => {
+    const uid = "legacy:uid.1@x";
+    const tag = seasonWrappedUidTag(uid);
+    expect(tag.name).toBe("uid_b64");
+    expect(tag.value).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(uidFromSeasonWrappedTags({ [tag.name]: tag.value })).toBe(uid);
+    expect(uidFromSeasonWrappedTags({ uid: "uid_1" })).toBe("uid_1");
   });
 });
 

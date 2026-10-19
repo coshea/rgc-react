@@ -75,6 +75,12 @@ describe("SeasonWrappedPage open tracking", () => {
     expect(recordWrappedView).not.toHaveBeenCalled();
   });
 
+  it("counts a member's own open even with a ?member= link", () => {
+    renderAt("/wrapped/2026?member=someone-else");
+    expect(screen.queryByText(/Opens aren't counted/)).not.toBeInTheDocument();
+    expect(recordWrappedView).toHaveBeenCalledWith(2026, "me", expect.objectContaining({ newOpen: true }));
+  });
+
   it("doesn't count views of a draft", () => {
     isAdmin = true;
     status = "draft";
