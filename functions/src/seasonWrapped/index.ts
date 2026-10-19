@@ -171,13 +171,11 @@ function toTournament(id: string, d: Data): WrappedTournament | null {
   const weather = asData(d.weather);
   const temperature = num(weather.temperature);
   const windSpeed = num(weather.windSpeed);
-  const registrationStart = toDate(d.registrationStart);
   return {
     id,
     title: str(d.title) ?? "Tournament",
     date,
     ...(str(d.status) ? { status: str(d.status) } : {}),
-    ...(registrationStart ? { registrationStart } : {}),
     ...(temperature !== undefined && windSpeed !== undefined
       ? { weather: { temperature, windSpeed, precipitation: num(weather.precipitation) ?? 0 } }
       : {}),
@@ -194,14 +192,11 @@ function toRegistration(id: string, tournamentId: string, d: Data): WrappedRegis
       : [];
   });
   const memberIds = strings(d.memberIds);
-  const registeredAt = toDate(d.registeredAt);
   return {
     id,
     tournamentId,
-    ...(str(d.ownerId) ? { ownerId: str(d.ownerId) } : {}),
     memberIds: memberIds.length > 0 ? memberIds : team.map((m) => m.id),
     team,
-    ...(registeredAt ? { registeredAt } : {}),
   };
 }
 
@@ -306,6 +301,7 @@ async function loadSeasonInput(
         amount: num(d.amount) ?? 0,
         date,
         ...(str(d.tournamentTitle) ? { tournamentTitle: str(d.tournamentTitle) } : {}),
+        ...(num(d.holeNumber) !== undefined ? { holeNumber: num(d.holeNumber) } : {}),
       },
     ];
   });

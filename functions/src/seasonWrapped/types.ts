@@ -197,13 +197,6 @@ export interface MonthTally {
   played: number;
 }
 
-export interface SignupSpeed {
-  medianMinutes: number;
-  /** Share of the club this member registered faster than; omitted outside the top half. */
-  fasterThanPercent?: number;
-  firstOnSheet: { tournamentTitle: string; minutesAfterOpen: number }[];
-}
-
 export interface CrewStats {
   topPartner?: {
     uid: string;
@@ -236,7 +229,8 @@ export interface MoneyStats {
 export interface ClosestToPinStats {
   count: number;
   holes: { hole: number; tournamentTitle: string }[];
-  aces: { date: string; tournamentTitle?: string }[];
+  /** `hole` is set when the award recorded one; older awards don't have it. */
+  aces: { date: string; tournamentTitle?: string; hole?: number }[];
 }
 
 export interface BracketRun {
@@ -281,7 +275,6 @@ export interface SeasonWrappedMember {
     /** Members who played more events; omitted outside the top half. */
     playedMoreCount?: number;
   };
-  signup?: SignupSpeed;
   crew?: CrewStats;
   money?: MoneyStats;
   closestToPin?: ClosestToPinStats;

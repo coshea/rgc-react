@@ -9,7 +9,6 @@ import type {
 export type WrappedCardSpec =
   | { id: "intro" }
   | { id: "events" }
-  | { id: "signup" }
   | { id: "crew" }
   | { id: "money" }
   | { id: "closest-to-pin" }
@@ -28,7 +27,6 @@ export function buildCards(
 
   // The member's season
   if (story.events) cards.push({ id: "events" });
-  if (story.signup) cards.push({ id: "signup" });
   if (story.crew?.topPartner || (story.crew?.distinctTeammates ?? 0) > 1) {
     cards.push({ id: "crew" });
   }

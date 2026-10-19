@@ -1,10 +1,11 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 
 import type { User } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
 import type { WrappedCardSpec } from "@/components/season-wrapped/build-cards";
+import { CountUp } from "@/components/season-wrapped/count-up";
 import { siteConfig } from "@/config/site";
 import {
   MAJOR_KIND,
@@ -36,37 +37,9 @@ export function formatMoney(amount: number): string {
   return `$${Math.round(amount).toLocaleString("en-US")}`;
 }
 
-
-/** Hours and minutes, as on the mockup's "3H 12M". */
-function Duration({ minutes }: { minutes: number }) {
-  if (minutes >= 48 * 60) {
-    return (
-      <>
-        {Math.round(minutes / 1440)}
-        <small>D</small>
-      </>
-    );
-  }
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return (
-    <>
-      {h > 0 && (
-        <>
-          {h}
-          <small>H</small>{" "}
-        </>
-      )}
-      {m}
-      <small>M</small>
-    </>
-  );
-}
-
-function durationText(minutes: number): string {
-  if (minutes < 60) return `${minutes} minutes`;
-  const h = Math.floor(minutes / 60);
-  return `${h} hour${h === 1 ? "" : "s"}${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
+/** Animation order for list items, read by wrapped.css as e.g. var(--i). */
+function order(vars: Record<`--${string}`, number>): CSSProperties {
+  return vars as CSSProperties;
 }
 
 /** First name on one line, the rest on the next (mockup style). */
@@ -192,7 +165,9 @@ function EventsCard({ story, progress }: CardProps) {
   const events = story.events!;
   return (
     <CardShell className="wr-c-show" brand="Showing up" progress={progress}>
-      <p className="wr-big wr-num">{events.played}</p>
+      <p className="wr-big wr-num">
+        <CountUp text={String(events.played)} />
+      </p>
       <p className="wr-copy">
         {events.played === 1 ? "tournament" : "tournaments"} played, out of {events.calendar} on the {story.year} calendar.
       </p>
@@ -202,11 +177,11 @@ function EventsCard({ story, progress }: CardProps) {
         role="img"
         aria-label={events.months.map((m) => `${monthName(m.month, true)}: ${m.played} of ${m.total}`).join(", ")}
       >
-        {events.months.map((m) => (
-          <div key={m.month}>
+        {events.months.map((m, mi) => (
+          <div key={m.month} style={order({ "--m": mi })}>
             <div className="wr-pips">
               {Array.from({ length: m.total }).map((_, i) => (
-                <i key={i} className={i < m.played ? "me" : undefined} />
+                <i key={i} className={i < m.played ? "me" : undefined} style={order({ "--p": i })} />
               ))}
             </div>
             <span>{monthName(m.month)}</span>
@@ -225,44 +200,6 @@ function EventsCard({ story, progress }: CardProps) {
       <p className="wr-foot">
         That&apos;s {events.played} of the {events.calendar} sign-up sheets with your name on them.
       </p>
-    </CardShell>
-  );
-}
-
-function SignupCard({ story, progress }: CardProps) {
-  const signup = story.signup!;
-  const first = signup.firstOnSheet[0];
-  return (
-    <CardShell className="wr-c-fast" brand="Quick draw" progress={progress}>
-      <p className="wr-label wr-mt-6">
-        Typical time to sign up
-      </p>
-      <p className="wr-big wr-num" aria-label={durationText(signup.medianMinutes)}>
-        <Duration minutes={signup.medianMinutes} />
-      </p>
-      <p className="wr-copy">
-        after registration opened.
-        {signup.fasterThanPercent !== undefined && ` Faster than ${signup.fasterThanPercent}% of the club.`}
-      </p>
-      {signup.fasterThanPercent !== undefined && (
-        <>
-          <div className="wr-meter" aria-hidden>
-            <b style={{ width: `${signup.fasterThanPercent}%` }} />
-          </div>
-          <div className="wr-meter-l" aria-hidden>
-            <span>LAST IN</span>
-            <span>FIRST IN</span>
-          </div>
-        </>
-      )}
-      {first && (
-        <p className="wr-copy-sm">
-          {signup.firstOnSheet.length === 1
-            ? `You were the first team on the sheet for ${first.tournamentTitle}, ${durationText(first.minutesAfterOpen)} after it opened.`
-            : `You were the first team on the sheet ${signup.firstOnSheet.length} times, including ${first.tournamentTitle}.`}
-        </p>
-      )}
-      <p className="wr-foot">From the time each registration was made, compared with when registration opened.</p>
     </CardShell>
   );
 }
@@ -299,11 +236,15 @@ function CrewCard({ story, progress }: CardProps) {
       )}
       <div className="wr-tally">
         <div>
-          <b className="wr-num">{crew.distinctTeammates}</b>
+          <b className="wr-num">
+            <CountUp text={String(crew.distinctTeammates)} delay={350} />
+          </b>
           <span>different teammates</span>
         </div>
         <div>
-          <b className="wr-num">{story.events?.played ?? 0}</b>
+          <b className="wr-num">
+            <CountUp text={String(story.events?.played ?? 0)} delay={450} />
+          </b>
           <span>events played</span>
         </div>
       </div>
@@ -328,7 +269,7 @@ function MoneyCard({ story, progress }: CardProps) {
     <CardShell className="wr-c-money" brand="Money list" progress={progress}>
       <p className={clsx("wr-big wr-num", amount.length >= 5 && "xlong", amount.length === 4 && "long")}>
         <sup>$</sup>
-        {amount}
+        <CountUp text={amount} duration={1100} />
       </p>
       {money.rankLabel ? (
         <div className="wr-rank">
@@ -345,8 +286,8 @@ function MoneyCard({ story, progress }: CardProps) {
         </div>
       )}
       <ul className="wr-finishes">
-        {shown.map((e) => (
-          <li key={`${e.tournamentTitle}-${e.result}`}>
+        {shown.map((e, i) => (
+          <li key={`${e.tournamentTitle}-${e.result}`} style={order({ "--i": i })}>
             <span>{e.tournamentTitle}</span>
             <span className="pl">
               {e.result} · {formatMoney(e.amount)}
@@ -354,7 +295,7 @@ function MoneyCard({ story, progress }: CardProps) {
           </li>
         ))}
         {more > 0 && (
-          <li>
+          <li style={order({ "--i": shown.length })}>
             <span>
               and {more} more {more === 1 ? "payout" : "payouts"}
             </span>
@@ -368,45 +309,28 @@ function MoneyCard({ story, progress }: CardProps) {
 
 function ClosestToPinCard({ story, progress }: CardProps) {
   const ctp = story.closestToPin!;
-  const hit = new Set(ctp.holes.map((h) => h.hole));
+  // Balls drop in hole order: closest to the pins first, then aces.
+  const ctpHoles = [...new Set(ctp.holes.map((h) => h.hole))].sort((a, b) => a - b);
+  const aceHoles = [...new Set(ctp.aces.flatMap((a) => (a.hole ? [a.hole] : [])))].sort((a, b) => a - b);
+  const rows = [
+    ...(ctpHoles.length > 0 ? [{ label: "CTP", cls: "hit", holes: ctpHoles, first: 0 }] : []),
+    ...(aceHoles.length > 0 ? [{ label: "ACE", cls: "ace", holes: aceHoles, first: ctpHoles.length }] : []),
+  ];
   const nine = (start: number) => Array.from({ length: 9 }, (_, i) => start + i);
+  const cardLabel = [
+    ctpHoles.length > 0 && `Closest to the pin on hole ${ctpHoles.join(", ")}`,
+    aceHoles.length > 0 && `hole in one on hole ${aceHoles.join(", ")}`,
+  ]
+    .filter(Boolean)
+    .join("; ");
   return (
     <CardShell className="wr-c-ctp" brand="Dialed in" progress={progress}>
       {ctp.count > 0 ? (
-        <>
-          <p className="wr-big">
-            {ctp.count} closest
-            <br />
-            to the pin
-          </p>
-          <div
-            className="wr-scorecard"
-            role="img"
-            aria-label={`Closest to the pin on hole ${ctp.holes.map((h) => h.hole).join(", ")}`}
-          >
-            {[1, 10].map((start) => (
-              <div key={start}>
-                <div className="row hd">
-                  <span>HOLE</span>
-                  {nine(start).map((h) => (
-                    <span key={h}>{h}</span>
-                  ))}
-                </div>
-                <div className="row">
-                  <span>CTP</span>
-                  {nine(start).map((h) => (
-                    <span key={h} className={hit.has(h) ? "hit" : undefined}>
-                      {hit.has(h) ? "●" : ""}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="wr-copy-sm">
-            {ctp.holes.map((h) => `Hole ${h.hole} at ${h.tournamentTitle}`).join(" and ")}.
-          </p>
-        </>
+        <p className="wr-big">
+          {ctp.count} closest
+          <br />
+          to the pin
+        </p>
       ) : (
         <p className="wr-big">
           One for
@@ -414,11 +338,54 @@ function ClosestToPinCard({ story, progress }: CardProps) {
           the books
         </p>
       )}
+      {rows.length > 0 && (
+        <div className="wr-scorecard" role="img" aria-label={cardLabel}>
+          {[1, 10].map((start) => (
+            <div key={start}>
+              <div className="row hd">
+                <span>HOLE</span>
+                {nine(start).map((h) => (
+                  <span key={h}>{h}</span>
+                ))}
+              </div>
+              {rows.map((row) => (
+                <div key={row.label} className="row">
+                  <span>{row.label}</span>
+                  {nine(start).map((h) => (
+                    <span key={h} className={row.holes.includes(h) ? row.cls : undefined}>
+                      {row.holes.includes(h) && (
+                        <i className="ball" style={order({ "--i": row.first + row.holes.indexOf(h) })}>
+                          ●
+                        </i>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {ctp.count > 0 && (
+        <p className="wr-copy-sm">
+          {ctp.holes.map((h) => `Hole ${h.hole} at ${h.tournamentTitle}`).join(" and ")}.
+        </p>
+      )}
       {ctp.aces.map((ace) => (
         <div key={ace.date} className="wr-ace">
+          {/* No hole recorded, so no scorecard ball: the ball rolls into this cup instead (wrapped.css). */}
+          {!ace.hole && (
+            <svg className="wr-cup" viewBox="0 0 30 32" aria-hidden>
+              <ellipse cx="15" cy="27" rx="14" ry="4" fill="#2c8a4b" />
+              <ellipse cx="15" cy="27" rx="3.4" ry="1.4" fill="#0b1a12" />
+              <rect x="14.3" y="3" width="1.4" height="24" fill="#fbf8f0" />
+              <path d="M15.7 3 L25 6.5 L15.7 10 Z" fill="#d4553a" />
+              <circle className="ball" cx="15" cy="27" r="1.9" fill="#fbf8f0" />
+            </svg>
+          )}
           <b>Ace</b>
           <span>
-            Hole in one, {shortDate(ace.date)}
+            Hole in one{ace.hole ? ` on hole ${ace.hole}` : ""}, {shortDate(ace.date)}
             {ace.tournamentTitle ? ` at ${ace.tournamentTitle}` : ""}.
           </span>
         </div>
@@ -436,20 +403,27 @@ function BracketCard({ story, progress }: CardProps) {
   return (
     <CardShell className="wr-c-bracket" brand="Match play" progress={progress}>
       <p className="wr-big wr-num">
-        {run.wins}–{run.losses}
+        <CountUp text={`${run.wins}–${run.losses}`} />
       </p>
       <p className="wr-copy">
         in the {run.tournamentTitle}. {reached}
       </p>
       <ul className="wr-bk">
         {run.matches.map((m, i) => (
-          <li key={i}>
+          <li key={i} className={m.bye ? "bye" : m.won ? "won" : "lost"} style={order({ "--i": i })}>
             <span className="r">{m.roundLabel}</span>
             {m.opponent ? <WrAvatarStack ids={m.opponentIds} names={m.opponent.split(" & ")} /> : <span />}
             <span className="who">
               {m.bye ? "Bye" : m.won ? `def. ${m.opponent ?? "opponent"}` : `lost to ${m.opponent ?? "opponent"}`}
             </span>
-            <span className={m.won ? "w" : "l"}>{m.bye ? "–" : m.won ? "W" : "L"}</span>
+            <span className={m.won ? "w" : "l"}>
+              {m.won && !m.bye && (
+                <svg className="wr-check" viewBox="0 0 12 12" aria-hidden>
+                  <path d="M2 6.5 5 9.5 10 2.5" />
+                </svg>
+              )}
+              {m.bye ? "–" : m.won ? "W" : "L"}
+            </span>
           </li>
         ))}
       </ul>
@@ -510,9 +484,10 @@ function PodiumCard({ season, progress }: ClubCardProps) {
   const c = season.club;
   // Podium order on screen: 2nd, 1st, 3rd.
   const slots = [
-    { entry: c.podium[1], cls: "p2" },
-    { entry: c.podium[0], cls: "p1" },
-    { entry: c.podium[2], cls: "p3" },
+    // `delay` matches each block's rise in wrapped.css.
+    { entry: c.podium[1], cls: "p2", delay: 400 },
+    { entry: c.podium[0], cls: "p1", delay: 650 },
+    { entry: c.podium[2], cls: "p3", delay: 150 },
   ].filter((s) => s.entry);
   return (
     <CardShell className="wr-c-podium" brand="Money list" progress={progress}>
@@ -521,11 +496,13 @@ function PodiumCard({ season, progress }: ClubCardProps) {
       </p>
       <p className="wr-big">The podium</p>
       <ol className="wr-podium" aria-label={`Top ${c.podium.length} on the ${season.year} money list`}>
-        {slots.map(({ entry, cls }) => (
+        {slots.map(({ entry, cls, delay }) => (
           <li key={entry.uid} className={cls}>
             <WrAvatar uid={entry.uid} name={entry.displayName} className="wr-av-a" />
             <span className="nm">{entry.displayName}</span>
-            <span className="amt wr-num">{formatMoney(entry.total)}</span>
+            <span className="amt wr-num">
+              <CountUp text={formatMoney(entry.total)} delay={delay} duration={750} />
+            </span>
             <span className="blk">{entry.rank}</span>
           </li>
         ))}
@@ -703,8 +680,6 @@ export function WrappedCard({ spec, season, story, index, total, shareSlot }: Wr
       return <IntroCard story={story} progress={progress} />;
     case "events":
       return <EventsCard story={story} progress={progress} />;
-    case "signup":
-      return <SignupCard story={story} progress={progress} />;
     case "crew":
       return <CrewCard story={story} progress={progress} />;
     case "money":

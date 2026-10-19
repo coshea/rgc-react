@@ -15,7 +15,6 @@ import {
   type PaidEvent,
   type PodiumEntry,
   type SeasonWrappedMember,
-  type SignupSpeed,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +48,6 @@ export interface WrappedTournament {
   /** Midnight UTC. */
   date: Date;
   status?: string;
-  registrationStart?: Date;
   weather?: { temperature: number; windSpeed: number; precipitation: number };
   winnerGroups: WrappedWinnerGroup[];
 }
@@ -57,10 +55,8 @@ export interface WrappedTournament {
 export interface WrappedRegistration {
   id: string;
   tournamentId: string;
-  ownerId?: string;
   memberIds: string[];
   team: { id: string; displayName: string; goldTee?: boolean }[];
-  registeredAt?: Date;
 }
 
 export interface WrappedBracket {
@@ -84,6 +80,8 @@ export interface WrappedSeasonAward {
   amount: number;
   date: Date;
   tournamentTitle?: string;
+  /** Optional; awards entered before the hole field existed don't have one. */
+  holeNumber?: number;
 }
 
 export interface WrappedChampionship {
@@ -125,8 +123,6 @@ export interface WrappedSeasonInput {
 const CANCELED = "Canceled";
 const HOLE_IN_ONE = "hole_in_one";
 const CLOSEST_TO_PIN = "closestToPin";
-/** Fewest captain registrations before signup speed means anything. */
-const MIN_SIGNUPS_FOR_SPEED = 3;
 const MIN_EVENTS_FOR_MONTHS = 3;
 const MIN_SHARED_EVENTS_FOR_PARTNER = 2;
 
@@ -160,12 +156,6 @@ export function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function byName(a: string, b: string): number {
@@ -440,8 +430,6 @@ export interface SeasonContext {
   /** uid -> registrations (one per tournament). */
   regsByUid: Map<string, WrappedRegistration[]>;
   moneyList: MoneyListRow[];
-  /** uid -> median signup minutes, for captains with enough signups. */
-  signupMedians: Map<string, number>;
   /** Event counts for everyone who played. */
   eventCounts: Map<string, number>;
   majors: MajorCard[];
@@ -465,20 +453,6 @@ export function buildSeasonContext(input: WrappedSeasonInput): SeasonContext {
     }
   }
 
-  const signupMinutes = new Map<string, number[]>();
-  for (const r of seasonRegs) {
-    const start = tournamentsById.get(r.tournamentId)?.registrationStart;
-    if (!r.ownerId || !r.registeredAt || !start) continue;
-    const minutes = Math.max(0, (r.registeredAt.getTime() - start.getTime()) / 60000);
-    const list = signupMinutes.get(r.ownerId) ?? [];
-    list.push(minutes);
-    signupMinutes.set(r.ownerId, list);
-  }
-  const signupMedians = new Map<string, number>();
-  signupMinutes.forEach((list, uid) => {
-    if (list.length >= MIN_SIGNUPS_FOR_SPEED) signupMedians.set(uid, median(list));
-  });
-
   const eventCounts = new Map<string, number>();
   regsByUid.forEach((regs, uid) => eventCounts.set(uid, regs.length));
 
@@ -495,7 +469,6 @@ export function buildSeasonContext(input: WrappedSeasonInput): SeasonContext {
     regsByTournament,
     regsByUid,
     moneyList,
-    signupMedians,
     eventCounts,
     majors: buildMajors(input.championships, tournamentsById, regsByTournament),
   };
@@ -514,37 +487,6 @@ export function eligibleUsers(
 // ---------------------------------------------------------------------------
 // Member half
 // ---------------------------------------------------------------------------
-
-function signupFor(uid: string, ctx: SeasonContext, myRegs: WrappedRegistration[]): SignupSpeed | undefined {
-  const mine = ctx.signupMedians.get(uid);
-  if (mine === undefined) return undefined;
-
-  const others = Array.from(ctx.signupMedians.entries()).filter(([id]) => id !== uid);
-  const slower = others.filter(([, m]) => m > mine).length;
-  const fasterThanPercent = others.length > 0 ? Math.round((slower / others.length) * 100) : undefined;
-
-  const firstOnSheet = myRegs
-    .filter((r) => {
-      if (!r.registeredAt) return false;
-      const all = ctx.regsByTournament.get(r.tournamentId) ?? [];
-      return all.every(
-        (o) => o.id === r.id || !o.registeredAt || o.registeredAt.getTime() > r.registeredAt!.getTime(),
-      );
-    })
-    .map((r) => {
-      const t = ctx.tournamentsById.get(r.tournamentId)!;
-      const minutes = t.registrationStart && r.registeredAt
-        ? Math.max(0, Math.round((r.registeredAt.getTime() - t.registrationStart.getTime()) / 60000))
-        : 0;
-      return { tournamentTitle: t.title, minutesAfterOpen: minutes };
-    });
-
-  return {
-    medianMinutes: Math.round(mine),
-    ...(fasterThanPercent !== undefined && fasterThanPercent >= 50 ? { fasterThanPercent } : {}),
-    firstOnSheet,
-  };
-}
 
 function paidTogetherCount(uid: string, partner: string, ctx: SeasonContext): number {
   let count = 0;
@@ -636,6 +578,7 @@ function closestToPinFor(uid: string, ctx: SeasonContext, awards: readonly Wrapp
     .map((a) => ({
       date: isoDate(a.date),
       ...(a.tournamentTitle ? { tournamentTitle: a.tournamentTitle } : {}),
+      ...(a.holeNumber !== undefined ? { hole: a.holeNumber } : {}),
     }));
   if (holes.length === 0 && aces.length === 0) return undefined;
   return { count: holes.length, holes, aces };
@@ -800,7 +743,6 @@ export function computeMemberStory(
       }
     : undefined;
 
-  const signup = signupFor(uid, ctx, myRegs);
   const crew = played ? crewFor(uid, myRegs, ctx) : undefined;
   const closestToPin = closestToPinFor(uid, ctx, input.seasonAwards);
   const bracket = bracketRunFor(uid, input.brackets, ctx);
@@ -817,7 +759,6 @@ export function computeMemberStory(
     generatedAt: meta.generatedAt,
     played,
     ...(events ? { events } : {}),
-    ...(signup ? { signup } : {}),
     ...(crew ? { crew } : {}),
     ...(money ? { money } : {}),
     ...(closestToPin ? { closestToPin } : {}),

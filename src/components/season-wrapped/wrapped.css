@@ -97,7 +97,6 @@
   overflow-wrap: anywhere;
   hyphens: manual;
 }
-.wr-big small { font-size: 0.43em; }
 .wr-label { font-family: var(--f-mono); font-size: calc(var(--u) * 11); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
 .wr-copy { font-size: calc(var(--u) * 15); line-height: 1.35; font-weight: 500; }
 .wr-copy-sm { font-size: calc(var(--u) * 13); line-height: 1.35; font-weight: 500; }
@@ -148,13 +147,6 @@
 .wr-pips i.me { background: var(--c-flag); }
 .wr-months span { font-family: var(--f-mono); font-size: calc(var(--u) * 9); opacity: 0.85; text-transform: uppercase; }
 
-/* quick draw */
-.wr-c-fast { background: var(--c-flag); color: var(--c-ink); }
-.wr-c-fast .wr-big { font-size: calc(var(--u) * 92); }
-.wr-meter { height: calc(var(--u) * 12); border-radius: calc(var(--u) * 6); background: rgba(11, 26, 18, 0.15); position: relative; }
-.wr-meter b { position: absolute; inset: 0 auto 0 0; border-radius: calc(var(--u) * 6); background: var(--c-ink); }
-.wr-meter-l { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: calc(var(--u) * 10); }
-
 /* crew */
 .wr-c-crew { background: var(--c-sky); color: var(--c-ink); }
 .wr-c-crew .wr-big { font-size: calc(var(--u) * 56); }
@@ -193,12 +185,15 @@
 .wr-scorecard .hd { background: var(--c-ink); color: var(--c-sand); }
 .wr-scorecard .hd > * { border-left-color: rgba(234, 217, 179, 0.25); }
 .wr-scorecard .hit { background: var(--c-clay); color: var(--c-chalk); font-weight: 500; }
+.wr-scorecard .ace { background: var(--c-flag); color: var(--c-ink); font-weight: 500; }
 .wr-ace {
   display: flex; gap: calc(var(--u) * 10); align-items: center;
   background: var(--c-ink); color: var(--c-flag); border-radius: calc(var(--u) * 12); padding: calc(var(--u) * 10) calc(var(--u) * 12);
 }
 .wr-ace b { font-family: var(--f-display); font-size: calc(var(--u) * 28); line-height: 1; text-transform: uppercase; }
 .wr-ace span { font-size: calc(var(--u) * 12); color: var(--c-chalk); }
+.wr-cup { width: calc(var(--u) * 30); height: calc(var(--u) * 32); flex: 0 0 auto; }
+.wr-cup .ball { transform-box: fill-box; transform-origin: center; }
 
 /* match play */
 .wr-c-bracket { background: var(--c-clay); }
@@ -214,6 +209,8 @@
 .wr-bk .r { font-family: var(--f-mono); font-size: calc(var(--u) * 10); opacity: 0.85; }
 .wr-bk .w { font-family: var(--f-mono); font-weight: 500; color: var(--c-flag); }
 .wr-bk .l { font-family: var(--f-mono); font-weight: 500; opacity: 0.7; }
+/* Losses sit back a little; wr-up fades rows in to this opacity. */
+.wr-bk li.lost { opacity: 0.8; }
 
 /* club */
 .wr-c-club { background: var(--c-night); }
@@ -318,20 +315,138 @@
 .wrapped-root .wr-pill-s { background: transparent; color: var(--c-chalk); border: calc(var(--u) * 1.5) solid rgba(251, 248, 240, 0.6); }
 .wr-renew { margin-top: auto; font-size: calc(var(--u) * 12); opacity: 0.85; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
+/* Bracket win check (drawn in by the animation below) */
+.wr-bk .w { display: inline-flex; align-items: center; gap: calc(var(--u) * 3); }
+.wr-check { width: calc(var(--u) * 10); height: calc(var(--u) * 10); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wr-scorecard .ball { display: inline-block; font-style: normal; }
+
+/*
+ * Motion. Each card remounts when shown, so every animation replays on entry.
+ * Keep each card's sequence under ~1.2s: members tap through quickly.
+ * Numbers count up in count-up.tsx, which checks the same media query.
+ */
 @media (prefers-reduced-motion: no-preference) {
   .wr-card-enter { animation: wr-enter 220ms ease-out; }
-  /* Podium blocks rise from the floor, 3rd then 2nd then 1st; the players ride up on top. */
+
+  /* Card content builds top to bottom (after the ticks and brand row). */
+  .wr-card > :nth-child(n + 3) { --rise: calc(var(--u) * 10); animation: wr-up 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .wr-card > :nth-child(3) { animation-delay: 40ms; }
+  .wr-card > :nth-child(4) { animation-delay: 120ms; }
+  .wr-card > :nth-child(5) { animation-delay: 200ms; }
+  .wr-card > :nth-child(6) { animation-delay: 280ms; }
+  .wr-card > :nth-child(7) { animation-delay: 360ms; }
+  .wr-card > :nth-child(n + 8) { animation-delay: 440ms; }
+
+  /* Intro: the year and headline rise further; the flag waves. */
+  .wr-c-intro > .wr-yr, .wr-c-intro > .wr-big { --rise: calc(var(--u) * 28); animation-duration: 600ms; }
+  .wr-c-intro .wr-flag path { transform-box: fill-box; transform-origin: 0 50%; animation: wr-wave 2.6s ease-in-out infinite; }
+
+  /* Showing up: your events pop in month by month, bottom up. */
+  .wr-pips i.me { animation: wr-pop 280ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards; animation-delay: calc(300ms + var(--m, 0) * 45ms + var(--p, 0) * 25ms); }
+
+  /* Crew: the two of you slide in from either side. */
+  .wr-duo .wr-av-a { animation: wr-from-left 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms backwards; }
+  .wr-duo .wr-av-b { animation: wr-from-right 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms backwards; }
+
+  /* Money: the rank drops into its slot; payouts post like a leaderboard. */
+  .wr-rank b { display: inline-block; animation: wr-tick 500ms cubic-bezier(0.3, 1.4, 0.5, 1) 450ms backwards; }
+  .wr-finishes li { --rise: calc(var(--u) * 6); animation: wr-up 320ms ease-out backwards; animation-delay: calc(550ms + var(--i, 0) * 70ms); }
+
+  /* Closest to the pin: a ball drops onto each hole. */
+  .wr-scorecard .ball { animation: wr-drop 550ms cubic-bezier(0.3, 0, 0.4, 1) backwards; animation-delay: calc(450ms + var(--i, 0) * 180ms); }
+  /* Ace: the ball lands, rolls to the pin and drops in; then "Ace" pops and a gold glint runs. */
+  .wr-cup .ball { animation: wr-sink 850ms ease-in-out 450ms both; }
+  .wr-card > .wr-ace { position: relative; overflow: hidden; }
+  .wr-card > .wr-ace::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, rgba(244, 196, 48, 0.55) 50%, transparent 70%);
+    transform: translateX(-120%); animation: wr-glint 900ms ease-out 1250ms forwards;
+  }
+  .wr-ace b { display: inline-block; animation: wr-pop 400ms cubic-bezier(0.3, 1.6, 0.5, 1) 1200ms backwards; }
+
+  /* Match play: rounds reveal in order; wins draw a check, losses settle in dimmer. */
+  .wr-bk li { --rise: calc(var(--u) * 8); animation: wr-up 360ms ease-out backwards; animation-delay: calc(300ms + var(--i, 0) * 150ms); }
+  .wr-check path { stroke-dasharray: 16; stroke-dashoffset: 16; animation: wr-draw 320ms ease-out forwards; animation-delay: calc(550ms + var(--i, 0) * 150ms); }
+
+  /* Podium: once 1st place has landed, a gold shimmer runs across it. */
+  /* Podium blocks rise from the floor, 3rd then 2nd then 1st; the players ride up on top.
+     The podium skips the content fade so the rise shows from its first frame. */
+  .wr-card > .wr-podium { animation: none; }
   .wr-podium .blk { animation: wr-rise 750ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
   .wr-podium .p3 .blk { animation-delay: 150ms; }
   .wr-podium .p2 .blk { animation-delay: 400ms; }
   .wr-podium .p1 .blk { animation-delay: 650ms; }
+  .wr-podium .p1 .blk { position: relative; }
+  .wr-podium .p1 .blk::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(251, 248, 240, 0.45) 50%, transparent 70%);
+    transform: translateX(-120%); animation: wr-glint 800ms ease-out 1400ms forwards;
+  }
+
+  /* Majors: the champion's name wipes in; "You" lands last. */
+  .wr-champ b, .wr-flight b { animation: wr-wipe 600ms cubic-bezier(0.4, 0, 0.2, 1) 450ms backwards; }
+  .wr-card > .wr-you { animation: wr-pop 380ms cubic-bezier(0.3, 1.6, 0.5, 1) 900ms backwards; }
+
+  /* Share: the card is handed over with a small tilt. */
+  .wr-card > .wr-sharecard { animation: wr-lift 700ms cubic-bezier(0.2, 0.9, 0.3, 1.15) 120ms backwards; }
 }
+
 @keyframes wr-rise {
   from { height: 0; }
 }
 @keyframes wr-enter {
   from { opacity: 0.4; transform: scale(0.985); }
   to { opacity: 1; transform: none; }
+}
+@keyframes wr-up {
+  from { opacity: 0; transform: translateY(var(--rise)); }
+}
+@keyframes wr-pop {
+  from { opacity: 0; transform: scale(0.4); }
+}
+@keyframes wr-wave {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  50% { transform: skewY(-6deg) scaleX(0.93); }
+}
+@keyframes wr-from-left {
+  from { opacity: 0; transform: translateX(calc(var(--u) * -40)); }
+}
+@keyframes wr-from-right {
+  from { opacity: 0; transform: translateX(calc(var(--u) * 40)); }
+}
+@keyframes wr-tick {
+  from { opacity: 0; transform: translateY(-70%); }
+}
+@keyframes wr-drop {
+  0% { opacity: 0; transform: translateY(calc(var(--u) * -36)); }
+  55% { opacity: 1; transform: translateY(0); }
+  75% { transform: translateY(calc(var(--u) * -5)); }
+  100% { transform: translateY(0); }
+}
+/* SVG user units: the ball ends in the cup at (15, 27). */
+@keyframes wr-sink {
+  0% { opacity: 0; transform: translate(-13px, -24px); }
+  12% { opacity: 1; }
+  45% { transform: translate(-10px, 0); }
+  58% { transform: translate(-8px, -3px); }
+  72% { transform: translate(-4px, 0); }
+  86% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(0, 1.5px) scale(0.3); }
+}
+@keyframes wr-glint {
+  to { transform: translateX(120%); }
+}
+@keyframes wr-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes wr-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes wr-lift {
+  0% { opacity: 0; transform: translateY(calc(var(--u) * 40)) rotate(-4deg) scale(0.94); }
+  60% { opacity: 1; transform: translateY(calc(var(--u) * -4)) rotate(1.5deg) scale(1.01); }
+  100% { transform: none; }
 }
 
 /* Home page banner */

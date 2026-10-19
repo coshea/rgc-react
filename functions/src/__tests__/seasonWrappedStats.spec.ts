@@ -34,16 +34,13 @@ function reg(
   id: string,
   tournamentId: string,
   members: string[],
-  registeredAt?: string,
   goldTee: string[] = [],
 ): WrappedRegistration {
   return {
     id,
     tournamentId,
-    ownerId: members[0],
     memberIds: members,
     team: members.map((m) => ({ id: m, displayName: m.toUpperCase(), goldTee: goldTee.includes(m) })),
-    ...(registeredAt ? { registeredAt: new Date(registeredAt) } : {}),
   };
 }
 
@@ -110,7 +107,6 @@ describe("computeMoneyList", () => {
 describe("member story", () => {
   const tournaments = [
     tournament("t1", "2026-05-02", {
-      registrationStart: new Date("2026-04-01T12:00:00Z"),
       weather: { temperature: 70, windSpeed: 5, precipitation: 0 },
       winnerGroups: [
         {
@@ -130,18 +126,17 @@ describe("member story", () => {
       ],
     }),
     tournament("t2", "2026-06-06", {
-      registrationStart: new Date("2026-05-01T12:00:00Z"),
       weather: { temperature: 90, windSpeed: 18, precipitation: 0.4 },
     }),
-    tournament("t3", "2026-06-20", { registrationStart: new Date("2026-06-01T12:00:00Z") }),
+    tournament("t3", "2026-06-20"),
   ];
   const registrations = [
-    reg("r1", "t1", ["me", "pal"], "2026-04-01T12:04:00Z", ["me"]),
-    reg("r2", "t2", ["me", "pal"], "2026-05-01T13:00:00Z"),
-    reg("r3", "t3", ["me", "other"], "2026-06-01T12:30:00Z"),
-    reg("r4", "t1", ["slow"], "2026-04-02T12:00:00Z"),
-    reg("r5", "t2", ["slow"], "2026-05-03T12:00:00Z"),
-    reg("r6", "t3", ["slow"], "2026-06-02T12:00:00Z"),
+    reg("r1", "t1", ["me", "pal"], ["me"]),
+    reg("r2", "t2", ["me", "pal"]),
+    reg("r3", "t3", ["me", "other"]),
+    reg("r4", "t1", ["slow"]),
+    reg("r5", "t2", ["slow"]),
+    reg("r6", "t3", ["slow"]),
   ];
   const input = baseInput({
     tournaments,
@@ -165,12 +160,6 @@ describe("member story", () => {
     expect(story.events?.busiestMonth).toBe(5);
   });
 
-  it("measures signup speed against other captains", () => {
-    expect(story.signup?.medianMinutes).toBe(30);
-    expect(story.signup?.fasterThanPercent).toBe(100);
-    expect(story.signup?.firstOnSheet.map((f) => f.tournamentTitle)).toEqual(["T t1", "T t2", "T t3"]);
-  });
-
   it("finds the top partner and gold tee events", () => {
     expect(story.crew?.topPartner).toMatchObject({ uid: "pal", events: 2, paidTogether: 1 });
     expect(story.crew?.distinctTeammates).toBe(2);
@@ -187,10 +176,9 @@ describe("member story", () => {
     expect(story.closestToPin?.holes).toEqual([{ hole: 12, tournamentTitle: "T t1" }]);
   });
 
-  it("leaves out money and the signup comparison when the member doesn't qualify", () => {
+  it("leaves out money when the member doesn't qualify", () => {
     const slow = computeMemberStory(input.users[2], input, ctx, { version: 1, generatedAt: "now" });
     expect(slow.money).toBeUndefined();
-    expect(slow.signup?.fasterThanPercent).toBeUndefined();
   });
 
   it("includes paid members who didn't play and skips migrated users", () => {
@@ -339,6 +327,24 @@ describe("paidEventsFor", () => {
       { tournamentTitle: "Member-Guest", amount: 60, result: "2nd" },
       { tournamentTitle: "Hole in one award", amount: 50, result: "Hole in one" },
       { tournamentTitle: "Spring Scramble", amount: 25, result: "CTP" },
+    ]);
+  });
+});
+
+describe("aces", () => {
+  it("keeps the hole when the award has one", () => {
+    const input = baseInput({
+      users: [{ uid: "me", displayName: "Me" }],
+      paidUids: new Set(["me"]),
+      seasonAwards: [
+        { id: "a1", userId: "me", userDisplayName: "Me", awardType: "hole_in_one", amount: 50, date: day("2026-07-01"), holeNumber: 7 },
+        { id: "a2", userId: "me", userDisplayName: "Me", awardType: "hole_in_one", amount: 50, date: day("2026-08-01") },
+      ],
+    });
+    const story = computeMemberStory(input.users[0], input, buildSeasonContext(input), { version: 1, generatedAt: "now" });
+    expect(story.closestToPin?.aces).toEqual([
+      { date: "2026-07-01", hole: 7 },
+      { date: "2026-08-01" },
     ]);
   });
 });
