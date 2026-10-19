@@ -7,6 +7,13 @@ import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "./logger";
 import { RESEND_WEBHOOK_SECRET } from "./resendConfig";
 import { withSentry } from "./sentry";
+import { uidFromSeasonWrappedTags } from "./seasonWrapped/email";
+import {
+  SEASON_WRAPPED_COLLECTION,
+  SEASON_WRAPPED_DELIVERY,
+  SEASON_WRAPPED_EMAIL_CATEGORY,
+  seasonWrappedPath,
+} from "./seasonWrapped/types";
 import {
   EMAIL_ISSUE_STATUS,
   EMAIL_ISSUES_COLLECTION,
@@ -71,6 +78,7 @@ interface ResendEmailEvent {
     tags?: Record<string, string>;
     bounce?: { type?: string; subType?: string; message?: string };
     suppressed?: { type?: string; message?: string };
+    click?: { link?: string };
   };
 }
 
@@ -134,13 +142,64 @@ export async function recordEmailIssues(
   return recipients.length;
 }
 
+/**
+ * Records a click on a Season Wrapped email against the member's delivery
+ * record. Needs click tracking on the sending domain and `email.clicked` in
+ * the webhook's events. Returns false for any other event. Only clicks on the
+ * story link count (not e.g. "Manage email preferences"), and `eventId` (the
+ * Svix message id) keeps a retried delivery from counting twice.
+ */
+export async function recordSeasonWrappedClick(
+  db: admin.firestore.Firestore,
+  event: ResendEmailEvent,
+  eventId?: string,
+): Promise<boolean> {
+  const tags = event.data?.tags;
+  const year = Number(tags?.year);
+  const uid = tags ? uidFromSeasonWrappedTags(tags) : undefined;
+  if (
+    event.type !== "email.clicked" ||
+    tags?.category !== SEASON_WRAPPED_EMAIL_CATEGORY ||
+    !uid ||
+    !Number.isInteger(year)
+  ) {
+    return false;
+  }
+  // Handled either way, so the event doesn't fall through to email issues.
+  if (!event.data?.click?.link?.includes(seasonWrappedPath(year))) return true;
+
+  const ref = db
+    .collection(SEASON_WRAPPED_COLLECTION)
+    .doc(String(year))
+    .collection(SEASON_WRAPPED_DELIVERY)
+    .doc(uid);
+  const clickedAt = event.created_at ?? new Date().toISOString();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const seen: unknown = snap.data()?.emailClickEventIds;
+    if (eventId && Array.isArray(seen) && seen.includes(eventId)) return;
+    tx.set(
+      ref,
+      {
+        uid,
+        emailClicks: FieldValue.increment(1),
+        lastEmailClickAt: clickedAt,
+        ...(snap.data()?.firstEmailClickAt ? {} : { firstEmailClickAt: clickedAt }),
+        ...(eventId ? { emailClickEventIds: FieldValue.arrayUnion(eventId) } : {}),
+      },
+      { merge: true },
+    );
+  });
+  return true;
+}
+
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
 /**
- * Resend webhook endpoint. Subscribe it to email.bounced, email.complained
- * and email.suppressed in the Resend dashboard (Webhooks), and store the
+ * Resend webhook endpoint. Subscribe it to email.bounced, email.complained,
+ * email.suppressed and email.clicked in the Resend dashboard (Webhooks), and store the
  * signing secret with `firebase functions:secrets:set RESEND_WEBHOOK_SECRET`.
  */
 export const resend_webhook = onRequest(
@@ -152,10 +211,11 @@ export const resend_webhook = onRequest(
     }
 
     const rawBody = req.rawBody?.toString("utf8") ?? "";
+    const svixId = headerValue(req.headers["svix-id"]);
     const verified = verifyResendSignature(
       RESEND_WEBHOOK_SECRET.value(),
       {
-        id: headerValue(req.headers["svix-id"]),
+        id: svixId,
         timestamp: headerValue(req.headers["svix-timestamp"]),
         signature: headerValue(req.headers["svix-signature"]),
       },
@@ -176,7 +236,13 @@ export const resend_webhook = onRequest(
       return;
     }
 
-    const recorded = await recordEmailIssues(admin.firestore(), event);
+    const db = admin.firestore();
+    if (await recordSeasonWrappedClick(db, event, svixId)) {
+      res.status(200).send("ok");
+      return;
+    }
+
+    const recorded = await recordEmailIssues(db, event);
     if (recorded > 0) {
       // No addresses in logs; the emailIssues doc holds them for admins.
       logger.info("resend_webhook: email issue recorded", {

@@ -12,6 +12,10 @@ export const AnalyticsEvent = {
   TOURNAMENT_REGISTER: "tournament_register",
   TOURNAMENT_REGISTRATION_UPDATE: "tournament_registration_update",
   TOURNAMENT_WITHDRAW: "tournament_withdraw",
+  // Season Wrapped (params: year, source, card index).
+  WRAPPED_OPEN: "wrapped_open",
+  WRAPPED_CARD_VIEW: "wrapped_card_view",
+  WRAPPED_SHARE: "wrapped_share",
 } as const;
 
 export type AnalyticsEventName =

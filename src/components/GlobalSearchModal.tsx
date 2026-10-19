@@ -17,6 +17,8 @@ const EXCLUDED_SEARCH_PATHS = new Set([
   siteConfig.pages.membershipDashboard.link,
   siteConfig.pages.adminNotifications.link,
   siteConfig.pages.notificationSettings.link,
+  // Route pattern (/wrapped/:year), not a linkable page.
+  siteConfig.pages.seasonWrapped.link,
 ]);
 
 // Derived at module load from siteConfig — pages with an icon that aren't

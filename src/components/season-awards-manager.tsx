@@ -27,6 +27,14 @@ import {
 
 const MIN_AWARD_YEAR = 2000;
 const MAX_AWARD_YEAR = 2100;
+const HOLES = 18;
+
+/** "" (no hole) or a whole number from 1 to 18. */
+function parseHole(value: string): number | undefined | null {
+  if (!value.trim()) return undefined;
+  const hole = Number(value);
+  return Number.isInteger(hole) && hole >= 1 && hole <= HOLES ? hole : null;
+}
 
 function toLocalDateInputValue(date: Date): string {
   const year = date.getFullYear();
@@ -57,6 +65,7 @@ export function SeasonAwardsManager() {
   const [awardAmountOverride, setAwardAmountOverride] = React.useState("");
   const [awardUserId, setAwardUserId] = React.useState("");
   const [awardDate, setAwardDate] = React.useState(`${currentYear}-01-01`);
+  const [awardHole, setAwardHole] = React.useState("");
   const [awardError, setAwardError] = React.useState<string | null>(null);
 
   const { usersMap } = useUsersMap();
@@ -68,6 +77,7 @@ export function SeasonAwardsManager() {
       setAwardType(SeasonAwardType.HoleInOne);
       setAwardAmountOverride("");
       setAwardUserId("");
+      setAwardHole("");
       setAwardError(null);
 
       const targetYear = seasonYear ?? selectedYear;
@@ -140,6 +150,12 @@ export function SeasonAwardsManager() {
       return;
     }
 
+    const holeNumber = parseHole(awardHole);
+    if (holeNumber === null) {
+      setAwardError(`Hole must be a number from 1 to ${HOLES}.`);
+      return;
+    }
+
     const parsedDate = new Date(`${awardDate}T12:00:00`);
     if (Number.isNaN(parsedDate.getTime())) {
       setAwardError("Please enter a valid date.");
@@ -169,6 +185,7 @@ export function SeasonAwardsManager() {
         amount,
         date: parsedDate,
         seasonYear: selectedYear,
+        holeNumber,
       });
 
       addToast({
@@ -199,6 +216,7 @@ export function SeasonAwardsManager() {
     );
     setAwardUserId(award.userId);
     setAwardDate(toLocalDateInputValue(award.date));
+    setAwardHole(award.holeNumber ? String(award.holeNumber) : "");
     setAwardError(null);
   };
 
@@ -331,9 +349,25 @@ export function SeasonAwardsManager() {
             {awardError && !awardDate ? awardError : undefined}
           </FieldError>
         </TextField>
+        <TextField
+          isInvalid={Boolean(awardError) && parseHole(awardHole) === null}
+          value={awardHole}
+          onChange={(v) => {
+            setAwardError(null);
+            setAwardHole(v);
+          }}
+        >
+          <Label>Hole (optional)</Label>
+          <Input type="number" inputMode="numeric" min={1} max={HOLES} />
+          <FieldError>
+            {awardError && parseHole(awardHole) === null
+              ? awardError
+              : undefined}
+          </FieldError>
+        </TextField>
       </div>
 
-      {awardError && awardUserId && awardDate ? (
+      {awardError && awardUserId && awardDate && parseHole(awardHole) !== null ? (
         <p className="text-sm text-danger">{awardError}</p>
       ) : null}
 
@@ -371,7 +405,9 @@ export function SeasonAwardsManager() {
                     {award.userDisplayName}
                   </p>
                   <p className="text-xs text-muted">
-                    {SEASON_AWARD_LABELS[award.awardType]} • ${award.amount} •{" "}
+                    {SEASON_AWARD_LABELS[award.awardType]}
+                    {award.holeNumber ? ` (hole ${award.holeNumber})` : ""}
+                    {` • $${award.amount} • `}
                     {award.date.toLocaleDateString("en-US")}
                   </p>
                 </div>

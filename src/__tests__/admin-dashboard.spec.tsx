@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { MemoryRouter } from "react-router-dom";
 
 import AdminDashboardPage from "@/pages/admin-dashboard";
 
-// Stub the three tab components so routing tests stay isolated from their
+// Stub every section component so routing tests stay isolated from their
 // own data-fetching dependencies.
 vi.mock("@/components/admin-dashboard/member-overview-tab", () => ({
   MemberOverviewTab: () => <div>Overview Tab Content</div>,
@@ -39,47 +39,57 @@ function renderPage(search = "") {
   );
 }
 
-describe("AdminDashboardPage — tab routing", () => {
-  it("defaults to Overview tab when no ?tab param is present", async () => {
+vi.mock("@/components/admin-dashboard/notifications-tab", () => ({
+  NotificationsTab: () => <div>Notifications Tab Content</div>,
+}));
+
+// The desktop sidebar marks the active section with aria-current="page".
+function sidebar() {
+  return screen.getByRole("navigation", { name: "Admin sections" });
+}
+
+function expectActive(name: RegExp, content: string) {
+  const link = within(sidebar()).getByRole("button", { name });
+
+  expect(link).toHaveAttribute("aria-current", "page");
+  expect(screen.getByText(content)).toBeInTheDocument();
+}
+
+describe("AdminDashboardPage — section routing", () => {
+  it("defaults to Overview when no ?tab param is present", () => {
     renderPage();
-    const overviewTab = await screen.findByRole("tab", { name: /Overview/i });
-    expect(overviewTab).toHaveAttribute("aria-selected", "true");
+    expectActive(/^Overview$/, "Overview Tab Content");
   });
 
-  it("selects Members tab when ?tab=members is in the URL", async () => {
-    renderPage("?tab=members");
-    const membersTab = await screen.findByRole("tab", { name: /^Members$/i });
-    expect(membersTab).toHaveAttribute("aria-selected", "true");
+  it.each([
+    ["members", /^Members$/, "Members Tab Content"],
+    ["payments", /^Payments$/, "Payments Tab Content"],
+    ["membership", /^Membership settings$/, "Membership Tab Content"],
+    ["tournaments", /^Tournaments$/, "Tournaments Tab Content"],
+    ["notifications", /^Notifications$/, "Notifications Tab Content"],
+  ])("selects %s from ?tab", (tab, name, content) => {
+    renderPage(`?tab=${tab}`);
+    expectActive(name, content);
   });
 
-  it("selects Payments tab when ?tab=payments is in the URL", async () => {
-    renderPage("?tab=payments");
-    const paymentsTab = await screen.findByRole("tab", { name: /Payments/i });
-    expect(paymentsTab).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("selects Membership settings tab when ?tab=membership is in the URL", async () => {
-    renderPage("?tab=membership");
-    const membershipTab = await screen.findByRole("tab", {
-      name: /^Membership$/i,
-    });
-    expect(membershipTab).toHaveAttribute("aria-selected", "true");
-    expect(
-      await screen.findByText("Membership Tab Content"),
-    ).toBeInTheDocument();
-  });
-
-  it("selects Tournaments tab when ?tab=tournaments is in the URL", async () => {
-    renderPage("?tab=tournaments");
-    const tournamentsTab = await screen.findByRole("tab", {
-      name: /Tournaments/i,
-    });
-    expect(tournamentsTab).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("falls back to Overview tab for an unrecognised ?tab value", async () => {
+  it("falls back to Overview for an unrecognised ?tab value", () => {
     renderPage("?tab=foo");
-    const overviewTab = await screen.findByRole("tab", { name: /Overview/i });
-    expect(overviewTab).toHaveAttribute("aria-selected", "true");
+    expectActive(/^Overview$/, "Overview Tab Content");
+  });
+
+  it("switches sections from the sidebar", async () => {
+    renderPage();
+    fireEvent.click(within(sidebar()).getByRole("button", { name: /^Payments$/ }));
+    expect(await screen.findByText("Payments Tab Content")).toBeInTheDocument();
+    expect(
+      within(sidebar()).getByRole("button", { name: /^Payments$/ }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("shows the active section in the phone picker", () => {
+    renderPage("?tab=tournaments");
+    expect(
+      screen.getByRole("button", { name: /Admin section: Tournaments/ }),
+    ).toBeInTheDocument();
   });
 });

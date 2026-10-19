@@ -128,6 +128,12 @@ export const siteConfig = {
       link: "/tournaments",
       icon: "lucide:calendar",
     },
+    seasonWrapped: {
+      title: "Season Wrapped",
+      description: "Your year at Ridgefield Golf Club",
+      link: "/wrapped/:year",
+      icon: "lucide:gift",
+    },
     moneyList: {
       title: "Money List",
       description: "Yearly prize money standings",

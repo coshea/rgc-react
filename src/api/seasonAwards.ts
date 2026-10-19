@@ -47,6 +47,8 @@ function mapSeasonAwardDoc(d: QueryDocumentSnapshot): SeasonAward {
       typeof data.tournamentTitle === "string"
         ? data.tournamentTitle
         : undefined,
+    holeNumber:
+      typeof data.holeNumber === "number" ? data.holeNumber : undefined,
     createdAt: data.createdAt ? toDate(data.createdAt) : undefined,
     updatedAt: data.updatedAt ? toDate(data.updatedAt) : undefined,
   };
@@ -122,6 +124,7 @@ export async function upsertSeasonAward(
     seasonYear: input.seasonYear,
     tournamentId: input.tournamentId || null,
     tournamentTitle: input.tournamentTitle || null,
+    holeNumber: input.holeNumber ?? null,
     updatedAt: serverTimestamp(),
   };
 

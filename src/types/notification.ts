@@ -6,7 +6,8 @@ export type NotificationType =
   | "tournament_canceled"
   | "registration_opening"
   | "registration_closing_soon"
-  | "new_features";
+  | "new_features"
+  | "season_wrapped";
 
 export const NOTIFICATION_TYPE_META: Record<
   NotificationType,
@@ -35,6 +36,11 @@ export const NOTIFICATION_TYPE_META: Record<
   registration_opening: {
     label: "Registration Opening",
     icon: "lucide:calendar-check",
+    color: "success",
+  },
+  season_wrapped: {
+    label: "Season Wrapped",
+    icon: "lucide:gift",
     color: "success",
   },
   registration_closing_soon: {

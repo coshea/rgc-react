@@ -20,6 +20,8 @@ export interface SeasonAward {
   seasonYear: number;
   tournamentId?: string;
   tournamentTitle?: string;
+  /** Hole 1–18; optional (older awards don't have it). */
+  holeNumber?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -34,4 +36,5 @@ export interface UpsertSeasonAwardInput {
   seasonYear: number;
   tournamentId?: string;
   tournamentTitle?: string;
+  holeNumber?: number;
 }

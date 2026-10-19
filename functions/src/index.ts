@@ -50,6 +50,13 @@ export {
   send_registration_opening_preview_email,
 } from "./notifyRegistrationOpening";
 export { resend_webhook } from "./resendWebhook";
+export {
+  generate_season_wrapped,
+  get_season_wrapped_share_image,
+  publish_season_wrapped,
+  send_season_wrapped_announcements,
+  send_season_wrapped_test,
+} from "./seasonWrapped";
 export { createUserDocument } from "./createUserDocument";
 export { deleteUserAvatars } from "./deleteUserAvatars";
 export { generate_blog_writeup } from "./generateBlogWriteup";

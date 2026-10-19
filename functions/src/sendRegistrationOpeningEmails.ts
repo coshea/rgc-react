@@ -1,10 +1,10 @@
 import type { ResendBatchEmail } from "./resendBatch";
 
-const FONT =
+export const FONT =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const FROM_EMAIL = "Ridgefield Golf Club <noreply@ridgefieldgolfclub.org>";
-const BASE_URL = "https://ridgefieldgolfclub.org";
-const CONTACT_EMAIL = "RidgefieldCTGolfClub@gmail.com";
+export const FROM_EMAIL = "Ridgefield Golf Club <noreply@ridgefieldgolfclub.org>";
+export const BASE_URL = "https://ridgefieldgolfclub.org";
+export const CONTACT_EMAIL = "RidgefieldCTGolfClub@gmail.com";
 export const MANAGE_NOTIFICATIONS_URL = `${BASE_URL}/settings/notifications`;
 
 export interface RegistrationOpeningAdminEmailParams {
