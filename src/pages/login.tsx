@@ -25,6 +25,7 @@ import { executeRecaptcha } from "@/utils/recaptcha";
 import { hydrateUserProfileFromAuth } from "@/api/users";
 import { consumePendingSignupProfile } from "@/utils/pendingSignupProfile";
 import { parseDisplayName } from "@/utils/profileCompletion";
+import { rememberReturnPath, takeReturnPath } from "@/utils/returnPath";
 import { RGCLogo } from "@/components/icons";
 
 const MAGIC_LINK_SENT_KEY = "magicLinkSent:login";
@@ -86,6 +87,12 @@ export default function LoginPage() {
     const params = new URLSearchParams(location.search);
     return params.get("auth_debug") === "1";
   }, [location.search]);
+
+  // Persist the destination so it survives the magic-link email round-trip
+  // and Google's redirect fallback, which both drop router state.
+  useEffect(() => {
+    rememberReturnPath(state?.from);
+  }, [state?.from]);
 
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -163,7 +170,7 @@ export default function LoginPage() {
           }
           navigate(siteConfig.pages.profile.link);
         } else {
-          const dest = state?.from || siteConfig.pages.home.link;
+          const dest = takeReturnPath(state?.from) || siteConfig.pages.home.link;
           navigate(dest);
         }
       } catch (error: unknown) {
@@ -212,7 +219,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (userLoggedIn && !authLoading) {
       // Check if user is logged in and auth is not loading
-      const dest = state?.from || siteConfig.pages.home.link;
+      const dest = takeReturnPath(state?.from) || siteConfig.pages.home.link;
       navigate(dest);
     }
   }, [userLoggedIn, authLoading, navigate, state?.from]);
@@ -318,7 +325,7 @@ export default function LoginPage() {
           try {
             await loginEmailAndPassword(email, password);
             // Navigate to original destination if provided, otherwise home
-            const dest = state?.from || siteConfig.pages.home.link;
+            const dest = takeReturnPath(state?.from) || siteConfig.pages.home.link;
             navigate(dest);
           } catch (error: unknown) {
             console.error("Email/Password Sign-In failed on LoginPage:", error);
@@ -378,7 +385,7 @@ export default function LoginPage() {
         }
         navigate(siteConfig.pages.profile.link);
       } else {
-        const dest = state?.from || siteConfig.pages.home.link;
+        const dest = takeReturnPath(state?.from) || siteConfig.pages.home.link;
         navigate(dest);
       }
     } catch (error: unknown) {
