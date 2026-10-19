@@ -6,6 +6,13 @@ on:
       - main
   workflow_dispatch:
 
+# One deploy at a time, in merge order. A newer run waits for the current one,
+# and a newer pending run replaces an older pending one (it deploys a later
+# commit), so a backlog never leaves production on stale code.
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: false
+
 jobs:
   build_and_deploy-react:
     runs-on: ubuntu-latest
