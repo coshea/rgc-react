@@ -78,23 +78,23 @@ export function headlineStats(
 }
 
 export function buildSeasonWrappedSubject(member: SeasonWrappedMember): string {
-  return `Your ${member.year} season at RGC is ready`;
+  return `Your ${member.year} RGC year in review`;
 }
 
 function preheaderFor(member: SeasonWrappedMember, club: ClubSeasonStats): string {
   const stats = headlineStats(member, club)
     .map((s) => `${s.value} ${s.label}`)
     .join(", ");
-  return `${stats}. Plus the year's majors and the club's season.`;
+  return `${stats}. Your ${member.year} season at Ridgefield Golf Club, event by event.`;
 }
 
 function introFor(member: SeasonWrappedMember, club: ClubSeasonStats): string {
   const tribute = club.tribute
-    ? `, and a thank-you to ${club.tribute.name}`
+    ? `, plus a thank-you to ${club.tribute.name}`
     : "";
   return member.played
-    ? `Your partners, the tournaments you won money in, the year's majors${tribute}. It takes about two minutes.`
-    : `The year's majors, the top of the money list, the club's season in numbers${tribute}. It takes about two minutes.`;
+    ? `Your ${member.year} year in review is ready. It covers the events you played, your results and winnings, how the year's majors finished and the club's season in numbers${tribute}.`
+    : `The club's ${member.year} year in review is ready. It covers the year's majors, the top of the money list and the season in numbers${tribute}.`;
 }
 
 export function buildSeasonWrappedLink(year: number): string {
@@ -140,8 +140,8 @@ export function buildSeasonWrappedEmailHtml(
         <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;border:1px solid #e4e4e7;">
           <tr>
             <td class="rgc-px" bgcolor="${COLORS.night}" style="background-color:${COLORS.night};border-radius:13px 13px 0 0;padding:32px 40px;">
-              <p style="margin:0;font-size:13px;color:${COLORS.chalk};font-family:${FONT};font-weight:600;text-transform:uppercase;letter-spacing:2px;">RGC Wrapped ${member.year}</p>
-              <p style="margin:10px 0 0;font-size:34px;color:${COLORS.flag};font-family:${FONT};font-weight:800;line-height:1.15;">${esc(member.firstName)}, here&#39;s your ${member.year}.</p>
+              <p style="margin:0;font-size:13px;color:${COLORS.chalk};font-family:${FONT};font-weight:600;text-transform:uppercase;letter-spacing:2px;">RGC ${member.year} Year in Review</p>
+              <p style="margin:10px 0 0;font-size:34px;color:${COLORS.flag};font-family:${FONT};font-weight:800;line-height:1.15;">${esc(member.firstName)}, your ${member.year} season in review.</p>
             </td>
           </tr>
           <tr>
@@ -156,7 +156,7 @@ export function buildSeasonWrappedEmailHtml(
           </tr>
           <tr>
             <td class="rgc-px" align="left" style="padding:24px 40px 0;">
-              <a class="rgc-btn" href="${esc(link)}" target="_blank" style="display:inline-block;background-color:${COLORS.flag};color:${COLORS.ink};font-family:${FONT};font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;">See my season</a>
+              <a class="rgc-btn" href="${esc(link)}" target="_blank" style="display:inline-block;background-color:${COLORS.flag};color:${COLORS.ink};font-family:${FONT};font-size:15px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;">View my year in review</a>
             </td>
           </tr>
           <tr>
@@ -180,15 +180,15 @@ export function buildSeasonWrappedEmailText(
   link: string,
 ): string {
   return [
-    `RGC WRAPPED ${member.year}`,
+    `RGC ${member.year} YEAR IN REVIEW`,
     "",
-    `${member.firstName}, here's your ${member.year}.`,
+    `${member.firstName}, your ${member.year} season in review.`,
     "",
     ...headlineStats(member, club).map((s) => `${s.value} ${s.label}`),
     "",
     introFor(member, club),
     "",
-    `See my season: ${link}`,
+    `View my year in review: ${link}`,
     "",
     "---",
     `Questions? Email us at ${CONTACT_EMAIL}.`,

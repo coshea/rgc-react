@@ -66,7 +66,7 @@ describe("Season Wrapped email", () => {
   it("links to the story with UTM tags and tags the member for click tracking", () => {
     const email = buildSeasonWrappedEmail("mike@example.com", member, club);
     expect(email.to).toEqual(["mike@example.com"]);
-    expect(email.subject).toBe("Your 2026 season at RGC is ready");
+    expect(email.subject).toBe("Your 2026 RGC year in review");
     expect(email.html).toContain(
       "https://ridgefieldgolfclub.org/wrapped/2026?utm_source=resend&amp;utm_medium=email&amp;utm_campaign=season_wrapped_2026",
     );
