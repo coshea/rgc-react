@@ -116,6 +116,18 @@
 .wrapped-root .wr-av-a { background: var(--c-night); color: var(--c-flag); }
 .wrapped-root .wr-av-b { background: var(--c-clay); color: var(--c-chalk); margin-left: calc(var(--u) * -14); }
 
+/* Avatar stacks: one avatar per player, overlapping for teams. Each context sets --av. */
+.wr-stack { display: flex; align-items: center; flex: 0 0 auto; }
+.wrapped-root .wr-stack .wr-av {
+  width: var(--av); height: var(--av); font-size: calc(var(--av) * 0.38); margin-left: 0;
+  border: calc(var(--u) * 2) solid rgba(251, 248, 240, 0.7); background: var(--c-flag); color: var(--c-ink);
+}
+.wrapped-root .wr-stack .wr-av + .wr-av { margin-left: calc(var(--av) * -0.32); }
+
+/* Intro: the member's own avatar beside "Your season" */
+.wr-intro-who { display: flex; align-items: center; gap: calc(var(--u) * 8); margin-top: calc(var(--u) * 14); }
+.wr-intro-who .wr-stack { --av: calc(var(--u) * 34); }
+
 /* intro */
 .wr-c-intro { background: var(--c-night); }
 .wr-c-intro::before {
@@ -193,10 +205,12 @@
 .wr-c-bracket .wr-big { font-size: calc(var(--u) * 96); }
 .wr-bk { display: flex; flex-direction: column; gap: calc(var(--u) * 5); }
 .wr-bk li {
-  display: grid; grid-template-columns: calc(var(--u) * 26) 1fr auto; gap: calc(var(--u) * 8); align-items: center;
+  display: grid; grid-template-columns: calc(var(--u) * 26) auto minmax(0, 1fr) auto; gap: calc(var(--u) * 8); align-items: center;
   background: rgba(251, 248, 240, 0.12); border-radius: calc(var(--u) * 8); padding: calc(var(--u) * 6) calc(var(--u) * 8); font-size: calc(var(--u) * 12.5);
 }
-.wr-bk li > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Full opponent names wrap rather than truncate. */
+.wr-bk .who { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.wr-bk .wr-stack { --av: calc(var(--u) * 22); }
 .wr-bk .r { font-family: var(--f-mono); font-size: calc(var(--u) * 10); opacity: 0.85; }
 .wr-bk .w { font-family: var(--f-mono); font-weight: 500; color: var(--c-flag); }
 .wr-bk .l { font-family: var(--f-mono); font-weight: 500; opacity: 0.7; }
@@ -206,6 +220,11 @@
 .wr-c-club .wr-big { font-size: calc(var(--u) * 46); color: var(--c-flag); }
 .wr-clubgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(251, 248, 240, 0.2); border-radius: calc(var(--u) * 12); overflow: hidden; }
 .wr-clubgrid div { background: var(--c-night); padding: calc(var(--u) * 10); }
+.wr-clubgrid div.wide { grid-column: 1 / -1; }
+.wr-champs { display: flex; flex-direction: column; gap: calc(var(--u) * 6); font-size: calc(var(--u) * 12); line-height: 1.25; }
+.wr-champs li { display: flex; align-items: center; gap: calc(var(--u) * 8); }
+.wr-champs .wr-stack { --av: calc(var(--u) * 24); }
+.wr-champs .fl { font-family: var(--f-mono); font-size: calc(var(--u) * 9); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; display: block; }
 .wr-clubgrid b { font-family: var(--f-display); font-size: calc(var(--u) * 34); font-weight: 800; display: block; line-height: 1; color: var(--c-chalk); }
 .wr-clubgrid span { font-size: calc(var(--u) * 11); opacity: 0.8; }
 
@@ -221,6 +240,7 @@
   width: 100%; border-radius: calc(var(--u) * 8) calc(var(--u) * 8) 0 0; background: var(--c-ink); color: var(--c-flag);
   display: grid; place-items: center; font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 34);
 }
+.wr-podium .blk { overflow: hidden; }
 .wr-podium .p1 .blk { height: calc(var(--u) * 96); }
 .wr-podium .p2 .blk { height: calc(var(--u) * 68); }
 .wr-podium .p3 .blk { height: calc(var(--u) * 48); }
@@ -237,12 +257,14 @@
 .wr-when { font-family: var(--f-mono); font-size: calc(var(--u) * 11); letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-flag); }
 .wr-c-major.v2 .wr-when, .wr-c-major.v3 .wr-when { color: var(--c-chalk); opacity: 0.9; }
 .wr-champ { display: flex; align-items: center; gap: calc(var(--u) * 10); background: rgba(251, 248, 240, 0.12); border-radius: calc(var(--u) * 12); padding: calc(var(--u) * 10); }
-.wrapped-root .wr-champ .wr-av { width: calc(var(--u) * 48); height: calc(var(--u) * 48); font-size: calc(var(--u) * 18); border-color: transparent; background: var(--c-flag); color: var(--c-ink); margin-left: 0; }
+.wr-champ .wr-stack { --av: calc(var(--u) * 48); }
 .wr-champ > div { display: flex; flex-direction: column; min-width: 0; }
 .wr-champ b { font-size: calc(var(--u) * 16); line-height: 1.15; }
 .wr-champ span { font-size: calc(var(--u) * 11); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; }
 .wr-facts { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 4) calc(var(--u) * 10); font-size: calc(var(--u) * 12); }
 .wr-facts dt { opacity: 0.75; }
+.wr-facts dd { display: flex; align-items: center; gap: calc(var(--u) * 5); min-width: 0; }
+.wr-facts .wr-stack { --av: calc(var(--u) * 22); }
 .wr-flights { display: flex; flex-direction: column; gap: calc(var(--u) * 6); }
 .wr-flight {
   display: grid; grid-template-columns: calc(var(--u) * 12) minmax(0, 1fr) auto; gap: calc(var(--u) * 2) calc(var(--u) * 10); align-items: center;
@@ -255,10 +277,7 @@
 .wr-flight .fl { font-family: var(--f-mono); font-size: calc(var(--u) * 10); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
 .wr-flight b { grid-column: 2; font-size: calc(var(--u) * 15); line-height: 1.15; }
 .wr-flight .ru { grid-column: 2; font-size: calc(var(--u) * 11); opacity: 0.75; }
-.wrapped-root .wr-flight .wr-av {
-  grid-column: 3; grid-row: 1 / span 3; width: calc(var(--u) * 34); height: calc(var(--u) * 34); font-size: calc(var(--u) * 13);
-  border: calc(var(--u) * 2) solid rgba(251, 248, 240, 0.6); background: var(--c-flag); color: var(--c-ink); margin-left: 0;
-}
+.wr-flight .wr-stack { grid-column: 3; grid-row: 1 / span 3; --av: calc(var(--u) * 34); }
 .wr-you {
   align-self: flex-start; font-family: var(--f-mono); font-size: calc(var(--u) * 11); letter-spacing: 0.04em;
   background: var(--c-chalk); color: var(--c-ink); border-radius: 999px; padding: calc(var(--u) * 5) calc(var(--u) * 10);
@@ -301,6 +320,14 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .wr-card-enter { animation: wr-enter 220ms ease-out; }
+  /* Podium blocks rise from the floor, 3rd then 2nd then 1st; the players ride up on top. */
+  .wr-podium .blk { animation: wr-rise 750ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+  .wr-podium .p3 .blk { animation-delay: 150ms; }
+  .wr-podium .p2 .blk { animation-delay: 400ms; }
+  .wr-podium .p1 .blk { animation-delay: 650ms; }
+}
+@keyframes wr-rise {
+  from { height: 0; }
 }
 @keyframes wr-enter {
   from { opacity: 0.4; transform: scale(0.985); }

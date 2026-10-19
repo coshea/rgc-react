@@ -21,6 +21,9 @@ import {
   updateHistoricalChampionship,
 } from "@/api/championships";
 import { useUsers } from "@/hooks/useUsers";
+import { useYearlyTournaments } from "@/hooks/useYearlyTournaments";
+import { formatEventDate } from "@/utils/tournamentResults";
+import { guessChampionshipTournament } from "@@/seasonWrapped/types";
 import { PlayerEntrySection } from "./player-entry-section";
 
 interface ChampionshipEditorModalProps {
@@ -43,7 +46,11 @@ interface ChampionshipFormData {
     id: string;
     isHistorical: boolean;
   }>;
+  /** Unset = use the title guess; NO_TOURNAMENT = the admin picked none. */
+  tournamentId?: string;
 }
+
+const NO_TOURNAMENT = "none";
 
 export function ChampionshipEditorModal({
   isOpen,
@@ -64,6 +71,19 @@ export function ChampionshipEditorModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditing = !!championship;
+
+  const { tournaments, isLoading: tournamentsLoading } = useYearlyTournaments({
+    year: formData.year,
+    enabled: isOpen && formData.year >= 1900,
+  });
+  const linkableTournaments = tournaments.filter(
+    (t): t is typeof t & { firestoreId: string } => !!t.firestoreId,
+  );
+  const selectedTournamentId =
+    formData.tournamentId ??
+    guessChampionshipTournament(formData.championshipType, linkableTournaments)
+      ?.firestoreId ??
+    NO_TOURNAMENT;
 
   useEffect(() => {
     if (championship) {
@@ -89,6 +109,7 @@ export function ChampionshipEditorModal({
             ? winners
             : [{ name: "", id: "", isHistorical: false }],
         runnersUp,
+        tournamentId: championship.tournamentId,
       });
     } else {
       // Reset form for new championship
@@ -129,6 +150,8 @@ export function ChampionshipEditorModal({
 
     setIsSubmitting(true);
     try {
+      const tournamentId =
+        selectedTournamentId === NO_TOURNAMENT ? undefined : selectedTournamentId;
       const championshipData = {
         year: formData.year,
         championshipType: formData.championshipType,
@@ -148,9 +171,15 @@ export function ChampionshipEditorModal({
       };
 
       if (isEditing && championship) {
-        await updateHistoricalChampionship(championship.id, championshipData);
+        await updateHistoricalChampionship(championship.id, {
+          ...championshipData,
+          tournamentId: tournamentId ?? null,
+        });
       } else {
-        await createHistoricalChampionship(championshipData);
+        await createHistoricalChampionship({
+          ...championshipData,
+          ...(tournamentId ? { tournamentId } : {}),
+        });
       }
 
       onSave?.();
@@ -367,6 +396,8 @@ export function ChampionshipEditorModal({
                   setFormData((prev) => ({
                     ...prev,
                     year: parseInt(v) || new Date().getFullYear(),
+                    // A pick from another year no longer applies.
+                    tournamentId: undefined,
                   }))
                 }
                 isInvalid={!!errors.year}
@@ -409,6 +440,58 @@ export function ChampionshipEditorModal({
                   </ListBox>
                 </Select.Popover>
               </Select>
+            </div>
+
+            {/* Tournament link: Season Wrapped reads date, score and field from it */}
+            <div className="flex flex-col gap-1">
+              <Select
+                value={selectedTournamentId}
+                onChange={(key) => {
+                  if (key) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      tournamentId: String(key),
+                    }));
+                  }
+                }}
+                isDisabled={tournamentsLoading}
+              >
+                <Label>Tournament</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item
+                      key={NO_TOURNAMENT}
+                      id={NO_TOURNAMENT}
+                      textValue="None"
+                    >
+                      None
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    {linkableTournaments.map((t) => {
+                      const label = `${t.title} · ${formatEventDate(t.date, { month: "short", day: "numeric" })}`;
+                      return (
+                        <ListBox.Item
+                          key={t.firestoreId}
+                          id={t.firestoreId}
+                          textValue={label}
+                        >
+                          {label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      );
+                    })}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              <p className="text-xs text-muted">
+                {linkableTournaments.length === 0 && !tournamentsLoading
+                  ? `No ${formData.year} tournaments on the site. Leave as None for older records.`
+                  : "The event this was decided at. Season Wrapped uses its date, winning score and field size."}
+              </p>
             </div>
 
             {/* Winners Section */}

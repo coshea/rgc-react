@@ -196,7 +196,8 @@ export function SeasonWrappedTab() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-separator pt-4 sm:flex-row sm:items-end">
+          {/* Top-aligned: the selection summary under the input grows, so items-end would track it, not the input. */}
+          <div className="flex flex-col gap-2 border-t border-separator pt-4 sm:flex-row sm:items-start">
             <UserSelect
               users={activeUsers}
               label="Generate for selected members"
@@ -208,7 +209,8 @@ export function SeasonWrappedTab() {
             />
             <Button
               variant="tertiary"
-              className="min-h-11"
+              // Label (20px) + gap (4px), less half the 44px button / 40px input difference: centered on the input.
+              className="min-h-11 sm:mt-5.5"
               isDisabled={selected.length === 0 || generate.isPending}
               isPending={generate.isPending && selected.length > 0}
               onPress={() => runGenerate(selected)}

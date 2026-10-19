@@ -38,6 +38,7 @@ export interface UnifiedChampionship {
   winnerIds?: string[];
   runnerUpNames?: string[];
   runnerUpIds?: string[];
+  tournamentId?: string;
   isHistorical: boolean;
 }
 

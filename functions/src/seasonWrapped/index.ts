@@ -258,17 +258,11 @@ async function loadSeasonInput(
   const start = new Date(Date.UTC(year, 0, 1));
   const end = new Date(Date.UTC(year + 1, 0, 1));
 
-  const [tournamentSnap, awardSnap, champSnap, findAGameCount, userSnap, paymentSnap] =
+  const [tournamentSnap, awardSnap, champSnap, userSnap, paymentSnap] =
     await Promise.all([
       db.collection("tournaments").where("date", ">=", start).where("date", "<", end).get(),
       db.collection("seasonAwards").where("seasonYear", "==", year).get(),
       db.collection("championships").where("year", "==", year).get(),
-      db
-        .collection("findAGame")
-        .where("date", ">=", `${year}-01-01`)
-        .where("date", "<=", `${year}-12-31`)
-        .count()
-        .get(),
       db
         .collection("users")
         .select("firstName", "displayName", "isMigrated", "email", "notificationPreferences")
@@ -345,7 +339,6 @@ async function loadSeasonInput(
     brackets,
     seasonAwards,
     championships,
-    findAGamePosts: findAGameCount.data().count,
     users: Array.from(userRecords.values()),
     paidUids,
     userRecords,

@@ -56,7 +56,6 @@ function baseInput(overrides: Partial<WrappedSeasonInput> = {}): WrappedSeasonIn
     brackets: [],
     seasonAwards: [],
     championships: [],
-    findAGamePosts: 0,
     users: [],
     paidUids: new Set(),
     ...overrides,
@@ -232,6 +231,51 @@ describe("club stats and majors", () => {
   });
 });
 
+describe("majors without a tournament link", () => {
+  it("finds the tournament by title and shows the champion's score", () => {
+    const input = baseInput({
+      tournaments: [
+        tournament("pc", "2026-06-21", {
+          title: "2026 President's Cup",
+          weather: { temperature: 91, windSpeed: 4, precipitation: 0 },
+          winnerGroups: [
+            {
+              id: "net",
+              label: "Net",
+              type: "custom",
+              winners: [{ place: 1, score: "68 net", competitors: [{ userId: "sam", displayName: "Sam" }] }],
+            },
+            {
+              id: "gross",
+              label: "Gross",
+              type: "custom",
+              winners: [{ place: 1, score: "74", competitors: [{ userId: "pl", displayName: "Pete" }] }],
+            },
+          ],
+        }),
+        tournament("mp", "2026-09-01", { title: "Team Match Play Final" }),
+      ],
+      registrations: [reg("r1", "pc", ["sam"]), reg("r2", "pc", ["pl"])],
+      championships: [
+        { id: "p", championshipType: "presidents-cup", winnerNames: ["Sam Okafor"], winnerIds: ["sam"], runnerUpNames: ["Pete Lind"], runnerUpIds: ["pl"] },
+        { id: "m", championshipType: "team-match-play", winnerNames: ["Bob Hanlon", "Al Price"], winnerIds: ["bh", "ap"] },
+      ],
+    });
+    const club = computeClubStats(input, buildSeasonContext(input));
+    const presidents = club.majors.find((m) => m.key === "presidents-cup:p")!;
+    expect(presidents).toMatchObject({
+      tournamentId: "pc",
+      date: "2026-06-21",
+      winningScore: "68 net",
+      fieldSize: "2 players",
+      runnerUpIds: ["pl"],
+    });
+    const matchPlay = club.majors.find((m) => m.key === "team-match-play:m")!;
+    expect(matchPlay.tournamentId).toBe("mp");
+    expect(matchPlay.winnerIds).toEqual(["bh", "ap"]);
+  });
+});
+
 describe("bracketRunFor", () => {
   it("counts wins and losses, treats empty slots as byes", () => {
     const input = baseInput({ tournaments: [tournament("mp", "2026-07-01")] });
@@ -244,7 +288,7 @@ describe("bracketRunFor", () => {
           teams: [
             { id: "A", name: "Me", memberIds: ["me"], memberNames: ["Mike Reynolds"] },
             { id: "B", name: "B", memberIds: ["b"], memberNames: ["Bob Hanlon"] },
-            { id: "C", name: "C", memberIds: ["c"], memberNames: ["Cal Duarte"] },
+            { id: "C", name: "C", memberIds: ["c", "d"], memberNames: ["Cal Duarte", "Dan Wells"] },
           ],
           matches: [
             { id: "1", round: 1, position: 0, team1Id: "A", team2Id: null, winnerId: "A" },
@@ -256,7 +300,9 @@ describe("bracketRunFor", () => {
       ctx,
     );
     expect(run).toMatchObject({ wins: 1, losses: 1, byes: 1, reached: "Final" });
-    expect(run?.matches[1].opponent).toBe("Hanlon");
+    expect(run?.matches[1].opponent).toBe("Bob Hanlon");
+    expect(run?.matches[2].opponent).toBe("Cal Duarte & Dan Wells");
+    expect(run?.matches[2].opponentIds).toEqual(["c", "d"]);
   });
 });
 

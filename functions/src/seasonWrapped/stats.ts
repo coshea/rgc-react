@@ -6,6 +6,7 @@
 import {
   MAJOR_KIND,
   SEASON_TRIBUTES,
+  guessChampionshipTournament,
   seasonWrappedShareImagePath,
   type BracketRun,
   type ChampionshipFlight,
@@ -112,7 +113,6 @@ export interface WrappedSeasonInput {
   brackets: WrappedBracket[];
   seasonAwards: WrappedSeasonAward[];
   championships: WrappedChampionship[];
-  findAGamePosts: number;
   users: WrappedUser[];
   /** Members with a confirmed dues payment for the year. */
   paidUids: ReadonlySet<string>;
@@ -291,9 +291,37 @@ function fieldSizeFor(regs: readonly WrappedRegistration[]): string | undefined 
   return teams ? `${regs.length} teams` : `${regs.length} players`;
 }
 
-function winningScoreFor(t: WrappedTournament | undefined): string | undefined {
-  const overall = t?.winnerGroups.find((g) => g.type === "overall");
-  return overall?.winners.find((w) => w.place === 1)?.score?.trim() || undefined;
+/**
+ * The tournament the championship's `tournamentId` links to (set in the
+ * championship editor), else a guess by title for records saved before the
+ * editor had a tournament field.
+ */
+export function findChampionshipTournament(
+  championship: Pick<WrappedChampionship, "championshipType" | "tournamentId">,
+  tournamentsById: ReadonlyMap<string, WrappedTournament>,
+): WrappedTournament | undefined {
+  if (championship.tournamentId) {
+    const linked = tournamentsById.get(championship.tournamentId);
+    if (linked) return linked;
+  }
+  return guessChampionshipTournament(championship.championshipType, tournamentsById.values());
+}
+
+/**
+ * The champion's score: the 1st-place entry that includes a champion, then
+ * the overall group's winner, then any 1st place with a score.
+ */
+export function winningScoreFor(
+  t: WrappedTournament | undefined,
+  winnerIds: readonly string[] = [],
+): string | undefined {
+  if (!t) return undefined;
+  const firsts = t.winnerGroups
+    .filter((g) => g.type !== CLOSEST_TO_PIN && g.type !== "bracketRound" && !g.id.startsWith("bracket-round:"))
+    .flatMap((g) => g.winners.filter((w) => w.place === 1 && w.score?.trim()).map((w) => ({ g, w })));
+  const byChampion = firsts.find(({ w }) => w.competitors.some((c) => winnerIds.includes(c.userId)));
+  const overall = firsts.find(({ g }) => g.type === "overall");
+  return (byChampion ?? overall ?? firsts[0])?.w.score?.trim();
 }
 
 export function buildMajors(
@@ -304,7 +332,7 @@ export function buildMajors(
   const majors: MajorCard[] = [];
 
   const flights: ChampionshipFlight[] = [];
-  let clubTournamentId: string | undefined;
+  let clubTournament: WrappedTournament | undefined;
   for (const type of CLUB_CHAMPIONSHIP_FLIGHTS) {
     for (const c of championships.filter((x) => x.championshipType === type)) {
       flights.push({
@@ -315,17 +343,15 @@ export function buildMajors(
         runnerUpNames: c.runnerUpNames ?? [],
         runnerUpIds: c.runnerUpIds ?? [],
       });
-      clubTournamentId ??= c.tournamentId;
+      clubTournament ??= findChampionshipTournament(c, tournamentsById);
     }
   }
   if (flights.length > 0) {
-    const t = clubTournamentId ? tournamentsById.get(clubTournamentId) : undefined;
     majors.push({
       key: CLUB_CHAMPIONSHIP_KEY,
       kind: MAJOR_KIND.CLUB_CHAMPIONSHIP,
       label: "Club Championship",
-      ...(clubTournamentId ? { tournamentId: clubTournamentId } : {}),
-      ...(t ? { date: isoDate(t.date) } : {}),
+      ...(clubTournament ? { tournamentId: clubTournament.id, date: isoDate(clubTournament.date) } : {}),
       flights,
     });
   }
@@ -337,11 +363,9 @@ export function buildMajors(
         c.championshipType !== "other",
     )
     .map((c) => {
-      const t = c.tournamentId ? tournamentsById.get(c.tournamentId) : undefined;
-      const fieldSize = c.tournamentId
-        ? fieldSizeFor(regsByTournament.get(c.tournamentId) ?? [])
-        : undefined;
-      const winningScore = winningScoreFor(t);
+      const t = findChampionshipTournament(c, tournamentsById);
+      const fieldSize = t ? fieldSizeFor(regsByTournament.get(t.id) ?? []) : undefined;
+      const winningScore = winningScoreFor(t, c.winnerIds ?? []);
       const card: MajorCard = {
         key: `${c.championshipType}:${c.id}`,
         kind: MAJOR_KIND.MAJOR,
@@ -349,8 +373,8 @@ export function buildMajors(
         winnerNames: c.winnerNames,
         winnerIds: c.winnerIds ?? [],
         runnerUpNames: c.runnerUpNames ?? [],
-        ...(c.tournamentId ? { tournamentId: c.tournamentId } : {}),
-        ...(t ? { date: isoDate(t.date) } : {}),
+        runnerUpIds: c.runnerUpIds ?? [],
+        ...(t ? { tournamentId: t.id, date: isoDate(t.date) } : {}),
         ...(winningScore ? { winningScore } : {}),
         ...(fieldSize ? { fieldSize } : {}),
         ...(t?.weather
@@ -389,7 +413,6 @@ export function computeClubStats(
       displayName: row.displayName,
       total: row.total,
       rank: row.rank,
-      paidFinishes: row.items.length,
     }));
 
   const tribute = SEASON_TRIBUTES[input.year];
@@ -399,10 +422,7 @@ export function computeClubStats(
     teamsRegistered: ctx.seasonRegs.length,
     prizeMoneyPaid: ctx.moneyList.reduce((sum, row) => sum + row.total, 0),
     holesInOne: input.seasonAwards.filter((a) => a.awardType === HOLE_IN_ONE).length,
-    findAGamePosts: input.findAGamePosts,
     podium,
-    podiumTotal: podium.reduce((sum, p) => sum + p.total, 0),
-    podiumPaidFinishes: podium.reduce((sum, p) => sum + p.paidFinishes, 0),
     majors: ctx.majors,
     ...(tribute ? { tribute } : {}),
   };
@@ -639,7 +659,8 @@ function reachedLabel(round: number, totalRounds: number, wonFinal: boolean): st
 function teamLabel(team: WrappedBracket["teams"][number]): string {
   const names = team.memberNames?.filter(Boolean) ?? [];
   if (names.length === 0) return team.name;
-  return names.map((n) => n.trim().split(/\s+/).at(-1) ?? n).join(" / ");
+  // Full names, e.g. "Bob Hanlon & Al Price".
+  return names.map((n) => n.trim()).join(" & ");
 }
 
 export function bracketRunFor(
@@ -664,7 +685,7 @@ export function bracketRunFor(
       const opponent = opponentId ? teamsById.get(opponentId) : undefined;
       return {
         roundLabel: roundLabel(m.round, totalRounds),
-        ...(opponent ? { opponent: teamLabel(opponent) } : {}),
+        ...(opponent ? { opponent: teamLabel(opponent), opponentIds: opponent.memberIds } : {}),
         won: m.winnerId === team.id,
         bye: !opponentId,
       };

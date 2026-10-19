@@ -13,6 +13,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   onSnapshot,
   serverTimestamp,
   FirestoreError,
@@ -79,6 +80,7 @@ export async function fetchChampionshipsWithPagination(
       winnerIds: data.winnerIds,
       runnerUpNames: data.runnerUpNames,
       runnerUpIds: data.runnerUpIds,
+      tournamentId: data.tournamentId,
       isHistorical: data.isHistorical,
     } as UnifiedChampionship;
   });
@@ -123,6 +125,7 @@ export async function fetchAllChampionships(
       winnerIds: data.winnerIds,
       runnerUpNames: data.runnerUpNames,
       runnerUpIds: data.runnerUpIds,
+      tournamentId: data.tournamentId,
       isHistorical: data.isHistorical,
     } as UnifiedChampionship;
   });
@@ -190,6 +193,7 @@ export async function fetchModernChampionships(
         winnerIds: data.winnerIds,
         runnerUpNames: data.runnerUpNames,
         runnerUpIds: data.runnerUpIds,
+        tournamentId: data.tournamentId,
         isHistorical: data.isHistorical,
       };
     }
@@ -211,14 +215,20 @@ export async function createHistoricalChampionship(
   return docRef.id;
 }
 
-// Update an existing historical championship
+// Update an existing historical championship. `tournamentId: null` removes the link.
 export async function updateHistoricalChampionship(
   id: string,
-  updates: Partial<Omit<HistoricalChampionship, "id" | "createdAt">>
+  updates: Partial<
+    Omit<HistoricalChampionship, "id" | "createdAt" | "tournamentId">
+  > & { tournamentId?: string | null }
 ): Promise<void> {
   const docRef = doc(db, "championships", id);
+  const { tournamentId, ...rest } = updates;
   await updateDoc(docRef, {
-    ...updates,
+    ...rest,
+    ...(tournamentId !== undefined
+      ? { tournamentId: tournamentId ?? deleteField() }
+      : {}),
     updatedAt: serverTimestamp(),
   });
 }
@@ -315,6 +325,7 @@ export async function fetchUserChampionships(
         winnerIds: data.winnerIds,
         runnerUpNames: data.runnerUpNames,
         runnerUpIds: data.runnerUpIds,
+        tournamentId: data.tournamentId,
         isHistorical: data.isHistorical,
       } as UnifiedChampionship);
     }

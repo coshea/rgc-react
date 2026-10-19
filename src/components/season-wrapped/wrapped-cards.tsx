@@ -98,6 +98,22 @@ function WrAvatar({ uid, name, className }: { uid?: string; name: string; classN
   return user ? <UserAvatar user={user} className={cls} /> : <UserAvatar name={name} className={cls} />;
 }
 
+/**
+ * One avatar per player, overlapping for teams. `ids` may be shorter than
+ * `names` (older championship records have names only); those get initials.
+ */
+function WrAvatarStack({ ids = [], names }: { ids?: readonly string[]; names: readonly string[] }) {
+  const count = Math.max(ids.length, names.length);
+  if (count === 0) return null;
+  return (
+    <span className="wr-stack">
+      {Array.from({ length: count }, (_, i) => (
+        <WrAvatar key={ids[i] ?? `name-${i}`} uid={ids[i]} name={names[i] ?? names.join(" ")} />
+      ))}
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Shell
 // ---------------------------------------------------------------------------
@@ -145,9 +161,10 @@ interface CardProps {
 function IntroCard({ story, progress }: CardProps) {
   return (
     <CardShell className="wr-c-intro" brand="RGC Wrapped" brandRight={String(story.year)} progress={progress}>
-      <p className="wr-label wr-mt-18">
-        Your season, {story.firstName}
-      </p>
+      <div className="wr-intro-who">
+        <WrAvatarStack ids={[story.uid]} names={[story.displayName]} />
+        <p className="wr-label">Your season, {story.firstName}</p>
+      </div>
       <p className="wr-yr">{story.year}</p>
       <p className="wr-big">
         {story.played ? (
@@ -428,7 +445,10 @@ function BracketCard({ story, progress }: CardProps) {
         {run.matches.map((m, i) => (
           <li key={i}>
             <span className="r">{m.roundLabel}</span>
-            <span>{m.bye ? "Bye" : m.won ? `def. ${m.opponent ?? "opponent"}` : `lost to ${m.opponent ?? "opponent"}`}</span>
+            {m.opponent ? <WrAvatarStack ids={m.opponentIds} names={m.opponent.split(" & ")} /> : <span />}
+            <span className="who">
+              {m.bye ? "Bye" : m.won ? `def. ${m.opponent ?? "opponent"}` : `lost to ${m.opponent ?? "opponent"}`}
+            </span>
             <span className={m.won ? "w" : "l"}>{m.bye ? "–" : m.won ? "W" : "L"}</span>
           </li>
         ))}
@@ -453,27 +473,34 @@ function ClubCard({ season, progress }: ClubCardProps) {
   const tiles = [
     { value: String(c.tournamentCount), label: "tournaments" },
     { value: String(c.playerCount), label: "members played" },
-    {
-      value: c.prizeMoneyPaid >= 10000 ? `$${(c.prizeMoneyPaid / 1000).toFixed(1)}K` : formatMoney(c.prizeMoneyPaid),
-      label: "paid out in prizes",
-    },
     { value: String(c.holesInOne), label: c.holesInOne === 1 ? "hole in one" : "holes in one" },
     { value: String(c.teamsRegistered), label: "teams registered" },
-    { value: String(c.findAGamePosts), label: "Find a Game posts" },
+    // Last tile spans both columns so five tiles fill the grid evenly.
+    { value: formatMoney(c.prizeMoneyPaid), label: "paid out in prizes", wide: true },
   ];
   return (
     <CardShell className="wr-c-club" brand="The club" progress={progress}>
       <p className="wr-big">RGC in {season.year}</p>
       <div className="wr-clubgrid">
         {tiles.map((t) => (
-          <div key={t.label}>
+          <div key={t.label} className={t.wide ? "wide" : undefined}>
             <b className="wr-num">{t.value}</b>
             <span>{t.label}</span>
           </div>
         ))}
       </div>
       {champs.length > 0 && (
-        <p className="wr-copy-sm">{champs.map((f) => `${f.label}: ${f.winnerNames.join(" & ")}`).join(". ")}.</p>
+        <ul className="wr-champs">
+          {champs.map((f) => (
+            <li key={f.championshipType}>
+              <WrAvatarStack ids={f.winnerIds} names={f.winnerNames} />
+              <span>
+                <span className="fl">{f.label}</span>
+                {f.winnerNames.join(" & ")}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </CardShell>
   );
@@ -493,9 +520,6 @@ function PodiumCard({ season, progress }: ClubCardProps) {
         {season.year} top earners
       </p>
       <p className="wr-big">The podium</p>
-      <p className="wr-copy-sm">
-        {formatMoney(c.podiumTotal)} between them, across {c.podiumPaidFinishes} paid finishes.
-      </p>
       <ol className="wr-podium" aria-label={`Top ${c.podium.length} on the ${season.year} money list`}>
         {slots.map(({ entry, cls }) => (
           <li key={entry.uid} className={cls}>
@@ -549,7 +573,7 @@ function MajorCardView({
             <li key={f.championshipType} className="wr-flight">
               <span className={clsx("tee", FLIGHT_TEE[f.championshipType])} aria-hidden />
               <span className="fl">{f.label}</span>
-              <WrAvatar uid={f.winnerIds[0]} name={f.winnerNames.join(" ")} />
+              <WrAvatarStack ids={f.winnerIds} names={f.winnerNames} />
               <b>{f.winnerNames.join(" & ")}</b>
               {f.runnerUpNames.length > 0 && <span className="ru">Runner-up: {f.runnerUpNames.join(" & ")}</span>}
             </li>
@@ -558,7 +582,8 @@ function MajorCardView({
       ) : (
         <>
           <div className="wr-champ">
-            <WrAvatar uid={major.winnerIds?.[0]} name={winners.join(" ")} />
+            {/* Both players for team events like Team Match Play. */}
+            <WrAvatarStack ids={major.winnerIds} names={winners} />
             <div>
               <span>{winners.length > 1 ? "Champions" : "Champion"}</span>
               <b>{winners.join(" & ")}</b>
@@ -568,7 +593,10 @@ function MajorCardView({
             {(major.runnerUpNames?.length ?? 0) > 0 && (
               <div>
                 <dt>{major.runnerUpNames!.length > 1 ? "Runners-up" : "Runner-up"}</dt>
-                <dd>{major.runnerUpNames!.join(" & ")}</dd>
+                <dd>
+                  <WrAvatarStack ids={major.runnerUpIds} names={major.runnerUpNames!} />
+                  <span>{major.runnerUpNames!.join(" & ")}</span>
+                </dd>
               </div>
             )}
             {major.winningScore && (

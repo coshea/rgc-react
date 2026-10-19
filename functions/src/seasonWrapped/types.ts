@@ -74,8 +74,6 @@ export interface PodiumEntry {
   total: number;
   /** Shared by tied earners, as on the Money List page. */
   rank: number;
-  /** Payouts across tournaments and season awards. */
-  paidFinishes: number;
 }
 
 /** One flight of the Club Championship (club / club tee / senior). */
@@ -91,6 +89,32 @@ export interface ChampionshipFlight {
 export interface MajorWeather {
   temperature: number;
   windSpeed: number;
+}
+
+/**
+ * Title patterns for guessing a championship's tournament when the record has
+ * no `tournamentId`. The championship editor uses the same guess to pre-fill
+ * its tournament picker.
+ */
+const CHAMPIONSHIP_TOURNAMENT_TITLES: Record<string, RegExp> = {
+  "club-champion": /club\s+championship/i,
+  "club-tee-champion": /club\s+championship/i,
+  "senior-club-champion": /club\s+championship/i,
+  "presidents-cup": /president/i,
+  "pisano-cup": /pisano/i,
+  "team-match-play": /match\s*play/i,
+};
+
+/** Latest title match: a multi-day event's final round decides the champion. */
+export function guessChampionshipTournament<T extends { title: string; date: Date }>(
+  championshipType: string,
+  tournaments: Iterable<T>,
+): T | undefined {
+  const pattern = CHAMPIONSHIP_TOURNAMENT_TITLES[championshipType];
+  if (!pattern) return undefined;
+  return Array.from(tournaments)
+    .filter((t) => pattern.test(t.title))
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 }
 
 export const MAJOR_KIND = {
@@ -115,6 +139,7 @@ export interface MajorCard {
   /** For avatars; may be shorter than winnerNames for historical records. */
   winnerIds?: string[];
   runnerUpNames?: string[];
+  runnerUpIds?: string[];
   winningScore?: string;
   /** e.g. "36 players" or "22 teams". */
   fieldSize?: string;
@@ -137,10 +162,7 @@ export interface ClubSeasonStats {
   teamsRegistered: number;
   prizeMoneyPaid: number;
   holesInOne: number;
-  findAGamePosts: number;
   podium: PodiumEntry[];
-  podiumTotal: number;
-  podiumPaidFinishes: number;
   majors: MajorCard[];
   tribute?: TributeCard;
 }
@@ -227,6 +249,8 @@ export interface BracketRun {
   matches: {
     roundLabel: string;
     opponent?: string;
+    /** For avatars, in the same order as the names in `opponent`. */
+    opponentIds?: string[];
     won: boolean;
     bye: boolean;
   }[];

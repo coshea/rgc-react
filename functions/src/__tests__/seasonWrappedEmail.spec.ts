@@ -16,10 +16,7 @@ const club: ClubSeasonStats = {
   teamsRegistered: 412,
   prizeMoneyPaid: 18400,
   holesInOne: 3,
-  findAGamePosts: 27,
   podium: [],
-  podiumTotal: 0,
-  podiumPaidFinishes: 0,
   majors: [],
   tribute: {
     heading: "Thank you, Frank.",

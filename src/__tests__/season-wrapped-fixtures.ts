@@ -18,32 +18,26 @@ export function makeSeason(
       teamsRegistered: 412,
       prizeMoneyPaid: 18400,
       holesInOne: 3,
-      findAGamePosts: 27,
       podium: [
         {
           uid: "jd",
           displayName: "Joe Duarte",
           total: 1105,
           rank: 1,
-          paidFinishes: 11,
         },
         {
           uid: "rw",
           displayName: "Ray Wells",
           total: 1020,
           rank: 2,
-          paidFinishes: 10,
         },
         {
           uid: "so",
           displayName: "Sam Okafor",
           total: 815,
           rank: 3,
-          paidFinishes: 10,
         },
       ],
-      podiumTotal: 2940,
-      podiumPaidFinishes: 31,
       majors: [
         {
           key: "club-championship",
