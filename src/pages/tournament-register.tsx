@@ -19,6 +19,7 @@ import type { User } from "@/api/users";
 // potential bundle splitting since registration flow is a narrower usage path.
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import RegistrationEditor from "@/components/registration-editor";
 // Static import for registrations list to ensure test mocks attach
 import { fetchAllRegistrations, upsertRegistration } from "@/api/tournaments";
@@ -37,6 +38,9 @@ const TournamentRegister: React.FC = () => {
   // registration-related state must be declared before effects that use them
   const [teammates, setTeammates] = React.useState<string[]>([""]);
   const [submitting, setSubmitting] = React.useState(false);
+  // Offline, Firestore would queue the write and the button would spin until
+  // reception returns, without checking the field is still open.
+  const online = useOnlineStatus();
   const [goldTees, setGoldTees] = React.useState<string[]>([]);
   const { user } = useAuth();
   const [hasEditedExistingTeam, setHasEditedExistingTeam] =
@@ -503,6 +507,16 @@ const TournamentRegister: React.FC = () => {
       return;
     }
 
+    if (!online) {
+      addToast({
+        title: "You're offline",
+        description:
+          "Registering needs a connection. Try again when you have signal.",
+        color: "warning",
+      });
+      return;
+    }
+
     if (!isRegistrationOpen(tournament)) {
       addToast({
         title: "Closed",
@@ -857,6 +871,13 @@ const TournamentRegister: React.FC = () => {
               </>
             )}
 
+            {!online ? (
+              <div className="text-sm text-warning" role="status">
+                You&apos;re offline. Registering or changing a registration
+                needs a connection.
+              </div>
+            ) : null}
+
             {/* no free-text inputs: teammates are selected by user id via Select */}
 
             <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-2">
@@ -868,7 +889,7 @@ const TournamentRegister: React.FC = () => {
                       className="w-full sm:w-auto"
                       variant="danger"
                       onPress={() => setConfirmOpen(true)}
-                      isDisabled={deleting}
+                      isDisabled={deleting || !online}
                     >
                       <Icon
                         icon={deleting ? "lucide:loader" : "lucide:x-circle"}
@@ -900,6 +921,7 @@ const TournamentRegister: React.FC = () => {
                       type="submit"
                       isDisabled={
                         submitting ||
+                        !online ||
                         !user?.uid ||
                         (minTeamSize > 1 && !hasMinTeamSize)
                       }
