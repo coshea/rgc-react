@@ -1,145 +1,190 @@
-import { Button, Tooltip } from "@heroui/react";
-import { PlusIcon } from "@heroicons/react/24/solid";
+import { Button, Dropdown, Header, Separator, Switch } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import type { User } from "@/api/users";
-import { EmailMembersButton } from "./EmailMembersButton";
+import {
+  EmailMembersButton,
+  emailMembers,
+  emailScopeOptions,
+} from "./EmailMembersButton";
 
 interface DirectoryHeaderProps {
+  /** Admin tools are shown (an admin with admin view on). */
   isAdmin: boolean;
   isAdminOrBoard: boolean;
+  /** e.g. "287 members" or "241 active of 287". */
+  summary: string;
   onAdd: () => void;
-  onFindDuplicates?: () => void;
-  onExportMembers?: () => void;
-  members?: User[];
-  activeSet?: Set<string>;
-  currentYear?: number;
+  onFindDuplicates: () => void;
+  onExportMembers: () => void;
+  members: User[];
+  activeSet: Set<string>;
+  currentYear: number;
+  /** Admins only: lets them switch to what members see. */
+  adminViewToggle?: { isSelected: boolean; onChange: (on: boolean) => void };
 }
 
+function AdminViewSwitch({
+  isSelected,
+  onChange,
+}: NonNullable<DirectoryHeaderProps["adminViewToggle"]>) {
+  return (
+    <Switch isSelected={isSelected} onChange={onChange} className="shrink-0">
+      {/* Switch.Content renders the real input; the control must sit inside it. */}
+      <Switch.Content className="min-h-11 gap-2 text-sm">
+        <Switch.Control>
+          <Switch.Thumb />
+        </Switch.Control>
+        Admin view
+      </Switch.Content>
+    </Switch>
+  );
+}
+
+/**
+ * Title plus member tools. Desktop shows the tools as buttons; phones put them
+ * in one ⋯ menu so the list starts near the top of the screen.
+ */
 export function DirectoryHeader({
   isAdmin,
   isAdminOrBoard,
+  summary,
   onAdd,
   onFindDuplicates,
   onExportMembers,
-  members = [],
-  activeSet = new Set(),
-  currentYear = new Date().getFullYear(),
+  members,
+  activeSet,
+  currentYear,
+  adminViewToggle,
 }: DirectoryHeaderProps) {
+  const noMembers = members.length === 0;
+
   return (
-    <div className="mb-4 flex flex-col gap-3">
-      {/* ── Title row ── */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold leading-tight">
-          Membership Directory
-        </h1>
+    <div className="flex items-start justify-between gap-3 lg:items-center">
+      <div className="flex flex-col gap-1 lg:flex-row lg:items-baseline lg:gap-3">
+        <h1 className="text-[28px] leading-tight lg:text-[32px]">Members</h1>
+        <p className="text-sm text-muted lg:text-[15px]">{summary}</p>
       </div>
 
-      {/* ── Mobile layout (hidden sm+) ── */}
-      {(isAdminOrBoard || isAdmin) && (
-        <div className="flex flex-col gap-2 sm:hidden">
-          {/* Board actions: Email + Export */}
-          {isAdminOrBoard && (
-            <div className="flex gap-2">
+      <div className="flex shrink-0 items-center gap-3">
+        {adminViewToggle && <AdminViewSwitch {...adminViewToggle} />}
+        {isAdminOrBoard && (
+          <>
+            <div className="hidden flex-wrap items-center justify-end gap-2 lg:flex">
               <EmailMembersButton
                 members={members}
                 activeSet={activeSet}
                 currentYear={currentYear}
-                size="sm"
+                variant="tertiary"
               />
-              {onExportMembers && (
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={onExportMembers}
-                  isDisabled={members.length === 0}
-                  className="font-medium"
-                >
-                  <Icon icon="lucide:download" className="w-4 h-4" />
-                  Export
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Admin-only actions row */}
-          {isAdmin && (
-            <div className="grid grid-cols-2 gap-2">
-              {onFindDuplicates && (
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={onFindDuplicates}
-                  className="font-medium w-full"
-                >
-                  <Icon icon="lucide:users" className="w-4 h-4" />
-                  Find Duplicates
-                </Button>
-              )}
-              <Button size="sm" onPress={onAdd} className="font-medium w-full">
-                <PlusIcon className="w-4 h-4" />
-                Add Member
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Desktop layout (hidden on mobile) ── */}
-      {(isAdminOrBoard || isAdmin) && (
-        <div className="hidden sm:flex flex-wrap gap-2 justify-end items-center">
-          {/* Admin or board: email + export */}
-          {isAdminOrBoard && (
-            <div className="flex gap-2 items-center">
-              <EmailMembersButton
-                members={members}
-                activeSet={activeSet}
-                currentYear={currentYear}
-                size="sm"
-              />
-              {onExportMembers && (
-                <Tooltip>
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    onPress={onExportMembers}
-                    isDisabled={members.length === 0}
-                    className="font-medium"
-                  >
-                    <Icon icon="lucide:download" className="w-4 h-4" />
-                    Export
-                  </Button>
-                  <Tooltip.Content>Export member list to CSV</Tooltip.Content>
-                </Tooltip>
-              )}
-            </div>
-          )}
-          {/* Admin only: direct actions */}
-          {isAdmin && (
-            <div className="flex items-center gap-2 pl-2 border-l border-divider">
-              {onFindDuplicates && (
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={onFindDuplicates}
-                  className="font-medium whitespace-nowrap"
-                >
-                  <Icon icon="lucide:users" className="w-4 h-4" />
-                  Find Duplicates
-                </Button>
-              )}
               <Button
-                size="sm"
-                onPress={onAdd}
-                className="font-medium whitespace-nowrap"
+                variant="tertiary"
+                onPress={onExportMembers}
+                isDisabled={noMembers}
               >
-                <PlusIcon className="w-4 h-4" />
-                Add Member
+                <Icon icon="lucide:download" className="h-4 w-4" />
+                Export CSV
               </Button>
+              {isAdmin && (
+                <>
+                  <Button variant="tertiary" onPress={onFindDuplicates}>
+                    <Icon icon="lucide:users" className="h-4 w-4" />
+                    Find duplicates
+                  </Button>
+                  <Button onPress={onAdd}>
+                    <Icon icon="lucide:plus" className="h-4 w-4" />
+                    Add member
+                  </Button>
+                </>
+              )}
             </div>
-          )}
-        </div>
-      )}
+
+            <div className="lg:hidden">
+              <Dropdown>
+                <Button
+                  isIconOnly
+                  variant="tertiary"
+                  className="h-11 w-11 rounded-full"
+                  aria-label="Member tools"
+                >
+                  <Icon icon="lucide:ellipsis" className="h-5 w-5" />
+                </Button>
+                <Dropdown.Popover placement="bottom end">
+                  <Dropdown.Menu aria-label="Member tools">
+                    <Dropdown.Section>
+                      <Header>Email members</Header>
+                      {emailScopeOptions(currentYear).map((o) => (
+                        <Dropdown.Item
+                          key={o.id}
+                          id={`email-${o.id}`}
+                          textValue={o.label}
+                          onPress={() =>
+                            void emailMembers(
+                              members,
+                              activeSet,
+                              o.id,
+                              currentYear,
+                            )
+                          }
+                        >
+                          {o.label}
+                        </Dropdown.Item>
+                      ))}
+                    </Dropdown.Section>
+                    <Separator />
+                    <Dropdown.Section>
+                      <Dropdown.Item
+                        id="export"
+                        textValue="Export CSV"
+                        isDisabled={noMembers}
+                        onPress={onExportMembers}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Icon
+                            icon="lucide:download"
+                            className="h-4 w-4 text-muted"
+                          />
+                          Export CSV
+                        </span>
+                      </Dropdown.Item>
+                      {isAdmin && (
+                        <Dropdown.Item
+                          id="duplicates"
+                          textValue="Find duplicates"
+                          onPress={onFindDuplicates}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icon
+                              icon="lucide:users"
+                              className="h-4 w-4 text-muted"
+                            />
+                            Find duplicates
+                          </span>
+                        </Dropdown.Item>
+                      )}
+                      {isAdmin && (
+                        <Dropdown.Item
+                          id="add"
+                          textValue="Add member"
+                          onPress={onAdd}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icon
+                              icon="lucide:plus"
+                              className="h-4 w-4 text-muted"
+                            />
+                            Add member
+                          </span>
+                        </Dropdown.Item>
+                      )}
+                    </Dropdown.Section>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

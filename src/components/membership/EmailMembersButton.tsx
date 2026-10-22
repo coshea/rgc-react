@@ -39,11 +39,75 @@ export function getEmailAddresses(
   }
 }
 
+/** Recipient groups, in menu order. */
+export function emailScopeOptions(
+  currentYear: number,
+): { id: EmailScope; label: string }[] {
+  return [
+    {
+      id: "full-members-this-year",
+      label: `Full members this year (${currentYear})`,
+    },
+    { id: "paid-this-year", label: `All paid this year (${currentYear})` },
+    { id: "active-last-2-years", label: "Active last 2 years" },
+    { id: "all", label: "All members" },
+  ];
+}
+
+/**
+ * Opens a mailto with the group's addresses. Long lists are copied to the
+ * clipboard instead, since mail clients truncate very long mailto URLs.
+ */
+export async function emailMembers(
+  members: User[],
+  activeSet: Set<string>,
+  scope: EmailScope,
+  currentYear: number,
+) {
+  const emails = getEmailAddresses(members, activeSet, scope, currentYear);
+  if (!emails.length) {
+    addToast({
+      title: "No email addresses found",
+      description: "There are no members with email addresses in this group.",
+      color: "warning",
+    });
+    return;
+  }
+
+  const emailString = emails.join(",");
+  const isLarge = emailString.length > 2000;
+  const clipboard =
+    typeof navigator === "undefined" ? undefined : navigator.clipboard;
+
+  if (isLarge && clipboard) {
+    try {
+      await clipboard.writeText(emailString);
+      addToast({
+        title: "Emails copied to clipboard",
+        description: `${emails.length} email addresses copied. Paste into your email client manually.`,
+        color: "success",
+      });
+      return;
+    } catch (error) {
+      console.error("Could not copy emails to clipboard:", error);
+      addToast({
+        title: "Clipboard copy failed",
+        description:
+          "Unable to copy long email list to clipboard. Trying mailto instead.",
+        color: "danger",
+      });
+    }
+  }
+
+  window.location.href = `mailto:${emailString}`;
+}
+
 interface EmailMembersButtonProps {
   members: User[];
   activeSet: Set<string>;
   currentYear: number;
   size?: "sm" | "md" | "lg";
+  variant?: "primary" | "tertiary";
 }
 
 export function EmailMembersButton({
@@ -51,76 +115,29 @@ export function EmailMembersButton({
   activeSet,
   currentYear,
   size = "md",
+  variant = "primary",
 }: EmailMembersButtonProps) {
-  async function openMailto(scope: EmailScope) {
-    const emails = getEmailAddresses(members, activeSet, scope, currentYear);
-    if (!emails.length) {
-      addToast({
-        title: "No email addresses found",
-        description: "There are no members with email addresses in this group.",
-        color: "warning",
-      });
-      return;
-    }
-
-    const emailString = emails.join(",");
-    const isLarge = emailString.length > 2000;
-    const clipboard =
-      typeof navigator === "undefined" ? undefined : navigator.clipboard;
-
-    if (isLarge && clipboard) {
-      try {
-        await clipboard.writeText(emailString);
-        addToast({
-          title: "Emails copied to clipboard",
-          description: `${emails.length} email addresses copied. Paste into your email client manually.`,
-          color: "success",
-        });
-        return;
-      } catch (error) {
-        console.error("Could not copy emails to clipboard:", error);
-        addToast({
-          title: "Clipboard copy failed",
-          description:
-            "Unable to copy long email list to clipboard. Trying mailto instead.",
-          color: "danger",
-        });
-      }
-    }
-
-    window.location.href = `mailto:${emailString}`;
-  }
-
   return (
     <Dropdown>
-      <Button variant="primary" size={size} className="font-medium">
+      <Button variant={variant} size={size} className="font-medium">
         <Icon icon="lucide:mail" className="w-4 h-4" />
-        Email Members
+        Email members
         <Icon icon="lucide:chevron-down" className="w-4 h-4" />
       </Button>
       <Dropdown.Popover>
         <Dropdown.Menu aria-label="Email recipient group">
-          <Dropdown.Item
-            id="full-members-this-year"
-            onPress={() => openMailto("full-members-this-year")}
-          >
-            Full members this year ({currentYear})
-          </Dropdown.Item>
-          <Dropdown.Item
-            id="paid-this-year"
-            onPress={() => openMailto("paid-this-year")}
-          >
-            All paid this year ({currentYear})
-          </Dropdown.Item>
-          <Dropdown.Item
-            id="active-last-2-years"
-            onPress={() => openMailto("active-last-2-years")}
-          >
-            Active last 2 years
-          </Dropdown.Item>
-          <Dropdown.Item id="all" onPress={() => openMailto("all")}>
-            All members
-          </Dropdown.Item>
+          {emailScopeOptions(currentYear).map((o) => (
+            <Dropdown.Item
+              key={o.id}
+              id={o.id}
+              textValue={o.label}
+              onPress={() =>
+                void emailMembers(members, activeSet, o.id, currentYear)
+              }
+            >
+              {o.label}
+            </Dropdown.Item>
+          ))}
         </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>
