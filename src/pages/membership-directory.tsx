@@ -144,6 +144,7 @@ export default function MembershipDirectoryPage() {
       tShirtSize: u.tShirtSize || "",
       boardMember: !!u.boardMember,
       role: u.boardMember ? u.role || "" : "",
+      defaultGoldTee: u.defaultGoldTee,
     });
     setOpen(true);
   }
@@ -185,6 +186,9 @@ export default function MembershipDirectoryPage() {
           tShirtSize: (form.tShirtSize || "").trim() as User["tShirtSize"],
           boardMember: !!form.boardMember,
           role: form.boardMember ? (form.role || "").trim() : null,
+          ...(typeof form.defaultGoldTee === "boolean" && {
+            defaultGoldTee: form.defaultGoldTee,
+          }),
         });
         console.log("[Directory] User updated", { id: editing.id, ...form });
 

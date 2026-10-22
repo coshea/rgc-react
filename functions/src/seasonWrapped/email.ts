@@ -5,6 +5,7 @@ import {
   FONT,
   FROM_EMAIL,
   MANAGE_NOTIFICATIONS_URL,
+  listUnsubscribeHeaders,
   withUtm,
 } from "../sendRegistrationOpeningEmails";
 import {
@@ -88,13 +89,10 @@ function preheaderFor(member: SeasonWrappedMember, club: ClubSeasonStats): strin
   return `${stats}. Your ${member.year} season at Ridgefield Golf Club, event by event.`;
 }
 
-function introFor(member: SeasonWrappedMember, club: ClubSeasonStats): string {
-  const tribute = club.tribute
-    ? `, plus a thank-you to ${club.tribute.name}`
-    : "";
+function introFor(member: SeasonWrappedMember): string {
   return member.played
-    ? `Your ${member.year} year in review is ready. It covers the events you played, your results and winnings, how the year's majors finished and the club's season in numbers${tribute}.`
-    : `The club's ${member.year} year in review is ready. It covers the year's majors, the top of the money list and the season in numbers${tribute}.`;
+    ? `Your ${member.year} year in review is ready. It covers the events you played, your results and winnings, how the year's majors finished and the club's season in numbers.`
+    : `The club's ${member.year} year in review is ready. It covers the year's majors, the top of the money list and the season in numbers.`;
 }
 
 export function buildSeasonWrappedLink(year: number): string {
@@ -109,6 +107,7 @@ export function buildSeasonWrappedEmailHtml(
   member: SeasonWrappedMember,
   club: ClubSeasonStats,
   link: string,
+  unsubscribeUrl?: string,
 ): string {
   const stats = headlineStats(member, club);
   const width = Math.floor(100 / stats.length);
@@ -151,7 +150,7 @@ export function buildSeasonWrappedEmailHtml(
           </tr>
           <tr>
             <td class="rgc-px" style="padding:28px 40px 0;">
-              <p style="margin:0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;">${esc(introFor(member, club))}</p>
+              <p style="margin:0;font-size:15px;color:#3f3f46;font-family:${FONT};line-height:1.6;">${esc(introFor(member))}</p>
             </td>
           </tr>
           <tr>
@@ -162,7 +161,7 @@ export function buildSeasonWrappedEmailHtml(
           <tr>
             <td class="rgc-px" style="padding:28px 40px 28px;">
               <p style="margin:0;font-size:13px;color:${COLORS.muted};font-family:${FONT};line-height:1.6;">If the button doesn&#39;t work, copy this link into your browser:<br><a href="${esc(link)}" style="color:#006fee;text-decoration:underline;word-break:break-all;">${esc(BASE_URL + seasonWrappedPath(member.year))}</a></p>
-              <p style="margin:8px 0 0;font-size:13px;color:${COLORS.muted};font-family:${FONT};line-height:1.6;">You&#39;re receiving this email because you&#39;re a ${member.year} Ridgefield Golf Club member with general announcement emails turned on. <a href="${esc(MANAGE_NOTIFICATIONS_URL)}" style="color:#006fee;text-decoration:underline;">Manage email preferences</a></p>
+              <p style="margin:8px 0 0;font-size:13px;color:${COLORS.muted};font-family:${FONT};line-height:1.6;">You&#39;re receiving this email because you&#39;re a ${member.year} Ridgefield Golf Club member with general announcement emails turned on. <a href="${esc(MANAGE_NOTIFICATIONS_URL)}" style="color:#006fee;text-decoration:underline;">Manage email preferences</a>${unsubscribeUrl ? ` &middot; <a href="${esc(unsubscribeUrl)}" style="color:#006fee;text-decoration:underline;">Unsubscribe</a>` : ""}</p>
               <p style="margin:8px 0 0;font-size:12px;color:#a1a1aa;font-family:${FONT};line-height:1.6;">Ridgefield Golf Club &bull; PO Box 24, Ridgefield, CT 06877</p>
             </td>
           </tr>
@@ -178,6 +177,7 @@ export function buildSeasonWrappedEmailText(
   member: SeasonWrappedMember,
   club: ClubSeasonStats,
   link: string,
+  unsubscribeUrl?: string,
 ): string {
   return [
     `RGC ${member.year} YEAR IN REVIEW`,
@@ -186,7 +186,7 @@ export function buildSeasonWrappedEmailText(
     "",
     ...headlineStats(member, club).map((s) => `${s.value} ${s.label}`),
     "",
-    introFor(member, club),
+    introFor(member),
     "",
     `View my year in review: ${link}`,
     "",
@@ -194,6 +194,7 @@ export function buildSeasonWrappedEmailText(
     `Questions? Email us at ${CONTACT_EMAIL}.`,
     `You're receiving this email because you're a ${member.year} Ridgefield Golf Club member with general announcement emails turned on.`,
     `Manage email preferences: ${MANAGE_NOTIFICATIONS_URL}`,
+    ...(unsubscribeUrl ? [`Unsubscribe: ${unsubscribeUrl}`] : []),
     "Ridgefield Golf Club, PO Box 24, Ridgefield, CT 06877",
   ].join("\n");
 }
@@ -220,22 +221,22 @@ export function uidFromSeasonWrappedTags(tags: Record<string, string>): string |
 /**
  * One member's Wrapped email for the Resend batch API. Tags carry the uid and
  * year so `resend_webhook` can record link clicks against the member.
+ * `unsubscribeUrl` is the recipient's signed one-click link (emailUnsubscribe.ts).
  */
 export function buildSeasonWrappedEmail(
   email: string,
   member: SeasonWrappedMember,
   club: ClubSeasonStats,
+  unsubscribeUrl?: string,
 ): ResendBatchEmail {
   const link = buildSeasonWrappedLink(member.year);
   return {
     from: FROM_EMAIL,
     to: [email],
     subject: buildSeasonWrappedSubject(member),
-    html: buildSeasonWrappedEmailHtml(member, club, link),
-    text: buildSeasonWrappedEmailText(member, club, link),
-    headers: {
-      "List-Unsubscribe": `<${MANAGE_NOTIFICATIONS_URL}>, <mailto:${CONTACT_EMAIL}?subject=Unsubscribe>`,
-    },
+    html: buildSeasonWrappedEmailHtml(member, club, link, unsubscribeUrl),
+    text: buildSeasonWrappedEmailText(member, club, link, unsubscribeUrl),
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
     tags: [
       { name: "category", value: SEASON_WRAPPED_EMAIL_CATEGORY },
       { name: "year", value: String(member.year) },

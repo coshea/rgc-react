@@ -5,6 +5,8 @@ type GoldTeeSwitchProps = {
   isSelected: boolean;
   onChange: (value: boolean) => void;
   isDisabled?: boolean;
+  /** Overrides the member-facing help text, e.g. for admins editing someone else. */
+  description?: string;
 };
 
 /**
@@ -16,6 +18,7 @@ export function GoldTeeSwitch({
   isSelected,
   onChange,
   isDisabled = false,
+  description = "Seniors only. Gold tees are pre-selected when you register for a tournament or are added to a team.",
 }: GoldTeeSwitchProps) {
   const id = React.useId();
   const labelId = `${id}-label`;
@@ -28,8 +31,7 @@ export function GoldTeeSwitch({
           Default to gold tees
         </p>
         <p id={descriptionId} className="text-sm text-muted">
-          Seniors only. Gold tees are pre-selected when you register for a
-          tournament or are added to a team.
+          {description}
         </p>
       </div>
       <Switch

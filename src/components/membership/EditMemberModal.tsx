@@ -1,25 +1,174 @@
-import { Button, Input, ListBox, Select, Spinner } from "@heroui/react";
+import {
+  Button,
+  Chip,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  Select,
+  Spinner,
+  Switch,
+  Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@heroui/react";
 import React, { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
+import * as Sentry from "@sentry/react";
 import {
   getMembershipPayment,
   updateMembershipPayment,
   deleteMembershipPayment,
+  type MembershipPayment,
 } from "@/api/membership";
 import { useQueryClient } from "@tanstack/react-query";
 import { ALLOWED_BOARD_ROLES, isAllowedBoardRole } from "@/types/roles";
-import { T_SHIRT_SIZES, type TShirtSize, type User } from "@/api/users";
+import { MEMBERSHIP_TYPES } from "@@/types";
+import {
+  saveMemberNotificationPreferences,
+  type NotificationPreferences,
+  type User,
+} from "@/api/users";
 import { formatPhone } from "@/utils/phone";
+import { resolvePreferences } from "@/utils/notificationPreferences";
 import { addToast } from "@/providers/toast";
+import { UserAvatar } from "@/components/avatar";
+import { GoldTeeSwitch } from "@/components/profile/gold-tee-switch";
+import { ShirtSizePicker } from "@/components/profile/shirt-size-picker";
+import { MemberNotificationPreferences } from "./MemberNotificationPreferences";
+
+/** Profile fields the caller saves through `onSave`. */
+export type MemberForm = Record<string, unknown>;
 
 interface EditMemberModalProps {
   open: boolean;
   editing: User | null;
-  form: Record<string, any>;
-  onChange: (next: Record<string, any>) => void;
+  form: MemberForm;
+  onChange: (next: MemberForm) => void;
   onClose: () => void;
-  onSave: () => void; // existing user save callback (name/board fields)
+  /** Saves the profile fields; returns the new member's id when adding. */
+  onSave: () => Promise<string | undefined> | void;
   isAdmin?: boolean; // gate membership editing
+}
+
+type PaymentDraft = {
+  membershipType?: string;
+  amount?: string;
+  method?: string;
+  status?: MembershipPayment["status"];
+  markPaid?: boolean;
+};
+
+const TAB = {
+  DETAILS: "details",
+  MEMBERSHIP: "membership",
+  NOTIFICATIONS: "notifications",
+} as const;
+
+const PAYMENT_METHODS = [
+  { id: "paypal", label: "PayPal" },
+  { id: "check", label: "Check" },
+] as const;
+
+function text(form: MemberForm, key: string): string {
+  const value = form[key];
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * Who you're editing, at a glance: avatar, name, email and the chips that
+ * decide what they can do on the site (membership, dues, board role).
+ */
+function MemberSummary({ member, year }: { member: User; year: number }) {
+  const name =
+    [member.firstName, member.lastName].filter(Boolean).join(" ") ||
+    member.displayName ||
+    member.email ||
+    "Member";
+  const paid = (member.lastPaidYear ?? 0) >= year;
+
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <UserAvatar user={member} size="lg" className="h-14 w-14 shrink-0" />
+      <div className="min-w-0">
+        <h2 className="truncate text-lg font-semibold leading-tight">{name}</h2>
+        {member.email && (
+          <p className="truncate text-sm text-muted">{member.email}</p>
+        )}
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {member.membershipType && (
+            <Chip
+              size="sm"
+              variant="soft"
+              color={
+                member.membershipType === MEMBERSHIP_TYPES.FULL
+                  ? "success"
+                  : "accent"
+              }
+            >
+              {member.membershipType === MEMBERSHIP_TYPES.FULL
+                ? "Full member"
+                : "Handicap member"}
+            </Chip>
+          )}
+          <Chip size="sm" variant="soft" color={paid ? "success" : "warning"}>
+            {paid ? `Paid for ${year}` : `Not paid for ${year}`}
+          </Chip>
+          {member.boardMember && member.role && (
+            <Chip size="sm" variant="soft">
+              {member.role}
+            </Chip>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A labelled switch row with a one-line explanation under the label. */
+function SwitchRow({
+  label,
+  description,
+  isSelected,
+  onChange,
+  isDisabled,
+}: {
+  label: string;
+  description: string;
+  isSelected: boolean;
+  onChange: (value: boolean) => void;
+  isDisabled?: boolean;
+}) {
+  const id = React.useId();
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p id={`${id}-label`} className="text-sm font-medium">
+          {label}
+        </p>
+        <p id={`${id}-description`} className="text-sm text-muted">
+          {description}
+        </p>
+      </div>
+      <Switch
+        isSelected={isSelected}
+        onChange={onChange}
+        isDisabled={isDisabled}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={`${id}-description`}
+        className="shrink-0"
+      >
+        {/* Switch.Content renders the real input; the control must sit inside it. */}
+        <Switch.Content>
+          <Switch.Control>
+            <Switch.Thumb />
+          </Switch.Control>
+        </Switch.Content>
+      </Switch>
+    </div>
+  );
 }
 
 export function EditMemberModal({
@@ -33,21 +182,33 @@ export function EditMemberModal({
 }: EditMemberModalProps) {
   const currentYear = new Date().getFullYear();
   const qc = useQueryClient();
-  const [fieldErrors, setFieldErrors] = useState<{
-    tShirtSize?: string;
-  }>({});
+  const [tab, setTab] = useState<string>(TAB.DETAILS);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [paymentDirty, setPaymentDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deletingPayment, setDeletingPayment] = useState(false);
-  const [payment, setPayment] = useState<{
-    membershipType?: string;
-    amount?: string;
-    method?: string;
-    status?: string;
-    markPaid?: boolean;
-  }>({});
+  const [payment, setPayment] = useState<PaymentDraft>({});
+  const [prefs, setPrefs] = useState<NotificationPreferences>(() =>
+    resolvePreferences(editing?.notificationPreferences),
+  );
+  const [prefsDirty, setPrefsDirty] = useState(false);
+
+  const set = (key: string, value: unknown) =>
+    onChange({ ...form, [key]: value });
+  const updatePayment = (next: Partial<PaymentDraft>) => {
+    setPayment((p) => ({ ...p, ...next }));
+    setPaymentDirty(true);
+  };
+
+  // Start on Details with the member's saved preferences each time it opens
+  useEffect(() => {
+    if (open) {
+      setTab(TAB.DETAILS);
+      setPrefs(resolvePreferences(editing?.notificationPreferences));
+      setPrefsDirty(false);
+    }
+  }, [open, editing]);
 
   // Load existing payment record when modal opens for an existing user
   useEffect(() => {
@@ -76,7 +237,6 @@ export function EditMemberModal({
         })
         .finally(() => setLoadingPayment(false));
     } else if (!open) {
-      setFieldErrors({});
       setPaymentDirty(false);
       setPayment({});
     }
@@ -112,24 +272,6 @@ export function EditMemberModal({
 
   async function handleSave() {
     if (saving) return; // guard double submit
-    const tShirtSize = String(form.tShirtSize ?? "").trim();
-    const nextFieldErrors: { tShirtSize?: string } = {};
-
-    if (tShirtSize && !T_SHIRT_SIZES.includes(tShirtSize as TShirtSize)) {
-      nextFieldErrors.tShirtSize = "Please select a valid T-shirt size.";
-    }
-
-    if (nextFieldErrors.tShirtSize) {
-      setFieldErrors(nextFieldErrors);
-      addToast({
-        title: "Invalid profile details",
-        description: "Please select a valid T-shirt size.",
-        color: "warning",
-      });
-      return;
-    }
-
-    setFieldErrors({});
     setSaving(true);
     try {
       // First run existing onSave for user profile
@@ -137,6 +279,24 @@ export function EditMemberModal({
 
       // Determine user ID for payment processing
       const userIdForPayment = editing?.id || newUserId;
+
+      if (isAdmin && editing && prefsDirty) {
+        try {
+          await saveMemberNotificationPreferences(editing.id, prefs);
+          setPrefsDirty(false);
+          qc.invalidateQueries({ queryKey: ["users"] });
+          qc.invalidateQueries({ queryKey: ["userProfile", editing.id] });
+        } catch (prefsError) {
+          Sentry.captureException(prefsError);
+          addToast({
+            title: "Preferences not saved",
+            description:
+              "Member information was saved, but their notification preferences could not be updated.",
+            color: "warning",
+          });
+          return;
+        }
+      }
 
       if (!isAdmin || !userIdForPayment || !paymentDirty) {
         addToast({
@@ -152,11 +312,14 @@ export function EditMemberModal({
 
       try {
         const membershipType = (payment.membershipType || "").trim();
-        if (membershipType !== "full" && membershipType !== "handicap") {
+        if (
+          membershipType !== MEMBERSHIP_TYPES.FULL &&
+          membershipType !== MEMBERSHIP_TYPES.HANDICAP
+        ) {
+          setTab(TAB.MEMBERSHIP);
           addToast({
-            title: "Invalid membership type",
-            description:
-              "Please select a valid membership type (Full or Handicap).",
+            title: "Choose a membership type",
+            description: "Pick Full or Handicap on the Membership tab.",
             color: "warning",
           });
           return;
@@ -164,7 +327,7 @@ export function EditMemberModal({
 
         const updates: Partial<
           Pick<
-            import("@/api/membership").MembershipPayment,
+            MembershipPayment,
             "amount" | "method" | "membershipType" | "status"
           >
         > = {
@@ -194,10 +357,7 @@ export function EditMemberModal({
         });
         onClose();
       } catch (paymentError) {
-        console.error(
-          "[EditMemberModal] membership payment save error",
-          paymentError,
-        );
+        Sentry.captureException(paymentError);
         addToast({
           title: "Payment save failed",
           description:
@@ -206,7 +366,7 @@ export function EditMemberModal({
         });
       }
     } catch (userSaveError) {
-      console.error("[EditMemberModal] user save error", userSaveError);
+      Sentry.captureException(userSaveError);
       addToast({
         title: "Save failed",
         description:
@@ -219,373 +379,393 @@ export function EditMemberModal({
     }
   }
 
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="bg-background dark:bg-default/60 rounded-lg p-6 w-full max-w-md z-10 my-auto">
-        <div className="flex items-center justify-between mb-4">
+  const role = text(form, "role");
+  const boardMember = !!form.boardMember;
+  const roleOptions = ALLOWED_BOARD_ROLES as readonly string[];
+  const roleChoices =
+    role && !roleOptions.includes(role) ? [role, ...roleOptions] : roleOptions;
+  const roleError = !boardMember
+    ? undefined
+    : !role.trim()
+      ? "Board members need a role."
+      : !isAllowedBoardRole(role)
+        ? "This role is no longer used. Pick a current one."
+        : undefined;
+
+  const detailsPanel = (
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <TextField
+          value={text(form, "firstName")}
+          onChange={(v) => set("firstName", v)}
+          isDisabled={saving}
+        >
+          <Label>First name</Label>
+          <Input autoComplete="off" />
+        </TextField>
+        <TextField
+          value={text(form, "lastName")}
+          onChange={(v) => set("lastName", v)}
+          isDisabled={saving}
+        >
+          <Label>Last name</Label>
+          <Input autoComplete="off" />
+        </TextField>
+        <TextField
+          value={text(form, "email")}
+          onChange={(v) => set("email", v)}
+          isDisabled={saving}
+        >
+          <Label>Email</Label>
+          <Input type="email" autoComplete="off" />
+        </TextField>
+        <TextField
+          value={text(form, "phone")}
+          onChange={(v) => set("phone", v)}
+          onBlur={() => set("phone", formatPhone(text(form, "phone")))}
+          isDisabled={saving}
+        >
+          <Label>Phone</Label>
+          <Input type="tel" autoComplete="off" />
+        </TextField>
+        <TextField
+          value={text(form, "ghinNumber")}
+          onChange={(v) => set("ghinNumber", v)}
+          isDisabled={saving}
+        >
+          <Label>GHIN number</Label>
+          <Input inputMode="numeric" autoComplete="off" />
+        </TextField>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">T-shirt size</p>
+        <ShirtSizePicker
+          value={text(form, "tShirtSize")}
+          onChange={(size) => set("tShirtSize", size)}
+        />
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <GoldTeeSwitch
+          isSelected={!!form.defaultGoldTee}
+          onChange={(value) => set("defaultGoldTee", value)}
+          isDisabled={saving}
+          description="Seniors only. Gold tees are pre-selected when they register or are added to a team."
+        />
+      </div>
+    </div>
+  );
+
+  const membershipPanel = (
+    <div className="flex flex-col gap-6">
+      {isAdmin && (
+        <section className="flex flex-col gap-4">
           <div>
-            <h3 className="text-lg font-medium">
-              {editing ? "Edit Member" : "Add Member"}
+            <h3 className="text-base font-semibold">
+              {currentYear} membership
             </h3>
-            {editing && (
-              <p className="text-xs text-muted mt-0.5 font-mono select-all">
-                {editing.id}
-              </p>
-            )}
+            <p className="text-sm text-muted">
+              {payment.status
+                ? `There's a ${payment.status} payment record for ${currentYear}.`
+                : `No payment recorded for ${currentYear} yet.`}
+            </p>
           </div>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            aria-label="Close"
-            onPress={onClose}
-            className="text-muted"
-          >
-            ×
-          </Button>
-        </div>
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="First Name"
-              value={form.firstName || ""}
-              disabled={saving}
-              onChange={(e: any) =>
-                onChange({ ...form, firstName: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Last Name"
-              value={form.lastName || ""}
-              disabled={saving}
-              onChange={(e: any) =>
-                onChange({ ...form, lastName: e.target.value })
-              }
-            />
-          </div>
-          <Input
-            placeholder="Email"
-            value={form.email || ""}
-            fullWidth
-            disabled={saving}
-            onChange={(e: any) => onChange({ ...form, email: e.target.value })}
-          />
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="Phone"
-              value={form.phone || ""}
-              disabled={saving}
-              onChange={(e: any) =>
-                onChange({ ...form, phone: e.target.value })
-              }
-              onBlur={() =>
-                onChange({ ...form, phone: formatPhone(form.phone) })
-              }
-            />
-            <Input
-              placeholder="GHIN Number"
-              value={form.ghinNumber || ""}
-              disabled={saving}
-              onChange={(e: any) =>
-                onChange({ ...form, ghinNumber: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Select
-              aria-label="T-Shirt Size"
-              placeholder="T-Shirt Size"
-              value={String(form.tShirtSize ?? "") || undefined}
-              isDisabled={saving}
-              isInvalid={!!fieldErrors.tShirtSize}
-              onChange={(key) => {
-                onChange({ ...form, tShirtSize: key ? String(key) : "" });
-                if (fieldErrors.tShirtSize) {
-                  setFieldErrors((prev) => ({
-                    ...prev,
-                    tShirtSize: undefined,
-                  }));
-                }
-              }}
-              className="w-full"
-            >
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {T_SHIRT_SIZES.map((size) => (
-                    <ListBox.Item key={size} id={size} textValue={size}>
-                      {size}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-            {fieldErrors.tShirtSize && (
-              <p className="text-[11px] text-danger">
-                {fieldErrors.tShirtSize}
-              </p>
-            )}
-          </div>
-          <div className="pt-2 border-t space-y-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-primary h-4 w-4"
-                checked={!!form.boardMember}
-                disabled={saving}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  onChange({
-                    ...form,
-                    boardMember: checked,
-                    role: checked ? form.role || "Board Member" : "",
-                  });
-                }}
-              />
-              <span>Board Member</span>
-            </label>
-            {form.boardMember ? (
-              <div className="space-y-1">
-                {(() => {
-                  const ROLE_OPTIONS = ALLOWED_BOARD_ROLES as readonly string[];
-                  const hasLegacy =
-                    form.role && !ROLE_OPTIONS.includes(form.role);
-                  const options = hasLegacy
-                    ? [form.role, ...ROLE_OPTIONS]
-                    : ROLE_OPTIONS;
-                  return (
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-foreground">
-                        Role <span className="text-danger">*</span>
-                      </label>
-                      <Select
-                        aria-label="Board Role"
-                        placeholder="Select a role"
-                        value={form.role || undefined}
-                        isDisabled={saving}
-                        onChange={(key) => {
-                          if (key) onChange({ ...form, role: String(key) });
-                        }}
-                        className="max-w-full"
-                      >
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
-                            {options.map((r) => (
-                              <ListBox.Item key={r} id={r} textValue={r}>
-                                {r}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                      {!form.role?.trim() && (
-                        <p className="text-[11px] text-danger mt-1">
-                          Required for board members
-                        </p>
-                      )}
-                      {form.role?.trim() &&
-                        form.boardMember &&
-                        !isAllowedBoardRole(form.role) && (
-                          <p className="text-[11px] text-danger mt-1">
-                            Legacy/unrecognized role, please pick a valid one.
-                          </p>
-                        )}
-                    </div>
-                  );
-                })()}
-              </div>
-            ) : (
-              <p className="text-[11px] text-muted">
-                Check "Board Member" to assign a role (e.g. President,
-                Treasurer).
-              </p>
-            )}
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="accent-primary h-4 w-4"
-              checked={!!form.defaultGoldTee}
-              disabled={saving}
-              onChange={(e) =>
-                onChange({ ...form, defaultGoldTee: e.target.checked })
-              }
-            />
-            <span className="flex items-center gap-1">
-              Default to Gold (Senior) Tees
-            </span>
-          </label>
-        </div>
-        {isAdmin && (
-          <div className="mt-6 pt-4 border-t space-y-3 text-sm">
-            <h4 className="text-sm font-medium">
-              Membership Payment ({currentYear})
-            </h4>
-            {loadingPayment ? (
-              <p className="text-xs text-muted">Loading payment…</p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex gap-3">
-                  <label className="flex items-center gap-2 text-xs">
-                    <input
-                      type="checkbox"
-                      className="accent-primary h-4 w-4"
-                      checked={!!payment.markPaid}
-                      disabled={saving}
-                      onChange={(e) => {
-                        setPayment((p) => ({
-                          ...p,
-                          markPaid: e.target.checked,
-                        }));
-                        setPaymentDirty(true);
-                      }}
-                    />
-                    <span>Paid / Confirmed</span>
-                  </label>
-                  <Select
-                    aria-label="Membership Type"
-                    placeholder="Type"
-                    value={payment.membershipType || undefined}
-                    isDisabled={saving}
-                    onChange={(key) => {
-                      if (key) {
-                        setPayment((p) => ({
-                          ...p,
-                          membershipType: String(key),
-                        }));
-                        setPaymentDirty(true);
-                      }
-                    }}
-                    className="min-w-32.5"
-                  >
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="full" textValue="Full">
-                          Full
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="handicap" textValue="Handicap">
-                          Handicap
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                  <Input
-                    placeholder="Amount"
-                    value={payment.amount || ""}
-                    className="max-w-25"
-                    disabled={saving}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setPayment((p) => ({ ...p, amount: e.target.value }));
-                      setPaymentDirty(true);
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Select
-                    aria-label="Payment Method"
-                    placeholder="Method"
-                    value={payment.method || undefined}
-                    isDisabled={saving}
-                    onChange={(key) => {
-                      const v = key ? String(key) : "";
-                      setPayment((p) => ({ ...p, method: v }));
-                      setPaymentDirty(true);
-                    }}
-                  >
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="paypal" textValue="PayPal">
-                          PayPal
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="check" textValue="Check">
-                          Check
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </div>
-                <p className="text-[11px] text-muted leading-snug">
-                  Marking Paid will create/update a membership payment record
-                  for {currentYear}. Leaving it unchecked keeps status pending.
+          {loadingPayment ? (
+            <div className="flex min-h-24 items-center justify-center">
+              <Spinner size="sm" aria-label="Loading payment" />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                <p id="member-type-label" className="text-sm font-medium">
+                  Membership type
                 </p>
-                {editing && payment.status && (
-                  <div className="pt-2 border-t">
-                    {confirmingDelete ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-danger">
-                          Delete this payment record?
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="tertiary"
-                          onPress={handleDeletePayment}
-                        >
-                          Confirm
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          isDisabled={deletingPayment}
-                          onPress={() => setConfirmingDelete(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
+                <ToggleButtonGroup
+                  aria-labelledby="member-type-label"
+                  selectionMode="single"
+                  disallowEmptySelection
+                  isDetached
+                  isDisabled={saving}
+                  selectedKeys={
+                    payment.membershipType ? [payment.membershipType] : []
+                  }
+                  onSelectionChange={(keys) => {
+                    const [next] = Array.from(keys);
+                    if (next !== undefined)
+                      updatePayment({ membershipType: String(next) });
+                  }}
+                  className="gap-1.5"
+                >
+                  <ToggleButton
+                    id={MEMBERSHIP_TYPES.FULL}
+                    className="h-11 px-4 font-semibold"
+                  >
+                    Full
+                  </ToggleButton>
+                  <ToggleButton
+                    id={MEMBERSHIP_TYPES.HANDICAP}
+                    className="h-11 px-4 font-semibold"
+                  >
+                    Handicap
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </div>
+
+              <SwitchRow
+                label={`Paid for ${currentYear}`}
+                description="On confirms the payment. Off keeps it pending."
+                isSelected={!!payment.markPaid}
+                onChange={(markPaid) => updatePayment({ markPaid })}
+                isDisabled={saving}
+              />
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <TextField
+                  value={payment.amount || ""}
+                  onChange={(amount) => updatePayment({ amount })}
+                  isDisabled={saving}
+                >
+                  <Label>Amount ($)</Label>
+                  <Input inputMode="decimal" />
+                </TextField>
+                <div className="flex flex-col gap-1">
+                  <p id="member-method-label" className="text-sm font-medium">
+                    Paid by
+                  </p>
+                  <ToggleButtonGroup
+                    aria-labelledby="member-method-label"
+                    selectionMode="single"
+                    isDetached
+                    isDisabled={saving}
+                    selectedKeys={payment.method ? [payment.method] : []}
+                    onSelectionChange={(keys) => {
+                      const [next] = Array.from(keys);
+                      updatePayment({ method: next ? String(next) : "" });
+                    }}
+                    className="gap-1.5"
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <ToggleButton
+                        key={m.id}
+                        id={m.id}
+                        className="h-11 px-4 font-semibold"
+                      >
+                        {m.label}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </div>
+              </div>
+
+              {editing && payment.status && (
+                <div className="flex min-h-11 flex-wrap items-center gap-2">
+                  {confirmingDelete ? (
+                    <>
+                      <span className="text-sm text-danger">
+                        Delete this payment record?
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        isDisabled={deletingPayment}
+                        onPress={handleDeletePayment}
+                      >
+                        Confirm
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        isDisabled={saving}
-                        onPress={() => setConfirmingDelete(true)}
+                        isDisabled={deletingPayment}
+                        onPress={() => setConfirmingDelete(false)}
                       >
-                        <Icon icon="lucide:trash-2" className="w-3.5 h-3.5" />
-                        Delete Payment
+                        Cancel
                       </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-danger"
+                      isDisabled={saving}
+                      onPress={() => setConfirmingDelete(true)}
+                    >
+                      <Icon icon="lucide:trash-2" className="h-4 w-4" />
+                      Delete payment
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      <section className="flex flex-col gap-3 border-t border-border pt-5">
+        <SwitchRow
+          label="Board member"
+          description="Listed on the board page with their role."
+          isSelected={boardMember}
+          onChange={(checked) =>
+            onChange({
+              ...form,
+              boardMember: checked,
+              role: checked ? role || "Board Member" : "",
+            })
+          }
+          isDisabled={saving}
+        />
+        {boardMember && (
+          <Select
+            placeholder="Select a role"
+            value={role || undefined}
+            isDisabled={saving}
+            isInvalid={!!roleError}
+            onChange={(key) => {
+              if (key) set("role", String(key));
+            }}
+            className="sm:max-w-xs"
+          >
+            <Label>Role</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {roleChoices.map((r) => (
+                  <ListBox.Item key={r} id={r} textValue={r}>
+                    {r}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+            <FieldError>{roleError}</FieldError>
+          </Select>
         )}
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="tertiary" onPress={onClose} isDisabled={saving}>
-            Cancel
-          </Button>
-          <Button onPress={handleSave} isDisabled={saving} aria-busy={saving}>
-            {saving ? (
-              <span className="flex items-center gap-1">
-                <Spinner size="sm" /> Saving...
-              </span>
-            ) : (
-              "Save"
-            )}
-          </Button>
-        </div>
-      </div>
+      </section>
     </div>
+  );
+
+  const notificationsPanel = (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted">
+        Turn off anything the member asked to stop getting, like an unsubscribe
+        request sent to the club inbox.
+      </p>
+      <MemberNotificationPreferences
+        value={prefs}
+        isDisabled={saving}
+        onChange={(next) => {
+          setPrefs(next);
+          setPrefsDirty(true);
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !saving) onClose();
+      }}
+    >
+      <Modal.Container
+        size="lg"
+        scroll="inside"
+        className="max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-3rem)]"
+      >
+        <Modal.Dialog
+          aria-label={editing ? "Edit member" : "Add member"}
+          className="max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-3rem)]"
+        >
+          <Modal.Header className="flex flex-col gap-3 pb-0">
+            <div className="flex items-start justify-between gap-3">
+              {editing ? (
+                <MemberSummary member={editing} year={currentYear} />
+              ) : (
+                <div>
+                  <h2 className="text-lg font-semibold">Add member</h2>
+                  <p className="text-sm text-muted">
+                    For someone who isn&apos;t on the site yet.
+                  </p>
+                </div>
+              )}
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                aria-label="Close"
+                onPress={onClose}
+                isDisabled={saving}
+                className="-mr-2 -mt-1 h-11 w-11 shrink-0 text-muted"
+              >
+                <Icon icon="lucide:x" className="h-5 w-5" />
+              </Button>
+            </div>
+            <Tabs
+              selectedKey={tab}
+              onSelectionChange={(k) => setTab(String(k))}
+            >
+              <Tabs.ListContainer>
+                <Tabs.List aria-label="Member sections">
+                  <Tabs.Tab id={TAB.DETAILS}>
+                    Details
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
+                  {isAdmin && (
+                    <Tabs.Tab id={TAB.MEMBERSHIP}>
+                      Membership
+                      <Tabs.Indicator />
+                    </Tabs.Tab>
+                  )}
+                  {isAdmin && editing && (
+                    <Tabs.Tab id={TAB.NOTIFICATIONS}>
+                      Notifications
+                      <Tabs.Indicator />
+                    </Tabs.Tab>
+                  )}
+                </Tabs.List>
+              </Tabs.ListContainer>
+            </Tabs>
+          </Modal.Header>
+          <Modal.Body className="pt-4 sm:min-h-104">
+            {tab === TAB.MEMBERSHIP && isAdmin
+              ? membershipPanel
+              : tab === TAB.NOTIFICATIONS && isAdmin && editing
+                ? notificationsPanel
+                : detailsPanel}
+          </Modal.Body>
+          <Modal.Footer className="border-t border-border pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Button
+              variant="tertiary"
+              onPress={onClose}
+              isDisabled={saving}
+              className="h-11 flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={handleSave}
+              isDisabled={saving || !!roleError}
+              aria-busy={saving}
+              className="h-11 flex-1 sm:flex-none sm:px-6"
+            >
+              {saving ? (
+                <span className="flex items-center gap-1">
+                  <Spinner size="sm" /> Saving…
+                </span>
+              ) : editing ? (
+                "Save changes"
+              ) : (
+                "Add member"
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

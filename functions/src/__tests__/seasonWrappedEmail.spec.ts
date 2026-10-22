@@ -70,12 +70,24 @@ describe("Season Wrapped email", () => {
     expect(email.html).toContain(
       "https://ridgefieldgolfclub.org/wrapped/2026?utm_source=resend&amp;utm_medium=email&amp;utm_campaign=season_wrapped_2026",
     );
-    expect(email.text).toContain("a thank-you to Frank Sergiovanni");
+    expect(email.text).not.toContain("Frank Sergiovanni");
     expect(email.tags).toEqual([
       { name: "category", value: "season_wrapped" },
       { name: "year", value: "2026" },
       { name: "uid", value: "uid_1" },
     ]);
+  });
+
+  it("adds the member's one-click unsubscribe link to the headers and footer", () => {
+    const unsubscribeUrl =
+      "https://us-central1-p.cloudfunctions.net/email_unsubscribe?u=uid_1&t=announcements&s=sig";
+    const email = buildSeasonWrappedEmail("mike@example.com", member, club, unsubscribeUrl);
+    expect(email.headers).toEqual({
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
+    expect(email.html).toContain(`href="${unsubscribeUrl.replace(/&/g, "&amp;")}"`);
+    expect(email.text).toContain(`Unsubscribe: ${unsubscribeUrl}`);
   });
 
   it("encodes uids Resend can't tag and the webhook decodes them back", () => {

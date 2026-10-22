@@ -16,6 +16,7 @@ import {
   type FieldValue,
 } from "firebase/firestore";
 import type { MembershipType } from "@@/types";
+import { requireAdmin } from "@/utils/admin";
 
 /**
  * Per-user notification opt-in preferences stored at users/{uid}.notificationPreferences.
@@ -488,6 +489,26 @@ export async function saveNotificationPreferences(
     notificationPreferences: prefs,
     updatedAt: serverTimestamp(),
   });
+}
+
+/**
+ * Admin-only: set another member's notification preferences, e.g. to honor an
+ * unsubscribe request that arrived by email. Members change their own with
+ * `saveNotificationPreferences`.
+ */
+export async function saveMemberNotificationPreferences(
+  uid: string,
+  prefs: NotificationPreferences,
+): Promise<void> {
+  await requireAdmin(auth.currentUser?.uid);
+  await Sentry.startSpan(
+    { op: "db.write", name: "saveMemberNotificationPreferences" },
+    () =>
+      updateDoc(doc(db, "users", uid), {
+        notificationPreferences: prefs,
+        updatedAt: serverTimestamp(),
+      }),
+  );
 }
 
 /**

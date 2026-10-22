@@ -73,14 +73,16 @@ function renderModal(
     isAdmin: true,
     ...overrides,
   };
-  return {
-    ...render(
-      <QueryClientProvider client={qc}>
-        <EditMemberModal {...defaultProps} />
-      </QueryClientProvider>,
-    ),
-    props: defaultProps,
-  };
+  const result = render(
+    <QueryClientProvider client={qc}>
+      <EditMemberModal {...defaultProps} />
+    </QueryClientProvider>,
+  );
+  // Payment controls live on the Membership tab.
+  if (defaultProps.isAdmin) {
+    fireEvent.click(screen.getByRole("tab", { name: "Membership" }));
+  }
+  return { ...result, props: defaultProps };
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -206,7 +208,9 @@ describe("EditMemberModal – Delete Payment", () => {
   it("does not show the payment section for non-admin users", async () => {
     renderModal({ isAdmin: false });
 
-    // Payment section heading should not appear
-    expect(screen.queryByText(/membership payment/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: "Membership" }),
+    ).not.toBeInTheDocument();
+    expect(getMembershipPaymentMock).not.toHaveBeenCalled();
   });
 });
