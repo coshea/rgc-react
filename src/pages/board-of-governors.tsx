@@ -5,6 +5,7 @@ import { UserAvatar } from "@/components/avatar";
 import { Icon } from "@iconify/react";
 import { useBoardMembers } from "@/hooks/useBoardMembers";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { BOARD_ROLE_META } from "@/types/roles";
 
 // Assumptions about User type extension:
 // - user.role?: string (e.g., 'president', 'vice-president', 'secretary', etc.) or
@@ -48,8 +49,7 @@ const BoardOfGovernorsPage: React.FC = () => {
           {boardMembers.map((member) => {
             const meta = member.roleMeta;
             const isPresident = member.isPresident;
-            const chipStart =
-              !isPresident && meta ? (
+            const chipStart = meta ? (
                 <Icon
                   icon={meta.icon}
                   className="inline-block w-3 h-3 mr-0.5 align-[-1px]"
@@ -106,7 +106,10 @@ const BoardOfGovernorsPage: React.FC = () => {
       {president && (
         <div className="mt-16 max-w-3xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-3 flex items-center justify-center gap-2">
-            <Icon icon="lucide:crown" className="w-6 h-6 text-warning" />
+            <Icon
+              icon={BOARD_ROLE_META.President.icon}
+              className="w-6 h-6 text-warning"
+            />
             Club President
           </h2>
           <p className="text-muted text-sm md:text-base leading-relaxed mb-4">

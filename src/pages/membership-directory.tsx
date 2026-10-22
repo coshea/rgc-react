@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Spinner } from "@heroui/react";
 import { addToast } from "@/providers/toast";
 import { useAuth } from "@/providers/AuthProvider";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@/api/users";
 import { isAllowedBoardRole } from "@/types/roles";
 import { updateUser, deleteUser, createUser } from "@/api/users";
@@ -9,8 +10,10 @@ import { formatPhone } from "@/utils/phone";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DirectoryHeader,
-  DirectorySearchBar,
-  MembersList,
+  DirectoryFilters,
+  MemberDirectoryList,
+  MemberContactPanel,
+  MemberActionsSheet,
   EditMemberModal,
   DeleteMemberModal,
   MergeDuplicatesModal,
@@ -20,6 +23,39 @@ import {
   useBoardMemberFlag,
 } from "@/components/membership/hooks";
 import { useMembers } from "@/hooks/useMembers";
+import { useEmailIssues } from "@/hooks/useEmailIssues";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { siteConfig } from "@/config/site";
+import {
+  DIRECTORY_FILTER,
+  type DirectoryFilter,
+  filterMembers,
+  groupMembersByLetter,
+} from "@/utils/memberDirectory";
+import { type EmailIssue, emailIssueDocId } from "@@/types";
+
+// Matches the sticky site navbar (45px + 1px border).
+const NAVBAR_HEIGHT = 46;
+const NO_EMAIL_ISSUES = new Map<string, EmailIssue>();
+
+// Per-browser convenience; the page works the same without storage.
+const ADMIN_VIEW_KEY = "rgc.directory.adminView";
+
+function readAdminViewPref(): boolean {
+  try {
+    return localStorage.getItem(ADMIN_VIEW_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function writeAdminViewPref(on: boolean) {
+  try {
+    localStorage.setItem(ADMIN_VIEW_KEY, on ? "on" : "off");
+  } catch {
+    // Storage blocked (private mode); the toggle still works for this visit.
+  }
+}
 
 import { usePageTracking } from "@/hooks/usePageTracking";
 
@@ -29,15 +65,22 @@ export default function MembershipDirectoryPage() {
   const navigate = useNavigate();
   const { isAdmin } = useAdminFlag(user);
   const { isBoardMember } = useBoardMemberFlag(user);
-  const isAdminOrBoard = isAdmin || isBoardMember;
+  // Admins can turn admin view off to see the page as members do.
+  const [adminView, setAdminView] = useState(readAdminViewPref);
+  const showAdmin = isAdmin && adminView;
+  const isAdminOrBoard = showAdmin || isBoardMember;
   const queryClient = useQueryClient(); // For invalidating queries after user operations
   const currentYear = new Date().getFullYear();
   const membersHook = useMembers(currentYear);
-  const members = membersHook.isAdmin
-    ? membersHook.allMembers
-    : membersHook.members;
   const allMembers = membersHook.allMembers;
+  const pageLoading = loading || membersHook.loading;
   const activeSet = membersHook.activeSet;
+  // Members only see people who paid in the last two years.
+  const members = useMemo(
+    () =>
+      showAdmin ? allMembers : allMembers.filter((m) => activeSet.has(m.id)),
+    [showAdmin, allMembers, activeSet],
+  );
 
   // Modal state for add/edit user
   const [open, setOpen] = useState(false);
@@ -48,22 +91,68 @@ export default function MembershipDirectoryPage() {
   // Merge duplicates modal state
   const [showMergeModal, setShowMergeModal] = useState(false);
 
-  // search filter
-  const [filter, setFilter] = useState("");
-  const [activeOnly, setActiveOnly] = useState(true);
+  // Admin, phone: the member whose actions sheet is open
+  const [actionsFor, setActionsFor] = useState<User | null>(null);
 
-  // compute visible count for the header summary (matches MembersList predicate)
-  const visibleCount = members.filter((m) => {
-    if (activeOnly && !activeSet.has(m.id)) return false;
-    if (!filter.trim()) return true;
-    const q = filter.toLowerCase();
-    return (
-      (m.displayName || "").toLowerCase().includes(q) ||
-      (m.email || "").toLowerCase().includes(q)
-    );
-  }).length;
+  const [query, setQuery] = useState("");
+  // null until the user picks a chip: admins start on active members
+  const [pickedFilter, setPickedFilter] = useState<DirectoryFilter | null>(
+    null,
+  );
+  const filter =
+    !showAdmin && pickedFilter === DIRECTORY_FILTER.ACTIVE
+      ? DIRECTORY_FILTER.ALL
+      : (pickedFilter ??
+        (showAdmin ? DIRECTORY_FILTER.ACTIVE : DIRECTORY_FILTER.ALL));
 
-  // Phone helpers moved to utils/phone.ts
+  // Desktop shows the selected member in a side panel; the URL keeps the
+  // selection so back, refresh and shared links work.
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = isDesktop ? searchParams.get("member") : null;
+
+  const visibleMembers = useMemo(
+    () => filterMembers(members, { query, filter, activeSet }),
+    [members, query, filter, activeSet],
+  );
+  const sections = useMemo(
+    () => groupMembersByLetter(visibleMembers),
+    [visibleMembers],
+  );
+  const selectedMember = selectedId
+    ? (members.find((m) => m.id === selectedId) ?? null)
+    : null;
+
+  const { data: emailIssueData } = useEmailIssues(isAdmin);
+  const emailIssues = showAdmin
+    ? (emailIssueData ?? NO_EMAIL_ISSUES)
+    : NO_EMAIL_ISSUES;
+  const issueFor = (u: User | null) =>
+    u?.email ? emailIssues.get(emailIssueDocId(u.email)) : undefined;
+
+  const summary = query.trim()
+    ? `${visibleMembers.length} match${visibleMembers.length === 1 ? "" : "es"}`
+    : showAdmin
+      ? `${activeSet.size} active of ${allMembers.length}`
+      : `${members.length} members`;
+
+  // Phone: letter headers stick just below the navbar and the search bar.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stickyBarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = stickyBarRef.current;
+    const root = rootRef.current;
+    if (!bar || !root) return;
+    const update = () =>
+      root.style.setProperty(
+        "--directory-sticky-top",
+        `${NAVBAR_HEIGHT + bar.offsetHeight}px`,
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [pageLoading]);
 
   // ── CSV export ────────────────────────────────────────────────────────────────
 
@@ -109,7 +198,7 @@ export default function MembershipDirectoryPage() {
 
   useEffect(() => {
     if (!loading && !userLoggedIn) {
-      const next = encodeURIComponent("/membership");
+      const next = encodeURIComponent(siteConfig.pages.directory.link);
       navigate(`/login?next=${next}`);
       return;
     }
@@ -253,6 +342,10 @@ export default function MembershipDirectoryPage() {
         description: `${confirmDelete.displayName || confirmDelete.email || "User"} removed`,
         color: "success",
       });
+      if (confirmDelete.id === selectedId) {
+        searchParams.delete("member");
+        setSearchParams(searchParams, { replace: true });
+      }
       setConfirmDelete(null);
 
       // Invalidate users query to refresh the list
@@ -270,45 +363,83 @@ export default function MembershipDirectoryPage() {
     }
   }
 
-  // edit and delete handled via modal or other admin flows; removed action buttons
-
-  if (loading) return <div>Loading...</div>;
+  if (pageLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner aria-label="Loading members" />
+      </div>
+    );
+  }
 
   return (
     <div
-      className="px-4 py-4 max-w-4xl mx-auto w-full overflow-x-hidden"
+      ref={rootRef}
+      className="mx-auto w-full max-w-6xl px-4 py-5 lg:px-6 lg:py-8"
       data-testid="membership-directory-root"
     >
       <DirectoryHeader
-        isAdmin={isAdmin}
+        isAdmin={showAdmin}
         isAdminOrBoard={isAdminOrBoard}
+        summary={summary}
         onAdd={openAdd}
         onFindDuplicates={() => setShowMergeModal(true)}
         onExportMembers={exportMemberList}
         members={allMembers}
         activeSet={activeSet}
         currentYear={currentYear}
-      />
-      <DirectorySearchBar
-        filter={filter}
-        onFilterChange={setFilter}
-        count={visibleCount}
-        total={members.length}
-        isAdmin={isAdmin}
-        activeOnly={activeOnly}
-        onActiveOnlyChange={setActiveOnly}
-      />
-
-      <MembersList
-        members={
-          isAdmin && activeOnly
-            ? members.filter((m) => activeSet.has(m.id))
-            : members
+        adminViewToggle={
+          isAdmin
+            ? {
+                isSelected: adminView,
+                onChange: (on) => {
+                  setAdminView(on);
+                  writeAdminViewPref(on);
+                },
+              }
+            : undefined
         }
-        filter={filter}
-        isAdmin={isAdmin}
-        activeSet={activeSet}
-        activeOnly={activeOnly}
+      />
+      <div
+        ref={stickyBarRef}
+        className="sticky top-[46px] z-20 -mx-4 mt-3 bg-background px-4 py-2 lg:static lg:mx-0 lg:mb-6 lg:mt-5 lg:p-0"
+      >
+        <DirectoryFilters
+          query={query}
+          onQueryChange={setQuery}
+          filter={filter}
+          onFilterChange={setPickedFilter}
+          showActiveFilter={showAdmin}
+        />
+      </div>
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <MemberDirectoryList
+          sections={sections}
+          isAdmin={showAdmin}
+          isDesktop={isDesktop}
+          selectedId={selectedId}
+          emailIssues={emailIssues}
+          year={currentYear}
+          query={query}
+          onClearSearch={() => setQuery("")}
+          onMore={setActionsFor}
+        />
+        {isDesktop && (
+          <MemberContactPanel
+            member={selectedMember}
+            isAdmin={showAdmin}
+            emailIssue={issueFor(selectedMember)}
+            onEdit={openEdit}
+            onDelete={requestDelete}
+          />
+        )}
+      </div>
+
+      <MemberActionsSheet
+        member={showAdmin && !isDesktop ? actionsFor : null}
+        year={currentYear}
+        emailIssue={issueFor(actionsFor)}
+        onClose={() => setActionsFor(null)}
         onEdit={openEdit}
         onDelete={requestDelete}
       />

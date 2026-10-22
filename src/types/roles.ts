@@ -18,7 +18,8 @@ export const BOARD_ROLE_META: Record<
   { icon: string; color: any; label: string; priority: number }
 > = {
   President: {
-    icon: "lucide:crown",
+    // Presides over board meetings; the crown is taken by championships.
+    icon: "lucide:gavel",
     color: "warning",
     label: "President",
     priority: 1,
@@ -91,6 +92,12 @@ export function formatBoardRoleLabel(role: string | null | undefined): string {
     .split(" ")
     .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
     .join(" ");
+}
+
+/** Icon for a board role, as shown on the board page; a shield for unknown roles. */
+export function boardRoleIcon(role: string | null | undefined): string {
+  const norm = coerceBoardRole(role);
+  return norm ? BOARD_ROLE_META[norm].icon : "lucide:shield";
 }
 
 export function isAllowedBoardRole(

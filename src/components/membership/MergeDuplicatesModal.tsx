@@ -481,9 +481,14 @@ export const MergeDuplicatesModal: React.FC<MergeDuplicatesModalProps> = ({
                       <Radio
                         key={user.id}
                         value={user.id}
-                        className="max-w-full"
+                        className="flex max-w-full flex-row items-start gap-3"
                       >
-                        {renderUserCard(user, true)}
+                        <Radio.Control className="mt-6">
+                          <Radio.Indicator />
+                        </Radio.Control>
+                        <Radio.Content className="min-w-0 flex-1">
+                          {renderUserCard(user, true)}
+                        </Radio.Content>
                       </Radio>
                     ))}
                   </RadioGroup>
