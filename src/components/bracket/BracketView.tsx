@@ -2,7 +2,7 @@
  * BracketView – renders a single-elimination bracket as a left-to-right tree
  * using absolute positioning + SVG connector lines.
  *
- * Display-only component. Winner management is handled by the admin bracket-tab form.
+ * Display-only component. Winner management is handled by BracketEditor in the tournament editor.
  */
 
 import type {

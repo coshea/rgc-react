@@ -11,6 +11,7 @@ import {
 import { httpsCallable } from "firebase/functions";
 
 import { db, functions } from "@/config/firebase";
+import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 import {
   SEASON_WRAPPED_COLLECTION,
   SEASON_WRAPPED_DELIVERY,
@@ -51,7 +52,7 @@ export async function fetchWrappedSeason(
         return snap.exists() ? (snap.data() as SeasonWrappedSeason) : null;
       } catch (error) {
         if (isPermissionDenied(error)) return null;
-        Sentry.captureException(error);
+        if (!isFirestoreOfflineError(error)) Sentry.captureException(error);
         throw error;
       }
     },
@@ -73,7 +74,7 @@ export async function fetchWrappedStory(
         return snap.exists() ? (snap.data() as SeasonWrappedMember) : null;
       } catch (error) {
         if (isPermissionDenied(error)) return null;
-        Sentry.captureException(error);
+        if (!isFirestoreOfflineError(error)) Sentry.captureException(error);
         throw error;
       }
     },

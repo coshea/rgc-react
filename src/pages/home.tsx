@@ -3,7 +3,6 @@ import { lazy, Suspense, useEffect } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { useLocation } from "react-router-dom";
 import { RecentBlogPosts } from "@/components/recent-blog-posts";
-import { WrappedBanner } from "@/components/season-wrapped/wrapped-banner";
 
 const TournamentSection = lazy(() =>
   import("@/components/tournament-section").then((module) => ({
@@ -86,7 +85,6 @@ export default function HomePage() {
 
   return (
     <section className="flex flex-col items-center justify-center overflow-x-hidden">
-      <WrappedBanner />
       <RecentBlogPosts limit={3} />
 
       <Suspense fallback={<TournamentSectionSkeleton />}>

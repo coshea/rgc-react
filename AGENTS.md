@@ -28,6 +28,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 
 **Run these without asking:** reading and searching files, tests, lint, type-check, build.
 **Ask first:** installing packages or adding heavy dependencies, deleting files, pushing commits, deploying (`npm run firebase`, `functions`, `firestore`), changing permissions (chmod).
+**Exception:** you may delete code or files that are deprecated or no longer used anywhere (check with a search first) without asking, e.g. a component left unreferenced by your change.
 
 ## Architecture
 
@@ -89,7 +90,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **Events:** use `onPress` on HeroUI components and `onClick` only on native elements. Never put `onPress` on native DOM nodes; wrap them in a HeroUI `Button`/`Link` instead (this includes a clickable `UserAvatar`, which deliberately doesn't forward `onPress`). Filter out non-DOM props before spreading them onto native elements.
 - **Prefer HeroUI controls** over raw `<button>`/`<input>`/`<select>`/`<img>` in new code and on lines you change. Don't proactively upgrade legacy controls elsewhere in a file you touch. If raw HTML is unavoidable, keep it accessible and say why in a comment.
 - **Modals:**
-  - New modals use the HeroUI `Modal`: `Modal.Backdrop isOpen/onOpenChange` → `Modal.Container` → `Modal.Dialog` → `Modal.Header`/`Body`/`Footer` (see `edit-profile-modal.tsx`).
+  - New modals use the HeroUI `Modal`: `Modal.Backdrop isOpen/onOpenChange` → `Modal.Container` → `Modal.Dialog` → `Modal.Header`/`Body`/`Footer` (see `championship-editor-modal.tsx`).
   - Legacy fixed-overlay modals (`EditMemberModal`, `DeleteMemberModal`, `RegistrationsSection`) stay as they are unless their shell must change; then migrate them.
   - Keep a modal shell in its feature file until 3 or more places need it.
   - Never use `window.confirm`.
