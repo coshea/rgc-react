@@ -5,7 +5,7 @@ import clsx from "clsx";
 
 import type { User } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
-import { formatBoardRoleLabel } from "@/types/roles";
+import { boardRoleIcon, formatBoardRoleLabel } from "@/types/roles";
 import {
   memberName,
   membershipSummary,
@@ -61,7 +61,7 @@ export function MemberDirectoryRow({
         {member.boardMember && (
           <span className="flex items-center gap-1 truncate text-sm text-muted">
             <Icon
-              icon="lucide:flag"
+              icon={boardRoleIcon(member.role)}
               className="h-3.5 w-3.5 shrink-0 text-accent"
               aria-hidden="true"
             />

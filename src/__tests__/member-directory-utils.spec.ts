@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import type { User } from "@/api/users";
+import { boardRoleIcon } from "@/types/roles";
 import {
   DIRECTORY_FILTER,
   filterMembers,
@@ -92,5 +93,13 @@ describe("telHref", () => {
   it("builds a digits-only tel link", () => {
     expect(telHref("(203) 555-0114")).toBe("tel:2035550114");
     expect(telHref("")).toBe("");
+  });
+});
+
+describe("boardRoleIcon", () => {
+  it("uses the board page's role icons, with a fallback for unknown roles", () => {
+    expect(boardRoleIcon("President")).toBe("lucide:gavel");
+    expect(boardRoleIcon("treasurer")).toBe("lucide:wallet");
+    expect(boardRoleIcon("Social Chair")).toBe("lucide:shield");
   });
 });

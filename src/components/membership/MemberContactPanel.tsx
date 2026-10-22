@@ -6,7 +6,7 @@ import * as Sentry from "@sentry/react";
 import type { User } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
 import { addToast } from "@/providers/toast";
-import { formatBoardRoleLabel } from "@/types/roles";
+import { boardRoleIcon, formatBoardRoleLabel } from "@/types/roles";
 import { formatPhone } from "@/utils/phone";
 import { memberName, telHref } from "@/utils/memberDirectory";
 import { MEMBERSHIP_TYPES, type EmailIssue } from "@@/types";
@@ -86,7 +86,7 @@ export function MemberContactPanel({
           {member.boardMember && (
             <p className="flex items-center gap-1.5 text-muted">
               <Icon
-                icon="lucide:flag"
+                icon={boardRoleIcon(member.role)}
                 className="h-4 w-4 shrink-0 text-accent"
                 aria-hidden="true"
               />
