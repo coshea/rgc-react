@@ -25,6 +25,19 @@ export function extractFirebaseAuthError(
 }
 
 /**
+ * True when a Firestore read failed because the device is offline and the
+ * document isn't in the local cache. Expected on phones at the course, so
+ * it isn't a bug worth reporting.
+ */
+export function isFirestoreOfflineError(error: unknown): boolean {
+  const { code, message = "" } = extractFirebaseAuthError(error) ?? {};
+  return (
+    code === "unavailable" ||
+    /client is offline|could not reach cloud firestore backend/i.test(message)
+  );
+}
+
+/**
  * Error callback for Firestore listeners. Keeps the console message, and
  * reports permission-denied to Sentry: a denied listener means the client
  * subscribed to something the rules don't allow (e.g. before auth), which is

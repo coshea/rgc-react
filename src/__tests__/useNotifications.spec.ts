@@ -276,6 +276,106 @@ describe("useNotifications", () => {
     expect(captureException).toHaveBeenCalledWith(denied);
   });
 
+  it("resubscribes when the first listen is denied right after sign-in", async () => {
+    vi.useFakeTimers();
+    const denied = Object.assign(
+      new Error("Missing or insufficient permissions."),
+      { code: "permission-denied" },
+    );
+    const captureException = vi.fn();
+    const n1 = makeNotification({ id: "a", read: false });
+    let calls = 0;
+
+    vi.doMock("@sentry/react", () => ({ captureException }));
+    vi.doMock("@/config/firebase", () => ({ db: {} }));
+    vi.doMock("firebase/firestore", () => ({
+      collection: vi.fn(() => ({})),
+      query: vi.fn(() => ({})),
+      where: vi.fn(() => ({})),
+      orderBy: vi.fn(() => ({})),
+      limit: vi.fn(() => ({})),
+      onSnapshot: vi.fn(
+        (
+          _q: unknown,
+          next: (snap: unknown) => void,
+          error: (err: unknown) => void,
+        ) => {
+          calls += 1;
+          if (calls === 1) error(denied);
+          else next({ docs: [{ id: n1.id, data: () => n1 }] });
+          return () => {};
+        },
+      ),
+      doc: vi.fn(),
+      updateDoc: vi.fn(),
+      deleteDoc: vi.fn(),
+      writeBatch: vi.fn(),
+    }));
+
+    try {
+      const { renderHook, act } = await import("@testing-library/react");
+      const { useNotifications } = await import("@/hooks/useNotifications");
+
+      const { result } = renderHook(() => useNotifications("user-123"));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(calls).toBe(2);
+      expect(result.current.notifications).toHaveLength(1);
+      expect(captureException).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports the listener once retries are exhausted", async () => {
+    vi.useFakeTimers();
+    const denied = Object.assign(
+      new Error("Missing or insufficient permissions."),
+      { code: "permission-denied" },
+    );
+    const captureException = vi.fn();
+    const onSnapshot = vi.fn(
+      (_q: unknown, _next: unknown, error: (err: unknown) => void) => {
+        error(denied);
+        return () => {};
+      },
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.doMock("@sentry/react", () => ({ captureException }));
+    vi.doMock("@/config/firebase", () => ({ db: {} }));
+    vi.doMock("firebase/firestore", () => ({
+      collection: vi.fn(() => ({})),
+      query: vi.fn(() => ({})),
+      where: vi.fn(() => ({})),
+      orderBy: vi.fn(() => ({})),
+      limit: vi.fn(() => ({})),
+      onSnapshot,
+      doc: vi.fn(),
+      updateDoc: vi.fn(),
+      deleteDoc: vi.fn(),
+      writeBatch: vi.fn(),
+    }));
+
+    try {
+      const { renderHook, act } = await import("@testing-library/react");
+      const { useNotifications } = await import("@/hooks/useNotifications");
+
+      const { result } = renderHook(() => useNotifications("user-123"));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+
+      expect(onSnapshot).toHaveBeenCalledTimes(4);
+      expect(captureException).toHaveBeenCalledTimes(1);
+      expect(result.current.loading).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("dismissNotification calls deleteDoc", async () => {
     const deleteDoc = vi.fn();
     const docRef = { path: "notifications/notif-1" };

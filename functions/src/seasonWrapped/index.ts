@@ -7,6 +7,11 @@ import {
 } from "firebase-functions/v2/https";
 
 import { getEmailIssueAddresses } from "../emailIssues";
+import {
+  EMAIL_UNSUBSCRIBE_SECRET,
+  buildUnsubscribeUrl,
+  unsubscribeKey,
+} from "../emailUnsubscribe";
 import { logger } from "../logger";
 import {
   areAutomatedMemberEmailsEnabled,
@@ -574,11 +579,19 @@ async function sendEmailChunk(
   }
   await claim.commit();
 
+  const key = unsubscribeKey();
   let failedIndices: number[];
   try {
     const result = await sendResendBatch(
       apiKey,
-      chunk.map((t) => buildSeasonWrappedEmail(t.email, t.story, club)),
+      chunk.map((t) =>
+        buildSeasonWrappedEmail(
+          t.email,
+          t.story,
+          club,
+          buildUnsubscribeUrl(key, t.uid, "announcements"),
+        ),
+      ),
       { idempotencyPrefix: `season-wrapped/${year}` },
     );
     failedIndices = result.failedIndices;
@@ -626,7 +639,7 @@ function appNotification(year: number, uid: string, test = false) {
  * Push rides on the in-app notification (dispatch_push_notification).
  */
 export const send_season_wrapped_announcements = onCall(
-  { timeoutSeconds: 540, secrets: [RESEND_API_KEY] },
+  { timeoutSeconds: 540, secrets: [RESEND_API_KEY, EMAIL_UNSUBSCRIBE_SECRET] },
   withSentry("send_season_wrapped_announcements", async (request: CallableRequest) => {
     const callerUid = await requireAdmin(request);
     const data = asData(request.data);
@@ -781,7 +794,7 @@ export const send_season_wrapped_announcements = onCall(
 
 /** Sends one member's email and an app notification to the calling admin only. */
 export const send_season_wrapped_test = onCall(
-  { secrets: [RESEND_API_KEY] },
+  { secrets: [RESEND_API_KEY, EMAIL_UNSUBSCRIBE_SECRET] },
   withSentry("send_season_wrapped_test", async (request: CallableRequest) => {
     const callerUid = await requireAdmin(request);
     const data = asData(request.data);
@@ -809,7 +822,13 @@ export const send_season_wrapped_test = onCall(
       throw new HttpsError("internal", "Resend is not configured.");
     }
 
-    const message = buildSeasonWrappedEmail(email, story, season.club);
+    // The admin receives it, so the unsubscribe link is theirs, not the member's.
+    const message = buildSeasonWrappedEmail(
+      email,
+      story,
+      season.club,
+      buildUnsubscribeUrl(unsubscribeKey(), callerUid, "announcements"),
+    );
     // Single send without an idempotency key, so repeated tests all arrive.
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",

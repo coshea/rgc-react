@@ -139,6 +139,35 @@ describe("buildRegistrationOpeningMemberEmail", () => {
     ]);
   });
 
+  it("uses the signed one-click unsubscribe link when given one", () => {
+    const unsubscribeUrl =
+      "https://us-central1-p.cloudfunctions.net/email_unsubscribe?u=pat&t=tournament_updates&s=sig";
+    const email = buildRegistrationOpeningMemberEmail(
+      { email: "pat@example.com", firstName: "Pat", unsubscribeUrl },
+      "abc",
+      params,
+    );
+
+    expect(email.headers).toEqual({
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
+    expect(email.html).toContain(
+      `href="${unsubscribeUrl.replace(/&/g, "&amp;")}"`,
+    );
+    expect(email.text).toContain(`Unsubscribe: ${unsubscribeUrl}`);
+  });
+
+  it("keeps the settings-page header without a one-click link", () => {
+    const email = buildRegistrationOpeningMemberEmail(
+      { email: "pat@example.com" },
+      "abc",
+      params,
+    );
+    expect(email.headers?.["List-Unsubscribe-Post"]).toBeUndefined();
+    expect(email.html).not.toContain(">Unsubscribe</a>");
+  });
+
   it("tags tournament links with UTM params but shows the clean URL", () => {
     const email = buildRegistrationOpeningMemberEmail(
       { email: "pat@example.com" },

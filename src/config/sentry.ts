@@ -231,6 +231,12 @@ if (enabled) {
         return null;
       }
 
+      // Rejection raised by Outlook's Safe Links scanner (a headless browser
+      // that opens links from emails), not by a member's browser.
+      if (/Object Not Found Matching Id:\d+/i.test(combinedText)) {
+        return null;
+      }
+
       const isChunkLoadFailure =
         /failed to fetch dynamically imported module/i.test(combinedText) ||
         /importing a module script failed/i.test(combinedText) ||

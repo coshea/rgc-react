@@ -149,7 +149,19 @@ vi.mock("../sendRegistrationOpeningEmails", () => ({
   buildRegistrationOpeningMemberEmail: (recipient: {
     email: string;
     firstName?: string;
-  }) => ({ to: [recipient.email], firstName: recipient.firstName }),
+    unsubscribeUrl?: string;
+  }) => ({
+    to: [recipient.email],
+    firstName: recipient.firstName,
+    unsubscribeUrl: recipient.unsubscribeUrl,
+  }),
+}));
+
+vi.mock("../emailUnsubscribe", () => ({
+  EMAIL_UNSUBSCRIBE_SECRET: { value: () => "test-unsubscribe-key" },
+  unsubscribeKey: () => "test-unsubscribe-key",
+  buildUnsubscribeUrl: (key: string, uid: string, topic: string) =>
+    `https://unsubscribe.test/${topic}/${uid}?k=${key}`,
 }));
 
 vi.mock("../resendBatch", () => ({
@@ -420,13 +432,18 @@ describe("notify_registration_opening handler", () => {
       expect(batchState.send).toHaveBeenCalledTimes(1);
       const [key, emails, options] = batchState.send.mock.calls[0] as [
         string,
-        Array<{ to: string[] }>,
+        Array<{ to: string[]; unsubscribeUrl?: string }>,
         { idempotencyPrefix: string },
       ];
       expect(key).toBe("test-resend-key");
       expect(emails.map((e) => e.to[0])).toEqual([
         "ann@example.com",
         "pushoff@example.com",
+      ]);
+      // Each member gets their own signed one-click unsubscribe link.
+      expect(emails.map((e) => e.unsubscribeUrl)).toEqual([
+        "https://unsubscribe.test/tournament_updates/ann?k=test-unsubscribe-key",
+        "https://unsubscribe.test/tournament_updates/pushoff?k=test-unsubscribe-key",
       ]);
       expect(options.idempotencyPrefix).toBe(
         `registration-opening/${tournamentId}`,

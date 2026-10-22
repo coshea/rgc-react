@@ -17,6 +17,11 @@ import { RESEND_API_KEY } from "./resendConfig";
 import { sendResendBatch } from "./resendBatch";
 import { getEmailIssueAddresses } from "./emailIssues";
 import {
+  EMAIL_UNSUBSCRIBE_SECRET,
+  buildUnsubscribeUrl,
+  unsubscribeKey,
+} from "./emailUnsubscribe";
+import {
   buildRegistrationOpeningMemberEmail,
   type RegistrationOpeningAdminEmailParams,
   type RegistrationOpeningMemberRecipient,
@@ -286,7 +291,15 @@ export async function sendRegistrationOpeningPreviewEmail({
   // Same email members get, so admins preview exactly what goes out.
   await sendRegistrationOpeningMemberPreviewEmail(
     apiKey,
-    { email, firstName: userData ? firstName(userData) : undefined },
+    {
+      email,
+      firstName: userData ? firstName(userData) : undefined,
+      unsubscribeUrl: buildUnsubscribeUrl(
+        unsubscribeKey(),
+        recipientUid,
+        "tournament_updates",
+      ),
+    },
     tournamentId,
     buildEmailParams(tournamentId, tournament),
   );
@@ -451,14 +464,19 @@ async function sendRegistrationOpeningMemberEmails(
   });
 
   const params = buildEmailParams(tournamentId, tournament);
+  const key = unsubscribeKey();
   let sent = 0;
   let failedRecipients: PendingMemberRecipient[];
   try {
     const result = await sendResendBatch(
       apiKey,
-      recipients.map(({ email, firstName: name }) =>
+      recipients.map(({ uid, email, firstName: name }) =>
         buildRegistrationOpeningMemberEmail(
-          { email, firstName: name },
+          {
+            email,
+            firstName: name,
+            unsubscribeUrl: buildUnsubscribeUrl(key, uid, "tournament_updates"),
+          },
           tournamentId,
           params,
         ),
@@ -571,7 +589,7 @@ async function retryPendingMemberEmails(
 }
 
 export const send_registration_opening_preview_email = onCall(
-  { secrets: [RESEND_API_KEY] },
+  { secrets: [RESEND_API_KEY, EMAIL_UNSUBSCRIBE_SECRET] },
   withSentry(
     "send_registration_opening_preview_email",
     async (request: CallableRequest) => {
@@ -628,7 +646,7 @@ export const notify_registration_opening = onSchedule(
     timeZone: "America/New_York",
     // Room for Resend rate-limit retries when emailing the membership.
     timeoutSeconds: 300,
-    secrets: [RESEND_API_KEY],
+    secrets: [RESEND_API_KEY, EMAIL_UNSUBSCRIBE_SECRET],
   },
   withSentry("notify_registration_opening", async () => {
     const db = admin.firestore();

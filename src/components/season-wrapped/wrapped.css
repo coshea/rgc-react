@@ -448,7 +448,3 @@
   60% { opacity: 1; transform: translateY(calc(var(--u) * -4)) rotate(1.5deg) scale(1.01); }
   100% { transform: none; }
 }
-
-/* Home page banner */
-.wr-banner { font-family: var(--f-body); }
-.wr-banner .wr-big { font-size: clamp(28px, 6vw, 40px); color: var(--c-flag); }

@@ -21,6 +21,27 @@ export interface RegistrationOpeningAdminEmailParams {
   recipientFirstName?: string;
   /** Member variant: adds a "why you got this" footer with this link. */
   manageNotificationsUrl?: string;
+  /** Member variant: signed one-click unsubscribe link for the footer. */
+  unsubscribeUrl?: string;
+}
+
+/**
+ * List-Unsubscribe headers for member emails. With a signed one-click URL
+ * (RFC 8058) mail clients and unsubscribe tools turn the preference off
+ * directly; without one they fall back to the settings page or an email to
+ * the club inbox, which someone has to action by hand.
+ */
+export function listUnsubscribeHeaders(
+  unsubscribeUrl?: string,
+): Record<string, string> {
+  return unsubscribeUrl
+    ? {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      }
+    : {
+        "List-Unsubscribe": `<${MANAGE_NOTIFICATIONS_URL}>, <mailto:${CONTACT_EMAIL}?subject=Unsubscribe>`,
+      };
 }
 
 function esc(value: string): string {
@@ -110,6 +131,7 @@ export function buildRegistrationOpeningAdminEmailHtml(
     registrationCloses,
     recipientFirstName,
     manageNotificationsUrl,
+    unsubscribeUrl,
   } = params;
 
   const preheader = [
@@ -120,7 +142,7 @@ export function buildRegistrationOpeningAdminEmailHtml(
     .filter(Boolean)
     .join(" ");
   const preferencesFooter = manageNotificationsUrl
-    ? `<p style="margin:8px 0 0;font-size:13px;color:#71717a;font-family:${FONT};line-height:1.6;">You&#39;re receiving this email because you&#39;re a current Ridgefield Golf Club member with tournament updates turned on. <a href="${esc(manageNotificationsUrl)}" style="color:#006fee;text-decoration:underline;">Manage email preferences</a></p>`
+    ? `<p style="margin:8px 0 0;font-size:13px;color:#71717a;font-family:${FONT};line-height:1.6;">You&#39;re receiving this email because you&#39;re a current Ridgefield Golf Club member with tournament updates turned on. <a href="${esc(manageNotificationsUrl)}" style="color:#006fee;text-decoration:underline;">Manage email preferences</a>${unsubscribeUrl ? ` · <a href="${esc(unsubscribeUrl)}" style="color:#006fee;text-decoration:underline;">Unsubscribe</a>` : ""}</p>`
     : "";
 
   const detailsRows = buildDetails(params)
@@ -239,9 +261,10 @@ export function buildRegistrationOpeningEmailText(
     tournamentLinkUrl = tournamentUrl,
     recipientFirstName,
     manageNotificationsUrl,
+    unsubscribeUrl,
   } = params;
 
-  const details = buildDetails(params)
+  const details =buildDetails(params)
     .filter(([, value]) => value)
     .map(([label, value]) => `${label}: ${value}`);
 
@@ -268,6 +291,7 @@ export function buildRegistrationOpeningEmailText(
       ? [
           "You're receiving this email because you're a current Ridgefield Golf Club member with tournament updates turned on.",
           `Manage email preferences: ${manageNotificationsUrl}`,
+          ...(unsubscribeUrl ? [`Unsubscribe: ${unsubscribeUrl}`] : []),
         ]
       : []),
     "Ridgefield Golf Club, PO Box 24, Ridgefield, CT 06877",
@@ -339,6 +363,8 @@ export function withUtm(
 export interface RegistrationOpeningMemberRecipient {
   email: string;
   firstName?: string;
+  /** Signed one-click unsubscribe link (see emailUnsubscribe.ts). */
+  unsubscribeUrl?: string;
 }
 
 /**
@@ -357,6 +383,7 @@ export function buildRegistrationOpeningMemberEmail(
     tournamentLinkUrl: withUtm(params.tournamentUrl, campaign, tournamentId),
     recipientFirstName: recipient.firstName,
     manageNotificationsUrl: MANAGE_NOTIFICATIONS_URL,
+    unsubscribeUrl: recipient.unsubscribeUrl,
   };
   return {
     from: FROM_EMAIL,
@@ -364,9 +391,7 @@ export function buildRegistrationOpeningMemberEmail(
     subject: buildSubject(params.tournamentTitle),
     html: buildRegistrationOpeningAdminEmailHtml(memberParams),
     text: buildRegistrationOpeningEmailText(memberParams),
-    headers: {
-      "List-Unsubscribe": `<${MANAGE_NOTIFICATIONS_URL}>, <mailto:${CONTACT_EMAIL}?subject=Unsubscribe>`,
-    },
+    headers: listUnsubscribeHeaders(recipient.unsubscribeUrl),
     tags: [
       { name: "category", value: "registration_opening" },
       {

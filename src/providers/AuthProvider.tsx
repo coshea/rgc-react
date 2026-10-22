@@ -31,6 +31,7 @@ import {
 import React, { useEffect, useState, createContext, useContext } from "react";
 import * as Sentry from "@sentry/react";
 import { logger } from "@/config/sentry";
+import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
 const HEROUI_THEME_STORAGE_KEY = "heroui-theme";
@@ -508,26 +509,6 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
   useEffect(() => {
     let cancelled = false;
     let retryInterval: ReturnType<typeof setInterval> | null = null;
-
-    const isFirestoreOfflineError = (error: unknown) => {
-      const code =
-        typeof error === "object" && error !== null && "code" in error
-          ? (error as { code?: unknown }).code
-          : undefined;
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : "";
-
-      return (
-        code === "unavailable" ||
-        /client is offline|could not reach cloud firestore backend/i.test(
-          message,
-        )
-      );
-    };
 
     async function tag() {
       const instance = getAnalyticsInstance();

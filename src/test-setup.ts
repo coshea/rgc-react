@@ -28,6 +28,12 @@ vi.stubGlobal(
   },
 );
 
+// jsdom has no Web Animations API; React Aria waits on getAnimations() when
+// an animated element (e.g. the Tabs indicator) changes.
+if (typeof Element.prototype.getAnimations !== "function") {
+  Element.prototype.getAnimations = () => [];
+}
+
 // Node.js 25 introduces `--localstorage-file` which conflicts with jsdom's
 // localStorage implementation, causing `localStorage.getItem` to not be a
 // function. Stub out the Web Storage API with a simple in-memory Map.

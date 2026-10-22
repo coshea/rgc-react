@@ -50,6 +50,7 @@ export {
   send_registration_opening_preview_email,
 } from "./notifyRegistrationOpening";
 export { resend_webhook } from "./resendWebhook";
+export { email_unsubscribe } from "./emailUnsubscribe";
 export {
   generate_season_wrapped,
   get_season_wrapped_share_image,
