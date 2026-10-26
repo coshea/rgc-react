@@ -468,6 +468,63 @@ describe("TournamentEditor - edit mode", () => {
     });
   });
 
+  it("saves the latest bracket standings after a live bracket result", async () => {
+    const standings = (places: number[]) => ({
+      id: "bracket-round:standings",
+      label: "Bracket Standings",
+      type: "overall" as const,
+      order: 0,
+      winners: places.map((place, i) => ({
+        id: `team${i}:standings`,
+        place,
+        competitors: [{ userId: `u${i}`, displayName: `Player ${i}` }],
+        prizeAmount: 50,
+        roundsWon: place === 1 ? 2 : 1,
+      })),
+    });
+    const existing: Tournament = {
+      ...openRegistrationWindow(),
+      title: "Match Play",
+      description: "Bracket",
+      players: 2,
+      status: TournamentStatus.InProgress,
+      prizePool: 1000,
+      // Final not played yet: both finalists are still alive in 1st.
+      winnerGroups: [standings([1, 1])],
+      date: new Date(),
+      tee: "Blue",
+      firestoreId: "abc123",
+    };
+    const qc = new QueryClient();
+    const renderWith = (tournament: Tournament) => (
+      <QueryClientProvider client={qc}>
+        <TournamentEditor
+          tournament={tournament}
+          onSave={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(renderWith(existing));
+
+    // The Bracket section saves the final live, and the tournament doc updates.
+    rerender(
+      renderWith({ ...existing, winnerGroups: [standings([1, 2])] }),
+    );
+    expect(screen.getByText("All changes saved")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
+
+    await waitFor(() => expect(updateDocMock).toHaveBeenCalled());
+    const saved = updateDocMock.mock.calls[0][1] as Tournament;
+    expect(
+      saved.winnerGroups?.[0].winners.map((w) => [w.place, w.roundsWon]),
+    ).toEqual([
+      [1, 2],
+      [2, 1],
+    ]);
+  });
+
   it("persists disabled registration-opening notifications", async () => {
     const existing: Tournament = {
       ...openRegistrationWindow(),

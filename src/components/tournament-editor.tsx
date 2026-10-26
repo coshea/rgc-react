@@ -268,6 +268,32 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
   ).length;
   const hasUnsavedChanges = unsavedCount > 0;
 
+  // Bracket results are saved live from the Bracket section, which regenerates
+  // the bracket standings on the tournament doc. Pull those in so saving the
+  // form doesn't write back standings from before the latest match result.
+  const liveBracketWinnerGroupsKey = JSON.stringify(
+    (tournament?.winnerGroups ?? []).filter(isAutomatedBracketWinnerGroup),
+  );
+  React.useEffect(() => {
+    const liveGroups = JSON.parse(liveBracketWinnerGroupsKey) as WinnerGroup[];
+    const withLiveBracketGroups = (groups: WinnerGroup[]) =>
+      mergeBracketWinnerGroups(
+        groups.filter((group) => !isAutomatedBracketWinnerGroup(group)),
+        liveGroups,
+      );
+    setWinnerGroups((prev) => {
+      const next = withLiveBracketGroups(prev);
+      return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+    });
+    setSavedValues((prev) => {
+      const saved = JSON.parse(prev.winnerGroups ?? "[]") as WinnerGroup[];
+      const next = JSON.stringify(withLiveBracketGroups(saved));
+      return next === prev.winnerGroups
+        ? prev
+        : { ...prev, winnerGroups: next };
+    });
+  }, [liveBracketWinnerGroupsKey]);
+
   // Warn before closing or reloading the tab with unsaved changes.
   React.useEffect(() => {
     if (!hasUnsavedChanges) return;
@@ -659,6 +685,9 @@ export const TournamentEditor: React.FC<TournamentEditorProps> = ({
           }
           if (w.score !== undefined && w.score !== null) {
             out.score = w.score;
+          }
+          if (typeof w.roundsWon === "number") {
+            out.roundsWon = w.roundsWon;
           }
           return out;
         }),
