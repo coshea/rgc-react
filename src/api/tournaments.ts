@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react";
 import { TournamentStatus } from "@/types/tournament";
 import { getStatus, parseToDate } from "@/utils/tournamentStatus";
+import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 // Centralized tournament-related Firestore access.
 // Components and hooks should import ONLY from this module (or hooks built atop it),
 // not directly from '@/config/firebase' or 'firebase/firestore'. This enables
@@ -369,8 +370,16 @@ export async function fetchUserUpcomingRegistrations(
           if (tournamentId) tournamentIds.add(tournamentId);
         }
 
+        // Offline, getDoc throws "unavailable" for a tournament that isn't in
+        // the device cache. Skip just that one so the cached registrations
+        // still show; the next online refetch fills it in.
         const tournamentSnaps = await Promise.all(
-          Array.from(tournamentIds, (id) => getDoc(doc(db, "tournaments", id))),
+          Array.from(tournamentIds, (id) =>
+            getDoc(doc(db, "tournaments", id)).catch((error: unknown) => {
+              if (isFirestoreOfflineError(error)) return null;
+              throw error;
+            }),
+          ),
         );
         const today = todayAsUtcMidnight().getTime();
         const upcomingById = new Map<
@@ -378,7 +387,7 @@ export async function fetchUserUpcomingRegistrations(
           ReturnType<typeof mapTournamentDoc>
         >();
         for (const tSnap of tournamentSnaps) {
-          if (!tSnap.exists()) continue;
+          if (!tSnap?.exists()) continue;
           const tournament = mapTournamentDoc(tSnap);
           if (
             tournament.status === TournamentStatus.Completed ||

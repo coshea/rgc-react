@@ -173,6 +173,25 @@ describe("fetchUserUpcomingRegistrations", () => {
     expect(getDocMock).not.toHaveBeenCalled();
   });
 
+  it("skips a tournament that isn't cached while offline instead of failing", async () => {
+    getDocMock.mockImplementation(async (path: string) => {
+      const id = path.split("/")[1];
+      if (id === "t-later") {
+        throw Object.assign(
+          new Error("Failed to get document because the client is offline."),
+          { code: "unavailable" },
+        );
+      }
+      const data = tournaments[id];
+      return { id, exists: () => data !== undefined, data: () => data };
+    });
+    const result = await fetchUserUpcomingRegistrations("me");
+    expect(
+      result.map((r) => `${r.tournament.firestoreId}/${r.registration.id}`),
+    ).toEqual(["t-open/r-captain"]);
+    expect(captureExceptionMock).not.toHaveBeenCalled();
+  });
+
   it("reports and rethrows Firestore errors instead of returning an empty list", async () => {
     const err = new Error("permission-denied");
     getDocsMock.mockRejectedValueOnce(err);

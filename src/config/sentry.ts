@@ -220,7 +220,11 @@ if (enabled) {
       const isServiceWorkerRegistrationNoise =
         event.tags?.error_type === "service_worker_registration_failure" &&
         (/^Rejected$/i.test(exceptionValues[0]?.value ?? "") ||
-          /firebase-messaging-sw\.js load failed/i.test(combinedText));
+          /firebase-messaging-sw\.js load failed/i.test(combinedText) ||
+          // Chrome's wording when the script fetch fails on a flaky network.
+          /unknown error occurred when fetching the script/i.test(
+            combinedText,
+          ));
       if (isServiceWorkerRegistrationNoise) {
         return null;
       }
@@ -234,6 +238,24 @@ if (enabled) {
       // Rejection raised by Outlook's Safe Links scanner (a headless browser
       // that opens links from emails), not by a member's browser.
       if (/Object Not Found Matching Id:\d+/i.test(combinedText)) {
+        return null;
+      }
+
+      // Thrown by the Obscura headless crawler (Deno-based, frames like
+      // `<obscura:bootstrap>` / `ext:core/`), not by a member's browser.
+      const isHeadlessCrawlerFrame = exceptionValues.some((value) =>
+        value.stacktrace?.frames?.some((frame) =>
+          /^(?:<obscura:|ext:core\/)/.test(frame.filename ?? ""),
+        ),
+      );
+      if (isHeadlessCrawlerFrame) {
+        return null;
+      }
+
+      // Sign-out terminates Firestore (clearOfflineData) and then reloads.
+      // Components that re-render for the signed-out user in that gap hit
+      // the terminated client; the reload discards them, so it's harmless.
+      if (/The client has already been terminated/i.test(combinedText)) {
         return null;
       }
 
