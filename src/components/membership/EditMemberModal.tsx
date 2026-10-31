@@ -15,6 +15,8 @@ import {
   ToggleButtonGroup,
 } from "@heroui/react";
 import React, { useEffect, useState } from "react";
+import { Segment } from "@heroui-pro/react/segment";
+import { NO_SEGMENT_SELECTION } from "@/utils/segment";
 import { Icon } from "@iconify/react";
 import * as Sentry from "@sentry/react";
 import {
@@ -481,35 +483,31 @@ export function EditMemberModal({
                 <p id="member-type-label" className="text-sm font-medium">
                   Membership type
                 </p>
-                <ToggleButtonGroup
+                <Segment
                   aria-labelledby="member-type-label"
-                  selectionMode="single"
-                  disallowEmptySelection
-                  isDetached
+                  size="lg"
                   isDisabled={saving}
-                  selectedKeys={
-                    payment.membershipType ? [payment.membershipType] : []
+                  selectedKey={
+                    payment.membershipType || NO_SEGMENT_SELECTION
                   }
-                  onSelectionChange={(keys) => {
-                    const [next] = Array.from(keys);
-                    if (next !== undefined)
-                      updatePayment({ membershipType: String(next) });
-                  }}
-                  className="gap-1.5"
+                  onSelectionChange={(key) =>
+                    updatePayment({ membershipType: String(key) })
+                  }
+                  className="self-start"
                 >
-                  <ToggleButton
+                  <Segment.Item
                     id={MEMBERSHIP_TYPES.FULL}
-                    className="h-11 px-4 font-semibold"
+                    className="h-11 font-semibold"
                   >
                     Full
-                  </ToggleButton>
-                  <ToggleButton
+                  </Segment.Item>
+                  <Segment.Item
                     id={MEMBERSHIP_TYPES.HANDICAP}
-                    className="h-11 px-4 font-semibold"
+                    className="h-11 font-semibold"
                   >
                     Handicap
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                  </Segment.Item>
+                </Segment>
               </div>
 
               <SwitchRow

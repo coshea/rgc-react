@@ -10,8 +10,23 @@ import {
   TextField,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
+import { DropZone } from "@heroui-pro/react/drop-zone";
 import { uploadBlogImage, listBlogImages } from "@/api/storage";
 import { addToast } from "@/providers/toast";
+import { EmptyStateMessage } from "@/components/empty-state-message";
+
+type DropEvent = Parameters<
+  NonNullable<React.ComponentProps<typeof DropZone.Area>["onDrop"]>
+>[0];
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileExtension(name: string) {
+  return name.split(".").pop()?.toUpperCase().slice(0, 4) ?? "IMG";
+}
 
 interface BlogImagePickerProps {
   value?: string;
@@ -27,10 +42,8 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
   const [images, setImages] = React.useState<
     Array<{ name: string; url: string; uploadedAt: number }>
   >([]);
-  const [dragActive, setDragActive] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [customFilename, setCustomFilename] = React.useState("");
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Load existing images
   React.useEffect(() => {
@@ -93,18 +106,10 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      // Pre-populate filename without extension
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-      setCustomFilename(nameWithoutExt);
-    }
-    // Reset the input so the same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  const selectFile = (file: File) => {
+    setSelectedFile(file);
+    // Pre-populate filename without extension
+    setCustomFilename(file.name.replace(/\.[^/.]+$/, ""));
   };
 
   const handleConfirmUpload = () => {
@@ -113,28 +118,9 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      // Pre-populate filename without extension
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-      setCustomFilename(nameWithoutExt);
-    }
+  const handleDrop = async (e: DropEvent) => {
+    const item = e.items.find((i) => i.kind === "file");
+    if (item?.kind === "file") selectFile(await item.getFile());
   };
 
   const selectedImageName = React.useMemo(() => {
@@ -146,89 +132,98 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
   return (
     <div className="space-y-4">
       {/* Upload Area */}
-      <Card>
-        <Card.Content>
-          <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              dragActive
-                ? "border-accent bg-accent/10"
-                : "border-foreground-300"
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            {uploading ? (
-              <div className="flex flex-col items-center gap-2">
-                <Spinner size="lg" />
-                <p className="text-sm text-muted">Uploading image...</p>
-              </div>
-            ) : selectedFile ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 justify-center">
-                  <Icon
-                    icon="lucide:file-image"
-                    className="text-2xl text-success"
-                  />
-                  <p className="text-sm font-medium">{selectedFile.name}</p>
-                </div>
-                <TextField
-                  value={customFilename}
-                  onChange={(v) => setCustomFilename(v)}
-                >
-                  <Label>Custom Filename (optional)</Label>
-                  <Input placeholder="e.g., spring-tournament-2024" />
-                  <p className="text-xs text-muted mt-1">
-                    Enter a descriptive name to easily find this image later
-                  </p>
-                </TextField>
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    size="sm"
-                    variant="tertiary"
+      <DropZone className="space-y-3">
+        {!selectedFile && !uploading && (
+          <DropZone.Area onDrop={handleDrop}>
+            <DropZone.Icon />
+            <DropZone.Label>
+              Drag and drop an image here, or click to browse
+            </DropZone.Label>
+            <DropZone.Description>PNG, JPG, GIF or WebP</DropZone.Description>
+            <DropZone.Trigger>
+              <Icon icon="lucide:image-plus" />
+              Choose Image
+            </DropZone.Trigger>
+          </DropZone.Area>
+        )}
+        <DropZone.Input
+          accept="image/*"
+          aria-label="Choose image file"
+          onSelect={(files) => selectFile(files[0])}
+        />
+
+        {selectedFile && (
+          <>
+            <DropZone.FileList>
+              <DropZone.FileItem status={uploading ? "uploading" : undefined}>
+                <DropZone.FileFormatIcon
+                  format={fileExtension(selectedFile.name)}
+                  color="blue"
+                />
+                <DropZone.FileInfo>
+                  <DropZone.FileName>{selectedFile.name}</DropZone.FileName>
+                  <DropZone.FileMeta>
+                    {uploading
+                      ? "Uploading image..."
+                      : formatFileSize(selectedFile.size)}
+                  </DropZone.FileMeta>
+                  {uploading && (
+                    <DropZone.FileProgress
+                      isIndeterminate
+                      aria-label="Uploading image"
+                    >
+                      <DropZone.FileProgressTrack>
+                        <DropZone.FileProgressFill />
+                      </DropZone.FileProgressTrack>
+                    </DropZone.FileProgress>
+                  )}
+                </DropZone.FileInfo>
+                {!uploading && (
+                  <DropZone.FileRemoveTrigger
+                    aria-label={`Remove ${selectedFile.name}`}
                     onPress={() => {
                       setSelectedFile(null);
                       setCustomFilename("");
                     }}
+                  />
+                )}
+              </DropZone.FileItem>
+            </DropZone.FileList>
+
+            {!uploading && (
+              <Card>
+                <Card.Content className="space-y-4">
+                  <TextField
+                    value={customFilename}
+                    onChange={(v) => setCustomFilename(v)}
                   >
-                    Cancel
-                  </Button>
-                  <Button size="sm" onPress={handleConfirmUpload}>
-                    <Icon icon="lucide:upload" />
-                    Upload
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Icon
-                  icon="lucide:upload-cloud"
-                  className="text-4xl text-muted mx-auto mb-3"
-                />
-                <p className="text-sm text-muted mb-2">
-                  Drag and drop an image here, or click to browse
-                </p>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onPress={() => fileInputRef.current?.click()}
-                >
-                  <Icon icon="lucide:image-plus" />
-                  Choose Image
-                </Button>
-              </>
+                    <Label>Custom Filename (optional)</Label>
+                    <Input placeholder="e.g., spring-tournament-2024" />
+                    <p className="text-xs text-muted mt-1">
+                      Enter a descriptive name to easily find this image later
+                    </p>
+                  </TextField>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="tertiary"
+                      onPress={() => {
+                        setSelectedFile(null);
+                        setCustomFilename("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button onPress={handleConfirmUpload}>
+                      <Icon icon="lucide:upload" />
+                      Upload
+                    </Button>
+                  </div>
+                </Card.Content>
+              </Card>
             )}
-          </div>
-        </Card.Content>
-      </Card>
+          </>
+        )}
+      </DropZone>
 
       {/* Select from existing images */}
       {loading ? (
@@ -279,9 +274,12 @@ export const BlogImagePicker: React.FC<BlogImagePickerProps> = ({
           </Select.Popover>
         </Select>
       ) : (
-        <p className="text-sm text-muted text-center">
-          No images uploaded yet. Upload your first image above.
-        </p>
+        <EmptyStateMessage
+          size="sm"
+          icon="lucide:images"
+          title="No images uploaded yet"
+          description="Upload your first image above."
+        />
       )}
 
       {/* Preview */}

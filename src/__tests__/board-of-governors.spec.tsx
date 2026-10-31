@@ -73,7 +73,7 @@ describe("BoardOfGovernorsPage", () => {
     renderPage();
 
     expect(
-      screen.getByText("No board members are listed yet."),
+      screen.getByText("No board members are listed yet"),
     ).toBeInTheDocument();
   });
 });

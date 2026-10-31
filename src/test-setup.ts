@@ -73,6 +73,29 @@ vi.mock("@iconify/react", () => {
   return { Icon, default: Icon };
 });
 
+// NumberFlow (used by HeroUI Pro's NumberStepper) renders a custom element
+// that jsdom can't animate. Render the formatted value as plain text instead.
+vi.mock("@number-flow/react", () => {
+  type NumberFlowProps = {
+    value: number;
+    format?: Intl.NumberFormatOptions;
+    locales?: string | string[];
+    className?: string;
+  };
+  const NumberFlow: React.FC<NumberFlowProps> = ({
+    value,
+    format,
+    locales,
+    className,
+  }) =>
+    React.createElement(
+      "span",
+      { className },
+      new Intl.NumberFormat(locales, format).format(value),
+    );
+  return { default: NumberFlow, NumberFlowGroup: React.Fragment };
+});
+
 // Force HeroUI components down their non-animated code paths in tests.
 // @heroui/system was removed in v3; mock is no-op to avoid import errors.
 

@@ -10,6 +10,7 @@ import {
   FieldError,
 } from "@heroui/react";
 import { Tournament, TournamentStatus } from "@/types/tournament";
+import { NumberStepperField } from "@/components/number-stepper-field";
 
 export type TeeColor = "Blue" | "White" | "Gold" | "Red" | "Mixed";
 export const TEE_COLORS: TeeColor[] = ["Blue", "White", "Gold", "Red", "Mixed"];
@@ -68,20 +69,14 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
 }) => {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 min-w-0">
-      <TextField
-        isInvalid={!!errors.players}
-        value={String(players)}
-        onChange={(v) => setPlayers(parseInt(v, 10) || 1)}
-      >
-        <Label>Number of Players On A Team</Label>
-        <Input
-          type="number"
-          placeholder="Enter number of players"
-          min={1}
-          max={100}
-        />
-        <FieldError>{errors.players}</FieldError>
-      </TextField>
+      <NumberStepperField
+        label="Number of Players On A Team"
+        value={players}
+        onChange={setPlayers}
+        minValue={1}
+        maxValue={100}
+        errorMessage={errors.players}
+      />
       <TextField
         isInvalid={!!errors.maxTeams}
         value={maxTeams !== undefined ? String(maxTeams) : ""}

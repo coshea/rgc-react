@@ -12,6 +12,7 @@ import {
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import UserSelect from "@/components/UserSelect";
+import { NumberStepperField } from "@/components/number-stepper-field";
 import { useUsersMap } from "@/hooks/useUsers";
 import {
   deleteSeasonAward,
@@ -246,21 +247,18 @@ export function SeasonAwardsManager() {
 
   return (
     <div className="space-y-4">
-      <TextField
-        value={String(selectedYear)}
-        onChange={(v) => {
-          const next = Number(v);
-          if (!Number.isFinite(next)) {
-            return;
-          }
+      <NumberStepperField
+        label="Season year"
+        value={selectedYear}
+        onChange={(next) => {
           setSelectedYear(next);
           setAwardError(null);
           resetAwardForm(undefined, next);
         }}
-      >
-        <Label>Season year</Label>
-        <Input type="number" min={MIN_AWARD_YEAR} max={MAX_AWARD_YEAR} />
-      </TextField>
+        minValue={MIN_AWARD_YEAR}
+        maxValue={MAX_AWARD_YEAR}
+        isYear
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Select
@@ -367,7 +365,10 @@ export function SeasonAwardsManager() {
         </TextField>
       </div>
 
-      {awardError && awardUserId && awardDate && parseHole(awardHole) !== null ? (
+      {awardError &&
+      awardUserId &&
+      awardDate &&
+      parseHole(awardHole) !== null ? (
         <p className="text-sm text-danger">{awardError}</p>
       ) : null}
 

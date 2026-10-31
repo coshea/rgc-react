@@ -198,7 +198,7 @@ export function ProfileFieldSheet({
               )}
               {meta && <p className="text-sm text-muted">{meta.help}</p>}
             </Drawer.Body>
-            <Drawer.Footer className="grid grid-cols-2 gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <Drawer.Footer className="flex justify-between gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <Button
                 variant="tertiary"
                 className="h-11"

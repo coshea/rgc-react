@@ -6,13 +6,6 @@ export default defineConfig({
     alias: [
       { find: "@", replacement: resolve(__dirname, "src") },
       { find: "@@", replacement: resolve(__dirname, "functions/src") },
-      {
-        find: "tailwind-variants",
-        replacement: resolve(
-          __dirname,
-          "node_modules/@heroui/react/node_modules/tailwind-variants/dist/index.js",
-        ),
-      },
       // HeroUI Pro requires a license token to download dist files during
       // `npm install`. In CI without HEROUI_AUTH_TOKEN the real dist is never
       // written, so vite:import-analysis can't resolve the subpath and the
@@ -38,6 +31,13 @@ export default defineConfig({
       // bypass the mock registry, causing LazyMotion async work to fire
       // after jsdom teardown ("window is not defined").
       inline: [/framer-motion/, /@heroui/, /tailwind-variants/],
+    },
+    server: {
+      deps: {
+        // HeroUI Pro imports @number-flow/react, which jsdom can't render.
+        // Inline Pro so the global mock in test-setup.ts reaches that import.
+        inline: [/@heroui-pro/],
+      },
     },
     // Explicitly exclude compiled output and node_modules so Vitest doesn't pick
     // up tests from dependencies or built artifacts (these were running in

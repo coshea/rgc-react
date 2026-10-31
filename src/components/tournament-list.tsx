@@ -10,6 +10,7 @@ import {
   getStatusBorderClass,
 } from "@/components/tournament-status-chip";
 import { TournamentStatusCard } from "@/components/tournament-status-card";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface TournamentListProps {
   tournaments: Tournament[];
@@ -182,18 +183,12 @@ export const TournamentList: React.FC<TournamentListProps> = ({
 
   if (tournaments.length === 0) {
     return (
-      <div className="text-center py-12 bg-surface rounded-lg border">
-        <Icon
-          icon="lucide:calendar-off"
-          className="mx-auto text-4xl text-muted mb-3"
-        />
-        <h3 className="text-lg font-medium text-foreground mb-1">
-          No tournaments found
-        </h3>
-        <p className="text-muted">
-          Create your first tournament to get started
-        </p>
-      </div>
+      <EmptyStateMessage
+        icon="lucide:calendar-off"
+        title="No tournaments found"
+        description="Create your first tournament to get started"
+        className="bg-surface rounded-lg border"
+      />
     );
   }
 

@@ -36,6 +36,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import type { User } from "@/api/users";
 import type { AppNotification, NotificationType } from "@/types/notification";
 import { NOTIFICATION_TYPE_META } from "@/types/notification";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface TournamentOption {
   id: string;
@@ -774,9 +775,11 @@ export function NotificationsTab() {
         {loadingRecent ? (
           <p className="text-muted text-sm text-center py-6">Loading…</p>
         ) : recentNotifications.length === 0 ? (
-          <p className="text-muted text-sm text-center py-6">
-            No notifications sent yet.
-          </p>
+          <EmptyStateMessage
+            size="sm"
+            icon="lucide:bell-off"
+            title="No notifications sent yet"
+          />
         ) : (
           <div className="divide-y divide-default-100">
             {recentNotifications.map((n) => (

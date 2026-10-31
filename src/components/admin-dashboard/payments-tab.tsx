@@ -3,21 +3,20 @@ import {
   Accordion,
   AccordionItem,
   Button,
-  ButtonGroup,
   Card,
   Chip,
-  Input,
   ListBox,
   Select,
   Spinner,
   SearchField,
-  cn,
 } from "@heroui/react";
-import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
+import { KPI } from "@heroui-pro/react/kpi";
+import { Segment } from "@heroui-pro/react/segment";
 import { Icon } from "@iconify/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import BackButton from "@/components/back-button";
+import { NumberStepperField } from "@/components/number-stepper-field";
 import { addToast } from "@/providers/toast";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -40,7 +39,17 @@ import { useMembers } from "@/hooks/useMembers";
 import { HANDICAP_FEE, MEMBERSHIP_FEE } from "@/config/membership-pricing";
 import { useAdminFlag } from "@/components/membership/hooks";
 
-type Filter = "all" | "yearly" | "handicap" | "donation";
+const FILTER_OPTIONS = [
+  { id: "all", label: "All" },
+  { id: "yearly", label: "Full" },
+  { id: "handicap", label: "Handicap" },
+  { id: "donation", label: "Donation" },
+] as const;
+
+type Filter = (typeof FILTER_OPTIONS)[number]["id"];
+
+const isFilter = (key: unknown): key is Filter =>
+  FILTER_OPTIONS.some((option) => option.id === key);
 
 function typeLabel(type?: MembershipType | string | null) {
   switch (type) {
@@ -107,6 +116,13 @@ function formatDate(value: unknown) {
 function paymentPurpose(purpose?: string | null) {
   return purpose === "donation" ? "donation" : "dues";
 }
+
+const KPI_COLOR_CLASS = {
+  primary: "text-accent",
+  success: "text-success",
+  warning: "text-warning",
+  secondary: "text-secondary",
+} as const;
 
 export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
   usePageTracking("Payments Tab");
@@ -737,119 +753,38 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               icon: "solar:heart-bold",
             },
           ].map(
-            (
-              { title, subtitle, value, amount, chartData, color, icon },
-              index,
-            ) => (
-              <Card
-                key={index}
+            ({ title, subtitle, value, amount, chartData, color, icon }) => (
+              <KPI
+                key={title}
                 className="dark:relative border border-transparent"
               >
-                <section className="flex flex-col flex-nowrap">
-                  <div className="flex flex-col justify-between gap-y-2 px-4 pt-4">
-                    <div className="flex flex-col gap-y-2">
-                      <div className="flex items-center gap-x-2">
-                        <Icon
-                          icon={icon}
-                          className={cn({
-                            "text-accent": color === "primary",
-                            "text-success": color === "success",
-                            "text-warning": color === "warning",
-                            "text-secondary": color === "secondary",
-                          })}
-                          width={18}
-                          height={18}
-                        />
-                        <div className="flex flex-col gap-y-0">
-                          <dt className="text-foreground text-sm font-medium">
-                            {title}
-                          </dt>
-                          <dd className="text-xs text-muted font-normal">
-                            {subtitle}
-                          </dd>
-                        </div>
-                      </div>
-                      <div className="flex items-baseline gap-x-2">
-                        <dd className="text-foreground text-xl font-semibold">
-                          {value}
-                        </dd>
-                        <span className="text-sm text-muted">{amount}</span>
-                      </div>
-                    </div>
+                <KPI.Header>
+                  <Icon
+                    icon={icon}
+                    className={KPI_COLOR_CLASS[color]}
+                    width={18}
+                    height={18}
+                  />
+                  <div className="flex flex-col gap-y-0">
+                    <KPI.Title className="text-foreground">{title}</KPI.Title>
+                    <span className="text-xs text-muted font-normal">
+                      {subtitle}
+                    </span>
                   </div>
-                  <div className="h-24 w-full">
-                    <ResponsiveContainer
-                      width="100%"
-                      height={96}
-                      minWidth={0}
-                      className="[&_.recharts-surface]:outline-hidden"
-                    >
-                      <AreaChart
-                        accessibilityLayer
-                        className="translate-y-1 scale-105"
-                        data={chartData}
-                      >
-                        <defs>
-                          <linearGradient
-                            id={`kpiGradient${index}`}
-                            x1="0"
-                            x2="0"
-                            y1="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="10%"
-                              stopColor={cn({
-                                "hsl(var(--heroui-primary))":
-                                  color === "primary",
-                                "hsl(var(--heroui-success))":
-                                  color === "success",
-                                "hsl(var(--heroui-warning))":
-                                  color === "warning",
-                                "hsl(var(--heroui-secondary))":
-                                  color === "secondary",
-                              })}
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset="100%"
-                              stopColor={cn({
-                                "hsl(var(--heroui-primary))":
-                                  color === "primary",
-                                "hsl(var(--heroui-success))":
-                                  color === "success",
-                                "hsl(var(--heroui-warning))":
-                                  color === "warning",
-                                "hsl(var(--heroui-secondary))":
-                                  color === "secondary",
-                              })}
-                              stopOpacity={0.1}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <YAxis
-                          domain={[
-                            Math.min(...chartData.map((d) => d.value)),
-                            "auto",
-                          ]}
-                          hide={true}
-                        />
-                        <Area
-                          dataKey="value"
-                          fill={`url(#kpiGradient${index})`}
-                          stroke={cn({
-                            "hsl(var(--heroui-primary))": color === "primary",
-                            "hsl(var(--heroui-success))": color === "success",
-                            "hsl(var(--heroui-warning))": color === "warning",
-                            "hsl(var(--heroui-secondary))":
-                              color === "secondary",
-                          })}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                </KPI.Header>
+                <KPI.Content className="justify-start">
+                  <div className="flex items-baseline gap-x-2">
+                    <KPI.Value value={value} className="text-xl" />
+                    <span className="text-sm text-muted">{amount}</span>
                   </div>
-                </section>
-              </Card>
+                </KPI.Content>
+                <KPI.Chart
+                  aria-label={`${title} by week`}
+                  data={chartData}
+                  height={96}
+                  className={KPI_COLOR_CLASS[color]}
+                />
+              </KPI>
             ),
           )}
         </dl>
@@ -874,45 +809,34 @@ export function PaymentsTab({ isEmbedded = false }: { isEmbedded?: boolean }) {
               </SearchField.Group>
             </SearchField>
 
-            <Input
-              type="number"
+            <NumberStepperField
               aria-label="Payment year"
-              value={String(year)}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                if (!Number.isFinite(next)) return;
-                setYear(next);
-              }}
-              className="w-32"
+              value={year}
+              onChange={setYear}
+              maxValue={new Date().getFullYear() + 1}
+              isYear
             />
           </div>
 
-          <ButtonGroup variant="outline">
-            <Button
-              onPress={() => setFilter("all")}
-              variant={filter === "all" ? "primary" : "outline"}
-            >
-              All
-            </Button>
-            <Button
-              onPress={() => setFilter("yearly")}
-              variant={filter === "yearly" ? "primary" : "outline"}
-            >
-              Full
-            </Button>
-            <Button
-              onPress={() => setFilter("handicap")}
-              variant={filter === "handicap" ? "primary" : "outline"}
-            >
-              Handicap
-            </Button>
-            <Button
-              onPress={() => setFilter("donation")}
-              variant={filter === "donation" ? "primary" : "outline"}
-            >
-              Donation
-            </Button>
-          </ButtonGroup>
+          <Segment
+            aria-label="Filter payments"
+            size="lg"
+            selectedKey={filter}
+            onSelectionChange={(key) => {
+              if (isFilter(key)) setFilter(key);
+            }}
+            className="w-full sm:w-auto"
+          >
+            {FILTER_OPTIONS.map((option) => (
+              <Segment.Item
+                key={option.id}
+                id={option.id}
+                className="h-11 sm:h-10"
+              >
+                {option.label}
+              </Segment.Item>
+            ))}
+          </Segment>
         </div>
 
         <Card className="mt-8 overflow-hidden">

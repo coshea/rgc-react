@@ -163,6 +163,9 @@ const UserProfilePage: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const currentYearWinnings =
     winnings?.yearly.find((w) => w.year === currentYear)?.amount ?? 0;
+  const lastYearWinnings = winnings?.yearly.find(
+    (w) => w.year === currentYear - 1,
+  )?.amount;
   const currentYearWinCount = tournamentWins.filter(
     (w) => w.year === currentYear,
   ).length;
@@ -206,23 +209,32 @@ const UserProfilePage: React.FC = () => {
             stats={[
               {
                 label: "Lifetime winnings",
-                value: `$${(winnings?.lifetime ?? 0).toLocaleString()}`,
+                value: winnings?.lifetime ?? 0,
+                isCurrency: true,
                 tone: "text-success",
                 isLoading: winningsLoading,
               },
               {
                 label: `${currentYear} winnings`,
-                value: `$${currentYearWinnings.toLocaleString()}`,
+                value: currentYearWinnings,
+                isCurrency: true,
                 isLoading: winningsLoading,
+                trend:
+                  lastYearWinnings !== undefined
+                    ? {
+                        delta: currentYearWinnings - lastYearWinnings,
+                        label: `vs ${currentYear - 1}`,
+                      }
+                    : undefined,
               },
               {
                 label: "Tournament wins",
-                value: String(tournamentWins.length),
+                value: tournamentWins.length,
                 isLoading: winsLoading,
               },
               {
                 label: "Championships",
-                value: String(championCount),
+                value: championCount,
                 tone: "text-warning",
                 isLoading: championshipsLoading,
               },

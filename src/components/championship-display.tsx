@@ -6,6 +6,7 @@ import { useUsersMap } from "@/hooks/useUsers";
 import { useAuth } from "@/providers/AuthProvider";
 import type { UnifiedChampionship } from "@/types/championship";
 import { CHAMPIONSHIP_TYPES } from "@/types/championship";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface ChampionshipCardProps {
   championship: UnifiedChampionship;
@@ -369,14 +370,7 @@ export function ChampionshipsList({
 
   if (years.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-default/20 flex items-center justify-center">
-          <Icon icon="lucide:trophy" className="w-8 h-8 text-muted" />
-        </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
-          {emptyMessage}
-        </h3>
-      </div>
+      <EmptyStateMessage size="lg" icon="lucide:trophy" title={emptyMessage} />
     );
   }
 

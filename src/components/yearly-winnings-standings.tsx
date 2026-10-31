@@ -19,6 +19,7 @@ import {
   type StandingsRow,
 } from "@/utils/standings";
 import { formatEventDate } from "@/utils/tournamentResults";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface Props {
   year: number;
@@ -142,7 +143,10 @@ export function YearlyWinningsStandings({ year }: Props) {
 
   if (!rows.length) {
     return (
-      <p className="text-sm text-muted">No winnings recorded for {year}.</p>
+      <EmptyStateMessage
+        icon="lucide:circle-dollar-sign"
+        title={`No winnings recorded for ${year}`}
+      />
     );
   }
 
