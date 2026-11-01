@@ -30,7 +30,7 @@ import {
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 import * as Sentry from "@sentry/react";
-import { logger } from "@/config/sentry";
+import { logger, markFirestoreTerminatedForSignOut } from "@/config/sentry";
 import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
@@ -419,6 +419,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearOfflineDataAndReload = async () => {
     try {
       const { clearOfflineData } = await import("@/config/firebase");
+      markFirestoreTerminatedForSignOut();
       const cleared = await clearOfflineData();
       if (!cleared) {
         logger.warn(

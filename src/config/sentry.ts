@@ -14,6 +14,30 @@ const SENTRY_DSN =
 const enabled =
   import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLE_IN_DEV === "true";
 
+// Sign-out terminates Firestore (clearOfflineData) and then reloads.
+// Components that re-render for the signed-out user in that gap hit the
+// terminated client; the reload discards them, so those errors are dropped.
+// Only for a short window, so a terminated client in any other situation (or
+// a reload that never happens) is still reported.
+const SIGN_OUT_TERMINATION_WINDOW_MS = 10_000;
+let firestoreTerminatedForSignOutAt: number | null = null;
+
+/** Call right before sign-out terminates Firestore. */
+export function markFirestoreTerminatedForSignOut(now = Date.now()): void {
+  firestoreTerminatedForSignOutAt = now;
+}
+
+export function isSignOutTerminationNoise(
+  text: string,
+  now = Date.now(),
+): boolean {
+  return (
+    firestoreTerminatedForSignOutAt !== null &&
+    now - firestoreTerminatedForSignOutAt <= SIGN_OUT_TERMINATION_WINDOW_MS &&
+    /The client has already been terminated/i.test(text)
+  );
+}
+
 // Custom logger to match project guidelines
 export const logger = {
   fmt: (strings: TemplateStringsArray, ...values: any[]) => {
@@ -252,10 +276,7 @@ if (enabled) {
         return null;
       }
 
-      // Sign-out terminates Firestore (clearOfflineData) and then reloads.
-      // Components that re-render for the signed-out user in that gap hit
-      // the terminated client; the reload discards them, so it's harmless.
-      if (/The client has already been terminated/i.test(combinedText)) {
+      if (isSignOutTerminationNoise(combinedText)) {
         return null;
       }
 
