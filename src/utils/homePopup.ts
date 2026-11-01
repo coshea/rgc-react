@@ -234,25 +234,34 @@ export function homePopupState(
   return HOME_POPUP_STATE.LIVE;
 }
 
+export interface HomePopupViewer {
+  signedIn: boolean;
+  /** A member has signed in on this device before (see `rememberMemberOnDevice`). */
+  memberOnDevice?: boolean;
+}
+
 export function isAudienceFor(
   audience: HomePopupAudience,
-  signedIn: boolean,
+  { signedIn, memberOnDevice = false }: HomePopupViewer,
 ): boolean {
   if (audience === HOME_POPUP_AUDIENCE.MEMBERS) return signedIn;
-  if (audience === HOME_POPUP_AUDIENCE.VISITORS) return !signedIn;
+  // A member who signed out isn't new to the site, so skip the welcome.
+  if (audience === HOME_POPUP_AUDIENCE.VISITORS) {
+    return !signedIn && !memberOnDevice;
+  }
   return true;
 }
 
 /** The popup to show: live, meant for this viewer, most recently published. */
 export function pickLivePopup(
   popups: readonly HomePopup[],
-  signedIn: boolean,
+  viewer: HomePopupViewer,
   today = todayUtc(),
 ): HomePopup | null {
   const live = popups.filter(
     (p) =>
       homePopupState(p, today) === HOME_POPUP_STATE.LIVE &&
-      isAudienceFor(p.audience, signedIn),
+      isAudienceFor(p.audience, viewer),
   );
   live.sort(
     (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0),
@@ -424,6 +433,24 @@ export function validateHomePopupForm(
 }
 
 const LOCAL_DISMISSALS_KEY = "rgc.homePopupDismissals";
+const MEMBER_ON_DEVICE_KEY = "rgc.memberSignedInOnDevice";
+
+/** Called on every sign-in, so visitors-only popups skip this device after sign-out. */
+export function rememberMemberOnDevice(): void {
+  try {
+    localStorage.setItem(MEMBER_ON_DEVICE_KEY, "true");
+  } catch {
+    // Storage blocked (private mode): they may see a visitors-only popup.
+  }
+}
+
+export function hasMemberOnDevice(): boolean {
+  try {
+    return localStorage.getItem(MEMBER_ON_DEVICE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 /** Popup id → dismissed version, remembered on this device. */
 export function readLocalDismissals(): Record<string, number> {

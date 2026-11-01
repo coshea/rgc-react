@@ -17,7 +17,7 @@ export const AUDIENCE_HELP: Record<HomePopupAudience, string> = {
     "Visitors and signed-in members. A visitor's dismissal is remembered on their device; a member's is saved to their account.",
   [HOME_POPUP_AUDIENCE.MEMBERS]: "Only signed-in members. Visitors never see it.",
   [HOME_POPUP_AUDIENCE.VISITORS]:
-    "Only people who aren't signed in, like a welcome for someone new to the site. Members never see it.",
+    "Only people who aren't signed in, like a welcome for someone new to the site. Members never see it, even after signing out on their device.",
 };
 
 export const STATE_META: Record<

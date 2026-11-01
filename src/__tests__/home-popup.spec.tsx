@@ -80,6 +80,19 @@ describe("HomePopup", () => {
     expect(await screen.findByText("Membership page")).toBeTruthy();
   });
 
+  it("skips a visitors-only popup for a member who signed out on this device", () => {
+    state.published = [livePopup({ audience: HOME_POPUP_AUDIENCE.VISITORS })];
+    localStorage.setItem("rgc.memberSignedInOnDevice", "true");
+    renderHome();
+    expect(screen.queryByText("2027 memberships are open")).toBeNull();
+  });
+
+  it("shows a visitors-only popup to someone new", async () => {
+    state.published = [livePopup({ audience: HOME_POPUP_AUDIENCE.VISITORS })];
+    renderHome();
+    expect(await screen.findByText("2027 memberships are open")).toBeTruthy();
+  });
+
   it("stays hidden once dismissed on this device", () => {
     localStorage.setItem("rgc.homePopupDismissals", JSON.stringify({ p1: 1 }));
     renderHome();

@@ -15,6 +15,7 @@ import {
 } from "@/types/homePopup";
 import { AnalyticsEvent, trackEvent } from "@/utils/analytics";
 import {
+  hasMemberOnDevice,
   isDismissed,
   isInternalLink,
   pickLivePopup,
@@ -44,11 +45,12 @@ export function HomePopup() {
   const remote = useHomePopupDismissals(user?.uid);
   const dismiss = useDismissHomePopup(user?.uid);
   const [local] = useState(readLocalDismissals);
+  const [memberOnDevice] = useState(hasMemberOnDevice);
   const [closedKey, setClosedKey] = useState<string | null>(null);
 
   const popup = useMemo(
-    () => pickLivePopup(published.data ?? [], signedIn),
-    [published.data, signedIn],
+    () => pickLivePopup(published.data ?? [], { signedIn, memberOnDevice }),
+    [published.data, signedIn, memberOnDevice],
   );
 
   const waiting = loading || published.isLoading || (signedIn && remote.isLoading);

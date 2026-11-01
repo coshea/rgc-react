@@ -148,17 +148,21 @@ describe("pickLivePopup", () => {
       audience: HOME_POPUP_AUDIENCE.MEMBERS,
       publishedAt: new Date("2026-11-10T10:00:00Z"),
     });
-    expect(pickLivePopup([older, members], false, today)?.id).toBe("old");
-    expect(pickLivePopup([older, members], true, today)?.id).toBe("members");
+    expect(pickLivePopup([older, members], { signedIn: false }, today)?.id).toBe("old");
+    expect(pickLivePopup([older, members], { signedIn: true }, today)?.id).toBe("members");
     expect(
-      pickLivePopup([popup({ status: HOME_POPUP_STATUS.DRAFT })], true, today),
+      pickLivePopup([popup({ status: HOME_POPUP_STATUS.DRAFT })], { signedIn: true }, today),
     ).toBeNull();
   });
 
   it("shows visitors-only popups to signed-out people only", () => {
     const welcome = popup({ id: "welcome", audience: HOME_POPUP_AUDIENCE.VISITORS });
-    expect(pickLivePopup([welcome], false, today)?.id).toBe("welcome");
-    expect(pickLivePopup([welcome], true, today)).toBeNull();
+    expect(pickLivePopup([welcome], { signedIn: false }, today)?.id).toBe("welcome");
+    expect(pickLivePopup([welcome], { signedIn: true }, today)).toBeNull();
+    // A member who signed out on this device isn't new to the site.
+    expect(
+      pickLivePopup([welcome], { signedIn: false, memberOnDevice: true }, today),
+    ).toBeNull();
   });
 });
 
