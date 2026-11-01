@@ -79,3 +79,25 @@ describe("HomePopupEditor", () => {
     expect(await screen.findByText(/Replace \[YEAR\] before publishing/)).toBeTruthy();
   });
 });
+
+describe("HomePopupEditor saving a new popup", () => {
+  beforeEach(() => {
+    mocks.save.mockReset().mockResolvedValue("new-id");
+    mocks.toast.mockReset();
+  });
+
+  it("updates the popup it just created, even before the list refetches", async () => {
+    // `popup` stays undefined, as when the list refetch hasn't landed.
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
+    expect(mocks.save.mock.calls[0][0].options.previous).toBeUndefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
+    expect(mocks.save.mock.calls[1][0].options.previous).toEqual({
+      id: "new-id",
+      status: HOME_POPUP_STATUS.DRAFT,
+    });
+  });
+});

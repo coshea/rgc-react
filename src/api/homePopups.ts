@@ -130,7 +130,7 @@ export async function fetchPublishedHomePopups(
 
 export interface SaveHomePopupOptions {
   /** The saved popup being edited; omit to create one. */
-  previous?: HomePopup;
+  previous?: Pick<HomePopup, "id" | "status">;
   /** Bump the version so people who dismissed it see it again. */
   showAgain?: boolean;
 }

@@ -155,11 +155,17 @@ export function HomePopupEditor({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // What the last save wrote. `popup` comes from the list query, which may not
+  // have refetched yet (or failed to), and a new popup must not be added twice.
+  const [savedAs, setSavedAs] = useState<Pick<HomePopup, "id" | "status"> | null>(
+    null,
+  );
 
   const save = useSaveHomePopup();
   const remove = useDeleteHomePopup();
 
-  const isPublished = popup?.status === HOME_POPUP_STATUS.PUBLISHED;
+  const saved = savedAs ?? popup;
+  const isPublished = saved?.status === HOME_POPUP_STATUS.PUBLISHED;
   const state = popup ? homePopupState(popup) : null;
   const template = findHomePopupTemplate(form.templateId);
 
@@ -180,8 +186,9 @@ export function HomePopupEditor({
     try {
       const id = await save.mutateAsync({
         input: formToInput(form, status),
-        options: { previous: popup, showAgain: showAgain && isPublished },
+        options: { previous: saved, showAgain: showAgain && isPublished },
       });
+      setSavedAs({ id, status });
       setShowAgain(false);
       setLastSaved(new Date());
       onSaved(id);
@@ -230,9 +237,9 @@ export function HomePopupEditor({
   };
 
   const handleDelete = async () => {
-    if (!popup) return;
+    if (!saved) return;
     try {
-      await remove.mutateAsync(popup.id);
+      await remove.mutateAsync(saved.id);
       addToast({ title: "Popup deleted", color: "success" });
       onClose();
     } catch (error) {
@@ -257,7 +264,7 @@ export function HomePopupEditor({
             {STATE_META[state].label}
           </Chip>
         )}
-        {popup && (
+        {saved && (
           <Button
             variant="danger-soft"
             size="sm"
