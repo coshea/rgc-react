@@ -471,7 +471,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       // What each signed-in member did with the popup. Members write only
-      // their own record; admins read them in the editor.
+      // their own record, and only for a published popup at a version it has
+      // reached, so made-up responses can't skew the totals; admins read them
+      // in the editor. (A popup edited to a newer version still accepts the
+      // older one, or a member's open popup couldn't record its dismissal.)
       match /responses/{uid} {
         allow read: if isAdmin();
         allow create, update: if request.auth != null
@@ -481,7 +484,9 @@ service cloud.firestore {
           && request.resource.data.action in ['clicked', 'dismissed']
           && request.resource.data.version is int
           && request.resource.data.link is string
-          && request.resource.data.link.size() <= 500;
+          && request.resource.data.link.size() <= 500
+          && get(/databases/$(database)/documents/homePopups/$(popupId)).data.status == 'published'
+          && request.resource.data.version <= get(/databases/$(database)/documents/homePopups/$(popupId)).data.version;
       }
     }
 
