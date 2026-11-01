@@ -17,6 +17,7 @@ import {
   formFromPopup,
   formFromTemplate,
   formatPopupDate,
+  hasRecentResponses,
   homePopupState,
   type HomePopupForm,
 } from "@/utils/homePopup";
@@ -52,9 +53,8 @@ export function HomePopupTab() {
   const { user } = useAuth();
   const { isAdmin, loadingAdmin } = useAdminFlag(user);
   const popups = useAllHomePopups(isAdmin);
-  // Only popups that have been live can have responses.
   const counts = useHomePopupResponseCounts(
-    (popups.data ?? []).filter((p) => p.publishedAt).map((p) => p.id),
+    (popups.data ?? []).filter((p) => hasRecentResponses(p)).map((p) => p.id),
   );
   const [editing, setEditing] = useState<Editing | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);

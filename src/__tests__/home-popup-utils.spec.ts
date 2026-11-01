@@ -13,6 +13,7 @@ import {
   formFromPopup,
   formFromTemplate,
   formToInput,
+  hasRecentResponses,
   homePopupState,
   isDismissed,
   isValidCtaLink,
@@ -229,5 +230,32 @@ describe("resolvePopupLink", () => {
     expect(resolvePopupLink("#rules", base)).toBeNull();
     expect(resolvePopupLink("mailto:board@example.com", base)).toBeNull();
     expect(resolvePopupLink("tel:+12035550100", base)).toBeNull();
+  });
+});
+
+describe("hasRecentResponses", () => {
+  const published = { publishedAt: ymdToUtcDate("2026-09-01") };
+
+  it("counts live popups and ones that came down in the last 30 days", () => {
+    expect(hasRecentResponses(popup(published), today)).toBe(true);
+    expect(
+      hasRecentResponses(popup({ ...published, endDate: ymdToUtcDate("2026-10-20") }), today),
+    ).toBe(true);
+    expect(
+      hasRecentResponses(
+        popup({ ...published, status: HOME_POPUP_STATUS.DRAFT, updatedAt: ymdToUtcDate("2026-11-10") }),
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it("skips never-published, scheduled and long-ended popups", () => {
+    expect(hasRecentResponses(popup(), today)).toBe(false);
+    expect(
+      hasRecentResponses(popup({ ...published, startDate: ymdToUtcDate("2026-12-01") }), today),
+    ).toBe(false);
+    expect(
+      hasRecentResponses(popup({ ...published, endDate: ymdToUtcDate("2026-09-30") }), today),
+    ).toBe(false);
   });
 });

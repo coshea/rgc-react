@@ -260,6 +260,35 @@ export function pickLivePopup(
   return live[0] ?? null;
 }
 
+/** How long after a popup comes down the admin list still counts its responses. */
+export const HOME_POPUP_TOTALS_DAYS = 30;
+
+/**
+ * Whether the admin list should count a popup's responses: it has been live,
+ * and is still up or came down recently. Older ones are left out so the list
+ * doesn't run two count queries for every popup ever published; the editor's
+ * Responses card still shows them.
+ */
+export function hasRecentResponses(
+  popup: Pick<
+    HomePopup,
+    "status" | "startDate" | "endDate" | "publishedAt" | "updatedAt"
+  >,
+  today = todayUtc(),
+): boolean {
+  if (!popup.publishedAt) return false;
+  const state = homePopupState(popup, today);
+  if (state === HOME_POPUP_STATE.LIVE) return true;
+  if (state === HOME_POPUP_STATE.SCHEDULED) return false;
+  // Ended, or unpublished back to a draft.
+  const cameDown =
+    state === HOME_POPUP_STATE.ENDED ? popup.endDate : popup.updatedAt;
+  const cutoff = ymdToUtcDate(
+    addDaysYmd(utcDateToYmd(today), -HOME_POPUP_TOTALS_DAYS),
+  );
+  return !!cameDown && cameDown.getTime() >= cutoff.getTime();
+}
+
 export const HOME_POPUP_TITLE_MAX = 60;
 
 /** Editor state. Dates are `"YYYY-MM-DD"`; `endYmd` is empty for no end. */
