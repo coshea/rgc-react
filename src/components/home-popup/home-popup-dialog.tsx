@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import type { HomePopup } from "@/types/homePopup";
-import { isInternalLink } from "@/utils/homePopup";
+import { isInternalLink, resolvePopupLink } from "@/utils/homePopup";
 
 /** Styles for everything the message's markdown editor can produce. */
 export const POPUP_MARKDOWN_CLASS =
@@ -26,8 +26,12 @@ interface HomePopupDialogProps {
   isOpen: boolean;
   /** X, "Not now", Escape or a backdrop tap. */
   onClose: () => void;
-  /** The button or a link in the message was pressed. Not called in preview. */
-  onFollowLink?: (link: string) => void;
+  /**
+   * The button or a link in the message was pressed. With `browserOpens`, the
+   * browser is already opening it (a modifier-click, `mailto:`), so don't
+   * navigate. Not called in preview.
+   */
+  onFollowLink?: (link: string, options?: { browserOpens?: boolean }) => void;
   /** Admin preview: links don't navigate, so the editor keeps its state. */
   preview?: boolean;
 }
@@ -54,14 +58,27 @@ export function HomePopupDialog({
     else onFollowLink?.(link);
   };
 
-  // Message links go through `follow` too, so they dismiss first (or are
-  // blocked in preview) instead of navigating on their own.
+  // Message links dismiss the popup too (or are blocked in preview). Plain
+  // clicks on web links route through `onFollowLink`; modifier-clicks,
+  // anchors and `mailto:`/`tel:` keep the browser's own behaviour.
   const handleMarkdownLink = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
+    const link = resolvePopupLink(href);
+    if (preview) {
+      event.preventDefault();
+      setBlockedLink(link ?? href);
+      return;
+    }
+    const modified =
+      event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (!link || modified) {
+      onFollowLink?.(link ?? href, { browserOpens: true });
+      return;
+    }
     event.preventDefault();
-    follow(href);
+    onFollowLink?.(link);
   };
 
   const ctaLabel = popup.ctaLabel?.trim();
@@ -95,17 +112,22 @@ export function HomePopupDialog({
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                a: ({ href, children }: { href?: string; children?: ReactNode }) => (
+                a: ({ href, children }: { href?: string; children?: ReactNode }) => {
+                  const link = href ? resolvePopupLink(href) : null;
                   // Native anchor so in-app links can route without a reload.
-                  <a
-                    href={href}
-                    target={href && !isInternalLink(href) ? "_blank" : undefined}
-                    rel="noopener noreferrer"
-                    onClick={(e) => href && handleMarkdownLink(e, href)}
-                  >
-                    {children}
-                  </a>
-                ),
+                  return (
+                    <a
+                      href={href}
+                      target={
+                        link && !isInternalLink(link) ? "_blank" : undefined
+                      }
+                      rel="noopener noreferrer"
+                      onClick={(e) => href && handleMarkdownLink(e, href)}
+                    >
+                      {children}
+                    </a>
+                  );
+                },
               }}
             >
               {popup.body}

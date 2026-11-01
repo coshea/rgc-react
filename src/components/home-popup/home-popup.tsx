@@ -99,12 +99,13 @@ export function HomePopup() {
         trackEvent(AnalyticsEvent.HOME_POPUP_DISMISS, analyticsParams(popup));
         close(HOME_POPUP_ACTION.DISMISSED);
       }}
-      onFollowLink={(link) => {
+      onFollowLink={(link, { browserOpens = false } = {}) => {
         trackEvent(AnalyticsEvent.HOME_POPUP_CLICK, {
           ...analyticsParams(popup),
           link,
         });
         close(HOME_POPUP_ACTION.CLICKED, link);
+        if (browserOpens) return;
         if (isInternalLink(link)) navigate(link);
         else window.open(link, "_blank", "noopener,noreferrer");
       }}

@@ -151,6 +151,29 @@ export function isInternalLink(link: string): boolean {
   return link.startsWith("/") && !link.startsWith("//");
 }
 
+/**
+ * Where a link in the message goes: an in-app path for this site (relative
+ * links and full links to this site included) or an absolute http(s) URL.
+ * Null for `#anchors`, `mailto:`, `tel:` and anything unparseable, which the
+ * browser should handle itself.
+ */
+export function resolvePopupLink(
+  href: string,
+  base: string = window.location.href,
+): string | null {
+  if (!href || href.startsWith("#")) return null;
+  let url: URL;
+  try {
+    url = new URL(href, base);
+  } catch {
+    return null;
+  }
+  if (url.origin === new URL(base).origin) {
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+  return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+}
+
 /** A button link must be an in-app path or an https URL. */
 export function isValidCtaLink(link: string): boolean {
   if (isInternalLink(link)) return true;

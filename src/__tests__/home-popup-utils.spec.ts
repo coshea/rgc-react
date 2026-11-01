@@ -20,6 +20,7 @@ import {
   readLocalDismissals,
   rememberLocalDismissal,
   todayUtc,
+  resolvePopupLink,
   validateHomePopupForm,
   ymdToUtcDate,
   type HomePopupForm,
@@ -210,5 +211,23 @@ describe("forms and templates", () => {
       expect(t.name.toLowerCase()).not.toContain("tournament");
       if (t.ctaLink) expect(t.ctaLink.startsWith("/")).toBe(true);
     }
+  });
+});
+
+describe("resolvePopupLink", () => {
+  const base = "https://ridgefieldgolfclub.org/";
+  it("turns relative and same-site links into in-app paths", () => {
+    expect(resolvePopupLink("membership", base)).toBe("/membership");
+    expect(resolvePopupLink("/membership?x=1", base)).toBe("/membership?x=1");
+    expect(resolvePopupLink("https://ridgefieldgolfclub.org/policies#rules", base)).toBe(
+      "/policies#rules",
+    );
+  });
+
+  it("keeps other web links and leaves the rest to the browser", () => {
+    expect(resolvePopupLink("https://example.com/a", base)).toBe("https://example.com/a");
+    expect(resolvePopupLink("#rules", base)).toBeNull();
+    expect(resolvePopupLink("mailto:board@example.com", base)).toBeNull();
+    expect(resolvePopupLink("tel:+12035550100", base)).toBeNull();
   });
 });

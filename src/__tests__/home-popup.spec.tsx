@@ -124,3 +124,40 @@ describe("HomePopup", () => {
     expect(screen.queryByText("2027 memberships are open")).toBeNull();
   });
 });
+
+describe("HomePopup message links", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    state.user = null;
+    state.remote = {};
+    state.dismiss.mockReset();
+  });
+
+  it("routes a relative link in the app instead of opening a new tab", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    state.published = [livePopup({ body: "Please [join](membership) today." })];
+    renderHome();
+    fireEvent.click(await screen.findByRole("link", { name: "join" }));
+    expect(open).not.toHaveBeenCalled();
+    expect(await screen.findByText("Membership page")).toBeTruthy();
+    expect(state.dismiss).toHaveBeenCalledWith(
+      expect.objectContaining({ response: { action: "clicked", link: "/membership" } }),
+    );
+    open.mockRestore();
+  });
+
+  it("lets the browser handle a modifier-click but still records it", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    state.published = [livePopup({ body: "Please [join](/membership) today." })];
+    renderHome();
+    const link = await screen.findByRole("link", { name: "join" });
+    // `true` means nothing called preventDefault, so the browser opens it.
+    expect(fireEvent.click(link, { metaKey: true })).toBe(true);
+    expect(open).not.toHaveBeenCalled();
+    expect(screen.queryByText("Membership page")).toBeNull();
+    expect(state.dismiss).toHaveBeenCalledWith(
+      expect.objectContaining({ response: { action: "clicked", link: "/membership" } }),
+    );
+    open.mockRestore();
+  });
+});
