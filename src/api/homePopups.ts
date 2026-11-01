@@ -25,6 +25,7 @@ import {
   HOME_POPUP_ACTION,
   HOME_POPUP_AUDIENCE,
   HOME_POPUP_DISMISSALS,
+  HOME_POPUP_RESPONSE_LINK_MAX,
   HOME_POPUP_RESPONSES,
   HOME_POPUP_STATUS,
   HOME_POPUPS_COLLECTION,
@@ -325,7 +326,9 @@ export async function recordHomePopupDismissal(
               uid,
               action: response.action,
               version,
-              link: response.link ?? "",
+              // Cut long links, or the rules reject the whole batch and the
+              // dismissal is lost too.
+              link: (response.link ?? "").slice(0, HOME_POPUP_RESPONSE_LINK_MAX),
               at: serverTimestamp(),
             },
           );

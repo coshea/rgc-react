@@ -65,6 +65,8 @@ export type HomePopupInput = Pick<
  * `homePopups/{id}/responses/{uid}`. Visitors are only counted in GA4.
  */
 export const HOME_POPUP_RESPONSES = "responses";
+/** Longest `link` the rules accept on a response; longer ones are cut. */
+export const HOME_POPUP_RESPONSE_LINK_MAX = 500;
 
 export const HOME_POPUP_ACTION = {
   /** Pressed the button or a link in the message. */
