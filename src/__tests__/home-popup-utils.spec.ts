@@ -102,6 +102,17 @@ describe("validateHomePopupForm", () => {
     ).toEqual({});
   });
 
+  it("won't publish a popup whose end date has passed, but saves it as a draft", () => {
+    const ended = form({ startYmd: "2026-10-01", endYmd: "2026-11-14" });
+    expect(
+      validateHomePopupForm(ended, { publishing: true, today }).endYmd,
+    ).toMatch(/passed/);
+    expect(validateHomePopupForm(ended, { publishing: false, today })).toEqual({});
+    expect(
+      validateHomePopupForm(form({ endYmd: "2026-11-15" }), { publishing: true, today }),
+    ).toEqual({});
+  });
+
   it("rejects an end date before the start, even for drafts", () => {
     expect(
       validateHomePopupForm(form({ endYmd: "2026-10-01" }), { publishing: false }).endYmd,

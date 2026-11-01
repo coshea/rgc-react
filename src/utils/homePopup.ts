@@ -316,12 +316,13 @@ export function formToInput(
 export type HomePopupFormErrors = Partial<Record<keyof HomePopupForm, string>>;
 
 /**
- * Drafts only need valid dates. Going live also needs a title and message,
- * a complete and valid button, and no `[PLACEHOLDER]`s left.
+ * Drafts only need valid dates. Going live also needs an end date that hasn't
+ * passed, a title and message, a complete and valid button, and no
+ * `[PLACEHOLDER]`s left.
  */
 export function validateHomePopupForm(
   form: HomePopupForm,
-  { publishing }: { publishing: boolean },
+  { publishing, today = todayUtc() }: { publishing: boolean; today?: Date },
 ): HomePopupFormErrors {
   const errors: HomePopupFormErrors = {};
   if (!form.startYmd) errors.startYmd = "Pick a start date.";
@@ -332,6 +333,11 @@ export function validateHomePopupForm(
     errors.title = `Keep the title to ${HOME_POPUP_TITLE_MAX} characters.`;
   }
   if (!publishing) return errors;
+
+  // An ended popup never shows, so publishing it would only look like it worked.
+  if (!errors.endYmd && form.endYmd && form.endYmd < utcDateToYmd(today)) {
+    errors.endYmd = "The end date has passed. Pick a later one or clear it.";
+  }
 
   const placeholderError = (text: string) => {
     const found = findPlaceholders(text);
