@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Button } from "@heroui/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { isFirestoreCacheFailure } from "@/utils/firebaseErrors";
 
@@ -10,6 +11,36 @@ import { isFirestoreCacheFailure } from "@/utils/firebaseErrors";
  */
 export function FirestoreFailureBanner() {
   const [failed, setFailed] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Most reads go through React Query, which keeps the error as query state
+  // instead of letting it reach the window listeners below.
+  useEffect(() => {
+    const unsubscribeQueries = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.type === "updated" &&
+        event.action.type === "error" &&
+        isFirestoreCacheFailure(event.action.error)
+      ) {
+        setFailed(true);
+      }
+    });
+    const unsubscribeMutations = queryClient
+      .getMutationCache()
+      .subscribe((event) => {
+        if (
+          event.type === "updated" &&
+          event.action.type === "error" &&
+          isFirestoreCacheFailure(event.action.error)
+        ) {
+          setFailed(true);
+        }
+      });
+    return () => {
+      unsubscribeQueries();
+      unsubscribeMutations();
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     const onError = (event: ErrorEvent) => {

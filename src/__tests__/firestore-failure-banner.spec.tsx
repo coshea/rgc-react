@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
 import "@testing-library/jest-dom";
 
 import { FirestoreFailureBanner } from "@/components/firestore-failure-banner";
@@ -8,6 +10,15 @@ import { isFirestoreCacheFailure } from "@/utils/firebaseErrors";
 const assertionError = new Error(
   'FIRESTORE (12.19.0) INTERNAL ASSERTION FAILED: Unexpected state (ID: b815) CONTEXT: {"tl":"Attempt to get all index records from database without an in-progress transaction"}',
 );
+
+let queryClient: QueryClient;
+
+function render(ui: ReactElement) {
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return rtlRender(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 function dispatchRejection(reason: unknown) {
   // jsdom has no PromiseRejectionEvent constructor.
@@ -59,6 +70,38 @@ describe("FirestoreFailureBanner", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       /something went wrong loading club data/i,
     );
+  });
+
+  it("appears when a query fails with a cache error", async () => {
+    render(<FirestoreFailureBanner />);
+    await act(async () => {
+      await queryClient
+        .fetchQuery({ queryKey: ["x"], queryFn: () => Promise.reject(assertionError) })
+        .catch(() => undefined);
+    });
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("appears when a mutation fails with a cache error", async () => {
+    render(<FirestoreFailureBanner />);
+    await act(async () => {
+      await queryClient
+        .getMutationCache()
+        .build(queryClient, { mutationFn: () => Promise.reject(assertionError) })
+        .execute(undefined)
+        .catch(() => undefined);
+    });
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("ignores ordinary query errors", async () => {
+    render(<FirestoreFailureBanner />);
+    await act(async () => {
+      await queryClient
+        .fetchQuery({ queryKey: ["y"], queryFn: () => Promise.reject(new Error("offline")) })
+        .catch(() => undefined);
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("appears on a thrown Firestore assertion and reloads on press", () => {
