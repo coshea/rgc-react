@@ -50,6 +50,7 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
   - Avatar resize with `sharp`.
   - Genkit blog writeups.
   - The functions codebase name is `rgc-react`.
+- **Home popup** (admin "Home popup" section, `src/components/home-popup/`, `src/components/admin-dashboard/home-popup/`): admins write popups into `homePopups/{id}` (audience `everyone` | `members` | `visitors` (signed out only), draft/published, date-only start/end). The home page shows the most recently published live one meant for the viewer, once per person: dismissals are keyed by `id` + `version` in `localStorage` and, for members, `users/{uid}/homePopupDismissals/{id}` (a dismissal made before signing in is copied there). Each click or close by a signed-in member is also written to `homePopups/{id}/responses/{uid}` in the same batch, and admins see it in the editor's Responses card; visitors are counted only by the GA4 `home_popup_*` events. "Show again" bumps `version`. Visitors must query with `audience in ["everyone", "visitors"]` or the rules reject it. Templates live in `HOME_POPUP_TEMPLATES` (`src/utils/homePopup.ts`); `[CAPS]` placeholders block publishing. "Preview on this page" saves a draft first and turns links off, so the editor never navigates away. It isn't for tournament registration, which has its own emails.
 - **Security:** `firestore.rules`, `storage.rules` and `firestore.indexes.json` are at the root. New queries may need a composite index.
 
 ## Auth, Admin & Firebase

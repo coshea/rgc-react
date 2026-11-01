@@ -16,6 +16,11 @@ export const AnalyticsEvent = {
   WRAPPED_OPEN: "wrapped_open",
   WRAPPED_CARD_VIEW: "wrapped_card_view",
   WRAPPED_SHARE: "wrapped_share",
+  // Home popup (params: popup_id, version, template, audience; clicks add link).
+  // Counts visitors too; who clicked is in homePopups/{id}/responses.
+  HOME_POPUP_VIEW: "home_popup_view",
+  HOME_POPUP_CLICK: "home_popup_click",
+  HOME_POPUP_DISMISS: "home_popup_dismiss",
 } as const;
 
 export type AnalyticsEventName =

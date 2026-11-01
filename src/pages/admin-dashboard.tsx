@@ -13,6 +13,7 @@ import { TournamentStatusTab } from "@/components/admin-dashboard/tournament-sta
 import { NotificationsTab } from "@/components/admin-dashboard/notifications-tab";
 import { MembershipSettingsTab } from "@/components/admin-dashboard/membership-settings-tab";
 import { SeasonWrappedTab } from "@/components/admin-dashboard/season-wrapped/season-wrapped-tab";
+import { HomePopupTab } from "@/components/admin-dashboard/home-popup/home-popup-tab";
 
 type TabKey =
   | "overview"
@@ -21,7 +22,8 @@ type TabKey =
   | "membership"
   | "tournaments"
   | "wrapped"
-  | "notifications";
+  | "notifications"
+  | "popup";
 
 const EmbeddedPaymentsTab = () => <PaymentsTab isEmbedded />;
 
@@ -80,6 +82,13 @@ const SECTIONS: readonly (AdminSection<TabKey> & {
     icon: "lucide:bell",
     group: "Communication",
     Component: NotificationsTab,
+  },
+  {
+    key: "popup",
+    label: "Home popup",
+    icon: "lucide:megaphone",
+    group: "Communication",
+    Component: HomePopupTab,
   },
 ];
 
