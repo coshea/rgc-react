@@ -1,10 +1,13 @@
 import { Button } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { siteConfig } from "@/config/site";
 
 interface BackButtonProps {
   /**
-   * Optional custom navigation action. If not provided, uses navigate(-1)
+   * Optional custom navigation action. If not provided, goes back in history,
+   * or home when there is no in-app history
    */
   onPress?: () => void;
   /**
@@ -28,6 +31,7 @@ export default function BackButton({
   showLabelOnMobile = true,
 }: BackButtonProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handlePress = () => {
     if (onPress) {
@@ -35,8 +39,13 @@ export default function BackButton({
       return;
     }
 
-    // Prefer standard history navigation; this behaves correctly for both
-    // BrowserRouter and MemoryRouter stacks.
+    // The first entry in the session (bookmark, email link, new tab) has no
+    // in-app page to return to, so go home instead of leaving the site.
+    if (location.key === "default") {
+      navigate(siteConfig.pages.home.link);
+      return;
+    }
+
     navigate(-1);
   };
 

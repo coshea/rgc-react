@@ -38,6 +38,24 @@ export function isFirestoreOfflineError(error: unknown): boolean {
 }
 
 /**
+ * True when Firestore's on-device cache (IndexedDB) has failed. Seen on iOS
+ * Safari (firebase-js-sdk#8250): after it, every Firestore read and write
+ * fails until the page reloads.
+ */
+export function isFirestoreCacheFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { name, message } = error as { name?: unknown; message?: unknown };
+  if (name === "IndexedDbTransactionError") return true;
+  const text = typeof message === "string" ? message : "";
+  return (
+    /FIRESTORE \(.*\) INTERNAL ASSERTION FAILED/.test(text) ||
+    /Attempt to get all index records from database without an in-progress transaction/.test(
+      text,
+    )
+  );
+}
+
+/**
  * Error callback for Firestore listeners. Keeps the console message, and
  * reports permission-denied to Sentry: a denied listener means the client
  * subscribed to something the rules don't allow (e.g. before auth), which is

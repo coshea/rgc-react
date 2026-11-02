@@ -4,6 +4,7 @@ import { Card, Spinner } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
 import { useBoardMembers } from "@/hooks/useBoardMembers";
 import { usePageTracking } from "@/hooks/usePageTracking";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 const BoardOfGovernorsPage: React.FC = () => {
   usePageTracking("Board of Governors");
@@ -27,7 +28,10 @@ const BoardOfGovernorsPage: React.FC = () => {
           <Spinner aria-label="Loading board members" />
         </div>
       ) : boardMembers.length === 0 ? (
-        <p className="text-muted">No board members are listed yet.</p>
+        <EmptyStateMessage
+          icon="lucide:users"
+          title="No board members are listed yet"
+        />
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {boardMembers.map((member) => {

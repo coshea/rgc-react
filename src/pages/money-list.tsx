@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Select, Tabs, Label, ListBox, Spinner } from "@heroui/react";
+import { Select, Label, ListBox, Spinner } from "@heroui/react";
+import { Segment } from "@heroui-pro/react/segment";
 import { useAuth } from "@/providers/AuthProvider";
 // Replaced legacy leaderboard with new standings component
 import { YearlyWinningsStandings } from "@/components/yearly-winnings-standings";
@@ -10,11 +11,22 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 const currentYear = new Date().getFullYear();
 const years = [currentYear, currentYear - 1];
 
+const MONEY_LIST_VIEWS = [
+  { id: "yearly", label: "Standings" },
+  { id: "tournaments", label: "Tournaments" },
+  { id: "teams", label: "Teams" },
+] as const;
+
+type MoneyListView = (typeof MONEY_LIST_VIEWS)[number]["id"];
+
+const isMoneyListView = (key: unknown): key is MoneyListView =>
+  MONEY_LIST_VIEWS.some((view) => view.id === key);
+
 export default function MoneyListPage() {
   usePageTracking("Money List");
   const { userLoggedIn, loading } = useAuth();
   const [year, setYear] = useState<number>(currentYear);
-  const [tab, setTab] = useState<string>("yearly");
+  const [tab, setTab] = useState<MoneyListView>("yearly");
   if (loading)
     return (
       <div className="p-4 flex justify-center">
@@ -64,63 +76,21 @@ export default function MoneyListPage() {
         </Select>
       </div>
 
-      {/* Mobile view selector */}
-      <div className="sm:hidden mb-4">
-        <Select
-          aria-label="Select leaderboard view"
-          value={tab}
-          onChange={(key) => {
-            if (key) setTab(String(key));
-          }}
-          className="max-w-xs"
-        >
-          <Label>View</Label>
-          <Select.Trigger>
-            <Select.Value />
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox>
-              <ListBox.Item id="yearly" textValue="Yearly Standings">
-                Yearly Standings
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="tournaments" textValue="Tournament Breakdown">
-                Tournament Breakdown
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-              <ListBox.Item id="teams" textValue="Team Winners">
-                Team Winners
-                <ListBox.ItemIndicator />
-              </ListBox.Item>
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      </div>
-
-      {/* Desktop tabs */}
-      <div className="hidden sm:block mb-6">
-        <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(String(k))}>
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Leaderboard views">
-              <Tabs.Tab id="yearly">
-                Yearly Standings
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="tournaments">
-                <Tabs.Separator />
-                Tournament Breakdown
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="teams">
-                <Tabs.Separator />
-                Team Winners
-                <Tabs.Indicator />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
-        </Tabs>
-      </div>
+      <Segment
+        aria-label="Leaderboard views"
+        size="lg"
+        selectedKey={tab}
+        onSelectionChange={(key) => {
+          if (isMoneyListView(key)) setTab(key);
+        }}
+        className="mb-6 w-full sm:w-auto"
+      >
+        {MONEY_LIST_VIEWS.map((view) => (
+          <Segment.Item key={view.id} id={view.id} className="h-11 sm:h-10">
+            {view.label}
+          </Segment.Item>
+        ))}
+      </Segment>
 
       {/* Content */}
       <div className="mb-6">

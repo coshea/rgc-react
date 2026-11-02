@@ -27,6 +27,8 @@ import {
   computeDisplayPlaces,
 } from "@/utils/winners";
 import { UserSelect } from "@/components/UserSelect";
+import { NumberStepperField } from "@/components/number-stepper-field";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface GroupedWinnersEditorProps {
   groups: WinnerGroup[];
@@ -547,21 +549,18 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
           </Select.Popover>
         </Select>
         {sourceMode !== "bracketRounds" && (
-          <TextField
-            value={String(effectiveTeamSize)}
-            onChange={(v) =>
-              setEffectiveTeamSize(Math.max(1, parseInt(v, 10) || 1))
+          <NumberStepperField
+            label="Winners per place"
+            value={effectiveTeamSize}
+            onChange={setEffectiveTeamSize}
+            minValue={1}
+            maxValue={20}
+            description={
+              teamSize !== effectiveTeamSize
+                ? `Tournament default: ${teamSize}`
+                : undefined
             }
-            className="w-[160px]"
-          >
-            <Label>Winners per place</Label>
-            <Input type="number" min={1} max={20} />
-            {teamSize !== effectiveTeamSize && (
-              <p className="text-xs text-muted mt-1">
-                Tournament default: {teamSize}
-              </p>
-            )}
-          </TextField>
+          />
         )}
       </div>
 
@@ -703,17 +702,20 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
           </Card.Content>
         </Card>
       ) : !isCompleted ? (
-        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
-          <Icon
-            icon="lucide:trophy"
-            className="mx-auto text-2xl mb-2 text-muted"
-          />
-          <p>Winners can be added once the tournament is marked as completed</p>
-        </div>
+        <EmptyStateMessage
+          size="sm"
+          icon="lucide:trophy"
+          title="Winners can be added once the tournament is marked as completed"
+          className="bg-surface-secondary rounded-md"
+        />
       ) : sorted.length === 0 ? (
-        <div className="bg-surface-secondary p-4 rounded-md text-center text-muted">
-          <p>No winner groups yet. Add one to get started.</p>
-        </div>
+        <EmptyStateMessage
+          size="sm"
+          icon="lucide:list-plus"
+          title="No winner groups yet"
+          description="Add one to get started."
+          className="bg-surface-secondary rounded-md"
+        />
       ) : (
         <div className="space-y-4">
           {sorted.map((g) => (
@@ -753,29 +755,19 @@ export const GroupedWinnersEditor: React.FC<GroupedWinnersEditorProps> = ({
                       </Select.Popover>
                     </Select>
                     {g.type === "day" && (
-                      <TextField
-                        value={String(g.dayIndex || 1)}
-                        onChange={(v) =>
-                          updateGroup(g.id, { dayIndex: parseInt(v, 10) || 1 })
-                        }
-                        className="w-[120px]"
-                      >
-                        <Label>Day #</Label>
-                        <Input type="number" min={1} />
-                      </TextField>
+                      <NumberStepperField
+                        label="Day #"
+                        value={g.dayIndex || 1}
+                        onChange={(dayIndex) => updateGroup(g.id, { dayIndex })}
+                        minValue={1}
+                      />
                     )}
-                    <TextField
-                      value={String(g.order)}
-                      onChange={(v) =>
-                        updateGroup(g.id, {
-                          order: Math.max(0, parseInt(v, 10) || 0),
-                        })
-                      }
-                      className="w-[120px]"
-                    >
-                      <Label>Order</Label>
-                      <Input type="number" min={0} />
-                    </TextField>
+                    <NumberStepperField
+                      label="Order"
+                      value={g.order}
+                      onChange={(order) => updateGroup(g.id, { order })}
+                      minValue={0}
+                    />
                   </div>
                   <Button
                     size="sm"

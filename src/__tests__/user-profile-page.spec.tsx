@@ -117,7 +117,7 @@ describe("UserProfilePage", () => {
     expect(screen.getByText("$1,240")).toBeInTheDocument();
     expect(screen.getByText("Lifetime winnings")).toBeInTheDocument();
     // Only champion placements count toward the Championships stat.
-    const stats = screen.getByRole("region", { name: "Stats" });
+    const stats = screen.getByLabelText("Stats");
     expect(stats).toHaveTextContent("1Championships");
     expect(screen.getByText("Club Champion")).toBeInTheDocument();
     // Overview lists this year's wins only.

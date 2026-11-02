@@ -644,31 +644,24 @@ describe("TournamentEditor - edge cases", () => {
     });
   });
 
-  it("prevents submission when players < 1", async () => {
+  it("does not let players drop below 1", () => {
     const qc = new QueryClient();
     render(
       <QueryClientProvider client={qc}>
         <TournamentEditor onSave={vi.fn()} onCancel={vi.fn()} />
       </QueryClientProvider>,
     );
-    fireEvent.change(screen.getByLabelText(/Tournament Title/i), {
-      target: { value: "Test Players" },
+    const decrease = screen.getByRole("button", {
+      name: /Decrease Number of Players/i,
     });
-    fireEvent.change(screen.getByLabelText(/Description/i), {
-      target: { value: "Desc" },
-    });
-    fireEvent.change(screen.getByLabelText(/Tournament Date/i), {
-      target: { value: "2025-02-03" },
-    });
-    // players input: fallback to placeholder
-    const playersInput = screen.getByPlaceholderText(
-      /Enter number of players/i,
-    );
-    fireEvent.change(playersInput, { target: { value: 0 } });
-    fireEvent.click(screen.getByRole("button", { name: /Create Tournament/i }));
-    await waitFor(() => {
-      expect(addDocMock).not.toHaveBeenCalled();
-    });
+    // Step down to the minimum, whatever the default team size is.
+    for (let i = 0; i < 10 && !decrease.hasAttribute("disabled"); i++) {
+      fireEvent.click(decrease);
+    }
+    expect(decrease).toBeDisabled();
+    expect(
+      screen.getByRole("textbox", { name: /Number of Players/i }),
+    ).toHaveValue("1");
   });
 
   it("allows submission when canceled and completed toggled (no winners)", async () => {

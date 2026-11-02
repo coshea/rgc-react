@@ -22,6 +22,8 @@ import {
   RadioGroup,
   Radio,
   DatePicker,
+  DateField,
+  Calendar,
   TextField,
   FieldError,
   Spinner,
@@ -36,6 +38,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import type { User } from "@/api/users";
 import type { AppNotification, NotificationType } from "@/types/notification";
 import { NOTIFICATION_TYPE_META } from "@/types/notification";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 interface TournamentOption {
   id: string;
@@ -496,66 +499,64 @@ export function NotificationsTab() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <TextField isInvalid={Boolean(errors.type)}>
-              <Select
-                value={type}
-                onChange={(key) => {
-                  const val = key as NotificationType;
-                  if (val) {
-                    setType(val);
-                    // When switching to a tournament-type, pre-fill link if a
-                    // tournament is already selected.
-                    if (TOURNAMENT_TYPES.has(val) && selectedTournamentId) {
-                      if (!link)
-                        setLink(`/tournaments/${selectedTournamentId}`);
-                      if (REGISTRATION_LINKED_TYPES.has(val)) {
-                        const tournament = tournaments.find(
-                          (t) => t.id === selectedTournamentId,
+            <Select
+              isInvalid={Boolean(errors.type)}
+              value={type}
+              onChange={(key) => {
+                const val = key as NotificationType;
+                if (val) {
+                  setType(val);
+                  // When switching to a tournament-type, pre-fill link if a
+                  // tournament is already selected.
+                  if (TOURNAMENT_TYPES.has(val) && selectedTournamentId) {
+                    if (!link) setLink(`/tournaments/${selectedTournamentId}`);
+                    if (REGISTRATION_LINKED_TYPES.has(val)) {
+                      const tournament = tournaments.find(
+                        (t) => t.id === selectedTournamentId,
+                      );
+                      if (tournament?.registrationEnd) {
+                        setExpiresAt(
+                          toDateTimeValue(tournament.registrationEnd),
                         );
-                        if (tournament?.registrationEnd) {
-                          setExpiresAt(
-                            toDateTimeValue(tournament.registrationEnd),
-                          );
-                        }
                       }
                     }
-                    // Clear tournament when switching away from tournament types
-                    // and no recipient-based targeting is active.
-                    if (
-                      !TOURNAMENT_TYPES.has(val) &&
-                      targetUid !== "__tournament_registrants__" &&
-                      targetUid !== "__tournament_non_registrants__"
-                    ) {
-                      setSelectedTournamentId("");
-                    }
                   }
-                }}
-              >
-                <Label>Type</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {NOTIFICATION_TYPES.map((t) => (
-                      <ListBox.Item
-                        key={t.value}
-                        id={t.value}
-                        textValue={t.label}
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Icon icon={t.icon} className="text-base shrink-0" />
-                          {t.label}
-                        </span>
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
+                  // Clear tournament when switching away from tournament types
+                  // and no recipient-based targeting is active.
+                  if (
+                    !TOURNAMENT_TYPES.has(val) &&
+                    targetUid !== "__tournament_registrants__" &&
+                    targetUid !== "__tournament_non_registrants__"
+                  ) {
+                    setSelectedTournamentId("");
+                  }
+                }
+              }}
+            >
+              <Label>Type</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {NOTIFICATION_TYPES.map((t) => (
+                    <ListBox.Item
+                      key={t.value}
+                      id={t.value}
+                      textValue={t.label}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Icon icon={t.icon} className="text-base shrink-0" />
+                        {t.label}
+                      </span>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
               <FieldError>{errors.type}</FieldError>
-            </TextField>
+            </Select>
 
             <Select
               value={targetUid}
@@ -625,74 +626,69 @@ export function NotificationsTab() {
             targetUid === "__tournament_registrants__" ||
             targetUid === "__tournament_non_registrants__") && (
             <>
-              <TextField isInvalid={Boolean(errors.tournament)}>
-                <Select
-                  placeholder="Select a tournament"
-                  value={selectedTournamentId || undefined}
-                  onChange={(key) => {
-                    const val = key as string;
-                    if (val) {
-                      setSelectedTournamentId(val);
-                      setLink(`/tournaments/${val}`);
-                      if (targetUid === "__tournament_registrants__") {
-                        setTournamentScope("in-tournament");
-                      }
-                      if (REGISTRATION_LINKED_TYPES.has(type)) {
-                        const tournament = tournaments.find(
-                          (t) => t.id === val,
+              <Select
+                isInvalid={Boolean(errors.tournament)}
+                placeholder="Select a tournament"
+                value={selectedTournamentId || undefined}
+                onChange={(key) => {
+                  const val = key as string;
+                  if (val) {
+                    setSelectedTournamentId(val);
+                    setLink(`/tournaments/${val}`);
+                    if (targetUid === "__tournament_registrants__") {
+                      setTournamentScope("in-tournament");
+                    }
+                    if (REGISTRATION_LINKED_TYPES.has(type)) {
+                      const tournament = tournaments.find((t) => t.id === val);
+                      if (tournament?.registrationEnd) {
+                        setExpiresAt(
+                          toDateTimeValue(tournament.registrationEnd),
                         );
-                        if (tournament?.registrationEnd) {
-                          setExpiresAt(
-                            toDateTimeValue(tournament.registrationEnd),
-                          );
-                        }
                       }
                     }
-                  }}
-                >
-                  <Label>Tournament</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {tournaments.map((t) => (
-                        <ListBox.Item key={t.id} id={t.id} textValue={t.title}>
-                          {t.title}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                  }
+                }}
+              >
+                <Label>Tournament</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {tournaments.map((t) => (
+                      <ListBox.Item key={t.id} id={t.id} textValue={t.title}>
+                        {t.title}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
                 <FieldError>{errors.tournament}</FieldError>
-              </TextField>
+              </Select>
               {targetUid === "__tournament_registrants__" &&
                 selectedTournamentId && (
-                  <div>
+                  <RadioGroup
+                    value={tournamentScope}
+                    onChange={(v) =>
+                      setTournamentScope(v as "in-tournament" | "all")
+                    }
+                    orientation="horizontal"
+                  >
                     <Label>Who to notify</Label>
-                    <RadioGroup
-                      value={tournamentScope}
-                      onChange={(v) =>
-                        setTournamentScope(v as "in-tournament" | "all")
-                      }
-                      orientation="horizontal"
-                    >
-                      <Radio value="in-tournament">
-                        <Radio.Control>
-                          <Radio.Indicator />
-                        </Radio.Control>
-                        <Radio.Content>In tournament</Radio.Content>
-                      </Radio>
-                      <Radio value="all">
-                        <Radio.Control>
-                          <Radio.Indicator />
-                        </Radio.Control>
-                        <Radio.Content>All (includes waitlist)</Radio.Content>
-                      </Radio>
-                    </RadioGroup>
-                  </div>
+                    <Radio value="in-tournament">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>In tournament</Radio.Content>
+                    </Radio>
+                    <Radio value="all">
+                      <Radio.Control>
+                        <Radio.Indicator />
+                      </Radio.Control>
+                      <Radio.Content>All (includes waitlist)</Radio.Content>
+                    </Radio>
+                  </RadioGroup>
                 )}
             </>
           )}
@@ -709,18 +705,56 @@ export function NotificationsTab() {
             </p>
           </TextField>
 
-          <div>
+          <DatePicker
+            value={expiresAt}
+            onChange={(v: DateValue | null) => setExpiresAt(v)}
+            granularity="minute"
+            className="w-full"
+          >
             <Label>Expiration (optional)</Label>
-            <DatePicker
-              value={expiresAt}
-              onChange={(v: DateValue | null) => setExpiresAt(v)}
-              granularity="minute"
-            />
+            <DateField.Group fullWidth>
+              <DateField.Input>
+                {(segment) => <DateField.Segment segment={segment} />}
+              </DateField.Input>
+              <DateField.Suffix>
+                <DatePicker.Trigger>
+                  <DatePicker.TriggerIndicator />
+                </DatePicker.Trigger>
+              </DateField.Suffix>
+            </DateField.Group>
             <p className="text-xs text-muted">
               When to auto-delete this notification. Defaults to 60 days if left
               blank.
             </p>
-          </div>
+            <DatePicker.Popover>
+              <Calendar aria-label="Expiration date">
+                <Calendar.Header>
+                  <Calendar.YearPickerTrigger>
+                    <Calendar.YearPickerTriggerHeading />
+                    <Calendar.YearPickerTriggerIndicator />
+                  </Calendar.YearPickerTrigger>
+                  <Calendar.NavButton
+                    slot="previous"
+                    aria-label="Previous month"
+                  />
+                  <Calendar.NavButton slot="next" aria-label="Next month" />
+                </Calendar.Header>
+                <Calendar.Grid>
+                  <Calendar.GridHeader>
+                    {(day) => <Calendar.HeaderCell>{day}</Calendar.HeaderCell>}
+                  </Calendar.GridHeader>
+                  <Calendar.GridBody>
+                    {(d) => <Calendar.Cell date={d} />}
+                  </Calendar.GridBody>
+                </Calendar.Grid>
+                <Calendar.YearPickerGrid>
+                  <Calendar.YearPickerGridBody>
+                    {({ year }) => <Calendar.YearPickerCell year={year} />}
+                  </Calendar.YearPickerGridBody>
+                </Calendar.YearPickerGrid>
+              </Calendar>
+            </DatePicker.Popover>
+          </DatePicker>
 
           <div className="flex flex-wrap justify-end gap-3">
             <Tooltip closeDelay={0}>
@@ -774,9 +808,11 @@ export function NotificationsTab() {
         {loadingRecent ? (
           <p className="text-muted text-sm text-center py-6">Loading…</p>
         ) : recentNotifications.length === 0 ? (
-          <p className="text-muted text-sm text-center py-6">
-            No notifications sent yet.
-          </p>
+          <EmptyStateMessage
+            size="sm"
+            icon="lucide:bell-off"
+            title="No notifications sent yet"
+          />
         ) : (
           <div className="divide-y divide-default-100">
             {recentNotifications.map((n) => (

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Chip, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,8 @@ import type { User } from "@/api/users";
 import { MEMBERSHIP_TYPES } from "@@/types";
 import { siteConfig } from "@/config/site";
 import { copyOrMailtoEmails } from "@/utils/email";
+import { OverviewKpi } from "@/components/admin-dashboard/overview-kpi";
+import { PaymentMethodSplit } from "@/components/admin-dashboard/payment-method-split";
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
@@ -89,6 +91,8 @@ export function MemberOverviewTab() {
     };
   }, [allMembers, payments, activeSet, year]);
 
+  const paidCount = stats.paidByMail + stats.paidByPayPal;
+
   return (
     <div className="space-y-6">
       {/* Year selector */}
@@ -129,143 +133,68 @@ export function MemberOverviewTab() {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <Card.Content className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted">Total Members</p>
-                    <p className="mt-1 text-2xl font-bold">{stats.total}</p>
-                  </div>
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <Icon icon="lucide:users" className="w-5 h-5 text-accent" />
-                  </div>
-                </div>
-                <p className="mt-2 text-xs text-muted">
-                  {stats.activeCount} active (paid last 2 yrs)
-                </p>
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Content className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted">Memberships</p>
-                    <p className="mt-1 text-2xl font-bold">
-                      {stats.fullMembers + stats.handicapOnly}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-secondary/10 p-2">
-                    <Icon
-                      icon="lucide:id-card"
-                      className="w-5 h-5 text-secondary"
-                    />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-3">
-                  <span className="text-xs text-muted">
-                    Full:{" "}
-                    <span className="font-medium text-foreground">
-                      {stats.fullMembers}
-                    </span>
-                  </span>
-                  <span className="text-muted">·</span>
-                  <span className="text-xs text-muted">
-                    Handicap:{" "}
-                    <span className="font-medium text-foreground">
-                      {stats.handicapOnly}
-                    </span>
-                  </span>
-                </div>
-              </Card.Content>
-            </Card>
-
-            <Card>
-              <Card.Content className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted">New This Year</p>
-                    <p className="mt-1 text-2xl font-bold">
-                      {stats.newThisYear}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-success/10 p-2">
-                    <Icon
-                      icon="lucide:user-plus"
-                      className="w-5 h-5 text-success"
-                    />
-                  </div>
-                </div>
-                <p className="mt-2 text-xs text-muted">Joined in {year}</p>
-              </Card.Content>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Button
-              className="h-auto p-0 block w-full rounded-xl bg-transparent data-[hover=true]:bg-transparent data-[focus-visible=true]:ring-2"
-              onPress={() => setShowNotPaid(true)}
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <OverviewKpi
+              title="Total Members"
+              value={stats.total}
+              icon="lucide:users"
+              iconClassName="bg-accent/10 text-accent"
             >
-              <Card className="w-full text-left">
-                <Card.Content className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted">Not Paid Yet</p>
-                      <p className="mt-1 text-2xl font-bold">
-                        {stats.notPaidThisYear}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-warning/10 p-2">
-                      <Icon
-                        icon="lucide:clock"
-                        className="w-5 h-5 text-warning"
-                      />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-muted">
-                    No payment in {year} · click to view
-                  </p>
-                </Card.Content>
-              </Card>
-            </Button>
+              {stats.activeCount} active (paid last 2 yrs)
+            </OverviewKpi>
 
-            <Card>
-              <Card.Content className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted">Payments</p>
-                    <p className="mt-1 text-2xl font-bold">
-                      {stats.paidByMail + stats.paidByPayPal}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-accent/10 p-2">
-                    <Icon
-                      icon="lucide:credit-card"
-                      className="w-5 h-5 text-accent"
-                    />
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center gap-3">
-                  <span className="flex items-center gap-1 text-xs text-muted">
-                    <Icon icon="lucide:mail" className="w-3 h-3" />
-                    Check:{" "}
-                    <span className="font-medium text-foreground">
-                      {stats.paidByMail}
-                    </span>
-                  </span>
-                  <span className="text-muted">·</span>
-                  <span className="flex items-center gap-1 text-xs text-muted">
-                    <Icon icon="lucide:laptop-minimal" className="w-3 h-3" />
-                    PayPal:{" "}
-                    <span className="font-medium text-foreground">
-                      {stats.paidByPayPal}
-                    </span>
-                  </span>
-                </div>
-              </Card.Content>
-            </Card>
-          </div>
+            <OverviewKpi
+              title="Memberships"
+              value={stats.fullMembers + stats.handicapOnly}
+              icon="lucide:id-card"
+              iconClassName="bg-secondary/10 text-secondary"
+            >
+              Full:{" "}
+              <span className="font-medium text-foreground">
+                {stats.fullMembers}
+              </span>{" "}
+              · Handicap:{" "}
+              <span className="font-medium text-foreground">
+                {stats.handicapOnly}
+              </span>
+            </OverviewKpi>
+
+            <OverviewKpi
+              title="New This Year"
+              value={stats.newThisYear}
+              icon="lucide:user-plus"
+              status="success"
+            >
+              Joined in {year}
+            </OverviewKpi>
+          </dl>
+
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <OverviewKpi
+              title="Not Paid Yet"
+              value={stats.notPaidThisYear}
+              icon="lucide:clock"
+              status="warning"
+              action={{
+                label: `Not paid yet: ${stats.notPaidThisYear}. View members`,
+                onPress: () => setShowNotPaid(true),
+              }}
+            >
+              No payment in {year} · click to view
+            </OverviewKpi>
+
+            <OverviewKpi
+              title="Payments"
+              value={paidCount}
+              icon="lucide:credit-card"
+              iconClassName="bg-accent/10 text-accent"
+            >
+              <PaymentMethodSplit
+                check={stats.paidByMail}
+                paypal={stats.paidByPayPal}
+              />
+            </OverviewKpi>
+          </dl>
 
           {/* Not Paid Yet modal */}
           {showNotPaid && (

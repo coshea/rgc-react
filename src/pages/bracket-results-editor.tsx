@@ -20,6 +20,7 @@ import BackButton from "@/components/back-button";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import type { Tournament } from "@/types/tournament";
 import type { TournamentBracket, BracketTeam } from "@/types/bracket";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -221,19 +222,20 @@ export default function BracketResultsEditorPage() {
       </div>
 
       {!bracket ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-muted">
-          <Icon icon="lucide:git-branch" className="w-10 h-10 opacity-30" />
-          <p className="text-sm">
-            No bracket has been generated for this tournament yet.
-          </p>
-          <Button
-            size="sm"
-            variant="tertiary"
-            onPress={() => navigate(`/tournaments/${firestoreId}`)}
-          >
-            Go to Tournament
-          </Button>
-        </div>
+        <EmptyStateMessage
+          size="lg"
+          icon="lucide:git-branch"
+          title="No bracket has been generated for this tournament yet"
+          action={
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => navigate(`/tournaments/${firestoreId}`)}
+            >
+              Go to Tournament
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-6">
           {/* Champion / runner-up banners */}

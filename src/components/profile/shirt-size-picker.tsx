@@ -1,11 +1,12 @@
-import { ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { Segment } from "@heroui-pro/react/segment";
 import { T_SHIRT_SIZES } from "@/api/users";
+import { NO_SEGMENT_SELECTION } from "@/utils/segment";
 
 type ShirtSizePickerProps = {
   value: string;
   onChange: (size: string) => void;
   isInvalid?: boolean;
-  /** Stretch the buttons to fill the row (phone sheet). */
+  /** Stretch the picker to fill the row (phone sheet). */
   fullWidth?: boolean;
 };
 
@@ -16,29 +17,20 @@ export function ShirtSizePicker({
   fullWidth = false,
 }: ShirtSizePickerProps) {
   return (
-    <ToggleButtonGroup
+    <Segment
       aria-label="T-shirt size"
-      aria-invalid={isInvalid || undefined}
-      selectionMode="single"
-      disallowEmptySelection
-      isDetached
-      fullWidth={fullWidth}
-      selectedKeys={value ? [value] : []}
-      onSelectionChange={(keys) => {
-        const [next] = Array.from(keys);
-        if (next !== undefined) onChange(String(next));
-      }}
-      className="flex-wrap gap-1.5"
+      // React Aria drops aria-invalid here; forms show the error text beside it.
+      data-invalid={isInvalid || undefined}
+      size="lg"
+      selectedKey={value || NO_SEGMENT_SELECTION}
+      onSelectionChange={(key) => onChange(String(key))}
+      className={`max-w-full data-[invalid=true]:ring-2 data-[invalid=true]:ring-danger ${fullWidth ? "w-full" : ""}`}
     >
       {T_SHIRT_SIZES.map((size) => (
-        <ToggleButton
-          key={size}
-          id={size}
-          className="h-11 min-w-12 px-3 font-semibold"
-        >
+        <Segment.Item key={size} id={size} className="h-11 px-2 font-semibold">
           {size}
-        </ToggleButton>
+        </Segment.Item>
       ))}
-    </ToggleButtonGroup>
+    </Segment>
   );
 }

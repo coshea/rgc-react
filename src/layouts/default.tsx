@@ -1,4 +1,5 @@
 import { MainNavbar as MainNavbar } from "@/components/navbar-with-avatar";
+import { FirestoreFailureBanner } from "@/components/firestore-failure-banner";
 import { OfflineBanner } from "@/components/offline-banner";
 import { OfflineWarmup } from "@/components/offline-warmup";
 import { useConsent } from "@/providers/ConsentProvider";
@@ -24,6 +25,7 @@ export default function DefaultLayout({
             : "pb-[max(2rem,env(safe-area-inset-bottom))]",
         )}
       >
+        <FirestoreFailureBanner />
         <OfflineBanner />
         <OfflineWarmup />
         {children}

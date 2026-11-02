@@ -2,6 +2,7 @@ import { Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import type { UserTournamentWin } from "@/hooks/useUserTournaments";
 import { getPlaceMeta } from "@/utils/placeMeta";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 function ordinal(n: number) {
   const s = ["th", "st", "nd", "rd"];
@@ -30,24 +31,26 @@ function formatPrize(amount: number) {
 }
 
 /** Trophy colors for the podium; the number underneath keeps them distinct without color. */
-const TROPHY_STYLES: Record<number, { box: string; icon: string; label: string }> =
-  {
-    1: {
-      box: "bg-amber-100 dark:bg-amber-400/15",
-      icon: "text-amber-500 dark:text-amber-300",
-      label: "text-amber-900 dark:text-amber-200",
-    },
-    2: {
-      box: "bg-slate-100 dark:bg-slate-400/15",
-      icon: "text-slate-400 dark:text-slate-300",
-      label: "text-slate-700 dark:text-slate-200",
-    },
-    3: {
-      box: "bg-orange-100 dark:bg-orange-400/15",
-      icon: "text-orange-700 dark:text-orange-300",
-      label: "text-orange-900 dark:text-orange-200",
-    },
-  };
+const TROPHY_STYLES: Record<
+  number,
+  { box: string; icon: string; label: string }
+> = {
+  1: {
+    box: "bg-amber-100 dark:bg-amber-400/15",
+    icon: "text-amber-500 dark:text-amber-300",
+    label: "text-amber-900 dark:text-amber-200",
+  },
+  2: {
+    box: "bg-slate-100 dark:bg-slate-400/15",
+    icon: "text-slate-400 dark:text-slate-300",
+    label: "text-slate-700 dark:text-slate-200",
+  },
+  3: {
+    box: "bg-orange-100 dark:bg-orange-400/15",
+    icon: "text-orange-700 dark:text-orange-300",
+    label: "text-orange-900 dark:text-orange-200",
+  },
+};
 
 /** Leaderboard-style finish: a gold/silver/bronze trophy for the podium, a badge otherwise. */
 function PlaceBadge({ position }: { position?: number }) {
@@ -156,7 +159,7 @@ export function WinsByYear({
   if (isLoading) return <WinsSkeleton rows={4} />;
   if (wins.length === 0) {
     return (
-      <p className="py-8 text-center text-muted">No tournament wins yet.</p>
+      <EmptyStateMessage icon="lucide:trophy" title="No tournament wins yet" />
     );
   }
 

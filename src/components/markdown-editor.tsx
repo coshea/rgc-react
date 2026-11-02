@@ -18,6 +18,8 @@ export interface MarkdownEditorProps {
   forceEdit?: boolean;
   /** Hide the preview toggle button */
   hidePreviewToggle?: boolean;
+  /** Validation message shown under the editor; marks the field invalid. */
+  error?: string;
 }
 
 const BUTTONS: Array<{
@@ -94,9 +96,17 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   hidePreviewToggle = false,
   fillHeight = false,
   onPopout,
+  error,
 }) => {
   const [preview, setPreview] = React.useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const inputId = React.useId();
+  const errorId = `${inputId}-error`;
+  const fieldProps = {
+    id: inputId,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": error ? errorId : undefined,
+  };
 
   function applyInsertion(insertFn: (typeof BUTTONS)[number]["insert"]) {
     const ta = textareaRef.current;
@@ -123,7 +133,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   return (
     <div className={wrapperClass}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">{label}</label>
+        <label htmlFor={inputId} className="text-sm font-medium">
+          {label}
+        </label>
         <div className="flex items-center gap-1 flex-wrap">
           {BUTTONS.map((b) => (
             <Tooltip key={b.label}>
@@ -170,6 +182,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           fillHeight ? (
             <textarea
               ref={textareaRef}
+              {...fieldProps}
               placeholder={placeholder}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -178,6 +191,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           ) : (
             <TextArea
               ref={textareaRef}
+              {...fieldProps}
               placeholder={placeholder}
               rows={minRows}
               value={value}
@@ -190,6 +204,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           fillHeight ? (
             <textarea
               ref={textareaRef}
+              {...fieldProps}
               placeholder={placeholder}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -198,6 +213,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           ) : (
             <TextArea
               ref={textareaRef}
+              {...fieldProps}
               placeholder={placeholder}
               rows={minRows}
               value={value}
@@ -218,6 +234,11 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           </div>
         )}
       </div>
+      {error && (
+        <p id={errorId} className="text-xs text-danger">
+          {error}
+        </p>
+      )}
       <p className="text-[11px] text-muted">
         Supports Markdown & GFM (tables, strikethrough, task lists).
       </p>

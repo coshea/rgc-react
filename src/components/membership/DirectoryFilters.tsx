@@ -1,4 +1,4 @@
-import { ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { Segment } from "@heroui-pro/react/segment";
 
 import { SearchInput } from "@/components/search-input";
 import {
@@ -16,7 +16,7 @@ interface DirectoryFiltersProps {
   showActiveFilter: boolean;
 }
 
-const chip = "h-11 shrink-0 rounded-full px-4 lg:h-10";
+const item = "h-11 lg:h-10";
 
 export function DirectoryFilters({
   query,
@@ -34,30 +34,27 @@ export function DirectoryFilters({
         ariaLabel="Search members"
         className="w-full lg:max-w-sm"
       />
-      <ToggleButtonGroup
+      <Segment
         aria-label="Filter members"
-        selectionMode="single"
-        disallowEmptySelection
-        isDetached
-        selectedKeys={[filter]}
-        onSelectionChange={(keys) => {
-          const [next] = Array.from(keys);
-          if (isDirectoryFilter(next)) onFilterChange(next);
+        size="lg"
+        selectedKey={filter}
+        onSelectionChange={(key) => {
+          if (isDirectoryFilter(key)) onFilterChange(key);
         }}
-        className="gap-2 overflow-x-auto"
+        className="w-full lg:w-auto"
       >
-        <ToggleButton id={DIRECTORY_FILTER.ALL} className={chip}>
+        <Segment.Item id={DIRECTORY_FILTER.ALL} className={item}>
           All
-        </ToggleButton>
-        <ToggleButton id={DIRECTORY_FILTER.BOARD} className={chip}>
+        </Segment.Item>
+        <Segment.Item id={DIRECTORY_FILTER.BOARD} className={item}>
           Board
-        </ToggleButton>
+        </Segment.Item>
         {showActiveFilter && (
-          <ToggleButton id={DIRECTORY_FILTER.ACTIVE} className={chip}>
+          <Segment.Item id={DIRECTORY_FILTER.ACTIVE} className={item}>
             Active, last 2 years
-          </ToggleButton>
+          </Segment.Item>
         )}
-      </ToggleButtonGroup>
+      </Segment>
     </div>
   );
 }

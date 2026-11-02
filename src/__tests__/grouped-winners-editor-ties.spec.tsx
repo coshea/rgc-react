@@ -389,8 +389,8 @@ describe("GroupedWinnersEditor - registered team multi-select", () => {
     );
 
     // effectiveTeamSize should be 4 (max competitors in saved data)
-    // React Aria's TextField associates Label→Input via for/id; use getByRole.
-    const winnersPerPlaceInput = screen.getByRole("spinbutton", {
+    // NumberStepper keeps its value in a hidden input labelled by the field.
+    const winnersPerPlaceInput = screen.getByRole("textbox", {
       name: /winners per place/i,
     }) as HTMLInputElement;
     expect(winnersPerPlaceInput).not.toBeNull();

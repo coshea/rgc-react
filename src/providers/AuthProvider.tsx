@@ -30,8 +30,9 @@ import {
 } from "firebase/auth";
 import React, { useEffect, useState, createContext, useContext } from "react";
 import * as Sentry from "@sentry/react";
-import { logger } from "@/config/sentry";
+import { logger, markFirestoreTerminatedForSignOut } from "@/config/sentry";
 import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
+import { rememberMemberOnDevice } from "@/utils/homePopup";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
 const HEROUI_THEME_STORAGE_KEY = "heroui-theme";
@@ -209,6 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserLoggedIn(true);
       // UID only (no email/name) so Sentry can count affected users.
       Sentry.setUser({ id: firebaseUser.uid });
+      rememberMemberOnDevice();
     } else {
       applyLightThemeForLoggedOutUser();
       Sentry.setUser(null);
@@ -419,6 +421,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearOfflineDataAndReload = async () => {
     try {
       const { clearOfflineData } = await import("@/config/firebase");
+      markFirestoreTerminatedForSignOut();
       const cleared = await clearOfflineData();
       if (!cleared) {
         logger.warn(

@@ -14,6 +14,30 @@ const SENTRY_DSN =
 const enabled =
   import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLE_IN_DEV === "true";
 
+// Sign-out terminates Firestore (clearOfflineData) and then reloads.
+// Components that re-render for the signed-out user in that gap hit the
+// terminated client; the reload discards them, so those errors are dropped.
+// Only for a short window, so a terminated client in any other situation (or
+// a reload that never happens) is still reported.
+const SIGN_OUT_TERMINATION_WINDOW_MS = 10_000;
+let firestoreTerminatedForSignOutAt: number | null = null;
+
+/** Call right before sign-out terminates Firestore. */
+export function markFirestoreTerminatedForSignOut(now = Date.now()): void {
+  firestoreTerminatedForSignOutAt = now;
+}
+
+export function isSignOutTerminationNoise(
+  text: string,
+  now = Date.now(),
+): boolean {
+  return (
+    firestoreTerminatedForSignOutAt !== null &&
+    now - firestoreTerminatedForSignOutAt <= SIGN_OUT_TERMINATION_WINDOW_MS &&
+    /The client has already been terminated/i.test(text)
+  );
+}
+
 // Custom logger to match project guidelines
 export const logger = {
   fmt: (strings: TemplateStringsArray, ...values: any[]) => {
@@ -220,7 +244,11 @@ if (enabled) {
       const isServiceWorkerRegistrationNoise =
         event.tags?.error_type === "service_worker_registration_failure" &&
         (/^Rejected$/i.test(exceptionValues[0]?.value ?? "") ||
-          /firebase-messaging-sw\.js load failed/i.test(combinedText));
+          /firebase-messaging-sw\.js load failed/i.test(combinedText) ||
+          // Chrome's wording when the script fetch fails on a flaky network.
+          /unknown error occurred when fetching the script/i.test(
+            combinedText,
+          ));
       if (isServiceWorkerRegistrationNoise) {
         return null;
       }
@@ -234,6 +262,21 @@ if (enabled) {
       // Rejection raised by Outlook's Safe Links scanner (a headless browser
       // that opens links from emails), not by a member's browser.
       if (/Object Not Found Matching Id:\d+/i.test(combinedText)) {
+        return null;
+      }
+
+      // Thrown by the Obscura headless crawler (Deno-based, frames like
+      // `<obscura:bootstrap>` / `ext:core/`), not by a member's browser.
+      const isHeadlessCrawlerFrame = exceptionValues.some((value) =>
+        value.stacktrace?.frames?.some((frame) =>
+          /^(?:<obscura:|ext:core\/)/.test(frame.filename ?? ""),
+        ),
+      );
+      if (isHeadlessCrawlerFrame) {
+        return null;
+      }
+
+      if (isSignOutTerminationNoise(combinedText)) {
         return null;
       }
 

@@ -21,6 +21,7 @@ import {
   deleteBlogPost,
 } from "@/api/blog";
 import { addToast } from "@/providers/toast";
+import { EmptyStateMessage } from "@/components/empty-state-message";
 
 export const BlogListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -203,23 +204,22 @@ export const BlogListPage: React.FC = () => {
       {/* Empty State */}
       {!loading && filteredPosts.length === 0 && (
         <Card>
-          <Card.Content className="text-center py-12">
-            <Icon
-              icon="lucide:file-text"
-              className="text-6xl text-muted mx-auto mb-4"
-            />
-            <p className="text-xl text-muted">No blog posts found</p>
-            {isAdmin && (
-              <Button
-                variant="primary"
-                className="mt-4"
-                onPress={() => navigate("/announcements/new")}
-              >
-                <Icon icon="lucide:plus" />
-                Create Your First Post
-              </Button>
-            )}
-          </Card.Content>
+          <EmptyStateMessage
+            size="lg"
+            icon="lucide:file-text"
+            title="No blog posts found"
+            action={
+              isAdmin && (
+                <Button
+                  variant="primary"
+                  onPress={() => navigate("/announcements/new")}
+                >
+                  <Icon icon="lucide:plus" />
+                  Create Your First Post
+                </Button>
+              )
+            }
+          />
         </Card>
       )}
 
