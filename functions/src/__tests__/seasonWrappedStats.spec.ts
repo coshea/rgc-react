@@ -294,6 +294,60 @@ describe("bracketRunFor", () => {
   });
 });
 
+describe("major results", () => {
+  it("shows the bracket round reached and only paid placings, never just playing", () => {
+    const input = baseInput({
+      tournaments: [
+        tournament("mp", "2026-07-01", { title: "Team Match Play" }),
+        tournament("ms", "2026-08-01", {
+          title: "Member Stroke Play",
+          winnerGroups: [
+            {
+              id: "o",
+              label: "Overall",
+              type: "overall",
+              winners: [
+                { place: 1, prizeAmount: 100, competitors: [{ userId: "b", displayName: "B" }] },
+                { place: 2, competitors: [{ userId: "me", displayName: "Me" }] },
+              ],
+            },
+          ],
+        }),
+      ],
+      registrations: [reg("r1", "mp", ["me"]), reg("r2", "ms", ["me"]), reg("r3", "ms", ["b"])],
+      brackets: [
+        {
+          tournamentId: "mp",
+          teams: [
+            { id: "A", name: "A", memberIds: ["me"] },
+            { id: "B", name: "B", memberIds: ["b"] },
+            { id: "C", name: "C", memberIds: ["c"] },
+            { id: "D", name: "D", memberIds: ["d"] },
+          ],
+          matches: [
+            { id: "1", round: 1, position: 0, team1Id: "A", team2Id: "C", winnerId: "A" },
+            { id: "2", round: 1, position: 1, team1Id: "B", team2Id: "D", winnerId: "B" },
+            { id: "3", round: 2, position: 0, team1Id: "A", team2Id: "B", winnerId: "B" },
+          ],
+        },
+      ],
+      championships: [
+        { id: "m", championshipType: "team-match-play", winnerNames: ["B"], tournamentId: "mp" },
+        { id: "s", championshipType: "member-stroke-play", winnerNames: ["B"], tournamentId: "ms" },
+      ],
+      users: [{ uid: "me", displayName: "Me" }, { uid: "b", displayName: "B" }, { uid: "c", displayName: "C" }],
+      paidUids: new Set(["me", "b", "c"]),
+    });
+    const ctx = buildSeasonContext(input);
+    const story = (uid: string) =>
+      computeMemberStory(input.users.find((u) => u.uid === uid)!, input, ctx, { version: 1, generatedAt: "now" });
+
+    expect(story("me").majorResults).toEqual({ "team-match-play:m": "Final" });
+    expect(story("c").majorResults).toEqual({ "team-match-play:m": "Semifinals" });
+    expect(story("b").majorResults["member-stroke-play:s"]).toBe("1st · $100");
+  });
+});
+
 describe("paidEventsFor", () => {
   it("lists every paid tournament and season award, biggest first", () => {
     const [row] = computeMoneyList(

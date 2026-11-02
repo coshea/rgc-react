@@ -651,10 +651,23 @@ export function bracketRunFor(
   return best;
 }
 
+/** How far the member's team got in a bracket, e.g. "Semifinals"; undefined if not in it. */
+export function bracketReachedFor(uid: string, bracket: WrappedBracket): string | undefined {
+  const team = bracket.teams.find((x) => x.memberIds.includes(uid));
+  if (!team) return undefined;
+  const mine = bracket.matches.filter((m) => m.team1Id === team.id || m.team2Id === team.id);
+  if (mine.length === 0) return undefined;
+  const totalRounds = Math.max(1, ...bracket.matches.map((m) => m.round));
+  const last = mine.reduce((a, b) => (b.round > a.round ? b : a));
+  const wonFinal = last.round === totalRounds && last.winnerId === team.id;
+  return reachedLabel(last.round, totalRounds, wonFinal);
+}
+
 function majorResultsFor(
   uid: string,
   majors: readonly MajorCard[],
   championships: readonly WrappedChampionship[],
+  brackets: readonly WrappedBracket[],
   ctx: SeasonContext,
 ): Record<string, string> {
   const results: Record<string, string> = {};
@@ -680,15 +693,19 @@ function majorResultsFor(
       continue;
     }
     if (!major.tournamentId) continue;
+    const bracket = brackets.find((b) => b.tournamentId === major.tournamentId);
+    const reached = bracket ? bracketReachedFor(uid, bracket) : undefined;
+    if (reached) {
+      results[major.key] = reached;
+      continue;
+    }
+    // Only placings that paid; just playing in it isn't shown.
     const t = ctx.tournamentsById.get(major.tournamentId);
     const overall = t?.winnerGroups.find((g) => g.type === "overall");
-    const place = overall?.winners.find((w) => w.competitors.some((c) => c.userId === uid));
-    if (place) {
-      const prize = place.prizeAmount ? ` · $${place.prizeAmount}` : "";
-      results[major.key] = `${ordinal(place.place)}${prize}`;
-    } else if ((ctx.regsByTournament.get(major.tournamentId) ?? []).some((r) => r.memberIds.includes(uid))) {
-      results[major.key] = "In the field";
-    }
+    const place = overall?.winners.find(
+      (w) => (w.prizeAmount ?? 0) > 0 && w.competitors.some((c) => c.userId === uid),
+    );
+    if (place) results[major.key] = `${ordinal(place.place)} · $${place.prizeAmount}`;
   }
   return results;
 }
@@ -764,7 +781,7 @@ export function computeMemberStory(
     ...(closestToPin ? { closestToPin } : {}),
     ...(bracket ? { bracket } : {}),
     championshipsWon,
-    majorResults: majorResultsFor(uid, ctx.majors, input.championships, ctx),
+    majorResults: majorResultsFor(uid, ctx.majors, input.championships, input.brackets, ctx),
     share: {
       events: myRegs.length,
       total: money?.total ?? 0,
