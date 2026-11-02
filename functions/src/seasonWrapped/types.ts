@@ -280,7 +280,7 @@ export interface SeasonWrappedMember {
   closestToPin?: ClosestToPinStats;
   bracket?: BracketRun;
   championshipsWon: string[];
-  /** Keyed by MajorCard.key; only majors the member placed in. */
+  /** Keyed by MajorCard.key; only majors the member won money in or, for brackets, the round reached. */
   majorResults: Record<string, string>;
   share: ShareSummary;
   shareImagePath: string;
