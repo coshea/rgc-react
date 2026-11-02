@@ -80,10 +80,10 @@ export function HomePopupResponses({ popup }: { popup: HomePopup }) {
               }}
               className="w-full sm:w-auto"
             >
-              <Segment.Item id={HOME_POPUP_ACTION.CLICKED} className="h-11 flex-1 lg:h-10">
+              <Segment.Item id={HOME_POPUP_ACTION.CLICKED} className="h-11! min-w-0 flex-1 px-2! sm:px-5! lg:h-10!">
                 Clicked
               </Segment.Item>
-              <Segment.Item id={HOME_POPUP_ACTION.DISMISSED} className="h-11 flex-1 lg:h-10">
+              <Segment.Item id={HOME_POPUP_ACTION.DISMISSED} className="h-11! min-w-0 flex-1 px-2! sm:px-5! lg:h-10!">
                 Closed
               </Segment.Item>
             </Segment>

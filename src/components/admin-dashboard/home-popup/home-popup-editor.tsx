@@ -276,7 +276,7 @@ export function HomePopupEditor({
         )}
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card className="border border-separator bg-surface">
             <Card.Content className="flex flex-col gap-4 p-4 sm:p-5">
@@ -348,13 +348,13 @@ export function HomePopupEditor({
                 }}
                 className="w-full"
               >
-                <Segment.Item id={HOME_POPUP_AUDIENCE.EVERYONE} className="h-11 flex-1">
+                <Segment.Item id={HOME_POPUP_AUDIENCE.EVERYONE} className="h-11! min-w-0 flex-1 px-2! sm:px-5!">
                   Everyone
                 </Segment.Item>
-                <Segment.Item id={HOME_POPUP_AUDIENCE.MEMBERS} className="h-11 flex-1">
+                <Segment.Item id={HOME_POPUP_AUDIENCE.MEMBERS} className="h-11! min-w-0 flex-1 px-2! sm:px-5!">
                   Members
                 </Segment.Item>
-                <Segment.Item id={HOME_POPUP_AUDIENCE.VISITORS} className="h-11 flex-1">
+                <Segment.Item id={HOME_POPUP_AUDIENCE.VISITORS} className="h-11! min-w-0 flex-1 px-2! sm:px-5!">
                   Visitors
                 </Segment.Item>
               </Segment>
