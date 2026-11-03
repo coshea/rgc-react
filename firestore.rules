@@ -602,6 +602,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Generate progress, listened to by the admin list.
+      match /generation/{uid} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
       // Open tracking. Counts only move forward; the member can't edit
       // anyone else's record or delete their own.
       match /views/{uid} {

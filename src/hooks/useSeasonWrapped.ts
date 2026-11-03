@@ -1,13 +1,19 @@
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  fetchWrappedAdminRows,
+  fetchWrappedEngagement,
   fetchWrappedSeason,
   fetchWrappedShareImage,
   fetchWrappedStory,
   generateWrapped,
+  onWrappedGeneration,
+  onWrappedMembers,
   publishWrapped,
+  type WrappedAdminRow,
 } from "@/api/seasonWrapped";
+import { reportListenerError } from "@/utils/firebaseErrors";
+import type { SeasonWrappedGeneration, SeasonWrappedMember } from "@@/seasonWrapped/types";
 
 export const wrappedKeys = {
   season: (year: number) => ["wrappedSeason", year] as const,
@@ -35,12 +41,59 @@ export function useWrappedStory(year: number, uid: string | undefined) {
   });
 }
 
-export function useWrappedAdminRows(year: number, enabled = true) {
-  return useQuery({
+/**
+ * Every member's story with delivery and open tracking. Admin only. Stories
+ * are live, so a row updates the moment it's regenerated; delivery and views
+ * are fetched (and refetched when `wrappedKeys.admin` is invalidated).
+ */
+export function useWrappedAdminRows(year: number) {
+  const [live, setLive] = useState<{ year: number; members: SeasonWrappedMember[] } | null>(null);
+  const engagement = useQuery({
     queryKey: wrappedKeys.admin(year),
-    queryFn: () => fetchWrappedAdminRows(year),
-    enabled,
+    queryFn: () => fetchWrappedEngagement(year),
   });
+
+  useEffect(
+    () =>
+      onWrappedMembers(
+        year,
+        (members) => setLive({ year, members }),
+        (error) => reportListenerError("wrappedMembers", error),
+      ),
+    [year],
+  );
+
+  const members = live?.year === year ? live.members : null;
+  const rows = useMemo<WrappedAdminRow[]>(
+    () =>
+      (members ?? []).map((story) => ({
+        story,
+        delivery: engagement.data?.deliveries.get(story.uid),
+        view: engagement.data?.views.get(story.uid),
+      })),
+    [members, engagement.data],
+  );
+  return { rows, isLoading: members === null || engagement.isLoading };
+}
+
+/** Live generate progress for the season, keyed by uid. Admin only. */
+export function useWrappedGeneration(year: number) {
+  const [live, setLive] = useState<{ year: number; docs: SeasonWrappedGeneration[] } | null>(null);
+
+  useEffect(
+    () =>
+      onWrappedGeneration(
+        year,
+        (docs) => setLive({ year, docs }),
+        (error) => reportListenerError("wrappedGeneration", error),
+      ),
+    [year],
+  );
+
+  return useMemo(
+    () => new Map((live?.year === year ? live.docs : []).map((d) => [d.uid, d])),
+    [live, year],
+  );
 }
 
 /**

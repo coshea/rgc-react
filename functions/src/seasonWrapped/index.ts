@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import {
@@ -40,6 +41,8 @@ import {
   SEASON_WRAPPED_COLLECTION,
   SEASON_WRAPPED_DELIVERY,
   SEASON_WRAPPED_EMAIL_CATEGORY,
+  SEASON_WRAPPED_GENERATION,
+  SEASON_WRAPPED_GENERATION_STATUS,
   SEASON_WRAPPED_MEMBERS,
   SEASON_WRAPPED_SOURCE,
   SEASON_WRAPPED_STATUS,
@@ -51,6 +54,8 @@ import {
   type GetShareImageResponse,
   type SeasonWrappedChannel,
   type SeasonWrappedDelivery,
+  type SeasonWrappedGeneration,
+  type SeasonWrappedGenerationStatus,
   type SeasonWrappedMember,
   type SeasonWrappedSeason,
   type SendSeasonWrappedResponse,
@@ -405,11 +410,30 @@ async function commitInBatches(
 // generate_season_wrapped
 // ---------------------------------------------------------------------------
 
+function generationDoc(
+  uid: string,
+  status: SeasonWrappedGenerationStatus,
+  runId: string,
+  error?: unknown,
+): SeasonWrappedGeneration {
+  return {
+    uid,
+    status,
+    runId,
+    updatedAt: new Date().toISOString(),
+    ...(error === undefined ? {} : { error: error instanceof Error ? error.message : String(error) }),
+  };
+}
+
 /**
  * Computes the club half and each member's story. Pass `uids` to generate
  * only those members (for testing); omit it to generate every eligible member
  * and remove stories for anyone no longer eligible. Never sends anything.
  * Each member doc is overwritten in place, so links already sent keep working.
+ *
+ * Progress goes to `generation/{uid}` (one doc per member, so the flips don't
+ * contend): pending once targets are known, then done or failed as each share
+ * image finishes. The admin list listens to it.
  */
 export const generate_season_wrapped = onCall(
   { timeoutSeconds: 540, memory: "1GiB" },
@@ -420,88 +444,125 @@ export const generate_season_wrapped = onCall(
     const uids = parseUids(data.uids);
 
     const db = admin.firestore();
+    const runId = randomUUID();
     const now = new Date();
     const generatedAt = now.toISOString();
     const input = await loadSeasonInput(db, year, now);
     const ctx = buildSeasonContext(input);
     const club = computeClubStats(input, ctx);
     const eligible = eligibleUsers(input, ctx);
+    const eligibleIds = new Set(eligible.map((u) => u.uid));
     const targets = uids ? eligible.filter((u) => uids.includes(u.uid)) : eligible;
+    const skippedUids = uids ? uids.filter((uid) => !eligibleIds.has(uid)) : [];
 
     const ref = seasonRef(year);
     const membersCol = ref.collection(SEASON_WRAPPED_MEMBERS);
-    const existing = targets.length
-      ? await db.getAll(...targets.map((u) => membersCol.doc(u.uid)))
-      : [];
-    const versions = new Map(
-      existing.map((snap) => [snap.id, num(snap.data()?.version) ?? 0]),
-    );
+    const generationCol = ref.collection(SEASON_WRAPPED_GENERATION);
+    const { PENDING, DONE, SKIPPED, FAILED } = SEASON_WRAPPED_GENERATION_STATUS;
+    const open = new Set(targets.map((u) => u.uid));
 
-    const stories = targets.map((user) =>
-      computeMemberStory(user, input, ctx, {
-        version: (versions.get(user.uid) ?? 0) + 1,
-        generatedAt,
-      }),
-    );
-    await commitInBatches(
-      db,
-      stories.map((story) => (batch) => batch.set(membersCol.doc(story.uid), story)),
-    );
-
-    if (!uids) {
-      const keep = new Set(targets.map((u) => u.uid));
-      const all = await membersCol.select().get();
-      const stale = all.docs.filter((doc) => !keep.has(doc.id));
-      await commitInBatches(db, stale.map((doc) => (batch) => batch.delete(doc.ref)));
-      if (stale.length > 0) {
-        logger.info("generate_season_wrapped: removed stale stories", { year, removed: stale.length });
-      }
-    }
-
-    const shareImagesFailed = await runPool(stories, IMAGE_CONCURRENCY, async (story) => {
+    // Progress is best effort: a failed status write never fails the run.
+    const setStatus = async (uid: string, status: SeasonWrappedGenerationStatus, error?: unknown) => {
       try {
-        await saveShareImage(story);
-      } catch (error) {
-        logger.warn("generate_season_wrapped: share image failed", { year, uid: story.uid, error });
-        throw error;
+        await generationCol.doc(uid).set(generationDoc(uid, status, runId, error));
+      } catch (writeError) {
+        logger.warn("generate_season_wrapped: status write failed", { year, uid, status, error: writeError });
       }
-    });
-
-    const memberCount = (await membersCol.count().get()).data().count;
-    const seasonSnap = await ref.get();
-    if (seasonSnap.exists) {
-      // update() replaces `club` whole, so stale nested fields can't linger.
-      // A partial regenerate doesn't claim the whole season was regenerated.
-      await ref.update(
-        uids ? { club, memberCount } : { club, memberCount, generatedAt, generatedBy: callerUid },
-      );
-    } else {
-      const season: SeasonWrappedSeason = {
-        year,
-        status: SEASON_WRAPPED_STATUS.DRAFT,
-        club,
-        memberCount,
-        generatedAt,
-        generatedBy: callerUid,
-      };
-      await ref.set(season);
-    }
-
-    logger.info("generate_season_wrapped: done", {
-      year,
-      callerUid,
-      generated: stories.length,
-      selected: uids?.length ?? null,
-      shareImagesFailed,
-    });
-
-    const response: GenerateSeasonWrappedResponse = {
-      ok: true,
-      generated: stories.length,
-      skipped: uids ? uids.length - targets.length : 0,
-      shareImagesFailed,
     };
-    return response;
+
+    await commitInBatches(db, [
+      ...targets.map((u) => (batch: admin.firestore.WriteBatch) =>
+        batch.set(generationCol.doc(u.uid), generationDoc(u.uid, PENDING, runId)),
+      ),
+      ...skippedUids.map((uid) => (batch: admin.firestore.WriteBatch) =>
+        batch.set(generationCol.doc(uid), generationDoc(uid, SKIPPED, runId)),
+      ),
+    ]);
+
+    try {
+      const existing = targets.length
+        ? await db.getAll(...targets.map((u) => membersCol.doc(u.uid)))
+        : [];
+      const versions = new Map(
+        existing.map((snap) => [snap.id, num(snap.data()?.version) ?? 0]),
+      );
+
+      const stories = targets.map((user) =>
+        computeMemberStory(user, input, ctx, {
+          version: (versions.get(user.uid) ?? 0) + 1,
+          generatedAt,
+        }),
+      );
+      await commitInBatches(
+        db,
+        stories.map((story) => (batch) => batch.set(membersCol.doc(story.uid), story)),
+      );
+
+      if (!uids) {
+        const all = await membersCol.select().get();
+        const stale = all.docs.filter((doc) => !open.has(doc.id));
+        await commitInBatches(db, stale.map((doc) => (batch) => batch.delete(doc.ref)));
+        if (stale.length > 0) {
+          logger.info("generate_season_wrapped: removed stale stories", { year, removed: stale.length });
+        }
+      }
+
+      const shareImagesFailed = await runPool(stories, IMAGE_CONCURRENCY, async (story) => {
+        try {
+          await saveShareImage(story);
+        } catch (error) {
+          logger.warn("generate_season_wrapped: share image failed", { year, uid: story.uid, error });
+          open.delete(story.uid);
+          await setStatus(story.uid, FAILED, error);
+          throw error;
+        }
+        open.delete(story.uid);
+        await setStatus(story.uid, DONE);
+      });
+
+      const memberCount = (await membersCol.count().get()).data().count;
+      const seasonSnap = await ref.get();
+      if (seasonSnap.exists) {
+        // update() replaces `club` whole, so stale nested fields can't linger.
+        // A partial regenerate doesn't claim the whole season was regenerated.
+        await ref.update(
+          uids ? { club, memberCount } : { club, memberCount, generatedAt, generatedBy: callerUid },
+        );
+      } else {
+        const season: SeasonWrappedSeason = {
+          year,
+          status: SEASON_WRAPPED_STATUS.DRAFT,
+          club,
+          memberCount,
+          generatedAt,
+          generatedBy: callerUid,
+        };
+        await ref.set(season);
+      }
+
+      logger.info("generate_season_wrapped: done", {
+        year,
+        callerUid,
+        runId,
+        generated: stories.length,
+        selected: uids?.length ?? null,
+        shareImagesFailed,
+      });
+
+      const response: GenerateSeasonWrappedResponse = {
+        ok: true,
+        runId,
+        generated: stories.length,
+        skipped: skippedUids.length,
+        skippedUids,
+        shareImagesFailed,
+      };
+      return response;
+    } catch (error) {
+      // Don't leave rows spinning: anyone not finished yet is marked failed.
+      await Promise.all([...open].map((uid) => setStatus(uid, FAILED, error)));
+      throw error;
+    }
   }),
 );
 

@@ -5,8 +5,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   runTransaction,
   serverTimestamp,
+  type FirestoreError,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 
@@ -15,6 +17,7 @@ import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 import {
   SEASON_WRAPPED_COLLECTION,
   SEASON_WRAPPED_DELIVERY,
+  SEASON_WRAPPED_GENERATION,
   SEASON_WRAPPED_MEMBERS,
   SEASON_WRAPPED_VIEWS,
   type GenerateSeasonWrappedRequest,
@@ -23,6 +26,7 @@ import {
   type GetShareImageResponse,
   type PublishSeasonWrappedRequest,
   type SeasonWrappedDelivery,
+  type SeasonWrappedGeneration,
   type SeasonWrappedMember,
   type SeasonWrappedSeason,
   type SeasonWrappedSource,
@@ -87,36 +91,57 @@ export interface WrappedAdminRow {
   view?: SeasonWrappedView;
 }
 
-/** Every member's story with delivery and open tracking. Admin only. */
-export async function fetchWrappedAdminRows(
-  year: number,
-): Promise<WrappedAdminRow[]> {
+export interface WrappedEngagement {
+  deliveries: Map<string, SeasonWrappedDelivery>;
+  views: Map<string, SeasonWrappedView>;
+}
+
+/** Delivery and open tracking for every member, keyed by uid. Admin only. */
+export async function fetchWrappedEngagement(year: number): Promise<WrappedEngagement> {
   return Sentry.startSpan(
-    { name: "fetchWrappedAdminRows", op: "db.query" },
+    { name: "fetchWrappedEngagement", op: "db.query" },
     async () => {
       try {
         const base = [SEASON_WRAPPED_COLLECTION, String(year)] as const;
-        const [members, deliveries, views] = await Promise.all([
-          getDocs(collection(db, ...base, SEASON_WRAPPED_MEMBERS)),
+        const [deliveries, views] = await Promise.all([
           getDocs(collection(db, ...base, SEASON_WRAPPED_DELIVERY)),
           getDocs(collection(db, ...base, SEASON_WRAPPED_VIEWS)),
         ]);
-        const deliveryById = new Map(
-          deliveries.docs.map((d) => [d.id, d.data() as SeasonWrappedDelivery]),
-        );
-        const viewById = new Map(
-          views.docs.map((d) => [d.id, d.data() as SeasonWrappedView]),
-        );
-        return members.docs.map((d) => ({
-          story: d.data() as SeasonWrappedMember,
-          delivery: deliveryById.get(d.id),
-          view: viewById.get(d.id),
-        }));
+        return {
+          deliveries: new Map(deliveries.docs.map((d) => [d.id, d.data() as SeasonWrappedDelivery])),
+          views: new Map(views.docs.map((d) => [d.id, d.data() as SeasonWrappedView])),
+        };
       } catch (error) {
         Sentry.captureException(error);
         throw error;
       }
     },
+  );
+}
+
+/** Live stories for every member, so regenerated rows update in place. Admin only. */
+export function onWrappedMembers(
+  year: number,
+  next: (members: SeasonWrappedMember[]) => void,
+  error: (error: FirestoreError) => void,
+) {
+  return onSnapshot(
+    collection(db, SEASON_WRAPPED_COLLECTION, String(year), SEASON_WRAPPED_MEMBERS),
+    (snap) => next(snap.docs.map((d) => d.data() as SeasonWrappedMember)),
+    error,
+  );
+}
+
+/** Live generate progress, one doc per member. Admin only. */
+export function onWrappedGeneration(
+  year: number,
+  next: (docs: SeasonWrappedGeneration[]) => void,
+  error: (error: FirestoreError) => void,
+) {
+  return onSnapshot(
+    collection(db, SEASON_WRAPPED_COLLECTION, String(year), SEASON_WRAPPED_GENERATION),
+    (snap) => next(snap.docs.map((d) => d.data() as SeasonWrappedGeneration)),
+    error,
   );
 }
 

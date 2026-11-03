@@ -8,6 +8,7 @@
  *   seasonWrapped/{year}/members/{uid}    SeasonWrappedMember (overwritten on regenerate)
  *   seasonWrapped/{year}/delivery/{uid}   SeasonWrappedDelivery (admin-only, never overwritten by regenerate)
  *   seasonWrapped/{year}/views/{uid}      SeasonWrappedView (written by the member's own browser)
+ *   seasonWrapped/{year}/generation/{uid} SeasonWrappedGeneration (admin-only, the member's last generate run)
  *
  * Every link points at `/wrapped/{year}`, so a regenerated story replaces the
  * old one without breaking anything that was already sent.
@@ -17,6 +18,7 @@ export const SEASON_WRAPPED_COLLECTION = "seasonWrapped";
 export const SEASON_WRAPPED_MEMBERS = "members";
 export const SEASON_WRAPPED_DELIVERY = "delivery";
 export const SEASON_WRAPPED_VIEWS = "views";
+export const SEASON_WRAPPED_GENERATION = "generation";
 
 export const SEASON_WRAPPED_STATUS = {
   DRAFT: "draft",
@@ -34,6 +36,22 @@ export const SEASON_WRAPPED_CHANNEL = {
 
 export type SeasonWrappedChannel =
   (typeof SEASON_WRAPPED_CHANNEL)[keyof typeof SEASON_WRAPPED_CHANNEL];
+
+/** Where a member is in a generate run, so the admin list can show it live. */
+export const SEASON_WRAPPED_GENERATION_STATUS = {
+  PENDING: "pending",
+  DONE: "done",
+  /** Selected, but no payment or event that year. */
+  SKIPPED: "skipped",
+  /**
+   * The share image failed (it's made when first opened instead), or the run
+   * errored before this member finished. `error` says which.
+   */
+  FAILED: "failed",
+} as const;
+
+export type SeasonWrappedGenerationStatus =
+  (typeof SEASON_WRAPPED_GENERATION_STATUS)[keyof typeof SEASON_WRAPPED_GENERATION_STATUS];
 
 /** Where a visit came from; read from the link's `utm_source`. */
 export const SEASON_WRAPPED_SOURCE = {
@@ -298,6 +316,16 @@ export interface SeasonWrappedDelivery {
   emailClickEventIds?: string[];
 }
 
+/** Admin-only; rewritten by every generate run that includes the member. */
+export interface SeasonWrappedGeneration {
+  uid: string;
+  status: SeasonWrappedGenerationStatus;
+  runId: string;
+  /** ISO time of the last status change. */
+  updatedAt: string;
+  error?: string;
+}
+
 /** Written by the member's own browser (rules restrict fields). */
 export interface SeasonWrappedView {
   uid: string;
@@ -324,8 +352,11 @@ export interface GenerateSeasonWrappedRequest {
 
 export interface GenerateSeasonWrappedResponse {
   ok: true;
+  runId: string;
   generated: number;
   skipped: number;
+  /** Selected members who weren't eligible. */
+  skippedUids: string[];
   shareImagesFailed: number;
 }
 
