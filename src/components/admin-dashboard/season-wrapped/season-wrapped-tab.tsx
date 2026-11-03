@@ -1,12 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Chip, Modal, Skeleton } from "@heroui/react";
+import { Button, Card, Chip, Label, Modal, ProgressBar, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useMutation } from "@tanstack/react-query";
 
 import { sendWrappedTest } from "@/api/seasonWrapped";
 import { UserSelect } from "@/components/UserSelect";
 import { percent, summarizeEngagement } from "@/components/admin-dashboard/season-wrapped/engagement";
+import {
+  generationProgress,
+  generationRowStates,
+  type GenerationRequests,
+} from "@/components/admin-dashboard/season-wrapped/generation";
 import { reportWrappedError } from "@/components/admin-dashboard/season-wrapped/report-error";
 import { WrappedMemberList } from "@/components/admin-dashboard/season-wrapped/wrapped-member-list";
 import { WrappedSendPanel } from "@/components/admin-dashboard/season-wrapped/wrapped-send-panel";
@@ -14,6 +19,7 @@ import {
   useGenerateWrapped,
   usePublishWrapped,
   useWrappedAdminRows,
+  useWrappedGeneration,
   useWrappedSeason,
 } from "@/hooks/useSeasonWrapped";
 import { useUsers } from "@/hooks/useUsers";
@@ -26,6 +32,11 @@ import {
 
 type Confirm = "regenerate-all" | "publish" | "unpublish" | null;
 
+/** How long skipped members stay in the list after a run, so the admin sees who they were. */
+const SKIPPED_VISIBLE_MS = 8000;
+/** Re-check for runs that died while pending (see STALE_PENDING_MS). */
+const NOW_TICK_MS = 30 * 1000;
+
 function formatTimestamp(iso: string | undefined): string {
   if (!iso) return "–";
   return new Date(iso).toLocaleString(undefined, {
@@ -37,9 +48,10 @@ function formatTimestamp(iso: string | undefined): string {
   });
 }
 
-function generatedToast(year: number, result: GenerateSeasonWrappedResponse) {
+function generatedToast(year: number, result: GenerateSeasonWrappedResponse, names: ReadonlyMap<string, string>) {
+  const who = (result.skippedUids ?? []).map((uid) => names.get(uid) ?? "Unknown member").join(", ");
   const skipped = result.skipped
-    ? ` ${result.skipped} selected ${result.skipped === 1 ? "member isn't" : "members aren't"} eligible (no ${year} payment or event).`
+    ? ` Not eligible (no ${year} payment or event): ${who}.`
     : "";
   const images = result.shareImagesFailed
     ? ` ${result.shareImagesFailed} share images failed and will be made when first opened.`
@@ -72,23 +84,42 @@ export function SeasonWrappedTab() {
   const [year, setYear] = useState(thisSeason);
   const [selected, setSelected] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<Confirm>(null);
-  const [busyUid, setBusyUid] = useState<string | null>(null);
+  const [testingUid, setTestingUid] = useState<string | null>(null);
+  const [requests, setRequests] = useState<GenerationRequests>(new Map());
+  const [fullRunning, setFullRunning] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const runRef = useRef(0);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const seasonQuery = useWrappedSeason(year);
-  const rowsQuery = useWrappedAdminRows(year);
+  const { rows, isLoading: rowsLoading } = useWrappedAdminRows(year);
+  const generation = useWrappedGeneration(year);
   const { users } = useUsers();
   const generate = useGenerateWrapped(year);
   const publish = usePublishWrapped(year);
 
   const season = seasonQuery.data;
-  const rows = useMemo(() => rowsQuery.data ?? [], [rowsQuery.data]);
   const summary = useMemo(() => summarizeEngagement(rows), [rows]);
   const published = season?.status === SEASON_WRAPPED_STATUS.PUBLISHED;
   const activeUsers = useMemo(() => users.filter((u) => u.isMigrated !== true), [users]);
+  const names = useMemo(
+    () => new Map(users.map((u) => [u.id, u.displayName || u.email || "Unknown member"])),
+    [users],
+  );
+  const states = useMemo(() => generationRowStates(generation, requests, now), [generation, requests, now]);
+  const progress = useMemo(() => generationProgress(states, requests), [states, requests]);
+
+  useEffect(() => {
+    if (!progress) return;
+    const id = setInterval(() => setNow(Date.now()), NOW_TICK_MS);
+    return () => clearInterval(id);
+  }, [progress]);
+
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   const testMutation = useMutation({
     mutationFn: (uid: string) => sendWrappedTest({ year, uid }),
-    onMutate: (uid) => setBusyUid(uid),
+    onMutate: (uid) => setTestingUid(uid),
     onSuccess: (result) =>
       addToast({
         title: "Test sent",
@@ -96,21 +127,55 @@ export function SeasonWrappedTab() {
         color: "success",
       }),
     onError: (error) => reportWrappedError(error, "Couldn't send the test"),
-    onSettled: () => setBusyUid(null),
+    onSettled: () => setTestingUid(null),
   });
 
-  const runGenerate = (uids?: string[], fromPicker = false) =>
-    generate.mutate(uids, {
-      onSuccess: (result) => {
-        generatedToast(year, result);
-        if (fromPicker) setSelected([]);
-      },
-      onError: (error) => reportWrappedError(error, "Couldn't generate Wrapped"),
-      onSettled: () => setBusyUid(null),
+  /** Drops this run's requests, except `keep`. */
+  const clearRun = (run: number, keep: readonly string[] = []) =>
+    setRequests((prev) => {
+      const next = new Map(prev);
+      for (const [uid, request] of prev) {
+        if (request.run === run && !keep.includes(uid)) next.delete(uid);
+      }
+      return next;
     });
 
+  /**
+   * Marks the members pending straight away (the server's own flags land once
+   * it has loaded the season), then lets the live status docs take over.
+   * `mutateAsync` because per-call `mutate` callbacks only fire for the latest
+   * of overlapping runs.
+   */
+  const runGenerate = async (uids?: string[]) => {
+    const run = ++runRef.current;
+    const targets = uids ?? rows.map((r) => r.story.uid);
+    setRequests((prev) => {
+      const next = new Map(prev);
+      for (const uid of targets) next.set(uid, { prev: generation.get(uid)?.updatedAt ?? null, run });
+      return next;
+    });
+    if (!uids) setFullRunning(true);
+    try {
+      const result = await generate.mutateAsync(uids);
+      generatedToast(year, result, names);
+      // `?? []`: the site can deploy before the function that returns it.
+      clearRun(run, result.skippedUids ?? []);
+      timersRef.current.push(setTimeout(() => clearRun(run), SKIPPED_VISIBLE_MS));
+    } catch (error) {
+      reportWrappedError(error, "Couldn't generate Wrapped");
+      clearRun(run);
+    } finally {
+      if (!uids) setFullRunning(false);
+    }
+  };
+
+  const changeYear = (y: number) => {
+    setYear(y);
+    setRequests(new Map());
+  };
+
   const onConfirm = () => {
-    if (confirm === "regenerate-all") runGenerate();
+    if (confirm === "regenerate-all") void runGenerate();
     if (confirm === "publish" || confirm === "unpublish") {
       publish.mutate(confirm === "publish", {
         onSuccess: (r) =>
@@ -147,7 +212,7 @@ export function SeasonWrappedTab() {
               className="min-h-11 sm:min-h-9"
               variant={y === year ? "primary" : "tertiary"}
               aria-pressed={y === year}
-              onPress={() => setYear(y)}
+              onPress={() => changeYear(y)}
             >
               {y}
             </Button>
@@ -176,9 +241,10 @@ export function SeasonWrappedTab() {
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
               className="min-h-11"
-              isPending={generate.isPending && !busyUid && selected.length === 0}
-              isDisabled={generate.isPending}
-              onPress={() => (season ? setConfirm("regenerate-all") : runGenerate())}
+              isPending={fullRunning}
+              // A full run deletes stale stories, so it mustn't overlap anything else.
+              isDisabled={progress !== null || generate.isPending}
+              onPress={() => (season ? setConfirm("regenerate-all") : void runGenerate())}
             >
               <Icon icon="lucide:refresh-cw" className="h-4 w-4" />
               {season ? "Regenerate everyone" : "Generate everyone"}
@@ -196,6 +262,20 @@ export function SeasonWrappedTab() {
             )}
           </div>
 
+          {progress && (
+            <ProgressBar value={progress.done} maxValue={progress.total} size="sm" className="gap-1">
+              <div className="flex justify-between text-sm">
+                <Label>
+                  Generating {progress.done} of {progress.total}
+                </Label>
+                <ProgressBar.Output className="text-muted" />
+              </div>
+              <ProgressBar.Track>
+                <ProgressBar.Fill />
+              </ProgressBar.Track>
+            </ProgressBar>
+          )}
+
           {/* Top-aligned: the selection summary under the input grows, so items-end would track it, not the input. */}
           <div className="flex flex-col gap-2 border-t border-separator pt-4 sm:flex-row sm:items-start">
             <UserSelect
@@ -211,9 +291,12 @@ export function SeasonWrappedTab() {
               variant="tertiary"
               // Label (20px) + gap (4px), less half the 44px button / 40px input difference: centered on the input.
               className="min-h-11 sm:mt-5.5"
-              isDisabled={selected.length === 0 || generate.isPending}
-              isPending={generate.isPending && selected.length > 0}
-              onPress={() => runGenerate(selected, true)}
+              isDisabled={selected.length === 0 || fullRunning}
+              onPress={() => {
+                // Cleared now: the members move from the picker into the list below.
+                setSelected([]);
+                void runGenerate(selected);
+              }}
             >
               Generate {selected.length || ""} selected
             </Button>
@@ -243,23 +326,24 @@ export function SeasonWrappedTab() {
 
           {/* Keyed by year so a preview never carries over to another season. */}
           <WrappedSendPanel key={year} year={year} published={published} />
-
-          {rowsQuery.isLoading ? (
-            <Skeleton className="h-64 w-full rounded-xl" />
-          ) : (
-            <WrappedMemberList
-              rows={rows}
-              busyUid={busyUid}
-              onPreview={(uid) => navigate(wrappedPreviewLink(year, uid))}
-              onSendTest={(uid) => testMutation.mutate(uid)}
-              onRegenerate={(uid) => {
-                setBusyUid(uid);
-                runGenerate([uid]);
-              }}
-            />
-          )}
         </>
       )}
+
+      {/* Shown before the first story exists too, so members being generated have somewhere to appear. */}
+      {(season || states.size > 0) &&
+        (rowsLoading ? (
+          <Skeleton className="h-64 w-full rounded-xl" />
+        ) : (
+          <WrappedMemberList
+            rows={rows}
+            states={states}
+            names={names}
+            testingUid={testingUid}
+            onPreview={(uid) => navigate(wrappedPreviewLink(year, uid))}
+            onSendTest={(uid) => testMutation.mutate(uid)}
+            onRegenerate={(uid) => void runGenerate([uid])}
+          />
+        ))}
 
       <Modal.Backdrop isOpen={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
         <Modal.Container size="sm">

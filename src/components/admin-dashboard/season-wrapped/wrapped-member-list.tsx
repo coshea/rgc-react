@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Chip, Dropdown } from "@heroui/react";
+import { Button, Chip, Dropdown, Spinner } from "@heroui/react";
 import { Icon } from "@iconify/react";
 
 import type { WrappedAdminRow } from "@/api/seasonWrapped";
@@ -10,6 +10,10 @@ import {
   matchesFilter,
   type EngagementFilter,
 } from "@/components/admin-dashboard/season-wrapped/engagement";
+import {
+  GENERATION_ROW_STATE,
+  type GenerationRowState,
+} from "@/components/admin-dashboard/season-wrapped/generation";
 
 const FILTERS: { id: EngagementFilter; label: string }[] = [
   { id: ENGAGEMENT_FILTER.ALL, label: "All" },
@@ -40,29 +44,71 @@ function formatWhen(value: unknown): string | null {
 
 interface WrappedMemberListProps {
   rows: WrappedAdminRow[];
-  busyUid: string | null;
+  /** Generate state per member; members with none are idle. */
+  states: ReadonlyMap<string, GenerationRowState>;
+  /** Names for members being generated who don't have a story yet. */
+  names: ReadonlyMap<string, string>;
+  testingUid: string | null;
   onPreview: (uid: string) => void;
   onSendTest: (uid: string) => void;
   onRegenerate: (uid: string) => void;
 }
 
-export function WrappedMemberList({ rows, busyUid, onPreview, onSendTest, onRegenerate }: WrappedMemberListProps) {
+/** Pending and skipped members sit at the top, whatever the filter, until their run finishes. */
+function isPinned(state: GenerationRowState | undefined): state is GenerationRowState {
+  return state === GENERATION_ROW_STATE.PENDING || state === GENERATION_ROW_STATE.SKIPPED;
+}
+
+function GeneratingNote({ state, hasStory }: { state: GenerationRowState; hasStory: boolean }) {
+  if (state === GENERATION_ROW_STATE.SKIPPED) {
+    return <p className="text-xs text-warning">Not eligible: no payment or event this season</p>;
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted">
+      <Spinner size="sm" className="size-3" />
+      {hasStory ? "Regenerating…" : "Generating…"}
+    </p>
+  );
+}
+
+export function WrappedMemberList({
+  rows,
+  states,
+  names,
+  testingUid,
+  onPreview,
+  onSendTest,
+  onRegenerate,
+}: WrappedMemberListProps) {
   const [filter, setFilter] = useState<EngagementFilter>(ENGAGEMENT_FILTER.ALL);
   const [search, setSearch] = useState("");
 
-  const visible = useMemo(() => {
+  const { pinned, placeholders, visible } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows
-      .filter((r) => matchesFilter(r, filter))
-      .filter((r) => !q || r.story.displayName.toLowerCase().includes(q))
-      .sort((a, b) => a.story.displayName.localeCompare(b.story.displayName));
-  }, [rows, filter, search]);
+    const byName = (a: WrappedAdminRow, b: WrappedAdminRow) => a.story.displayName.localeCompare(b.story.displayName);
+    const withStory = new Set(rows.map((r) => r.story.uid));
+    return {
+      pinned: rows.filter((r) => isPinned(states.get(r.story.uid))).sort(byName),
+      placeholders: [...states]
+        .filter(([uid, state]) => isPinned(state) && !withStory.has(uid))
+        .map(([uid, state]) => ({ uid, state, name: names.get(uid) ?? "Unknown member" }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      visible: rows
+        .filter((r) => !isPinned(states.get(r.story.uid)))
+        .filter((r) => matchesFilter(r, filter))
+        .filter((r) => !q || r.story.displayName.toLowerCase().includes(q))
+        .sort(byName),
+    };
+  }, [rows, states, names, filter, search]);
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="wrapped-members-heading">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 id="wrapped-members-heading" className="text-lg font-semibold">
-          Members <span className="text-sm font-normal text-muted">({visible.length} of {rows.length})</span>
+          Members{" "}
+          <span className="text-sm font-normal text-muted">
+            ({pinned.length + visible.length} of {rows.length})
+          </span>
         </h3>
         <SearchInput
           value={search}
@@ -89,22 +135,49 @@ export function WrappedMemberList({ rows, busyUid, onPreview, onSendTest, onRege
       </div>
 
       <ul className="flex flex-col divide-y divide-separator rounded-xl border border-separator bg-surface">
-        {visible.length === 0 && <li className="p-4 text-sm text-muted">No members match.</li>}
-        {visible.map(({ story, delivery, view }) => {
+        {placeholders.map(({ uid, state, name }) => (
+          <li key={uid} className="flex items-center gap-3 p-3" aria-busy={state === GENERATION_ROW_STATE.PENDING}>
+            <UserAvatar name={name} size="sm" />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{name}</p>
+              <GeneratingNote state={state} hasStory={false} />
+            </div>
+          </li>
+        ))}
+        {pinned.length + visible.length + placeholders.length === 0 && (
+          <li className="p-4 text-sm text-muted">No members match.</li>
+        )}
+        {[...pinned, ...visible].map(({ story, delivery, view }) => {
           const opened = formatWhen(view?.firstOpenedAt);
+          const state = states.get(story.uid);
+          const generated = formatWhen(story.generatedAt);
           return (
-            <li key={story.uid} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
+            <li
+              key={story.uid}
+              className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center"
+              aria-busy={state === GENERATION_ROW_STATE.PENDING}
+            >
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <UserAvatar name={story.displayName} size="sm" />
                 <div className="min-w-0">
                   <p className="truncate font-medium">{story.displayName}</p>
-                  <p className="text-xs text-muted">
-                    {story.played ? `${story.events?.played ?? 0} events` : "Didn't play"} · v{story.version}
-                  </p>
+                  {isPinned(state) ? (
+                    <GeneratingNote state={state} hasStory />
+                  ) : (
+                    <p className="text-xs text-muted">
+                      {story.played ? `${story.events?.played ?? 0} events` : "Didn't play"} · v{story.version}
+                      {generated && ` · ${generated}`}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {state === GENERATION_ROW_STATE.FAILED && (
+                  <Chip size="sm" variant="soft" color="danger">
+                    Last generate failed
+                  </Chip>
+                )}
                 <Chip size="sm" variant="soft" color={delivery?.emailSentAt ? "success" : "default"}>
                   Email {delivery?.emailSentAt ? "sent" : "not sent"}
                 </Chip>
@@ -141,7 +214,7 @@ export function WrappedMemberList({ rows, busyUid, onPreview, onSendTest, onRege
                   variant="tertiary"
                   size="sm"
                   className="min-h-11 self-end sm:min-h-9 sm:self-auto"
-                  isPending={busyUid === story.uid}
+                  isPending={testingUid === story.uid || state === GENERATION_ROW_STATE.PENDING}
                   aria-label={`Actions for ${story.displayName}`}
                 >
                   <Icon icon="lucide:ellipsis" className="h-4 w-4" />
