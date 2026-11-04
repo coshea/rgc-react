@@ -298,12 +298,22 @@
 .wr-c-share { background: var(--c-fairway); }
 .wr-sharecard {
   background: var(--c-chalk); color: var(--c-ink); border-radius: calc(var(--u) * 14); padding: calc(var(--u) * 14);
-  display: flex; flex-direction: column; gap: calc(var(--u) * 10); aspect-ratio: 1 / 1; max-width: 100%;
+  display: flex; flex-direction: column; gap: calc(var(--u) * 10);
+  /* At least square (the card's 212-unit content width), growing to fit its content.
+     aspect-ratio would pin the height and let long names spill out. */
+  min-height: calc(var(--u) * 212); flex-shrink: 0;
 }
 .wr-sharecard .wr-label { color: var(--c-fairway); opacity: 1; }
 .wr-sharecard .nm { font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 30); line-height: 0.9; text-transform: uppercase; }
 .wr-sharecard .g { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 8) calc(var(--u) * 10); margin-top: auto; }
-.wr-sharecard .g b { font-family: var(--f-display); font-size: calc(var(--u) * 26); font-weight: 800; line-height: 1; display: block; overflow-wrap: anywhere; }
+.wr-sharecard .g > div { min-width: 0; }
+.wr-sharecard .g b {
+  font-family: var(--f-display); font-size: calc(var(--u) * 26); font-weight: 800; line-height: 1; display: block;
+  /* Sized in shareStatSize() to fit; breaking mid-word is a last resort, never cutting off. */
+  overflow-wrap: anywhere;
+}
+.wr-sharecard .g b.long { font-size: calc(var(--u) * 20); }
+.wr-sharecard .g b.xlong { font-size: calc(var(--u) * 16); }
 .wr-sharecard .g span { font-size: calc(var(--u) * 10); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: 0.04em; }
 .wr-btnrow { display: flex; gap: calc(var(--u) * 8); }
 /* HeroUI buttons styled as the mockup's pills; 44px minimum tap target. */
