@@ -624,14 +624,29 @@ function TributeCardView({ tribute, progress }: { tribute: TributeCard; progress
   );
 }
 
-function shareStats(story: SeasonWrappedMember): { value: string; label: string }[] {
+interface ShareStat {
+  value: string;
+  label: string;
+  /** A person's name: first name on one line, the rest below, never cut off. */
+  isName?: boolean;
+}
+
+/** Shrinks a stat so its longest unbreakable run still fits the half-width column. */
+function shareStatSize({ value, isName }: ShareStat): string | undefined {
+  const longest = isName ? Math.max(...value.split(/\s+/).map((w) => w.length)) : value.length;
+  if (longest > 10) return "xlong";
+  if (longest > 7) return "long";
+  return undefined;
+}
+
+function shareStats(story: SeasonWrappedMember): ShareStat[] {
   const s = story.share;
   const stats = [
     s.events > 0 && { value: String(s.events), label: s.events === 1 ? "event" : "events" },
     s.total > 0 && { value: formatMoney(s.total), label: s.rankLabel ? `won · #${s.rankLabel}` : "won" },
     s.closestToPins > 0 && { value: String(s.closestToPins), label: s.closestToPins === 1 ? "CTP" : "CTPs" },
-    s.topPartner && { value: s.topPartner.split(/\s+/).map((p, i) => (i === 0 ? `${p[0]}.` : p)).join(" "), label: "top partner" },
-  ].filter((x): x is { value: string; label: string } => !!x);
+    s.topPartner && { value: s.topPartner, label: "top partner", isName: true },
+  ].filter((x): x is ShareStat => !!x);
   return stats.length > 0 ? stats.slice(0, 4) : [{ value: String(story.year), label: "RGC member" }];
 }
 
@@ -650,7 +665,9 @@ function ShareCard({
         <div className="g">
           {shareStats(story).map((s) => (
             <div key={s.label}>
-              <b className="wr-num">{s.value}</b>
+              <b className={clsx("wr-num", shareStatSize(s))}>
+                {s.isName ? <TwoLineName name={s.value} /> : s.value}
+              </b>
               <span>{s.label}</span>
             </div>
           ))}
