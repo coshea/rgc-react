@@ -55,14 +55,37 @@ export function generationRowStates(
   return states;
 }
 
-/** Progress of what's running now: members done out of everyone in flight or just finished. */
+/**
+ * Progress of what's running now: members finished out of everyone in the
+ * active runs. A run is active while any of its members is pending, and the
+ * total keeps the members it already finished, even ones this browser didn't
+ * request (members with no story yet in a full run, or after a reload), so
+ * the first number climbs to a fixed total. Skipped members aren't counted.
+ */
 export function generationProgress(
   states: ReadonlyMap<string, GenerationRowState>,
   requests: GenerationRequests,
+  docs: ReadonlyMap<string, SeasonWrappedGeneration>,
 ): { done: number; total: number } | null {
-  const inFlight = new Set(requests.keys());
-  for (const [uid, state] of states) if (state === GENERATION_ROW_STATE.PENDING) inFlight.add(uid);
-  const pending = [...inFlight].filter((uid) => states.get(uid) === GENERATION_ROW_STATE.PENDING).length;
+  const { PENDING, SKIPPED } = SEASON_WRAPPED_GENERATION_STATUS;
+  const isPending = (uid: string) => states.get(uid) === GENERATION_ROW_STATE.PENDING;
+  // False while a requested member's doc is still the one from before the request.
+  const isCurrent = (doc: SeasonWrappedGeneration) => requests.get(doc.uid)?.prev !== doc.updatedAt;
+
+  // Runs with someone still pending (a stale pending doc reads as failed, so its run isn't active).
+  const activeRuns = new Set<string>();
+  for (const doc of docs.values()) {
+    if (doc.status === PENDING && isCurrent(doc) && isPending(doc.uid)) activeRuns.add(doc.runId);
+  }
+
+  const members = new Set(requests.keys());
+  for (const doc of docs.values()) if (isCurrent(doc) && activeRuns.has(doc.runId)) members.add(doc.uid);
+
+  const counted = [...members].filter((uid) => {
+    const doc = docs.get(uid);
+    return !(doc && isCurrent(doc) && doc.status === SKIPPED);
+  });
+  const pending = counted.filter(isPending).length;
   if (pending === 0) return null;
-  return { done: inFlight.size - pending, total: inFlight.size };
+  return { done: counted.length - pending, total: counted.length };
 }
