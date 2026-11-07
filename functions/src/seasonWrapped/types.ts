@@ -427,3 +427,129 @@ export const SEASON_TRIBUTES: Record<number, TributeCard> = {
     signoff: "From the RGC Board of Governors and members",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Share tag (functions/src/seasonWrapped/shareImage.ts and the site's share card)
+// ---------------------------------------------------------------------------
+
+/**
+ * The bag tag's band color changes every season, the way real member bag
+ * tags do. Cycles from 2026; each color carries white text.
+ */
+export const SEASON_TAG_COLORS = ["#2c8a4b", "#1f4e8c", "#8c2f39", "#1d6f73", "#6a4a94"] as const;
+
+export function seasonTagColor(year: number): string {
+  const n = SEASON_TAG_COLORS.length;
+  return SEASON_TAG_COLORS[(((year - 2026) % n) + n) % n];
+}
+
+/** A gold seal on the tag for the member's biggest moment of the season. */
+export interface ShareStamp {
+  main: string;
+  detail?: string;
+}
+
+/** The Money List seal's title. */
+export const MONEY_LIST_SEAL = "Money list";
+
+/** Money List ranks that earn a seal. */
+export const STAMP_MONEY_RANK = 25;
+
+/**
+ * At most one seal, in order: a championship, a hole-in-one, a match play
+ * final, a top-25 Money List finish.
+ */
+export function shareStamp(member: SeasonWrappedMember): ShareStamp | undefined {
+  const title = member.championshipsWon.find((t) => t !== "Other");
+  if (title) {
+    return /champion/i.test(title) ? { main: title } : { main: title, detail: "Winner" };
+  }
+  const aces = member.closestToPin?.aces ?? [];
+  if (aces.length > 0) {
+    const hole = aces.length === 1 ? aces[0].hole : undefined;
+    return {
+      main: "Hole in one",
+      ...(aces.length > 1 ? { detail: `${aces.length} aces` } : hole ? { detail: `Hole ${hole}` } : {}),
+    };
+  }
+  const reached = member.bracket?.reached;
+  if (reached === "Champions") return { main: "Match play", detail: "Champion" };
+  if (reached === "Final") return { main: "Match play", detail: "Finalist" };
+  const rank = member.money?.rank;
+  if (rank && rank <= STAMP_MONEY_RANK && member.money?.rankLabel) {
+    return { main: MONEY_LIST_SEAL, detail: `#${member.money.rankLabel}` };
+  }
+  return undefined;
+}
+
+/**
+ * The tag's grommet and leather strap, in tag pixels (the tag is 700 wide;
+ * y = 0 is its top edge). The share image draws them at 1:1 and the site's
+ * card scales them, so both show the same loop: the front strand comes down
+ * over the tag into the grommet, the back strand rises from behind the tag.
+ */
+export const TAG_GROMMET = { x: 350, y: 90, r: 50, ring: 10 } as const;
+export const TAG_STRAP_COLORS = {
+  front: "#d4553a",
+  back: "#a8442d",
+  stitch: "#8a3422",
+  /** The strap seen through the grommet. */
+  inHole: "#6e2a1b",
+  ring: "#ead9b3",
+} as const;
+const STRAP_WIDTH = 36;
+
+/**
+ * SVG markup (no outer element) for the strap and the grommet's lower lip,
+ * for a viewBox of `0 ${-rise} 700 ${rise + 150}`: `rise` is how much strap
+ * shows above the tag. Draw it over the tag.
+ */
+export function tagStrapSvg(rise: number, idPrefix = "tag"): string {
+  // Unique ids so two tags on one page don't share clip paths.
+  const above = `${idPrefix}-above`.replace(/[^\w-]/g, "");
+  const inFront = `${idPrefix}-front`.replace(/[^\w-]/g, "");
+  const { x, y, r, ring } = TAG_GROMMET;
+  const top = -rise - 20;
+  const inner = r - ring;
+  // Runs down into the hole and disappears under its lower lip.
+  const front = `M${x - 60} ${top} C${x - 60} ${y - 70} ${x - 6} ${y - 40} ${x - 2} ${y + inner}`;
+  const back = `M${x + 60} ${top} C${x + 60} ${y - 70} ${x + 26} ${y - 40} ${x + 20} ${y + 10}`;
+  const lip = `M${x - r + ring / 2} ${y} A${r - ring / 2} ${r - ring / 2} 0 0 0 ${x + r - ring / 2} ${y}`;
+  const strand = (d: string, color: string) =>
+    `<path d="${d}" fill="none" stroke="${color}" stroke-width="${STRAP_WIDTH}"/>` +
+    `<path d="${d}" fill="none" stroke="${TAG_STRAP_COLORS.stitch}" stroke-width="2.5" stroke-dasharray="10 8"/>`;
+  return (
+    // The back strand only shows above the tag.
+    `<defs><clipPath id="${above}"><rect x="0" y="${top}" width="700" height="${-top}"/></clipPath>` +
+    // The front strand shows above the hole's center and inside the hole.
+    `<clipPath id="${inFront}"><rect x="0" y="${top}" width="700" height="${y - top}"/>` +
+    `<circle cx="${x}" cy="${y}" r="${inner}"/></clipPath></defs>` +
+    `<g clip-path="url(#${above})">${strand(back, TAG_STRAP_COLORS.back)}</g>` +
+    `<g clip-path="url(#${inFront})">${strand(front, TAG_STRAP_COLORS.front)}</g>` +
+    `<path d="${lip}" fill="none" stroke="${TAG_STRAP_COLORS.ring}" stroke-width="${ring}"/>`
+  );
+}
+
+/** "4" → "4th", "T12" → "tied 12th"; anything else is shown as "#label". */
+export function moneyRankText(rankLabel: string): string {
+  const tied = /^T/i.test(rankLabel);
+  const n = Number(rankLabel.replace(/^T/i, ""));
+  if (!Number.isInteger(n) || n <= 0) return `#${rankLabel}`;
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${tied ? "tied " : ""}${n}${suffix}`;
+}
+
+/**
+ * Label under the money won: plain "won" when there's no rank or the seal
+ * already shows it, otherwise e.g. "won, 4th on the money list".
+ */
+export function moneyWonLabel(rankLabel: string | undefined, sealShowsRank = false): string {
+  // Non-breaking spaces keep "the money list" together when the label wraps.
+  return rankLabel && !sealShowsRank ? `won, ${moneyRankText(rankLabel)} on the\u00a0money\u00a0list` : "won";
+}
+
+/** True when the member's seal is their Money List finish. */
+export function sealShowsMoneyRank(member: SeasonWrappedMember): boolean {
+  return shareStamp(member)?.main === MONEY_LIST_SEAL;
+}

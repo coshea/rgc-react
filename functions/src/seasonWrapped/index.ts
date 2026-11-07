@@ -22,6 +22,7 @@ import { sendResendBatch } from "../resendBatch";
 import { RESEND_API_KEY } from "../resendConfig";
 import { buildSeasonWrappedEmail } from "./email";
 import { renderShareImage } from "./shareImage";
+import { loadSharePhoto } from "./sharePhoto";
 import {
   buildSeasonContext,
   computeClubStats,
@@ -356,7 +357,7 @@ async function loadSeasonInput(
 // ---------------------------------------------------------------------------
 
 async function saveShareImage(member: SeasonWrappedMember): Promise<Buffer> {
-  const png = await renderShareImage(member);
+  const png = await renderShareImage(member, await loadSharePhoto(member.uid));
   await admin
     .storage()
     .bucket()

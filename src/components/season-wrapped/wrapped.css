@@ -295,16 +295,85 @@
 .wr-yrs span { font-size: calc(var(--u) * 12); }
 
 /* share */
-.wr-c-share { background: var(--c-fairway); }
+/* A member bag tag on a leather strap, matching the share image (shareImage.ts). */
+.wr-c-share { background: var(--c-night); }
 .wr-sharecard {
-  background: var(--c-chalk); color: var(--c-ink); border-radius: calc(var(--u) * 14); padding: calc(var(--u) * 14);
+  --tag-pad: calc(var(--u) * 16);
+  /* One tag pixel: the share image's tag is 700 wide, this one is 212u. */
+  --t: calc(var(--u) * 212 / 700);
+  /* Must match TAG_STRAP_RISE in wrapped-cards.tsx. */
+  --strap-rise: calc(var(--t) * 72);
+  position: relative;
+  margin-top: var(--strap-rise);
+  /* Pure white so the logo PNG's white background blends in. */
+  background: #fff; color: var(--c-ink); border-radius: calc(var(--u) * 18);
+  padding: 0 var(--tag-pad) var(--tag-pad);
   display: flex; flex-direction: column; gap: calc(var(--u) * 10);
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 20) rgba(0, 0, 0, 0.35);
   /* At least square (the card's 212-unit content width), growing to fit its content.
      aspect-ratio would pin the height and let long names spill out. */
   min-height: calc(var(--u) * 212); flex-shrink: 0;
 }
-.wr-sharecard .wr-label { color: var(--c-fairway); opacity: 1; }
-.wr-sharecard .nm { font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 30); line-height: 0.9; text-transform: uppercase; }
+/* Strap and grommet lip: SVG from tagStrapSvg() (types.ts), in tag pixels (the tag is 700 wide). */
+.wr-tag-strap {
+  position: absolute; left: 0; top: calc(var(--strap-rise) * -1);
+  width: 100%; height: calc(var(--strap-rise) + var(--t) * 150);
+  /* Above the band and stitching, below the seal. */
+  z-index: 1; pointer-events: none; overflow: visible;
+}
+.wr-tag-band {
+  position: relative;
+  margin-inline: calc(var(--tag-pad) * -1); height: calc(var(--t) * 150);
+  background: var(--tag-color, var(--c-fairway)); border-radius: calc(var(--u) * 18) calc(var(--u) * 18) 0 0;
+  display: flex; justify-content: center; padding-top: calc(var(--t) * 40);
+}
+/* Grommet (TAG_GROMMET: center 90 down, radius 50, ring 10), showing the strap through it. */
+.wr-tag-band i {
+  box-sizing: border-box; width: calc(var(--t) * 100); height: calc(var(--t) * 100); border-radius: 50%;
+  background: #6e2a1b; border: calc(var(--t) * 10) solid var(--c-sand);
+}
+/* The season, white on the band (its color changes every year: seasonTagColor). */
+.wr-tag-year {
+  position: absolute; left: var(--tag-pad); top: 0; bottom: 0; display: flex; align-items: center;
+  font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 19); line-height: 1; color: #fff;
+}
+/* Dashed stitching just inside the tag's edge, over the band, under the strap. */
+.wr-tag-stitch {
+  position: absolute; inset: calc(var(--u) * 5); border-radius: calc(var(--u) * 14);
+  border: 1px dashed rgba(12, 42, 28, 0.4); pointer-events: none;
+}
+/* Photo or initials (UserAvatar) beside the name, ringed in the season color. */
+.wr-tag-who { display: flex; align-items: center; gap: calc(var(--u) * 8); }
+.wr-tag-who .nm { min-width: 0; }
+.wrapped-root .wr-av-tag {
+  width: calc(var(--u) * 45); height: calc(var(--u) * 45); font-size: calc(var(--u) * 19);
+  background: var(--c-night); color: var(--c-flag); border: calc(var(--u) * 2) solid var(--tag-color, var(--c-fairway));
+}
+.wr-tag-logo { align-self: flex-start; width: calc(var(--u) * 80); height: auto; margin-top: calc(var(--u) * 2); }
+/* Gold seal for the member's biggest moment (shareStamp), over the band's right corner. */
+.wr-seal {
+  position: absolute; right: calc(var(--u) * 8); top: calc(var(--u) * 21);
+  width: calc(var(--u) * 60); height: calc(var(--u) * 60); border-radius: 50%;
+  z-index: 2; background: var(--c-flag); color: #5c4300; transform: rotate(-10deg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  box-shadow: 0 0 0 calc(var(--u) * 1.8) var(--c-flag) inset, 0 0 0 calc(var(--u) * 3) #5c4300 inset;
+}
+.wr-seal::after {
+  content: ""; position: absolute; inset: calc(var(--u) * 5.5); border-radius: 50%; border: 1px solid #5c4300;
+}
+.wr-seal span { font-size: calc(var(--u) * 5.5); font-weight: 700; line-height: 1.2; }
+.wr-seal b {
+  max-width: calc(var(--u) * 40); font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 10);
+  line-height: 0.92; text-transform: uppercase;
+}
+/* Long titles, as in shareImage.ts (more than 12 characters). */
+.wr-seal b.long { font-size: calc(var(--u) * 8.5); }
+.wr-sharecard .nm {
+  font-family: var(--f-display); font-weight: 900; font-size: calc(var(--u) * 30); line-height: 0.88; text-transform: uppercase;
+  color: var(--c-night); overflow-wrap: anywhere;
+}
+.wr-sharecard .nm.long { font-size: calc(var(--u) * 23); }
+.wr-sharecard .nm.xlong { font-size: calc(var(--u) * 16); }
 .wr-sharecard .g { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 8) calc(var(--u) * 10); margin-top: auto; }
 .wr-sharecard .g > div { min-width: 0; }
 .wr-sharecard .g b {
@@ -314,7 +383,7 @@
 }
 .wr-sharecard .g b.long { font-size: calc(var(--u) * 20); }
 .wr-sharecard .g b.xlong { font-size: calc(var(--u) * 16); }
-.wr-sharecard .g span { font-size: calc(var(--u) * 10); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.wr-sharecard .g span { display: block; margin-top: calc(var(--u) * 2); font-size: calc(var(--u) * 10); font-weight: 700; color: var(--tag-color, var(--c-fairway)); }
 .wr-btnrow { display: flex; gap: calc(var(--u) * 8); }
 /* HeroUI buttons styled as the mockup's pills; 44px minimum tap target. */
 .wrapped-root .wr-pill {

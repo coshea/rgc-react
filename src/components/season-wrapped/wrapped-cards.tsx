@@ -1,14 +1,20 @@
-import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useId, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import clsx from "clsx";
 
 import type { User } from "@/api/users";
+import rgcLogoPng from "@/assets/rgc_logo.png";
 import { UserAvatar } from "@/components/avatar";
 import type { WrappedCardSpec } from "@/components/season-wrapped/build-cards";
 import { CountUp } from "@/components/season-wrapped/count-up";
 import { siteConfig } from "@/config/site";
 import {
   MAJOR_KIND,
+  moneyWonLabel,
+  sealShowsMoneyRank,
+  seasonTagColor,
+  shareStamp,
+  tagStrapSvg,
   type MajorCard,
   type SeasonWrappedMember,
   type SeasonWrappedSeason,
@@ -40,6 +46,14 @@ export function formatMoney(amount: number): string {
 /** Animation order for list items, read by wrapped.css as e.g. var(--i). */
 function order(vars: Record<`--${string}`, number>): CSSProperties {
   return vars as CSSProperties;
+}
+
+/** Strap above the tag, in tag pixels; must match --strap-rise in wrapped.css. */
+const TAG_STRAP_RISE = 72;
+
+/** The season's bag tag color, read by wrapped.css as var(--tag-color). */
+function tagColor(year: number): CSSProperties {
+  return { "--tag-color": seasonTagColor(year) } as CSSProperties;
 }
 
 /** First name on one line, the rest on the next (mockup style). */
@@ -639,11 +653,19 @@ function shareStatSize({ value, isName }: ShareStat): string | undefined {
   return undefined;
 }
 
+/** Shrinks the name beside the avatar so its longest word fits on one line. */
+function tagNameSize(name: string): string | undefined {
+  const longest = Math.max(...name.trim().split(/\s+/).map((w) => w.length));
+  if (longest > 12) return "xlong";
+  if (longest > 8) return "long";
+  return undefined;
+}
+
 function shareStats(story: SeasonWrappedMember): ShareStat[] {
   const s = story.share;
   const stats = [
     s.events > 0 && { value: String(s.events), label: s.events === 1 ? "event" : "events" },
-    s.total > 0 && { value: formatMoney(s.total), label: s.rankLabel ? `won · #${s.rankLabel}` : "won" },
+    s.total > 0 && { value: formatMoney(s.total), label: moneyWonLabel(s.rankLabel, sealShowsMoneyRank(story)) },
     s.closestToPins > 0 && { value: String(s.closestToPins), label: s.closestToPins === 1 ? "CTP" : "CTPs" },
     s.topPartner && { value: s.topPartner, label: "top partner", isName: true },
   ].filter((x): x is ShareStat => !!x);
@@ -655,13 +677,39 @@ function ShareCard({
   progress,
   shareSlot,
 }: CardProps & { shareSlot?: ReactNode }) {
+  const stamp = shareStamp(story);
+  const strapId = useId();
   return (
     <CardShell className="wr-c-share" brand="That's a wrap" progress={progress}>
-      <div className="wr-sharecard">
-        <p className="wr-label">RGC Wrapped {story.year}</p>
-        <p className="nm">
-          <TwoLineName name={story.displayName} />
-        </p>
+      {/* A member bag tag, matching the share image (functions/src/seasonWrapped/shareImage.ts). */}
+      <div className="wr-sharecard" style={tagColor(story.year)}>
+        <div className="wr-tag-band">
+          <span className="wr-tag-year">{story.year}</span>
+          <i aria-hidden />
+        </div>
+        <span className="wr-tag-stitch" aria-hidden />
+        {/* Static markup from our own tagStrapSvg(); no user content. */}
+        <svg
+          className="wr-tag-strap"
+          viewBox={`0 ${-TAG_STRAP_RISE} 700 ${TAG_STRAP_RISE + 150}`}
+          aria-hidden
+          dangerouslySetInnerHTML={{ __html: tagStrapSvg(TAG_STRAP_RISE, strapId) }}
+        />
+        {stamp && (
+          <div className="wr-seal">
+            <span>{story.year}</span>
+            <b className={clsx(stamp.main.length > 12 && "long")}>{stamp.main}</b>
+            {stamp.detail && <span>{stamp.detail}</span>}
+          </div>
+        )}
+        {/* Plain <img>: a static decorative-size logo; HeroUI v3 has no image component. */}
+        <img className="wr-tag-logo" src={rgcLogoPng} alt="Ridgefield Golf Club" />
+        <div className="wr-tag-who">
+          <WrAvatar uid={story.uid} name={story.displayName} className="wr-av-tag" />
+          <p className={clsx("nm", tagNameSize(story.displayName))}>
+            <TwoLineName name={story.displayName} />
+          </p>
+        </div>
         <div className="g">
           {shareStats(story).map((s) => (
             <div key={s.label}>

@@ -9,6 +9,7 @@ import {
   withUtm,
 } from "../sendRegistrationOpeningEmails";
 import {
+  moneyWonLabel,
   SEASON_WRAPPED_EMAIL_CATEGORY,
   seasonWrappedPath,
   type ClubSeasonStats,
@@ -61,7 +62,7 @@ export function headlineStats(
     if (member.money) {
       stats.push({
         value: money(member.money.total),
-        label: member.money.rankLabel ? `won · #${member.money.rankLabel}` : "won",
+        label: moneyWonLabel(member.money.rankLabel),
       });
     }
     if (member.closestToPin?.count) {
