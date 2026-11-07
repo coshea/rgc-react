@@ -107,7 +107,7 @@ export function SeasonWrappedTab() {
     [users],
   );
   const states = useMemo(() => generationRowStates(generation, requests, now), [generation, requests, now]);
-  const progress = useMemo(() => generationProgress(states, requests), [states, requests]);
+  const progress = useMemo(() => generationProgress(states, requests, generation), [states, requests, generation]);
 
   useEffect(() => {
     if (!progress) return;

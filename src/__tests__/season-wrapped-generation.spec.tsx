@@ -65,9 +65,34 @@ describe("generationRowStates", () => {
       ["a", { prev: null, run: 1 }],
       ["b", { prev: null, run: 1 }],
     ]);
-    const states = generationRowStates(docs(statusDoc("a", STATUS.DONE), statusDoc("c", STATUS.PENDING)), requests, NOW);
-    expect(generationProgress(states, requests)).toEqual({ done: 1, total: 3 });
-    expect(generationProgress(new Map(), new Map())).toBeNull();
+    const server = docs(statusDoc("a", STATUS.DONE), statusDoc("c", STATUS.PENDING));
+    const states = generationRowStates(server, requests, NOW);
+    expect(generationProgress(states, requests, server)).toEqual({ done: 1, total: 3 });
+    expect(generationProgress(new Map(), new Map(), new Map())).toBeNull();
+  });
+
+  it("counts up to a fixed total for members nobody here requested", () => {
+    // A full run (or a reload mid-run): this browser has no requests.
+    const at = (done: number) => {
+      const list = ["a", "b", "c", "d"].map((uid, i) => statusDoc(uid, i < done ? STATUS.DONE : STATUS.PENDING));
+      const server = docs(...list, statusDoc("s", STATUS.SKIPPED), { ...statusDoc("old", STATUS.DONE), runId: "last-run" });
+      return generationProgress(generationRowStates(server, new Map(), NOW), new Map(), server);
+    };
+    expect(at(0)).toEqual({ done: 0, total: 4 });
+    expect(at(1)).toEqual({ done: 1, total: 4 });
+    expect(at(3)).toEqual({ done: 3, total: 4 });
+    expect(at(4)).toBeNull();
+  });
+
+  it("ignores a requested member's doc from the last run", () => {
+    const requests: GenerationRequests = new Map([
+      ["a", { prev: T0, run: 1 }],
+      ["b", { prev: null, run: 1 }],
+    ]);
+    // The server has written b for the new run; a still shows last run's done doc.
+    const server = docs({ ...statusDoc("a", STATUS.DONE, T0), runId: "last-run" }, statusDoc("b", STATUS.DONE));
+    const states = generationRowStates(server, requests, NOW);
+    expect(generationProgress(states, requests, server)).toEqual({ done: 1, total: 2 });
   });
 });
 
