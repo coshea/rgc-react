@@ -15,6 +15,10 @@ import {
   type GenerationRowState,
 } from "@/components/admin-dashboard/season-wrapped/generation";
 
+/** Generate failures, alongside the engagement filters. */
+const FAILED_FILTER = GENERATION_ROW_STATE.FAILED;
+type ListFilter = EngagementFilter | typeof FAILED_FILTER;
+
 const FILTERS: { id: EngagementFilter; label: string }[] = [
   { id: ENGAGEMENT_FILTER.ALL, label: "All" },
   { id: ENGAGEMENT_FILTER.NOT_OPENED, label: "Not opened" },
@@ -59,6 +63,14 @@ function isPinned(state: GenerationRowState | undefined): state is GenerationRow
   return state === GENERATION_ROW_STATE.PENDING || state === GENERATION_ROW_STATE.SKIPPED;
 }
 
+function FailedChip() {
+  return (
+    <Chip size="sm" variant="soft" color="danger">
+      Last generate failed
+    </Chip>
+  );
+}
+
 function GeneratingNote({ state, hasStory }: { state: GenerationRowState; hasStory: boolean }) {
   if (state === GENERATION_ROW_STATE.SKIPPED) {
     return <p className="text-xs text-warning">Not eligible: no payment or event this season</p>;
@@ -80,26 +92,37 @@ export function WrappedMemberList({
   onSendTest,
   onRegenerate,
 }: WrappedMemberListProps) {
-  const [filter, setFilter] = useState<EngagementFilter>(ENGAGEMENT_FILTER.ALL);
+  const [filter, setFilter] = useState<ListFilter>(ENGAGEMENT_FILTER.ALL);
   const [search, setSearch] = useState("");
+
+  const failedCount = useMemo(
+    () => [...states.values()].filter((s) => s === GENERATION_ROW_STATE.FAILED).length,
+    [states],
+  );
 
   const { pinned, placeholders, visible } = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const matchesSearch = (name: string) => !q || name.toLowerCase().includes(q);
     const byName = (a: WrappedAdminRow, b: WrappedAdminRow) => a.story.displayName.localeCompare(b.story.displayName);
     const withStory = new Set(rows.map((r) => r.story.uid));
+    const isFailed = (uid: string) => states.get(uid) === GENERATION_ROW_STATE.FAILED;
+    const showFailed = filter === ENGAGEMENT_FILTER.ALL || filter === FAILED_FILTER;
     return {
       pinned: rows.filter((r) => isPinned(states.get(r.story.uid))).sort(byName),
+      // Members with no story yet: in flight (always shown) or failed before their story was written.
       placeholders: [...states]
-        .filter(([uid, state]) => isPinned(state) && !withStory.has(uid))
+        .filter(([uid, state]) => !withStory.has(uid) && (isPinned(state) || (showFailed && isFailed(uid))))
         .map(([uid, state]) => ({ uid, state, name: names.get(uid) ?? "Unknown member" }))
+        .filter(({ state, name }) => isPinned(state) || matchesSearch(name))
         .sort((a, b) => a.name.localeCompare(b.name)),
       visible: rows
         .filter((r) => !isPinned(states.get(r.story.uid)))
-        .filter((r) => matchesFilter(r, filter))
-        .filter((r) => !q || r.story.displayName.toLowerCase().includes(q))
+        .filter((r) => (filter === FAILED_FILTER ? isFailed(r.story.uid) : matchesFilter(r, filter)))
+        .filter((r) => matchesSearch(r.story.displayName))
         .sort(byName),
     };
   }, [rows, states, names, filter, search]);
+  const failedPlaceholders = placeholders.filter((p) => !isPinned(p.state)).length;
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="wrapped-members-heading">
@@ -107,7 +130,7 @@ export function WrappedMemberList({
         <h3 id="wrapped-members-heading" className="text-lg font-semibold">
           Members{" "}
           <span className="text-sm font-normal text-muted">
-            ({pinned.length + visible.length} of {rows.length})
+            ({pinned.length + visible.length + failedPlaceholders} of {rows.length})
           </span>
         </h3>
         <SearchInput
@@ -132,16 +155,47 @@ export function WrappedMemberList({
             {f.label}
           </Button>
         ))}
+        {/* Only while someone failed (or the filter is on, so it doesn't vanish under the admin). */}
+        {(failedCount > 0 || filter === FAILED_FILTER) && (
+          <Button
+            size="sm"
+            variant={filter === FAILED_FILTER ? "danger" : "danger-soft"}
+            className="min-h-11 shrink-0 sm:min-h-9"
+            onPress={() => setFilter(FAILED_FILTER)}
+            aria-pressed={filter === FAILED_FILTER}
+          >
+            Failed ({failedCount})
+          </Button>
+        )}
       </div>
 
       <ul className="flex flex-col divide-y divide-separator rounded-xl border border-separator bg-surface">
         {placeholders.map(({ uid, state, name }) => (
           <li key={uid} className="flex items-center gap-3 p-3" aria-busy={state === GENERATION_ROW_STATE.PENDING}>
             <UserAvatar name={name} size="sm" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{name}</p>
-              <GeneratingNote state={state} hasStory={false} />
+              {isPinned(state) ? (
+                <GeneratingNote state={state} hasStory={false} />
+              ) : (
+                <p className="text-xs text-muted">No story yet</p>
+              )}
             </div>
+            {!isPinned(state) && (
+              <>
+                <FailedChip />
+                <Button
+                  variant="tertiary"
+                  size="sm"
+                  className="min-h-11 sm:min-h-9"
+                  aria-label={`Retry ${name}`}
+                  onPress={() => onRegenerate(uid)}
+                >
+                  <Icon icon="lucide:refresh-cw" className="h-4 w-4" />
+                  Retry
+                </Button>
+              </>
+            )}
           </li>
         ))}
         {pinned.length + visible.length + placeholders.length === 0 && (
@@ -173,11 +227,7 @@ export function WrappedMemberList({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                {state === GENERATION_ROW_STATE.FAILED && (
-                  <Chip size="sm" variant="soft" color="danger">
-                    Last generate failed
-                  </Chip>
-                )}
+                {state === GENERATION_ROW_STATE.FAILED && <FailedChip />}
                 <Chip size="sm" variant="soft" color={delivery?.emailSentAt ? "success" : "default"}>
                   Email {delivery?.emailSentAt ? "sent" : "not sent"}
                 </Chip>

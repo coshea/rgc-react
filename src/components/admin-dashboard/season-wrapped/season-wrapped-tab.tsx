@@ -8,6 +8,7 @@ import { sendWrappedTest } from "@/api/seasonWrapped";
 import { UserSelect } from "@/components/UserSelect";
 import { percent, summarizeEngagement } from "@/components/admin-dashboard/season-wrapped/engagement";
 import {
+  GENERATION_ROW_STATE,
   generationProgress,
   generationRowStates,
   type GenerationRequests,
@@ -108,6 +109,10 @@ export function SeasonWrappedTab() {
   );
   const states = useMemo(() => generationRowStates(generation, requests, now), [generation, requests, now]);
   const progress = useMemo(() => generationProgress(states, requests, generation), [states, requests, generation]);
+  const failedUids = useMemo(
+    () => [...states].filter(([, state]) => state === GENERATION_ROW_STATE.FAILED).map(([uid]) => uid),
+    [states],
+  );
 
   useEffect(() => {
     if (!progress) return;
@@ -249,6 +254,17 @@ export function SeasonWrappedTab() {
               <Icon icon="lucide:refresh-cw" className="h-4 w-4" />
               {season ? "Regenerate everyone" : "Generate everyone"}
             </Button>
+            {failedUids.length > 0 && (
+              <Button
+                variant="danger-soft"
+                className="min-h-11"
+                isDisabled={fullRunning}
+                onPress={() => void runGenerate(failedUids)}
+              >
+                <Icon icon="lucide:rotate-ccw" className="h-4 w-4" />
+                Regenerate {failedUids.length} failed
+              </Button>
+            )}
             {season && (
               <Button
                 variant={published ? "tertiary" : "secondary"}
