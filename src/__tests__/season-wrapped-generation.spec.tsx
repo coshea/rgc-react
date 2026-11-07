@@ -100,7 +100,10 @@ describe("WrappedMemberList while generating", () => {
   const row = (uid: string, displayName: string): WrappedAdminRow => ({ story: makeStory({ uid, displayName }) });
   const rows = [row("a", "Al Adams"), row("z", "Zed Zimmer")];
 
-  function renderList(states: Map<string, (typeof GENERATION_ROW_STATE)[keyof typeof GENERATION_ROW_STATE]>) {
+  function renderList(
+    states: Map<string, (typeof GENERATION_ROW_STATE)[keyof typeof GENERATION_ROW_STATE]>,
+    onRegenerate = vi.fn(),
+  ) {
     render(
       <WrappedMemberList
         rows={rows}
@@ -109,7 +112,7 @@ describe("WrappedMemberList while generating", () => {
         testingUid={null}
         onPreview={vi.fn()}
         onSendTest={vi.fn()}
-        onRegenerate={vi.fn()}
+        onRegenerate={onRegenerate}
       />,
     );
     return within(screen.getByRole("list")).getAllByRole("listitem");
@@ -159,5 +162,34 @@ describe("WrappedMemberList while generating", () => {
       minute: "2-digit",
     });
     expect(items[0].textContent).toContain(`v${rows[0].story.version} · ${when}`);
+  });
+
+  it("hides the Failed filter when nothing failed", () => {
+    renderList(new Map());
+    expect(screen.queryByRole("button", { name: /^Failed/ })).toBeNull();
+  });
+
+  it("filters to failed members, including ones whose story was never written", () => {
+    const onRegenerate = vi.fn();
+    renderList(
+      new Map([
+        ["a", GENERATION_ROW_STATE.FAILED],
+        ["new", GENERATION_ROW_STATE.FAILED],
+      ]),
+      onRegenerate,
+    );
+    // The failed member without a story shows under All too, so they're never invisible.
+    expect(screen.queryByText("Nora New")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Failed (2)" }));
+    const items = within(screen.getByRole("list")).getAllByRole("listitem");
+    expect(items.map((li) => li.querySelector("p")?.textContent)).toEqual(["Nora New", "Al Adams"]);
+    expect(items[0].textContent).toContain("Last generate failed");
+
+    fireEvent.click(within(items[0]).getByRole("button", { name: "Retry Nora New" }));
+    expect(onRegenerate).toHaveBeenCalledWith("new");
+
+    fireEvent.click(screen.getByRole("button", { name: "Shared" }));
+    expect(screen.queryByText("Nora New")).toBeNull();
   });
 });
