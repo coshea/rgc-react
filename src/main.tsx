@@ -12,6 +12,7 @@ import { Provider } from "./provider.tsx";
 import "@/styles/globals.css";
 import ScrollToTop from "@/components/scroll-to-top.tsx";
 import DefaultLayout from "@/layouts/default";
+import { installFirestoreCacheRecovery } from "@/utils/firestoreCacheRecovery";
 
 // "offlineFirst" runs each query once even when the browser reports no
 // connection, so Firestore can answer from the data saved on the device. The
@@ -171,6 +172,7 @@ function warmOfflineRoutes(): void {
 }
 
 installChunkLoadRecovery();
+installFirestoreCacheRecovery();
 registerAppServiceWorker();
 warmOfflineRoutes();
 
