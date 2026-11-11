@@ -26,6 +26,10 @@ jobs:
           # Firebase CLI v14+ requires Node >=20; use Node 22 for compatibility
           node-version: "22"
 
+      - name: Use npm 12
+        # Match local dev; lockfiles written by npm 12 can fail npm 10's npm ci.
+        run: npm install -g npm@12
+
       - name: Install dependencies
         env:
           HEROUI_AUTH_TOKEN: ${{ secrets.HEROUI_AUTH_TOKEN }}

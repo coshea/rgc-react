@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Use npm 12
+        # Match local dev; lockfiles written by npm 12 can fail npm 10's npm ci.
+        run: npm install -g npm@12
       - env:
           HEROUI_AUTH_TOKEN: ${{ secrets.HEROUI_AUTH_TOKEN }}
           VITE_PAYPAL_CLIENT_ID: ${{ secrets.VITE_PAYPAL_CLIENT_ID }}

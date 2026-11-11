@@ -123,6 +123,6 @@
     "protobufjs": false,
     "msw": false,
     "@zowe/secrets-for-zowe-sdk": false,
-    "@sentry/cli@2.58.5": true
+    "@sentry/cli@2.58.6": true
   }
 }
