@@ -7,6 +7,29 @@ import {
   StorageReference,
 } from "firebase/storage";
 import { storage, auth } from "@/config/firebase";
+import { AVATAR_MAX_UPLOAD_BYTES, downscaleImage } from "@/utils/image";
+
+/** The photo is over the avatar size limit in `storage.rules`, even after shrinking. */
+export class AvatarTooLargeError extends Error {
+  constructor() {
+    super("Photo is too large to upload. Please choose a photo under 5 MB.");
+    this.name = "AvatarTooLargeError";
+  }
+}
+
+/**
+ * Shrinks the photo in the browser, then uploads it with `uploadProfilePicture`.
+ * Falls back to the original if it can't be shrunk. Throws
+ * `AvatarTooLargeError` instead of uploading a file the rules would reject.
+ */
+export async function uploadResizedProfilePicture(
+  uid: string,
+  file: File,
+): Promise<string> {
+  const upload = await downscaleImage(file);
+  if (upload.size >= AVATAR_MAX_UPLOAD_BYTES) throw new AvatarTooLargeError();
+  return uploadProfilePicture(uid, upload);
+}
 
 /**
  * Uploads a File to storage under `avatars/{uid}/{filename}` and returns the download URL.

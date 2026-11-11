@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { AvatarTooLargeError } from "@/api/storage";
 import { addToast } from "@/providers/toast";
 import { siteConfig } from "@/config/site";
 import { formatPhone } from "@/utils/phone";
@@ -116,6 +117,14 @@ export function ProfileSettingsList() {
       });
       return true;
     } catch (error) {
+      if (error instanceof AvatarTooLargeError) {
+        addToast({
+          title: "Photo too large",
+          description: error.message,
+          color: "danger",
+        });
+        return false;
+      }
       Sentry.captureException(error);
       addToast({
         title: "Couldn't save",
