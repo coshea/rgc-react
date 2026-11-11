@@ -1,0 +1,45 @@
+# Runs the same install/test/build as firebase-deploy-functions.yml on PRs,
+# so a broken functions lockfile or build fails the PR instead of the deploy.
+name: Check Firebase Functions on PR
+
+on:
+  pull_request:
+    paths:
+      - "functions/**"
+      - ".github/workflows/functions-pr-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: functions-pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-functions:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./functions
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Use npm 12
+        # Match local dev and functions/package.json engines.npm (Cloud Build).
+        run: npm install -g npm@12
+
+      - name: Install function dependencies
+        run: npm ci
+
+      - name: Run function unit tests
+        run: npm test
+
+      - name: Build functions
+        run: npm run build
