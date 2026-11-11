@@ -42,6 +42,7 @@ import {
   SEASON_WRAPPED_COLLECTION,
   SEASON_WRAPPED_DELIVERY,
   SEASON_WRAPPED_EMAIL_CATEGORY,
+  SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS,
   SEASON_WRAPPED_GENERATION,
   SEASON_WRAPPED_GENERATION_STATUS,
   SEASON_WRAPPED_MEMBERS,
@@ -437,7 +438,7 @@ function generationDoc(
  * image finishes. The admin list listens to it.
  */
 export const generate_season_wrapped = onCall(
-  { timeoutSeconds: 540, memory: "1GiB" },
+  { timeoutSeconds: SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS, memory: "1GiB" },
   withSentry("generate_season_wrapped", async (request: CallableRequest) => {
     const callerUid = await requireAdmin(request);
     const data = asData(request.data);
