@@ -17,6 +17,7 @@ import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
 import {
   SEASON_WRAPPED_COLLECTION,
   SEASON_WRAPPED_DELIVERY,
+  SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS,
   SEASON_WRAPPED_GENERATION,
   SEASON_WRAPPED_MEMBERS,
   SEASON_WRAPPED_VIEWS,
@@ -193,9 +194,10 @@ export async function recordWrappedView(
 // Callables (admin, except the share image)
 // ---------------------------------------------------------------------------
 
-// Matches the server's timeoutSeconds for generate/send, which render images
+// Match the server's timeoutSeconds for generate/send, which render images
 // and send email in chunks; the SDK default (70s) gives up while they still run.
-const LONG_CALL_TIMEOUT_MS = 540_000;
+const SEND_CALL_TIMEOUT_MS = 540_000;
+const GENERATE_CALL_TIMEOUT_MS = SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS * 1000;
 
 async function call<Req, Res>(name: string, data: Req, timeout?: number): Promise<Res> {
   return Sentry.startSpan({ name, op: "http.client" }, async () => {
@@ -209,7 +211,7 @@ export function generateWrapped(req: GenerateSeasonWrappedRequest) {
   return call<GenerateSeasonWrappedRequest, GenerateSeasonWrappedResponse>(
     "generate_season_wrapped",
     req,
-    LONG_CALL_TIMEOUT_MS,
+    GENERATE_CALL_TIMEOUT_MS,
   );
 }
 
@@ -224,7 +226,7 @@ export function sendWrappedAnnouncements(req: SendSeasonWrappedRequest) {
   return call<SendSeasonWrappedRequest, SendSeasonWrappedResponse>(
     "send_season_wrapped_announcements",
     req,
-    LONG_CALL_TIMEOUT_MS,
+    SEND_CALL_TIMEOUT_MS,
   );
 }
 

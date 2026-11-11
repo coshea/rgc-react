@@ -1,4 +1,5 @@
 import {
+  SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS,
   SEASON_WRAPPED_GENERATION_STATUS,
   type SeasonWrappedGeneration,
 } from "@@/seasonWrapped/types";
@@ -13,8 +14,9 @@ export const GENERATION_ROW_STATE = {
 export type GenerationRowState =
   (typeof GENERATION_ROW_STATE)[keyof typeof GENERATION_ROW_STATE];
 
-/** Longer than the callable's 540s timeout, so a pending doc this old belongs to a run that died. */
-export const STALE_PENDING_MS = 10 * 60 * 1000;
+/** Longer than the generate callable's timeout, so a pending doc this old belongs to a run that died. */
+export const STALE_PENDING_MS =
+  (SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS + 5 * 60) * 1000;
 
 /**
  * Members this browser just asked to generate. The value is the `updatedAt`

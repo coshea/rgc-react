@@ -37,6 +37,13 @@ export const SEASON_WRAPPED_CHANNEL = {
 export type SeasonWrappedChannel =
   (typeof SEASON_WRAPPED_CHANNEL)[keyof typeof SEASON_WRAPPED_CHANNEL];
 
+/**
+ * How long `generate_season_wrapped` may run (2nd-gen callables allow up to
+ * 3600s). Rendering every member's share image outgrew 540s. The client's
+ * callable timeout and the admin list's stale-pending check derive from this.
+ */
+export const SEASON_WRAPPED_GENERATE_TIMEOUT_SECONDS = 1800;
+
 /** Where a member is in a generate run, so the admin list can show it live. */
 export const SEASON_WRAPPED_GENERATION_STATUS = {
   PENDING: "pending",

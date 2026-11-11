@@ -16,7 +16,8 @@ vi.mock("@/api/users", () => ({
 }));
 
 vi.mock("@/api/storage", () => ({
-  uploadProfilePicture: vi.fn(async () => "http://mock/url.png"),
+  AvatarTooLargeError: class AvatarTooLargeError extends Error {},
+  uploadResizedProfilePicture: vi.fn(async () => "http://mock/url.png"),
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

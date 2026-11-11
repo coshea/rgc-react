@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserProfile, saveUserProfile } from "@/api/users";
-import { uploadProfilePicture } from "@/api/storage";
+import { uploadResizedProfilePicture } from "@/api/storage";
 import type { UserProfilePayload } from "@/api/users";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -31,11 +31,12 @@ export function useUserProfile() {
     mutationFn: async (payload: SaveVars) => {
       if (!uid) throw new Error("Not authenticated");
 
-      // Only the original is uploaded; the `resize_user_avatar` Cloud Function
-      // generates the resized copy and writes `profileURL` server-side.
+      // The photo is shrunk in the browser to fit the storage size limit; the
+      // `resize_user_avatar` Cloud Function then crops it and writes
+      // `profileURL` server-side.
       let photoURL = payload.data.photoURL || null;
       if (payload.file) {
-        photoURL = await uploadProfilePicture(uid, payload.file);
+        photoURL = await uploadResizedProfilePicture(uid, payload.file);
       }
 
       // Derive displayName client-side as well for immediate optimistic consistency

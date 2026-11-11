@@ -16,6 +16,7 @@ import { UserAvatar } from "@/components/avatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { addToast } from "@/providers/toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { AvatarTooLargeError } from "@/api/storage";
 import { GoldTeeSwitch } from "@/components/profile/gold-tee-switch";
 import { ShirtSizePicker } from "@/components/profile/shirt-size-picker";
 import {
@@ -149,7 +150,9 @@ export function ProfileForm({
       onSaved?.();
     } catch (error) {
       // The saveError banner below explains the failure to the user.
-      Sentry.captureException(error);
+      if (!(error instanceof AvatarTooLargeError)) {
+        Sentry.captureException(error);
+      }
     }
   };
 
@@ -337,8 +340,9 @@ export function ProfileForm({
         >
           <Icon icon="lucide:alert-circle" />
           <span>
-            There was an error uploading your avatar or saving your profile.
-            Please try again.
+            {saveError instanceof AvatarTooLargeError
+              ? saveError.message
+              : "There was an error uploading your avatar or saving your profile. Please try again."}
           </span>
         </div>
       )}
