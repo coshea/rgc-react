@@ -31,7 +31,10 @@ import {
 import React, { useEffect, useState, createContext, useContext } from "react";
 import * as Sentry from "@sentry/react";
 import { logger, markFirestoreTerminatedForSignOut } from "@/config/sentry";
-import { isFirestoreOfflineError } from "@/utils/firebaseErrors";
+import {
+  extractFirebaseAuthError,
+  isFirestoreOfflineError,
+} from "@/utils/firebaseErrors";
 import { rememberMemberOnDevice } from "@/utils/homePopup";
 
 const EMAIL_FOR_SIGN_IN_STORAGE_KEY = "emailForSignIn";
@@ -508,10 +511,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
  * consent is granted after initial page load. Short-circuits the Firestore
  * profile read until analytics is actually enabled.
  */
+/** Failed profile reads before AnalyticsUserTagger stops retrying. */
+const ANALYTICS_TAG_MAX_FAILED_READS = 5;
+
 function AnalyticsUserTagger({ uid }: { uid: string }) {
   useEffect(() => {
     let cancelled = false;
     let retryInterval: ReturnType<typeof setInterval> | null = null;
+    let failedReads = 0;
 
     async function tag() {
       const instance = getAnalyticsInstance();
@@ -521,10 +528,19 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
       try {
         profile = await getUserProfile(uid);
       } catch (error) {
-        if (isFirestoreOfflineError(error)) {
+        // Tagging is best-effort: never let it reject. Offline, or denied
+        // because Firestore sent the read before the auth token was attached
+        // (seen on iOS Safari after its IndexedDB cache fails), is retried a
+        // few times; anything else is reported once and polling stops.
+        const code = extractFirebaseAuthError(error)?.code;
+        const retryable =
+          isFirestoreOfflineError(error) || code === "permission-denied";
+        failedReads += 1;
+        if (retryable && failedReads < ANALYTICS_TAG_MAX_FAILED_READS) {
           return false;
         }
-        throw error;
+        if (!retryable) Sentry.captureException(error);
+        return true; // give up
       }
 
       if (cancelled) return true;
@@ -539,18 +555,31 @@ function AnalyticsUserTagger({ uid }: { uid: string }) {
       return true; // done
     }
 
+    const stopPolling = () => {
+      if (retryInterval) {
+        clearInterval(retryInterval);
+        retryInterval = null;
+      }
+    };
+    const reportAndStop = (error: unknown) => {
+      Sentry.captureException(error);
+      stopPolling();
+      return true;
+    };
+
     // Try immediately; if analytics isn't ready yet, poll until it is.
-    tag().then((done) => {
-      if (done || cancelled) return;
-      retryInterval = setInterval(() => {
-        tag().then((done) => {
-          if ((done || cancelled) && retryInterval) {
-            clearInterval(retryInterval);
-            retryInterval = null;
-          }
-        });
-      }, 2000);
-    });
+    tag()
+      .catch(reportAndStop)
+      .then((done) => {
+        if (done || cancelled) return;
+        retryInterval = setInterval(() => {
+          tag()
+            .catch(reportAndStop)
+            .then((done) => {
+              if (done || cancelled) stopPolling();
+            });
+        }, 2000);
+      });
 
     return () => {
       cancelled = true;
