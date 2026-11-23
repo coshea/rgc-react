@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
  *   honouring the `retry-after` header.
  */
 
+export const RESEND_EMAILS_URL = "https://api.resend.com/emails";
 export const RESEND_BATCH_URL = "https://api.resend.com/emails/batch";
 export const RESEND_BATCH_LIMIT = 100;
 const MAX_ATTEMPTS = 4;
@@ -106,21 +107,30 @@ async function readErrorCode(response: Response): Promise<string | undefined> {
   return undefined;
 }
 
-async function postChunk(
+const defaultSleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * POSTs JSON to Resend, retrying 429 and 5xx (honouring `retry-after`). The
+ * same `Idempotency-Key` is sent on every attempt, so a retry after a 5xx
+ * that Resend actually processed is not delivered twice.
+ */
+export async function postToResend(
+  url: string,
   apiKey: string,
-  emails: ResendBatchEmail[],
+  body: unknown,
   idempotencyKey: string,
-  sleep: (ms: number) => Promise<void>,
+  sleep: (ms: number) => Promise<void> = defaultSleep,
 ): Promise<void> {
   for (let attempt = 1; ; attempt++) {
-    const response = await fetch(RESEND_BATCH_URL, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
       },
-      body: JSON.stringify(emails),
+      body: JSON.stringify(body),
     });
 
     if (response.ok) return;
@@ -144,9 +154,7 @@ export async function sendResendBatch(
   emails: readonly ResendBatchEmail[],
   options: ResendBatchOptions,
 ): Promise<ResendBatchResult> {
-  const sleep =
-    options.sleep ??
-    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const sleep = options.sleep ?? defaultSleep;
 
   let sent = 0;
   let failed = 0;
@@ -158,7 +166,8 @@ export async function sendResendBatch(
     RESEND_BATCH_LIMIT,
   ).entries()) {
     try {
-      await postChunk(
+      await postToResend(
+        RESEND_BATCH_URL,
         apiKey,
         emailsChunk,
         buildChunkIdempotencyKey(options.idempotencyPrefix, emailsChunk),
