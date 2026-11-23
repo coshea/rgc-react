@@ -14,13 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import type { AppNotification } from "@/types/notification";
-import {
-  extractFirebaseAuthError,
-  reportListenerError,
-} from "@/utils/firebaseErrors";
-
-const LISTENER_AUTH_RETRIES = 3;
-const LISTENER_RETRY_DELAY_MS = 1000;
+import { subscribeWithAuthRetry } from "@/utils/firebaseErrors";
 
 type BadgeNavigator = Navigator & {
   setAppBadge?: (contents?: number) => Promise<void>;
@@ -97,45 +91,23 @@ export function useNotifications(
       limit(50),
     );
 
-    // Right after sign-in (seen with email-link sign-in since the multi-tab
-    // offline cache) Firestore can still run the first listen with the
-    // signed-out credentials and deny it. A denied listener stays dead, so
-    // resubscribe a few times before treating it as a real failure.
-    let unsubscribe = () => {};
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    let retries = 0;
-
-    const subscribe = () => {
-      unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const docs = snapshot.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          })) as AppNotification[];
-          setNotifications(docs);
-          setLoading(false);
-        },
-        (err) => {
-          if (
-            extractFirebaseAuthError(err)?.code === "permission-denied" &&
-            retries < LISTENER_AUTH_RETRIES
-          ) {
-            retries += 1;
-            retryTimer = setTimeout(subscribe, LISTENER_RETRY_DELAY_MS * retries);
-            return;
-          }
-          reportListenerError("notifications", err);
-          setLoading(false);
-        },
-      );
-    };
-    subscribe();
-
-    return () => {
-      clearTimeout(retryTimer);
-      unsubscribe();
-    };
+    return subscribeWithAuthRetry(
+      "notifications",
+      (onError) =>
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const docs = snapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+            })) as AppNotification[];
+            setNotifications(docs);
+            setLoading(false);
+          },
+          onError,
+        ),
+      () => setLoading(false),
+    );
   }, [uid]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;

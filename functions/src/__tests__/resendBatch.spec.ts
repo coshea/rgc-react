@@ -2,11 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildChunkIdempotencyKey,
+  postToResend,
   RESEND_BATCH_URL,
+  RESEND_EMAILS_URL,
   ResendApiError,
   type ResendBatchEmail,
   sendResendBatch,
 } from "../resendBatch";
+import { sendTournamentLeaderEmail } from "../sendRegistrationEmails";
 
 function email(to: string): ResendBatchEmail {
   return { from: "from@example.com", to: [to], subject: "Hi", html: "<p/>" };
@@ -117,5 +120,59 @@ describe("buildChunkIdempotencyKey", () => {
     expect(buildChunkIdempotencyKey("p", [email("a@x.org")])).not.toBe(
       buildChunkIdempotencyKey("p", [email("c@x.org")]),
     );
+  });
+});
+
+describe("postToResend", () => {
+  it("retries 429 and 5xx with the same idempotency key", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response(429))
+      .mockResolvedValueOnce(response(503))
+      .mockResolvedValueOnce(response(200));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postToResend(RESEND_EMAILS_URL, "key", { to: ["a@x.org"] }, "k1", noSleep);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(noSleep).toHaveBeenNthCalledWith(1, 1000);
+    expect(noSleep).toHaveBeenNthCalledWith(2, 2000);
+    const keys = fetchMock.mock.calls.map(
+      ([, init]) => (init as RequestInit & { headers: Record<string, string> })
+        .headers["Idempotency-Key"],
+    );
+    expect(keys).toEqual(["k1", "k1", "k1"]);
+  });
+
+  it("throws a ResendApiError after the last attempt", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => response(429)));
+
+    await expect(
+      postToResend(RESEND_EMAILS_URL, "key", {}, "k1", noSleep),
+    ).rejects.toBeInstanceOf(ResendApiError);
+    expect(noSleep).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("registration emails", () => {
+  it("send one email to /emails with an idempotency key", async () => {
+    const fetchMock = vi.fn(async () => response(200));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendTournamentLeaderEmail("key", "lead@x.org", {
+      firstName: "Pat",
+      tournamentTitle: "Club Championship",
+      tournamentDate: "June 1, 2026",
+      tournamentTee: "White",
+      tournamentTeeTimes: "Assigned",
+      teamMembersHtml: "",
+      tournamentUrl: "https://example.org/t/1",
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(RESEND_EMAILS_URL);
+    expect(JSON.parse(String(init.body)).to).toEqual(["lead@x.org"]);
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Idempotency-Key"]).toMatch(/^[0-9a-f-]{36}$/);
   });
 });

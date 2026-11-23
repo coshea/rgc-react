@@ -6,6 +6,9 @@
  * No additional npm dependency is needed.
  */
 
+import { randomUUID } from "node:crypto";
+import { postToResend, RESEND_EMAILS_URL } from "./resendBatch";
+
 const FONT =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const FROM_EMAIL = "Ridgefield Golf Club <noreply@ridgefieldgolfclub.org>";
@@ -508,52 +511,17 @@ interface ResendPayload {
   html: string;
 }
 
+/**
+ * Sends one email. Several registration triggers can fire at once (a team
+ * leader plus each member), which can trip Resend's rate limit, so 429 and
+ * 5xx responses are retried. A random idempotency key per email, reused on
+ * every attempt, keeps a retried 5xx from delivering twice.
+ */
 async function callResendApi(
   apiKey: string,
   payload: ResendPayload,
 ): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const text = await response.text();
-
-    let errorCode: string | undefined;
-    let errorId: string | undefined;
-
-    try {
-      const parsed: unknown = JSON.parse(text);
-      if (parsed && typeof parsed === "object") {
-        const parsedRecord = parsed as Record<string, unknown>;
-        if (typeof parsedRecord.code === "string") {
-          errorCode = parsedRecord.code;
-        }
-        if (typeof parsedRecord.id === "string") {
-          errorId = parsedRecord.id;
-        }
-      }
-    } catch {
-      // Ignore parse failures and fall back to a status-only error message.
-    }
-
-    const details = [
-      errorCode ? `code=${errorCode}` : undefined,
-      errorId ? `id=${errorId}` : undefined,
-    ]
-      .filter((detail): detail is string => Boolean(detail))
-      .join(", ");
-
-    throw new Error(
-      details
-        ? `Resend API error ${response.status} (${details})`
-        : `Resend API error ${response.status}`,
-    );
-  }
+  await postToResend(RESEND_EMAILS_URL, apiKey, payload, randomUUID());
 }
 
 export async function sendTournamentLeaderEmail(

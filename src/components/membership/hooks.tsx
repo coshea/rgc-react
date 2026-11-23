@@ -7,6 +7,7 @@ import {
   onAllPushSubscriptions,
 } from "@/api/membershipData";
 import type { User as DirectoryUser } from "@/api/users";
+import { subscribeWithAuthRetry } from "@/utils/firebaseErrors";
 import type {
   DocumentData,
   DocumentSnapshot,
@@ -25,17 +26,28 @@ export function useAdminFlag(user: { uid?: string } | null) {
       setLoadingAdmin(false);
       return;
     }
-    const unsub = onAdminDoc(
-      user.uid,
-      (snap: DocumentSnapshot<DocumentData>) => {
-        const d = snap.data();
-        const flag =
-          d?.isAdmin === true || d?.admin === true || d?.admin === "true";
-        setIsAdmin(flag);
+    const uid = user.uid;
+    // Without an error callback a denied listen (seen right after email-link
+    // sign-in) was uncaught and left loadingAdmin stuck on true.
+    return subscribeWithAuthRetry(
+      "adminFlag",
+      (onError) =>
+        onAdminDoc(
+          uid,
+          (snap: DocumentSnapshot<DocumentData>) => {
+            const d = snap.data();
+            const flag =
+              d?.isAdmin === true || d?.admin === true || d?.admin === "true";
+            setIsAdmin(flag);
+            setLoadingAdmin(false);
+          },
+          onError,
+        ),
+      () => {
+        setIsAdmin(false);
         setLoadingAdmin(false);
       },
     );
-    return () => unsub();
   }, [user?.uid]);
   return { isAdmin, loadingAdmin };
 }

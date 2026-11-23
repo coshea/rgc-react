@@ -69,3 +69,50 @@ export function reportListenerError(listener: string, error: unknown): void {
     });
   }
 }
+
+const LISTENER_AUTH_RETRIES = 3;
+const LISTENER_RETRY_DELAY_MS = 1000;
+
+/**
+ * Starts a Firestore listener and resubscribes it a few times when it is
+ * denied. Right after sign-in (seen with email-link sign-in since the
+ * multi-tab offline cache) Firestore can still run the first listen with the
+ * signed-out credentials and deny it, and a denied listener stays dead.
+ *
+ * `subscribe` must pass the given error callback to `onSnapshot`. Any other
+ * error, or a denial that outlasts the retries, is reported with
+ * `reportListenerError` and handed to `onFailure`. Returns the cleanup.
+ */
+export function subscribeWithAuthRetry(
+  listener: string,
+  subscribe: (onError: (error: unknown) => void) => () => void,
+  onFailure?: (error: unknown) => void,
+): () => void {
+  let unsubscribe = () => {};
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+  let retries = 0;
+  let active = true;
+
+  const start = () => {
+    unsubscribe = subscribe((error) => {
+      if (!active) return;
+      if (
+        extractFirebaseAuthError(error)?.code === "permission-denied" &&
+        retries < LISTENER_AUTH_RETRIES
+      ) {
+        retries += 1;
+        retryTimer = setTimeout(start, LISTENER_RETRY_DELAY_MS * retries);
+        return;
+      }
+      reportListenerError(listener, error);
+      onFailure?.(error);
+    });
+  };
+  start();
+
+  return () => {
+    active = false;
+    clearTimeout(retryTimer);
+    unsubscribe();
+  };
+}

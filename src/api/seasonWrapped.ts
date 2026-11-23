@@ -156,11 +156,38 @@ export interface WrappedViewUpdate {
   shared?: boolean;
 }
 
+// Pending view write per story, so writes run one at a time (see below).
+const viewWriteQueues = new Map<string, Promise<void>>();
+
 /**
  * Records the member's own progress through their story. Counts only move
  * forward (the rules enforce it too). Never call this for admin previews.
+ *
+ * Tapping through the cards fires writes a second or two apart. Overlapping
+ * transactions on the same doc contend, and when a stale one commits after a
+ * newer one the rules see `furthestCard` go backwards and deny it. So writes
+ * for the same story are queued and each transaction reads the result of the
+ * one before it.
  */
-export async function recordWrappedView(
+export function recordWrappedView(
+  year: number,
+  uid: string,
+  update: WrappedViewUpdate,
+): Promise<void> {
+  const key = `${year}/${uid}`;
+  const previous = viewWriteQueues.get(key) ?? Promise.resolve();
+  const write = previous
+    .catch(() => undefined)
+    .then(() => writeWrappedView(year, uid, update));
+  viewWriteQueues.set(key, write);
+  const cleanup = () => {
+    if (viewWriteQueues.get(key) === write) viewWriteQueues.delete(key);
+  };
+  write.then(cleanup, cleanup);
+  return write;
+}
+
+async function writeWrappedView(
   year: number,
   uid: string,
   update: WrappedViewUpdate,
