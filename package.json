@@ -26,7 +26,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emailjs/browser": "^4.4.1",
     "@heroicons/react": "^2.2.0",
-    "@heroui-pro/react": "^1.0.0-beta.11",
+    "@heroui-pro/react": "^1.0.1",
     "@heroui/react": "^3.2.8",
     "@heroui/styles": "^3.2.8",
     "@number-flow/react": "^0.6.2",
@@ -117,7 +117,7 @@
     "globals": true
   },
   "allowScripts": {
-    "@heroui-pro/react@1.0.0-beta.11": true,
+    "@heroui-pro/react@1.0.1": true,
     "@firebase/util": false,
     "fsevents": false,
     "protobufjs": false,

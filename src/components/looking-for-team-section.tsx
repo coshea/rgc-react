@@ -3,6 +3,7 @@ import { Button, Card, Separator } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { addToast } from "@/providers/toast";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import {
   onLookingForTeam,
   setLookingForTeamPost,
@@ -281,7 +282,10 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                       key={post.id}
                       className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 bg-default/60"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <MemberHoverCard
+                        userId={post.ownerId}
+                        className="min-w-0 items-center gap-2"
+                      >
                         <UserAvatar
                           user={
                             profile
@@ -312,7 +316,7 @@ export const LookingForTeamSection: React.FC<LookingForTeamSectionProps> = ({
                             })}
                           </p>
                         </div>
-                      </div>
+                      </MemberHoverCard>
                       <div className="flex items-center gap-1 shrink-0">
                         {profile?.email && !isCurrentUser && (
                           <Button

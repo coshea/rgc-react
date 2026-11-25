@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, Chip, Link, Skeleton } from "@heroui/react";
 import clsx from "clsx";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { SearchInput } from "@/components/search-input";
 import { siteConfig } from "@/config/site";
 import type { User } from "@/api/users";
@@ -274,13 +275,14 @@ export function YearlyTeamWinners({ year }: Props) {
                     <div className="min-w-0">
                       <div className="flex -space-x-2 mb-2.5">
                         {team.userIds.map((uid, i) => (
-                          <UserAvatar
-                            key={uid}
-                            size="sm"
-                            className="ring-2 ring-surface"
-                            user={usersMap.get(uid)}
-                            name={usersMap.get(uid) ? undefined : names[i]}
-                          />
+                          <MemberHoverCard key={uid} userId={uid}>
+                            <UserAvatar
+                              size="sm"
+                              className="ring-2 ring-surface"
+                              user={usersMap.get(uid)}
+                              name={usersMap.get(uid) ? undefined : names[i]}
+                            />
+                          </MemberHoverCard>
                         ))}
                       </div>
                       <Card.Title className="text-base wrap-break-word">

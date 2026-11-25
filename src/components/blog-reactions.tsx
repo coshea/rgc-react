@@ -1,5 +1,6 @@
 import React from "react";
-import { Button, Popover, ToggleButton, Tooltip } from "@heroui/react";
+import { Button, Popover, Tooltip } from "@heroui/react";
+import { EmojiReactionButton } from "@heroui-pro/react/emoji-reaction-button";
 import { Icon } from "@iconify/react";
 
 import { computeDisplayName } from "@/api/users";
@@ -25,14 +26,15 @@ interface BlogReactionsProps {
 const COMPACT_LIMIT = 3;
 const MAX_TOOLTIP_NAMES = 8;
 
-// Outlined and transparent by default; HeroUI's selected state supplies the
-// soft accent tint, so only the member's own reactions carry colour.
-const CHIP_BASE =
-  "rounded-full border border-border tabular-nums [--toggle-button-bg:transparent] data-[selected=true]:border-accent/40";
+// Pro EmojiReactionButton supplies the pill, hover and selected (accent)
+// styles; these only set sizes and tap targets. Pro's CSS is unlayered, so
+// anything it also sets (padding, font size) needs the important modifier. The "+N more" and picker buttons
+// borrow the same pill so the row reads as one set.
+const CHIP_BASE = "relative rounded-full bg-default tabular-nums";
 // Compact chips look 28px tall; the ::before extends the tap target to 44px.
 const CHIP_COMPACT =
-  "h-7 min-h-0 gap-1 px-2 text-xs md:h-7 before:absolute before:inset-x-0 before:-inset-y-2 before:content-['']";
-const CHIP_FULL = "min-h-11 gap-1 px-3 text-sm sm:min-h-9";
+  "h-7 min-h-0 gap-1! px-2! text-xs! md:h-7 before:absolute before:inset-x-0 before:-inset-y-2 before:content-['']";
+const CHIP_FULL = "min-h-11 px-3! sm:min-h-9";
 
 function reactionLabel(def: BlogReactionDef, count: number) {
   return `${def.label}, ${count} ${count === 1 ? "reaction" : "reactions"}`;
@@ -246,20 +248,24 @@ function ReactionChip({
       {...(longPress ? hold.handlers : {})}
     >
       <Tooltip delay={300} closeDelay={0}>
-        <ToggleButton
+        <EmojiReactionButton
           ref={chipRef}
-          size="sm"
+          size={compact ? "sm" : "md"}
           isSelected={isMine}
           onChange={() => {
             if (!hold.consume()) onToggle(def.key);
           }}
           aria-label={reactionLabel(def, count)}
           aria-describedby={namesId}
-          className={`${CHIP_BASE} ${compact ? CHIP_COMPACT : CHIP_FULL}`}
+          className={`relative ${compact ? CHIP_COMPACT : CHIP_FULL}`}
         >
-          <span aria-hidden="true">{def.emoji}</span>
-          <span aria-hidden="true">{count}</span>
-        </ToggleButton>
+          <EmojiReactionButton.Emoji aria-hidden="true">
+            {def.emoji}
+          </EmojiReactionButton.Emoji>
+          <EmojiReactionButton.Count aria-hidden="true">
+            {count}
+          </EmojiReactionButton.Count>
+        </EmojiReactionButton>
         <Tooltip.Content placement="top" offset={6} className="max-w-56">
           {heading}
           <NamesList names={names} />
@@ -362,17 +368,18 @@ function ReactionPicker({
         <Popover.Dialog aria-label="Choose reactions">
           <div className="grid grid-cols-5 gap-1">
             {BLOG_REACTIONS.map((def) => (
-              <ToggleButton
+              <EmojiReactionButton
                 key={def.key}
-                variant="ghost"
-                isIconOnly
+                size="lg"
                 isSelected={mine.includes(def.key)}
                 onChange={() => onToggle(def.key)}
                 aria-label={def.label}
-                className="h-11 w-11 text-2xl"
+                className="h-11 w-11 justify-center p-0! text-2xl! not-data-[selected=true]:bg-transparent!"
               >
-                <span aria-hidden="true">{def.emoji}</span>
-              </ToggleButton>
+                <EmojiReactionButton.Emoji aria-hidden="true">
+                  {def.emoji}
+                </EmojiReactionButton.Emoji>
+              </EmojiReactionButton>
             ))}
           </div>
         </Popover.Dialog>

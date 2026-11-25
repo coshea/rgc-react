@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Button, Link } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { useUsersMap } from "@/hooks/useUsers";
 import { siteConfig } from "@/config/site";
 import type { Tournament } from "@/types/tournament";
@@ -133,13 +134,14 @@ export function TournamentResults({ tournament, onBack }: Props) {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="hidden md:flex -space-x-2 shrink-0">
                         {e.userIds.slice(0, 4).map((uid, i) => (
-                          <UserAvatar
-                            key={`${uid}-${i}`}
-                            size="sm"
-                            className="ring-1 ring-background"
-                            user={usersMap.get(uid)}
-                            name={usersMap.get(uid) ? undefined : names[i]}
-                          />
+                          <MemberHoverCard key={`${uid}-${i}`} userId={uid}>
+                            <UserAvatar
+                              size="sm"
+                              className="ring-1 ring-background"
+                              user={usersMap.get(uid)}
+                              name={usersMap.get(uid) ? undefined : names[i]}
+                            />
+                          </MemberHoverCard>
                         ))}
                       </div>
                       <div className="min-w-0">

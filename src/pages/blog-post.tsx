@@ -12,6 +12,7 @@ import { usePageTracking } from "@/hooks/usePageTracking";
 import BackButton from "@/components/back-button";
 import GroupedWinners from "@/components/grouped-winners";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { BlogReactions } from "@/components/blog-reactions";
 import { onTournament, mapTournamentDoc } from "@/api/tournaments";
 import { Tournament } from "@/types/tournament";
@@ -219,14 +220,14 @@ export const BlogPostPage: React.FC = () => {
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
 
         <div className="flex items-center gap-4 text-sm text-muted">
-          <div className="flex items-center gap-2">
+          <MemberHoverCard userId={post.authorId} className="items-center gap-2">
             <UserAvatar
               src={post.authorPhotoURL || undefined}
               user={authorAvatarUser}
               size="sm"
             />
             <span>{authorName}</span>
-          </div>
+          </MemberHoverCard>
           <span className="flex items-center gap-1">
             <Icon icon="lucide:calendar" className="w-4 h-4" />
             {formatDate(post.publishedAt)}

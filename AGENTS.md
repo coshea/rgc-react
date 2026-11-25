@@ -100,6 +100,8 @@ npm run emulators            # Firebase emulators: auth, firestore, functions (U
 - **Toasts:** call `addToast({ title, description, color })` from `@/providers/toast`. Don't import `toast` from `@heroui/react` directly.
 - **Accessibility:** every control without visible text needs `aria-label`/`aria-labelledby` on the compound **root** (e.g. `SearchField`, `Select`, `DatePicker`). Keep focus visible. Style with component props (`variant`/`size`/`isIconOnly`) and Tailwind, not inline styles.
 - **Components:** write function components only. Keep them focused; extract non-modal subcomponents into `src/components/` rather than growing inline render blocks.
+- **HeroUI Pro CSS is unlayered:** each Pro component needs its `@import "@heroui-pro/react/css/components/<name>.css"` in `globals.css`, and because those styles sit outside any cascade layer they beat Tailwind utilities. To override a property Pro sets (padding, font size, colour), use the important modifier (`px-3!`) or an unlayered rule in `globals.css`.
+- **Member hover card:** wrap a member's avatar (and name, when they sit together) in `MemberHoverCard userId={uid}` (`src/components/member-hover-card.tsx`) on member-facing pages. It renders plain children for visitors, since `users` docs need sign-in. Don't put it inside a button or accordion trigger.
 
 ### `UserAvatar` (`src/components/avatar.tsx`)
 
