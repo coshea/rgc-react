@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Chip, Skeleton, buttonVariants } from "@heroui/react";
 import { HoverCard } from "@heroui-pro/react/hover-card";
 import { Icon } from "@iconify/react";
@@ -6,9 +6,13 @@ import { Link as RouterLink } from "react-router-dom";
 
 import { computeDisplayName, toDate } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
+import { useUserChampionships } from "@/hooks/useChampionships";
 import { useUserById } from "@/hooks/useUserById";
+import { useYearlyWinnings } from "@/hooks/useYearlyWinnings";
 import { useAuth } from "@/providers/AuthProvider";
+import { CHAMPIONSHIP_TYPES } from "@/types/championship";
 import { BOARD_ROLE_META, formatBoardRoleLabel } from "@/types/roles";
+import { rankStandings } from "@/utils/standings";
 
 interface MemberHoverCardProps {
   /** The member's `users/{uid}` id. Without one, children render as-is. */
@@ -53,8 +57,86 @@ function roleMeta(role: string | null | undefined) {
     : null;
 }
 
-function MemberHoverCardBody({ userId }: { userId: string }) {
+/** Championship chips shown before the rest collapse into "+N". */
+const MAX_TROPHY_CHIPS = 2;
+
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+function championshipLabel(type: string) {
+  return CHAMPIONSHIP_TYPES[type as keyof typeof CHAMPIONSHIP_TYPES] ?? type;
+}
+
+/**
+ * This season's money list numbers for one member. `useYearlyWinnings` is
+ * the money list's own query, cached under `['yearlyWinnings', year]`, so
+ * every hover card on a page (and the money list itself) shares one load.
+ * The rank is shown only in the top half, as in Season Wrapped.
+ */
+function useSeasonStats(userId: string, year: number) {
+  const { winnings, isLoading } = useYearlyWinnings({ year });
+  return useMemo(() => {
+    const rows = rankStandings(winnings);
+    const row = rows.find((r) => r.userId === userId);
+    const inTopHalf = !!row && row.rank <= Math.ceil(rows.length / 2);
+    return {
+      isLoading,
+      total: row?.total ?? 0,
+      wins: row?.wins ?? 0,
+      rankLabel: inTopHalf ? row.rankLabel : undefined,
+    };
+  }, [winnings, isLoading, userId]);
+}
+
+function StatCell({
+  value,
+  label,
+  isEmpty,
+  isLoading,
+  extra,
+}: {
+  value: ReactNode;
+  label: string;
+  isEmpty: boolean;
+  isLoading: boolean;
+  extra?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-auto flex-col items-center gap-0.5 px-2 text-center">
+      {isLoading ? (
+        <Skeleton className="my-0.5 h-5 w-10 rounded" />
+      ) : (
+        <span
+          className={`whitespace-nowrap text-[17px] font-bold tabular-nums leading-6 ${isEmpty ? "text-muted" : ""}`}
+        >
+          {isEmpty ? "–" : value}
+          {!isEmpty && extra}
+        </span>
+      )}
+      <span className="whitespace-nowrap text-[11px] leading-tight text-muted">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Exported for tests; use `MemberHoverCard`. */
+export function MemberHoverCardBody({ userId }: { userId: string }) {
   const { user, isLoading } = useUserById(userId);
+  const year = new Date().getFullYear();
+  const season = useSeasonStats(userId, year);
+  const { championships, isLoading: championshipsLoading } =
+    useUserChampionships({ userId });
+  const titles = useMemo(
+    () =>
+      championships
+        .filter((c) => c.winnerIds?.includes(userId))
+        .sort((a, b) => b.year - a.year),
+    [championships, userId],
+  );
 
   if (isLoading) {
     return (
@@ -74,16 +156,30 @@ function MemberHoverCardBody({ userId }: { userId: string }) {
 
   const name = computeDisplayName(user) || user.email || "Member";
   const meta = roleMeta(user.role);
-  const memberSince = toDate(user.createdAt)?.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  const memberSinceYear = toDate(user.createdAt)?.getUTCFullYear();
+  const isChampion = titles.length > 0;
+  const shownTitles = titles.slice(0, MAX_TROPHY_CHIPS);
+  const moreTitles = titles.length - shownTitles.length;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <UserAvatar user={user} size="lg" className="h-12 w-12 shrink-0" />
+        <div className="relative shrink-0">
+          <UserAvatar
+            user={user}
+            size="lg"
+            className={`h-12 w-12 ${isChampion ? "ring-2 ring-warning ring-offset-2 ring-offset-overlay" : ""}`}
+          />
+          {isChampion && (
+            <span className="absolute -bottom-1 -right-1.5 flex size-5.5 items-center justify-center rounded-full bg-warning text-warning-foreground ring-2 ring-overlay">
+              <Icon
+                icon="lucide:trophy"
+                className="size-3"
+                aria-label={championshipLabel(titles[0].championshipType)}
+              />
+            </span>
+          )}
+        </div>
         <div className="flex min-w-0 flex-col gap-1">
           <p className="truncate font-semibold leading-tight">{name}</p>
           <div className="flex flex-wrap gap-1">
@@ -110,12 +206,66 @@ function MemberHoverCardBody({ userId }: { userId: string }) {
                 Handicap Only
               </Chip>
             )}
+            {memberSinceYear && (
+              <Chip size="sm" variant="tertiary">
+                Since {memberSinceYear}
+              </Chip>
+            )}
           </div>
         </div>
       </div>
-      {memberSince && (
-        <p className="text-xs text-muted">Member since {memberSince}</p>
+
+      {/* Columns size to their content so every label stays on one line. */}
+      <div className="flex divide-x divide-separator rounded-xl bg-surface-secondary py-2.5">
+        <StatCell
+          label={`${year} winnings`}
+          value={usd.format(season.total)}
+          isEmpty={season.total <= 0}
+          isLoading={season.isLoading}
+          extra={
+            season.rankLabel && (
+              <span
+                className="ml-1 text-xs font-normal text-muted"
+                aria-label={`, number ${season.rankLabel} on the money list`}
+              >
+                #{season.rankLabel}
+              </span>
+            )
+          }
+        />
+        <StatCell
+          label={`${year} wins`}
+          value={season.wins}
+          isEmpty={season.wins === 0}
+          isLoading={season.isLoading}
+        />
+        <StatCell
+          label="Championships"
+          value={titles.length}
+          isEmpty={titles.length === 0}
+          isLoading={championshipsLoading}
+        />
+      </div>
+
+      {shownTitles.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5" aria-label="Championships">
+          {shownTitles.map((c) => (
+            <li
+              key={c.id}
+              className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1.5 text-xs leading-none text-warning-soft-foreground"
+            >
+              <Icon icon="lucide:trophy" className="size-3.5" aria-hidden />
+              {championshipLabel(c.championshipType)} · {c.year}
+            </li>
+          ))}
+          {moreTitles > 0 && (
+            <li className="inline-flex items-center rounded-full bg-default px-2.5 py-1.5 text-xs leading-none">
+              +{moreTitles}
+            </li>
+          )}
+        </ul>
       )}
+
       <RouterLink
         to={`/profile/${user.id}`}
         className={`${buttonVariants({ variant: "secondary", size: "sm", fullWidth: true })} h-11 sm:h-9`}
