@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FindAGamePost, deletePartnerPost } from "@/api/find-a-game";
 import { getUserProfile, type UserProfilePayload } from "@/api/users";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { normalizePhone } from "@/utils/phone";
 
 export interface PostsListProps {
@@ -167,21 +168,22 @@ export function PostsList({
           <div className="px-4 py-3 space-y-3">
             {/* Owner info with enhanced styling */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <MemberHoverCard
+                userId={p.ownerId}
+                className="min-w-0 items-center gap-3"
+              >
                 <UserAvatar
                   size="md"
                   user={owners[p.ownerId] || undefined}
                   userId={p.ownerId}
                   className="ring-2 ring-default-100"
                 />
-                <div>
-                  <div className="font-semibold text-sm text-foreground">
-                    {owners[p.ownerId]?.displayName ||
-                      owners[p.ownerId]?.email?.split("@")[0] ||
-                      `Member (${p.ownerId.slice(0, 8)}...)`}
-                  </div>
-                </div>
-              </div>
+                <span className="truncate font-semibold text-sm text-foreground">
+                  {owners[p.ownerId]?.displayName ||
+                    owners[p.ownerId]?.email?.split("@")[0] ||
+                    `Member (${p.ownerId.slice(0, 8)}...)`}
+                </span>
+              </MemberHoverCard>
 
               {/* Contact actions */}
               <div className="flex items-center gap-1">

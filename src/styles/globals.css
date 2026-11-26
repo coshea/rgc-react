@@ -12,6 +12,8 @@
 @import "@heroui-pro/react/css/components/number-value.css";
 @import "@heroui-pro/react/css/components/segment.css";
 @import "@heroui-pro/react/css/components/trend-chip.css";
+@import "@heroui-pro/react/css/components/emoji-reaction-button.css";
+@import "@heroui-pro/react/css/components/hover-card.css";
 
 /* Prevent any overflowing element from causing horizontal page scroll on mobile */
 html,

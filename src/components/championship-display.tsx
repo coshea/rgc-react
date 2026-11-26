@@ -1,5 +1,6 @@
 import { Card, Separator, Chip, Button } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
 import { useUsersMap } from "@/hooks/useUsers";
@@ -102,23 +103,28 @@ export function ChampionshipCard({
 
             const row = (
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 transition-colors hover:bg-amber-100 dark:hover:bg-amber-950/50">
-                <UserAvatar
-                  user={winnerUser}
-                  name={winnerName}
+                <MemberHoverCard
                   userId={winnerId}
-                  size="sm"
-                  alt={winnerName}
-                  className="shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 truncate">
-                    {winnerName}
-                  </p>
-                  <p className="text-[10px] leading-tight text-amber-700 dark:text-amber-300 flex items-center gap-0.5">
-                    <Icon icon="lucide:trophy" className="w-2 h-2 shrink-0" />
-                    {winnersLabel}
-                  </p>
-                </div>
+                  className="min-w-0 flex-1 items-center gap-2"
+                >
+                  <UserAvatar
+                    user={winnerUser}
+                    name={winnerName}
+                    userId={winnerId}
+                    size="sm"
+                    alt={winnerName}
+                    className="shrink-0"
+                  />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-amber-900 dark:text-amber-100 truncate">
+                      {winnerName}
+                    </span>
+                    <span className="text-[10px] leading-tight text-amber-700 dark:text-amber-300 flex items-center gap-0.5">
+                      <Icon icon="lucide:trophy" className="w-2 h-2 shrink-0" />
+                      {winnersLabel}
+                    </span>
+                  </span>
+                </MemberHoverCard>
                 {isClickable && (
                   <Icon
                     icon="lucide:chevron-right"
@@ -174,23 +180,28 @@ export function ChampionshipCard({
 
             const row = (
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700">
-                <UserAvatar
-                  user={runnerUpUser}
-                  name={runnerUpName}
+                <MemberHoverCard
                   userId={runnerUpId}
-                  size="sm"
-                  alt={runnerUpName}
-                  className="shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                    {runnerUpName}
-                  </p>
-                  <p className="text-[10px] leading-tight text-slate-500 dark:text-slate-400 flex items-center gap-0.5">
-                    <Icon icon="lucide:award" className="w-2 h-2 shrink-0" />
-                    {runnerLabel}
-                  </p>
-                </div>
+                  className="min-w-0 flex-1 items-center gap-2"
+                >
+                  <UserAvatar
+                    user={runnerUpUser}
+                    name={runnerUpName}
+                    userId={runnerUpId}
+                    size="sm"
+                    alt={runnerUpName}
+                    className="shrink-0"
+                  />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                      {runnerUpName}
+                    </span>
+                    <span className="text-[10px] leading-tight text-slate-500 dark:text-slate-400 flex items-center gap-0.5">
+                      <Icon icon="lucide:award" className="w-2 h-2 shrink-0" />
+                      {runnerLabel}
+                    </span>
+                  </span>
+                </MemberHoverCard>
                 {isClickable && (
                   <Icon
                     icon="lucide:chevron-right"

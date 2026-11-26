@@ -27,6 +27,7 @@ import { addToast } from "@/providers/toast";
 import { siteConfig } from "@/config/site";
 import { reportListenerError } from "@/utils/firebaseErrors";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import BackButton from "@/components/back-button";
 import { TournamentStatusChip } from "@/components/tournament-status-chip";
 import { Icon } from "@iconify/react";
@@ -2119,12 +2120,14 @@ img { display: block; max-width: 100%; }
                               className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
                             >
                               <div className="flex items-center gap-2 min-w-0">
-                                <UserAvatar
-                                  size="sm"
-                                  user={memberUser}
-                                  name={memberUser ? undefined : name}
-                                  alt={name}
-                                />
+                                <MemberHoverCard userId={m.id}>
+                                  <UserAvatar
+                                    size="sm"
+                                    user={memberUser}
+                                    name={memberUser ? undefined : name}
+                                    alt={name}
+                                  />
+                                </MemberHoverCard>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2 min-w-0">
                                     <span className="text-sm font-medium truncate">
@@ -2256,12 +2259,14 @@ img { display: block; max-width: 100%; }
                             className="flex items-center justify-between gap-3 rounded-md border bg-surface-secondary/60 p-2"
                           >
                             <div className="flex items-center gap-2 min-w-0">
-                              <UserAvatar
-                                size="sm"
-                                user={memberUser}
-                                name={memberUser ? undefined : name}
-                                alt={name}
-                              />
+                              <MemberHoverCard userId={uid}>
+                                <UserAvatar
+                                  size="sm"
+                                  user={memberUser}
+                                  name={memberUser ? undefined : name}
+                                  alt={name}
+                                />
+                              </MemberHoverCard>
                               <div className="min-w-0">
                                 <div className="text-sm font-medium truncate">
                                   {name}

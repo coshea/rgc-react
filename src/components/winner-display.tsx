@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { useUsersMap } from "@/hooks/useUsers";
 import { getPlaceMeta } from "@/utils/placeMeta";
 import type { ReactNode } from "react";
@@ -89,13 +90,14 @@ export function WinnerDisplay({
           const resolvedName =
             user?.displayName || user?.email || competitor.displayName;
           return (
-            <UserAvatar
-              key={competitor.userId}
-              size="sm"
-              className="ring-1 ring-background"
-              name={resolvedName}
-              user={user}
-            />
+            <MemberHoverCard key={competitor.userId} userId={competitor.userId}>
+              <UserAvatar
+                size="sm"
+                className="ring-1 ring-background"
+                name={resolvedName}
+                user={user}
+              />
+            </MemberHoverCard>
           );
         })}
       </div>
@@ -107,13 +109,17 @@ export function WinnerDisplay({
             const resolvedName =
               user?.displayName || user?.email || competitor.displayName;
             return (
-              <UserAvatar
+              <MemberHoverCard
                 key={competitor.userId}
-                size="sm"
-                className="ring-1 ring-background"
-                name={resolvedName}
-                user={user}
-              />
+                userId={competitor.userId}
+              >
+                <UserAvatar
+                  size="sm"
+                  className="ring-1 ring-background"
+                  name={resolvedName}
+                  user={user}
+                />
+              </MemberHoverCard>
             );
           })}
         </div>

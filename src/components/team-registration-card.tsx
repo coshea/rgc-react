@@ -1,6 +1,7 @@
 import { Card, Chip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { TeeBadge } from "@/components/tee-badge";
 import type { User } from "@/api/users";
 
@@ -114,24 +115,29 @@ export function TeamRegistrationCard({
             const isLeader = !!leaderId && m.id === leaderId;
             return (
               <li key={m.id || i} className="flex items-center gap-2 min-w-0">
-                <UserAvatar
-                  size="sm"
-                  user={memberUser}
-                  name={memberUser ? undefined : label}
-                  className={
-                    isLeader
-                      ? "shrink-0 border ring-2 ring-primary ring-offset-1 ring-offset-background"
-                      : "shrink-0 border"
-                  }
-                  alt={label}
-                />
-                <span
-                  className={`text-[13px] sm:text-sm font-medium truncate min-w-0 ${
-                    isLeader ? "text-accent" : ""
-                  }`}
+                <MemberHoverCard
+                  userId={m.id}
+                  className="min-w-0 items-center gap-2"
                 >
-                  {m.displayName || m.id}
-                </span>
+                  <UserAvatar
+                    size="sm"
+                    user={memberUser}
+                    name={memberUser ? undefined : label}
+                    className={
+                      isLeader
+                        ? "shrink-0 border ring-2 ring-primary ring-offset-1 ring-offset-background"
+                        : "shrink-0 border"
+                    }
+                    alt={label}
+                  />
+                  <span
+                    className={`text-[13px] sm:text-sm font-medium truncate min-w-0 ${
+                      isLeader ? "text-accent" : ""
+                    }`}
+                  >
+                    {m.displayName || m.id}
+                  </span>
+                </MemberHoverCard>
                 {isLeader && maxPlayers > 1 && (
                   <span className="text-[10px] text-muted font-medium shrink-0">
                     Leader

@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Button, Checkbox, Label, Tooltip } from "@heroui/react";
 import { UserAvatar } from "@/components/avatar";
+import { MemberHoverCard } from "@/components/member-hover-card";
 import { Icon } from "@iconify/react";
 import { User } from "@/api/users";
 import RegistrationEditor from "@/components/registration-editor";
@@ -138,14 +139,15 @@ export const RegistrationsList: React.FC<Props> = ({
                       // Pass full user when available for centralized fallback (profileURL > photoURL > initials)
                       const label = (m.displayName || m.id || "").toString();
                       return (
-                        <UserAvatar
-                          key={m.id || i}
-                          size="sm"
-                          user={memberUser}
-                          name={memberUser ? undefined : label}
-                          alt={label}
-                          className="border"
-                        />
+                        <MemberHoverCard key={m.id || i} userId={m.id}>
+                          <UserAvatar
+                            size="sm"
+                            user={memberUser}
+                            name={memberUser ? undefined : label}
+                            alt={label}
+                            className="border"
+                          />
+                        </MemberHoverCard>
                       );
                     })}
                   </div>
